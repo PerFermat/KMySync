@@ -7,12 +7,10 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 
 import de.spahr.ausgaben.pdf.PdfText;
-import de.spahr.ausgaben.statement.AnchorRule;
+import de.spahr.ausgaben.statement.StatementRulesIo;
 import de.spahr.ausgaben.statement.StatementScan;
 import de.spahr.ausgaben.statement.StatementTemplate;
 
@@ -26,6 +24,9 @@ import de.spahr.ausgaben.statement.StatementTemplate;
  *
  * <p>Speicherformat unter {@code templates}: eine Liste von
  * {@code {"a":"buy","d":"Depot","r":{"NET":{"t":["Endbetrag zu Ihren Lasten"],"d":"SAME_LINE","s":false,"c":"EUR"}, …}}}.
+ * Geschrieben und gelesen wird sie von {@link StatementRulesIo} — derselben Klasse, die auch die Datei
+ * schreibt, mit der ein Nutzer seine Regeln weitergibt. Nur das {@code "d"} mit dem Depot kommt von hier:
+ * in der Datei steht das Depot einmal im Kopf, denn dort gehören alle Vorlagen zu einem.
  * Unter {@code isins} steht je ISIN Depot, Wertpapier-ID und Name.</p>
  *
  * <p>Die Vorlagen gehören zum <b>Depot</b>, nicht zur Bank: verschickt eine Bank Abrechnungen an zwei
@@ -284,7 +285,7 @@ public class StatementTemplates {
             JSONArray arr = new JSONArray(prefs.getString(keyTemplates(), "[]"));
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.optJSONObject(i);
-                StatementTemplate t = fromJson(o);
+                StatementTemplate t = StatementRulesIo.templateFromJson(o);
                 if (t != null && !t.isEmpty()) {
                     out.add(new Entry(o == null ? "" : o.optString("d", ""), t));
                 }
@@ -298,7 +299,7 @@ public class StatementTemplates {
     private void write(List<Entry> entries) {
         JSONArray arr = new JSONArray();
         for (Entry e : entries) {
-            JSONObject o = toJson(e.template);
+            JSONObject o = StatementRulesIo.templateToJson(e.template);
             if (o != null) {
                 try {
                     o.put("d", e.depot);
@@ -310,144 +311,4 @@ public class StatementTemplates {
         prefs.edit().putString(keyTemplates(), arr.toString()).apply();
     }
 
-    private static JSONObject toJson(StatementTemplate t) {
-        try {
-            JSONObject o = new JSONObject();
-            o.put("a", t.action == null ? "" : t.action);
-            JSONObject rules = new JSONObject();
-            for (Map.Entry<StatementTemplate.Field, AnchorRule> e : t.rules().entrySet()) {
-                rules.put(e.getKey().name(), ruleToJson(e.getValue()));
-            }
-            o.put("r", rules);
-            // Nur schreiben, wenn es eine feste Gebühr gibt – Bestandsvorlagen bleiben so, wie sie sind.
-            if (t.fixedFeeCents > 0) {
-                o.put("ff", t.fixedFeeCents);
-                o.put("fc", t.fixedFeeCategory);
-                o.put("fi", t.fixedFeeInTotal);
-            }
-            if (!t.feeParts.isEmpty()) {
-                o.put("fp", partsToJson(t.feeParts));
-            }
-            if (!t.incomeParts.isEmpty()) {
-                o.put("ip", partsToJson(t.incomeParts));
-            }
-            if (!t.feeCategory.isEmpty()) {
-                o.put("fcat", t.feeCategory);
-            }
-            if (!t.incomeCategory.isEmpty()) {
-                o.put("icat", t.incomeCategory);
-            }
-            return o;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private static JSONObject ruleToJson(AnchorRule r) throws org.json.JSONException {
-        JSONObject ro = new JSONObject();
-        ro.put("t", new JSONArray(r.anchors));
-        ro.put("d", r.direction.name());
-        ro.put("s", r.sum);
-        ro.put("c", r.currency);
-        if (r.nth > 1) {
-            ro.put("n", r.nth);
-        }
-        if (r.lineDistance > 0) {
-            // Nur bei fester Angabe – ohne sie sucht die Regel, und das ist der Regelfall.
-            ro.put("b", r.lineDistance);
-        }
-        if (r.position != AnchorRule.Position.LAST) {
-            // Nur schreiben, wenn es vom Regelfall abweicht – Bestandsvorlagen bleiben so, wie
-            // sie sind, und beim Lesen gilt ohne Angabe die letzte Zahl.
-            ro.put("p", r.position.name());
-        }
-        return ro;
-    }
-
-    private static JSONArray partsToJson(List<StatementTemplate.PartRule> parts)
-            throws org.json.JSONException {
-        JSONArray arr = new JSONArray();
-        for (StatementTemplate.PartRule part : parts) {
-            JSONObject po = new JSONObject();
-            po.put("l", part.label);
-            po.put("r", ruleToJson(part.rule));
-            if (!part.category.isEmpty()) {
-                po.put("k", part.category);
-            }
-            arr.put(po);
-        }
-        return arr;
-    }
-
-    private static StatementTemplate fromJson(JSONObject o) {
-        if (o == null) {
-            return null;
-        }
-        Map<StatementTemplate.Field, AnchorRule> rules = new EnumMap<>(StatementTemplate.Field.class);
-        JSONObject r = o.optJSONObject("r");
-        if (r != null) {
-            for (StatementTemplate.Field field : StatementTemplate.Field.values()) {
-                AnchorRule rule = ruleFromJson(r.optJSONObject(field.name()));
-                if (rule != null) {
-                    rules.put(field, rule);
-                }
-            }
-        }
-        return new StatementTemplate(o.optString("a", ""), rules,
-                o.optLong("ff", 0L), o.optString("fc", ""), o.optBoolean("fi", false),
-                partsFromJson(o.optJSONArray("fp")), partsFromJson(o.optJSONArray("ip")),
-                o.optString("fcat", ""), o.optString("icat", ""));
-    }
-
-    /** Eine einzelne Regel; {@code null}, wenn keine dasteht oder ihr die Beschriftungen fehlen. */
-    private static AnchorRule ruleFromJson(JSONObject ro) {
-        if (ro == null) {
-            return null;
-        }
-        List<String> anchors = new ArrayList<>();
-        JSONArray arr = ro.optJSONArray("t");
-        if (arr != null) {
-            for (int i = 0; i < arr.length(); i++) {
-                anchors.add(arr.optString(i, ""));
-            }
-        }
-        if (anchors.isEmpty()) {
-            return null;
-        }
-        AnchorRule.Direction dir;
-        try {
-            dir = AnchorRule.Direction.valueOf(
-                    ro.optString("d", AnchorRule.Direction.SAME_LINE.name()));
-        } catch (IllegalArgumentException e) {
-            dir = AnchorRule.Direction.SAME_LINE;
-        }
-        AnchorRule.Position pos;
-        try {
-            pos = AnchorRule.Position.valueOf(ro.optString("p", AnchorRule.Position.LAST.name()));
-        } catch (IllegalArgumentException e) {
-            pos = AnchorRule.Position.LAST;
-        }
-        return new AnchorRule(anchors, dir, ro.optBoolean("s", false),
-                ro.optString("c", ""), pos, ro.optInt("n", 1), ro.optInt("b", 0));
-    }
-
-    private static List<StatementTemplate.PartRule> partsFromJson(JSONArray arr) {
-        List<StatementTemplate.PartRule> out = new ArrayList<>();
-        if (arr == null) {
-            return out;
-        }
-        for (int i = 0; i < arr.length(); i++) {
-            JSONObject po = arr.optJSONObject(i);
-            if (po == null) {
-                continue;
-            }
-            AnchorRule rule = ruleFromJson(po.optJSONObject("r"));
-            String label = po.optString("l", "");
-            // Ohne Beschriftung wäre der Teil nicht wiederzuerkennen und ohne Regel nicht zu lesen.
-            if (rule != null && !label.trim().isEmpty()) {
-                out.add(new StatementTemplate.PartRule(label, rule, po.optString("k", "")));
-            }
-        }
-        return out;
-    }
 }

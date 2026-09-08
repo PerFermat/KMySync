@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Die gelernten Regeln eines Depots weitergeben und eine fremde Datei einspielen.
+
+     Beide im Ueberlaufmenue und nicht als Knopf auf der Seite: die Seite ist zum Nachbessern da, das
+     Teilen kommt selten und einmal. -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_rules_share"
+        android:title="@string/statement_rules_share"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_rules_import"
+        android:title="@string/statement_rules_import"
+        app:showAsAction="never" />
+
+</menu>

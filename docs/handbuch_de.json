@@ -1014,6 +1014,11 @@
       "text": "<b>Erkennungsregeln anpassen:</b> Sollte eine gelernte Regel nicht mehr passen oder Sie möchten sie manuell korrigieren, öffnen Sie das Depot und tippen <b>⋮ → Erkennungsregeln</b>. Dort sehen Sie alle bisher gelernten Regeln nach Bank sortiert. Ein Tipp auf eine Bank zeigt ihre Regeln: zu jedem Feld (Datum, Betrag, Gebühren etc.) steht die <b>gelernte Beschriftung</b> (wie die Bank die Zeile nennt), die <b>Position</b> (welche Zeile, welche Spalte), ob es eine <b>feste Gebühr</b> je Order gibt und weitere Details. Sie können jede Regel einzeln <b>löschen</b>, damit die App sie beim nächsten PDF dieser Bank neu lernt – oder Sie bearbeiten die Regel und passen die Beschriftung, Position und Optionen manuell an."
     },
     {
+      "type": "p",
+      "id": "b-0212e2",
+      "text": "<b>Regeln teilen und einspielen:</b> Was Ihre App über eine Bank gelernt hat, lässt sich weitergeben: <b>⋮ → Regeln teilen</b> auf der Regelseite schickt die Regeln dieses Depots als kleine JSON-Datei – per Mail, Messenger oder in die Dateien-App. Darin stehen nur die Beschriftungen und Leseregeln, <b>keine Beträge und keine Wertpapiere</b>. Umgekehrt übernimmt <b>⋮ → Regeln einspielen</b> eine solche Datei ins geöffnete Depot und <b>ersetzt dabei dessen bisherige Regeln</b> – eine Rückfrage nennt vorher, was in der Datei steht. So bekommen Sie die Regeln für Ihre Bank von jemandem, der dieselbe hat, ohne selbst eine einzige Beschriftung einzutippen. Und wird eine Ihrer Abrechnungen nicht erkannt, schicken Sie die Regel, an der es liegt, statt sie zu beschreiben."
+    },
+    {
       "type": "h3",
       "id": "b-0212f",
       "text": "Werte aus einer Tabelle auswählen"

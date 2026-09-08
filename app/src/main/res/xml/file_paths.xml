@@ -4,4 +4,7 @@
     <external-files-path name="belege" path="belege/" />
     <!-- Fallback, falls kein externer app-privater Speicher verfügbar ist (getFilesDir()/belege). -->
     <files-path name="belege_internal" path="belege/" />
+    <!-- Die geteilte Datei mit den gelernten Erkennungsregeln. Im Cache, weil sie nur auf dem Weg zum
+         Teilen-Blatt gebraucht wird und danach niemand mehr. -->
+    <cache-path name="regeln" path="regeln/" />
 </paths>

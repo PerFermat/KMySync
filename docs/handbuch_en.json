@@ -1014,6 +1014,11 @@
       "text": "<b>Adjust recognition rules:</b> If a learned rule no longer fits or you want to correct it manually, open the portfolio and tap <b>⋮ → Recognition rules</b>. You see all the rules learned so far, sorted by bank. Tapping a bank shows its rules: for each field (date, amount, fees etc.) there is the <b>learned label</b> (what the bank calls the row), the <b>position</b> (which row, which column), whether there is a <b>fixed fee</b> per trade, and further details. You can <b>delete</b> each rule individually so the app learns it fresh the next time from that bank – or you edit the rule and manually adjust the label, position and options."
     },
     {
+      "type": "p",
+      "id": "b-0212e2",
+      "text": "<b>Share and import rules:</b> What your app has learned about a bank can be passed on: <b>⋮ → Share rules</b> on the rules page sends this portfolio's rules as a small JSON file – by mail, messenger or into the files app. It holds only the labels and reading rules, <b>no amounts and no securities</b>. The other way round, <b>⋮ → Import rules</b> takes such a file into the open portfolio and <b>replaces its previous rules</b> – a prompt names beforehand what the file holds. That way you get the rules for your bank from someone who banks there too, without typing a single label yourself. And if one of your statements is not recognised, you send the rule it hinges on instead of describing it."
+    },
+    {
       "type": "h3",
       "id": "b-0212f",
       "text": "Picking values from a table"

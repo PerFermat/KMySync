@@ -59,6 +59,10 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
     /** Schlüssel und Angaben der Ankerauswahl – siehe {@link HostedDialog}. */
     private static final String DLG_PICK_ANCHOR = "dlg_pickAnchor";
     private static final String ARG_ANCHOR_TARGET = "a_anchorTarget";
+    /** Die Rückfrage vor dem Einspielen einer fremden Regeldatei. */
+    private static final String DLG_IMPORT = "dlg_importRules";
+    /** Die Rückfrage vor dem Teilen, wenn im Formular noch etwas Ungespeichertes steht. */
+    private static final String DLG_SHARE_UNSAVED = "dlg_shareUnsaved";
 
     /**
      * Der Bereich, dessen Ankerauswahl gerade offen ist.
@@ -72,6 +76,12 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
 
     @Override
     public android.app.Dialog buildDialog(String key, Bundle args) {
+        if (DLG_IMPORT.equals(key)) {
+            return offenerImport == null ? null : buildImportDialog();
+        }
+        if (DLG_SHARE_UNSAVED.equals(key)) {
+            return buildShareUnsavedDialog();
+        }
         if (!DLG_PICK_ANCHOR.equals(key) || offeneAnkerauswahl == null || testText == null) {
             return null;
         }
@@ -82,6 +92,7 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
     @Override
     public void onDialogCancelled(String key, Bundle args) {
         offeneAnkerauswahl = null;
+        offenerImport = null;
     }
 
 
@@ -122,6 +133,7 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
     private final List<StatementTemplate> templates = new ArrayList<>();
     private int current = -1;
 
+    private MaterialToolbar toolbar;
     private PickerTextView editTemplate;
     private TextInputLayout templateLayout;
     private TextView textEmpty;
@@ -163,6 +175,17 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
     private CategoryFilterAdapter categoryAdapter;
 
     private ActivityResultLauncher<String[]> tryLauncher;
+    private ActivityResultLauncher<String[]> importLauncher;
+
+    /**
+     * Die eingelesene Regeldatei, solange die Rückfrage dazu offen ist.
+     *
+     * <p>Wie {@link #offeneAnkerauswahl} nicht in ein {@link Bundle} zu legen — es sind fertige
+     * Vorlagen mit ihren Regeln. Nach einer Drehung ist sie weg und die Rückfrage verschwindet; ein
+     * erneuter Griff ins Menü holt die Datei wieder. Das ist der harmlose Ausgang: verschwindet die
+     * Frage, ist nichts eingespielt.</p>
+     */
+    private de.spahr.ausgaben.statement.StatementRulesIo.Parsed offenerImport;
 
     /**
      * Das Leserecht an der Testabrechnung über einen Prozesstod hinweg festhalten.
@@ -196,8 +219,24 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
             depot = "";
         }
 
-        MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        toolbar = findViewById(R.id.toolbar);
         toolbar.setNavigationOnClickListener(v -> finish());
+        toolbar.inflateMenu(R.menu.statement_rules_menu);
+        toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_rules_share) {
+                shareRules();
+                return true;
+            }
+            if (item.getItemId() == R.id.action_rules_import) {
+                // Ohne Einschränkung auf application/json: Eine Regeldatei kommt meist als Anhang aus
+                // Mail oder Messenger, und die geben ihr oft text/plain oder octet-stream mit. Ein
+                // enger Filter blendete dann genau die Datei aus, die der Nutzer gerade bekommen hat;
+                // ob sie taugt, entscheidet ohnehin erst das Lesen.
+                importLauncher.launch(new String[]{"*/*"});
+                return true;
+            }
+            return false;
+        });
         editTemplate = findViewById(R.id.editTemplate);
         templateLayout = findViewById(R.id.templateLayout);
         textEmpty = findViewById(R.id.textEmpty);
@@ -225,6 +264,12 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
                     if (uri != null) {
                         merkeZugriffsrecht(uri);
                         useTestStatement(uri);
+                    }
+                });
+        importLauncher = registerForActivityResult(
+                new ActivityResultContracts.OpenDocument(), uri -> {
+                    if (uri != null) {
+                        readRulesFile(uri);
                     }
                 });
 
@@ -258,6 +303,9 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
         btnTry.setVisibility(any ? View.VISIBLE : View.GONE);
         btnSave.setVisibility(any ? View.VISIBLE : View.GONE);
         btnDelete.setVisibility(any ? View.VISIBLE : View.GONE);
+        // Zu teilen gibt es nur etwas, wo etwas gelernt wurde. Das Einspielen bleibt dagegen immer
+        // erreichbar – es ist der einzige Weg, auf dem diese Seite eine Vorlage überhaupt anlegen kann.
+        toolbar.getMenu().findItem(R.id.action_rules_share).setVisible(any);
         fieldContainer.removeAllViews();
         forms.clear();
         if (!any) {
@@ -1114,6 +1162,169 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
+    }
+
+    // ---- Teilen und Einspielen ----
+
+    /**
+     * Die gelernten Regeln dieses Depots als kleine JSON-Datei weitergeben.
+     *
+     * <p>Zwei Zwecke, ein Griff: Wer die Beschriftungen seiner Bank mühsam nachgebessert hat, kann sie
+     * jedem geben, der bei derselben Bank ist — und wessen Abrechnung nicht erkannt wird, schickt die
+     * Regel, an der es liegt, statt sie zu beschreiben.</p>
+     *
+     * <p>In der Datei stehen <b>nur</b> die Vorlagen: Beschriftungen, Leserichtungen, Kategorien. Keine
+     * Beträge, keine Wertpapiere, keine ISIN-Zuordnung — das Gelernte ist die Bank, nicht der
+     * Bestand.</p>
+     */
+    private void shareRules() {
+        if (templates.isEmpty()) {
+            Toast.makeText(this, R.string.statement_rules_share_none, Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (hatUngespeichertes()) {
+            // Sonst verschickt man den Stand von vorhin und wundert sich, dass die Nachbesserung, die
+            // man gerade eingetragen hat, beim Empfänger fehlt.
+            HostedDialog.show(this, DLG_SHARE_UNSAVED, new Bundle());
+            return;
+        }
+        doShareRules();
+    }
+
+    /** Steht im Formular etwas, das so noch nicht gespeichert ist? */
+    private boolean hatUngespeichertes() {
+        return current >= 0 && !edited().sameAs(templates.get(current));
+    }
+
+    private android.app.Dialog buildShareUnsavedDialog() {
+        return new AppDialog(this)
+                .setTitle(R.string.statement_rules_share_unsaved_title)
+                .setMessage(R.string.statement_rules_share_unsaved_message)
+                .setPositiveButton(R.string.statement_rules_share_unsaved_save, (d, w) -> {
+                    save();
+                    doShareRules();
+                })
+                .setNegativeButton(R.string.statement_rules_share_unsaved_anyway,
+                        (d, w) -> doShareRules())
+                .create();
+    }
+
+    /**
+     * Schreibt die Datei in den Cache und reicht sie ans Teilen-Blatt weiter.
+     *
+     * <p>Über den FileProvider und nicht als Pfad: der fremden App wird Lesen für diese eine Datei
+     * gestattet, mehr nicht — dasselbe Verfahren wie beim Weitergeben eines Belegs.</p>
+     */
+    private void doShareRules() {
+        try {
+            java.io.File dir = new java.io.File(getCacheDir(), "regeln");
+            if (!dir.exists() && !dir.mkdirs()) {
+                throw new java.io.IOException("Verzeichnis " + dir + " nicht angelegt");
+            }
+            java.io.File file = new java.io.File(dir, dateiname());
+            try (java.io.OutputStream out = new java.io.FileOutputStream(file)) {
+                out.write(de.spahr.ausgaben.statement.StatementRulesIo.toFile(depot, templates)
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+            Uri uri = androidx.core.content.FileProvider.getUriForFile(
+                    this, getPackageName() + ".fileprovider", file);
+            android.content.Intent send = new android.content.Intent(
+                    android.content.Intent.ACTION_SEND)
+                    .setType("application/json")
+                    .putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                    .putExtra(android.content.Intent.EXTRA_SUBJECT,
+                            getString(R.string.statement_rules_share_subject, depotName()))
+                    .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(android.content.Intent.createChooser(
+                    send, getString(R.string.statement_rules_share)));
+        } catch (Exception e) {
+            android.util.Log.w("StatementRules", "Regeln nicht zum Teilen bereitzulegen", e);
+            Toast.makeText(this, R.string.statement_rules_share_failed, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /** Das Depot, wie es sich anschreiben lässt; ohne eins der Name der Seite. */
+    private String depotName() {
+        return depot.trim().isEmpty() ? getString(R.string.statement_rules) : depot.trim();
+    }
+
+    /**
+     * Der Dateiname, den der Empfänger sieht: {@code ausgaben-regeln-DKB.json}.
+     *
+     * <p>Aus dem Depotnamen bleibt nur, was in jedem Dateisystem und in jedem Mailanhang unfällig
+     * ist — alles andere wird zum Bindestrich. Ein Depot heißt auch mal „Depot 1234/5678", und ein
+     * Schrägstrich darin träfe beim Anlegen der Datei auf ein Verzeichnis, das es nicht gibt.</p>
+     */
+    private String dateiname() {
+        String rein = depotName().replaceAll("[^\\p{L}\\p{N}]+", "-")
+                .replaceAll("^-+|-+$", "");
+        if (rein.length() > 40) {
+            rein = rein.substring(0, 40);
+        }
+        return "ausgaben-regeln" + (rein.isEmpty() ? "" : "-" + rein) + ".json";
+    }
+
+    /** Eine gewählte Regeldatei einlesen; erst die Rückfrage entscheidet, ob sie auch gilt. */
+    private void readRulesFile(Uri uri) {
+        try {
+            String json = new String(de.spahr.ausgaben.util.UriBytes.read(this, uri),
+                    java.nio.charset.StandardCharsets.UTF_8);
+            offenerImport = de.spahr.ausgaben.statement.StatementRulesIo.parse(json);
+            HostedDialog.show(this, DLG_IMPORT, new Bundle());
+        } catch (de.spahr.ausgaben.statement.StatementRulesIo.StatementRulesFormatException e) {
+            Toast.makeText(this, grund(e.problem), Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.statement_rules_import_unreadable, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /** Warum eine Datei nicht taugt — in einem Satz, den der Nutzer lesen kann. */
+    private String grund(de.spahr.ausgaben.statement.StatementRulesIo.Problem problem) {
+        switch (problem) {
+            case NOT_OURS:
+                return getString(R.string.statement_rules_import_not_ours);
+            case TOO_NEW:
+                return getString(R.string.statement_rules_import_too_new);
+            case NO_TEMPLATES:
+                return getString(R.string.statement_rules_import_empty);
+            default:
+                return getString(R.string.statement_rules_import_unreadable);
+        }
+    }
+
+    /**
+     * Die Rückfrage vor dem Einspielen: was in der Datei steht — und dass alles andere weicht.
+     *
+     * <p>Ersetzt wird der ganze Bestand dieses Depots und nicht je Art: Wer eine fremde Regeldatei
+     * einspielt, will die Regeln <b>dieser</b> Bank, nicht eine Mischung aus seinen und fremden, die
+     * hinterher niemand mehr auseinanderhält.</p>
+     */
+    private android.app.Dialog buildImportDialog() {
+        final de.spahr.ausgaben.statement.StatementRulesIo.Parsed parsed = offenerImport;
+        StringBuilder arten = new StringBuilder();
+        for (StatementTemplate t : parsed.templates) {
+            arten.append(arten.length() > 0 ? ", " : "").append(actionLabel(t.action));
+        }
+        String was = parsed.depot.trim().isEmpty() ? arten.toString()
+                : getString(R.string.statement_rules_import_from, arten.toString(),
+                parsed.depot.trim());
+        return AppDialog.destructive(this)
+                .setTitle(R.string.statement_rules_import_title)
+                .setMessage(getString(R.string.statement_rules_import_message, was))
+                .setPositiveButton(R.string.statement_rules_import, (d, w) -> {
+                    store.saveAll(depot, parsed.templates);
+                    offenerImport = null;
+                    load();
+                    Toast.makeText(this, getString(R.string.statement_rules_import_done,
+                            parsed.templates.size()), Toast.LENGTH_LONG).show();
+                    // Liegt eine Testabrechnung an, zeigt die Seite sofort, was die neuen Regeln
+                    // darin lesen – genau die Frage, wegen der man sie eingespielt hat.
+                    if (testText != null) {
+                        switchToMatching();
+                    }
+                })
+                .setNegativeButton(R.string.cancel, (d, w) -> offenerImport = null)
+                .create();
     }
 
     // ---- Probe ----
