@@ -1,4 +1,6 @@
-Ausgaben ("expenses" in German) is a mobile companion to the desktop finance software KMyMoney. Record cash expenses, income and transfers on the go and export them into KMyMoney, instead of typing everything in by hand later.
+KMySync is a mobile companion to the desktop finance software KMyMoney. Record cash expenses, income and transfers on the go and export them into KMyMoney, instead of typing everything in by hand later.
+
+Note: KMySync was previously called “Ausgaben”. It is the same program under a new name. If you already have “Ausgaben” installed, KMySync arrives as a normal update – all your bookings, profiles, settings and receipts are kept. There is nothing to export, uninstall or migrate.
 
 The app works fully offline and without any vendor account: data is exchanged with KMyMoney through a folder you provide yourself (WebDAV, Nextcloud or SMB/Samba). No ads, no tracking.
 

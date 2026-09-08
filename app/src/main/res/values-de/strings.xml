@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Ausgaben</string>
+    <string name="app_name">KMySync</string>
 
     <!-- Hauptbildschirm -->
     <string name="type_expense">Ausgabe</string>
@@ -407,7 +407,7 @@
     <string name="receipt_row_label">Beleg: %1$s</string>
     <string name="receipt_new">neu</string>
     <string name="receipt_none">—</string>
-    <string name="lock_title">Ausgaben entsperren</string>
+    <string name="lock_title">KMySync entsperren</string>
     <string name="lock_subtitle">Bitte authentifizieren, um fortzufahren</string>
     <string name="lock_retry">Erneut versuchen</string>
     <string name="biometric_none_enrolled">Es ist keine Entsperrmethode eingerichtet. Bitte in den Geräteeinstellungen einen Fingerabdruck, Gesichtsscan oder eine PIN/Muster/Passwort einrichten.</string>
@@ -692,7 +692,7 @@
     <string name="err_csv_empty">Datei ist leer</string>
     <string name="err_csv_account_missing">Kontozeile nicht gefunden</string>
     <string name="err_csv_header_missing">Kopfzeile nicht gefunden</string>
-    <string name="err_csv_no_bookings">Keine Buchungen gefunden – ist das ein Ledger-Export aus KMyMoney oder Ausgaben?</string>
+    <string name="err_csv_no_bookings">Keine Buchungen gefunden – ist das ein Ledger-Export aus KMyMoney oder KMySync?</string>
     <string name="err_csv_depot_unsupported">Depots werden im CSV-Modus nicht unterstützt (aktuelle Kurse lassen sich darüber nicht abbilden). Bitte ohne Depot-Konto arbeiten oder den KMyMoney-Dateimodus verwenden.</string>
     <string name="skip_account_not_found">Konto nicht gefunden (%1$s)</string>
     <string name="skip_category_not_found">Kategorie nicht gefunden (%1$s)</string>

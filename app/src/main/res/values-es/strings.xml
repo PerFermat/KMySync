@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Ausgaben</string>
+    <string name="app_name">KMySync</string>
 
     <!-- Pantalla principal -->
     <string name="type_expense">Gasto</string>
@@ -404,7 +404,7 @@
     <string name="receipt_row_label">Justificante: %1$s</string>
     <string name="receipt_new">nuevo</string>
     <string name="receipt_none">—</string>
-    <string name="lock_title">Desbloquear Ausgaben</string>
+    <string name="lock_title">Desbloquear KMySync</string>
     <string name="lock_subtitle">Autentícate para continuar</string>
     <string name="lock_retry">Intentar de nuevo</string>
     <string name="biometric_none_enrolled">No hay método de desbloqueo configurado. Configura una huella dactilar, reconocimiento facial o un PIN/patrón/contraseña en los ajustes del dispositivo.</string>
@@ -689,7 +689,7 @@
     <string name="err_csv_empty">El archivo está vacío</string>
     <string name="err_csv_account_missing">No se encontró la línea de cuenta</string>
     <string name="err_csv_header_missing">No se encontró la cabecera de la tabla</string>
-    <string name="err_csv_no_bookings">No se encontraron apuntes – ¿es una exportación de libro mayor de KMyMoney o Ausgaben?</string>
+    <string name="err_csv_no_bookings">No se encontraron apuntes – ¿es una exportación de libro mayor de KMyMoney o KMySync?</string>
     <string name="err_csv_depot_unsupported">No se admiten carteras en modo CSV (los precios actuales no se pueden representar así). Trabaja sin cuenta de cartera o cambia al modo archivo KMyMoney.</string>
     <string name="skip_account_not_found">Cuenta no encontrada (%1$s)</string>
     <string name="skip_category_not_found">Categoría no encontrada (%1$s)</string>

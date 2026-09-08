@@ -27,7 +27,7 @@ public class SmbDiagnosticsTest {
         String report = SmbDiagnostics.report(Arrays.asList(
                 step("Verbinden", true, "", 28),
                 step("Freigabe „daten\" öffnen", false, "STATUS_ACCESS_DENIED", 12)));
-        assertTrue(report, report.startsWith("SMB-Diagnose (Ausgaben)"));
+        assertTrue(report, report.startsWith("SMB-Diagnose (KMySync)"));
         assertTrue(report, report.contains("✓ Verbinden (28 ms)"));
         assertTrue(report, report.contains("✗ Freigabe „daten\" öffnen: STATUS_ACCESS_DENIED (12 ms)"));
     }

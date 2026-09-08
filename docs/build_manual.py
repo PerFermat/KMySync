@@ -3,7 +3,7 @@
 
 Von der Kommandozeile:
 
-    python3 docs/build_manual.py Handbuch-Ausgaben-de de
+    python3 docs/build_manual.py Handbuch-KMySync-de de
 
 Der Handbuch-Editor ruft stattdessen erzeuge() auf und übergibt seinen ungesicherten Stand samt
 einer Auswahl von Abschnitten – so zeigt die Vorschau dasselbe Layout wie das fertige PDF, ohne

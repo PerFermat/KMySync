@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Ausgaben</string>
+    <string name="app_name">KMySync</string>
     <string name="wear_title">Record booking</string>
     <string name="wear_switch">Switch account/place</string>
     <string name="wear_type_income">Income</string>

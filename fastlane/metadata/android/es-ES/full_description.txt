@@ -1,4 +1,6 @@
-Ausgaben ("gastos" en alemán) es un complemento móvil del software de finanzas de escritorio KMyMoney. Registra gastos en efectivo, ingresos y traspasos sobre la marcha y expórtalos a KMyMoney, en lugar de teclearlos a mano después.
+KMySync es un complemento móvil del software de finanzas de escritorio KMyMoney. Registra gastos en efectivo, ingresos y traspasos sobre la marcha y expórtalos a KMyMoney, en lugar de teclearlos a mano después.
+
+Nota: KMySync se llamaba antes «Ausgaben». Es el mismo programa con un nombre nuevo. Si ya tienes «Ausgaben» instalada, KMySync llega como una actualización normal: se conservan todos tus apuntes, perfiles, ajustes y recibos. No hay nada que exportar, desinstalar ni migrar.
 
 La app funciona completamente sin conexión y sin cuentas de proveedor: los datos se intercambian con KMyMoney a través de una carpeta que tú mismo proporcionas (WebDAV, Nextcloud o SMB/Samba). Sin anuncios, sin seguimiento.
 

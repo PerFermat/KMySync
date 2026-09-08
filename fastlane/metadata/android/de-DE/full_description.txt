@@ -1,4 +1,6 @@
-Ausgaben ist eine mobile Ergänzung zur Desktop-Finanzsoftware KMyMoney. Erfassen Sie Bargeld-Ausgaben, -Einnahmen und Umbuchungen unterwegs und exportieren Sie sie nach KMyMoney, statt alles später von Hand nachzutragen.
+KMySync ist eine mobile Ergänzung zur Desktop-Finanzsoftware KMyMoney. Erfassen Sie Bargeld-Ausgaben, -Einnahmen und Umbuchungen unterwegs und exportieren Sie sie nach KMyMoney, statt alles später von Hand nachzutragen.
+
+Hinweis: KMySync hieß früher „Ausgaben". Es ist dasselbe Programm unter neuem Namen. Wer „Ausgaben" bereits installiert hat, erhält KMySync als ganz normales Update – alle Buchungen, Profile, Einstellungen und Belege bleiben erhalten. Es ist nichts zu exportieren, zu deinstallieren oder zu übertragen.
 
 Die App arbeitet vollständig offline und ohne Herstellerkonto: Der Datenaustausch mit KMyMoney läuft über einen von Ihnen bereitgestellten Ordner (WebDAV, Nextcloud oder SMB/Samba). Keine Werbung, kein Tracking.
 

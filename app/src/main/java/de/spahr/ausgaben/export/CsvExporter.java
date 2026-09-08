@@ -80,7 +80,7 @@ public class CsvExporter {
 
     /** Erzeugt den Dateinamen mit Zeitstempel, z. B. Ausgaben-20260629-153012.csv */
     public String buildFileName() {
-        return "Ausgaben-" + timestampFormat.format(new Date()) + ".csv";
+        return "KMySync-" + timestampFormat.format(new Date()) + ".csv";
     }
 
     /** Dateiname pro Konto, z. B. Bargeld-20260629-153012.csv (Kontoname bereinigt). */

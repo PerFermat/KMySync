@@ -1,4 +1,8 @@
-# F-Droid build recipe for Ausgaben (reference copy).
+# F-Droid build recipe for KMySync (reference copy).
+#
+# Filename and package id stay de.spahr.ausgaben: F-Droid keys apps by applicationId, not by
+# display name, and keeping it is what makes existing installs updatable across the rename.
+# The display name comes from app_name / fastlane title.txt, so it needs no entry here.
 #
 # This is the metadata that goes into the fdroiddata repository as
 # metadata/de.spahr.ausgaben.yml (via a merge request), NOT into this app repo's build.
@@ -19,12 +23,12 @@ Categories:
   - Money
 License: GPL-3.0-only
 AuthorName: Michael Spahr
-SourceCode: https://github.com/PerFermat/Ausgaben
-IssueTracker: https://github.com/PerFermat/Ausgaben/issues
-Changelog: https://github.com/PerFermat/Ausgaben/releases
+SourceCode: https://github.com/PerFermat/KMySync
+IssueTracker: https://github.com/PerFermat/KMySync/issues
+Changelog: https://github.com/PerFermat/KMySync/releases
 
 RepoType: git
-Repo: https://github.com/PerFermat/Ausgaben.git
+Repo: https://github.com/PerFermat/KMySync.git
 
 Builds:
   - versionName: "1.3"       # TODO: update once v1.3 (or later) is tagged

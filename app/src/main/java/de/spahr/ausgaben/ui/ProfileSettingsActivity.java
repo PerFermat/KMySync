@@ -1103,7 +1103,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
                     backupIncludeServerPassword = include.isChecked();
                     backupPassword = p1;
                     dialog.dismiss();
-                    backupLauncher.launch("ausgaben-profil-" + timestamp() + (p1.isEmpty() ? ".zip" : ".abk"));
+                    backupLauncher.launch("kmysync-profil-" + timestamp() + (p1.isEmpty() ? ".zip" : ".abk"));
                 }));
         return dialog;
     }

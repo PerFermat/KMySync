@@ -174,7 +174,7 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
         setupLanguages();
         ((MaterialButton) findViewById(R.id.btnExportTemplate)).setOnClickListener(
                 v -> templateExportLauncher.launch(
-                        "ausgaben-language-" + settings.getLanguage() + ".json"));
+                        "kmysync-language-" + settings.getLanguage() + ".json"));
         ((MaterialButton) findViewById(R.id.btnUploadLanguage)).setOnClickListener(
                 v -> languageUploadLauncher.launch(new String[]{"application/json"}));
 
@@ -484,7 +484,7 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
                     backupIncludeServerPassword = include.isChecked();
                     backupPassword = p1;
                     dialog.dismiss();
-                    backupLauncher.launch("ausgaben-backup-" + timestamp() + (p1.isEmpty() ? ".zip" : ".abk"));
+                    backupLauncher.launch("kmysync-backup-" + timestamp() + (p1.isEmpty() ? ".zip" : ".abk"));
                 }));
         return dialog;
     }

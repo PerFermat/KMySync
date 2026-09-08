@@ -264,7 +264,7 @@ public final class SmbDiagnostics {
 
     /** Kompletter Bericht als Text – genau das, was der Nutzer kopiert und schickt. */
     public static String report(List<Step> steps) {
-        StringBuilder sb = new StringBuilder("SMB-Diagnose (Ausgaben)\n");
+        StringBuilder sb = new StringBuilder("SMB-Diagnose (KMySync)\n");
         for (Step s : steps) {
             sb.append(s).append('\n');
         }

@@ -1,4 +1,4 @@
-# Ausgaben
+# KMySync
 
 **English** · [Deutsch](README.de.md)
 
@@ -8,9 +8,14 @@ instead of typing everything in by hand later.
 
 > Offline-first · no account, no ads, no tracking · open source.
 
-*("Ausgaben" is German for "expenses".)*
+> [!NOTE]
+> **KMySync was previously called “Ausgaben”.** It is the same program, just under a new name.
+> If you already have “Ausgaben” installed, simply install the new version over it — it arrives as
+> a normal update: the package id (`de.spahr.ausgaben`) and the signing key are unchanged, so all
+> your bookings, profiles, settings and receipts stay exactly where they are. There is nothing to
+> export, uninstall or migrate. Only the name and the launcher label change.
 
-📖 The full **[user manual (PDF, English)](docs/Manual-Ausgaben-en.pdf)** describes every feature in
+📖 The full **[user manual (PDF, English)](docs/Manual-KMySync-en.pdf)** describes every feature in
 detail, with screenshots.
 
 <p>
@@ -75,7 +80,7 @@ for F-Droid packaging notes.
 ## Features at a glance
 
 This list names the main features only. The exact behaviour, every detail and screenshots are in the
-**[user manual](docs/Manual-Ausgaben-en.pdf)**.
+**[user manual](docs/Manual-KMySync-en.pdf)**.
 
 - **Record bookings** — expense, income, transfer, split bookings; a built-in calculator keyboard in the
   amount field.
@@ -188,7 +193,7 @@ folder you choose.
   and contains neither the password nor the user name.
 
 Every detail — ports, guest access, domains, error cases — is in the
-**[user manual](docs/Manual-Ausgaben-en.pdf)**.
+**[user manual](docs/Manual-KMySync-en.pdf)**.
 
 ## License
 

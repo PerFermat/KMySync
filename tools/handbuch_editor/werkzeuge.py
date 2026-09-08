@@ -16,7 +16,7 @@ from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QDialog, QPlainTextEdit, QPushButton, QVBoxLayout
 
 #: Die beiden PDFs, so wie manuel_de.py / manuel_en.py sie benennen.
-PDF_NAME = {"de": "Handbuch-Ausgaben-de", "en": "Manual-Ausgaben-en"}
+PDF_NAME = {"de": "Handbuch-KMySync-de", "en": "Manual-KMySync-en"}
 
 
 def system_python() -> str:

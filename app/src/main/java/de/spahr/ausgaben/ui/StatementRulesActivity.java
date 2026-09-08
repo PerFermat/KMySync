@@ -1249,7 +1249,7 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
     }
 
     /**
-     * Der Dateiname, den der Empfänger sieht: {@code ausgaben-regeln-DKB.json}.
+     * Der Dateiname, den der Empfänger sieht: {@code kmysync-regeln-DKB.json}.
      *
      * <p>Aus dem Depotnamen bleibt nur, was in jedem Dateisystem und in jedem Mailanhang unfällig
      * ist — alles andere wird zum Bindestrich. Ein Depot heißt auch mal „Depot 1234/5678", und ein
@@ -1261,7 +1261,7 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
         if (rein.length() > 40) {
             rein = rein.substring(0, 40);
         }
-        return "ausgaben-regeln" + (rein.isEmpty() ? "" : "-" + rein) + ".json";
+        return "kmysync-regeln" + (rein.isEmpty() ? "" : "-" + rein) + ".json";
     }
 
     /** Eine gewählte Regeldatei einlesen; erst die Rückfrage entscheidet, ob sie auch gilt. */

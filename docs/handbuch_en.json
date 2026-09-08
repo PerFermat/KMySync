@@ -1,10 +1,10 @@
 {
-  "doc_title": "Ausgaben – User Manual",
-  "doc_author": "Ausgaben",
-  "version_text": "Version 1.10",
-  "date_text": "Updated: August 2026",
+  "doc_title": "KMySync – User Manual",
+  "doc_author": "KMySync",
+  "version_text": "Version 1.13",
+  "date_text": "Updated: September 2026",
   "toc_title": "Contents",
-  "footer_text": "Ausgaben · User Manual (Version 1.10)",
+  "footer_text": "KMySync · User Manual (Version 1.13)",
   "page_text": "Page %d",
   "placeholder_no_image": "No image",
   "table_headers": [
@@ -95,12 +95,12 @@
     {
       "type": "h1",
       "id": "b-0001",
-      "text": "1. What is Ausgaben?"
+      "text": "1. What is KMySync?"
     },
     {
       "type": "p",
       "id": "b-0002",
-      "text": "<b>Ausgaben</b> (German for «expenses») is a mobile companion to the desktop finance software <b>KMyMoney</b>. Use it to record cash expenses, income and transfers on the go – right on your phone or a Wear OS watch – and transfer them into KMyMoney later, instead of typing everything in by hand."
+      "text": "<b>KMySync</b> is a mobile companion to the desktop finance software <b>KMyMoney</b>. Use it to record cash expenses, income and transfers on the go – right on your phone or a Wear OS watch – and transfer them into KMyMoney later, instead of typing everything in by hand."
     },
     {
       "type": "p",

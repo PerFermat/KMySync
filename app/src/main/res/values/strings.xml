@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Ausgaben</string>
+    <string name="app_name">KMySync</string>
 
     <!-- Main screen -->
     <string name="type_expense">Expense</string>
@@ -408,7 +408,7 @@
     <string name="receipt_row_label">Receipt: %1$s</string>
     <string name="receipt_new">new</string>
     <string name="receipt_none">—</string>
-    <string name="lock_title">Unlock Ausgaben</string>
+    <string name="lock_title">Unlock KMySync</string>
     <string name="lock_subtitle">Please authenticate to continue</string>
     <string name="lock_retry">Try again</string>
     <string name="biometric_none_enrolled">No unlock method is set up. Please set up a fingerprint, face scan or a PIN/pattern/password in the device settings.</string>
@@ -693,7 +693,7 @@
     <string name="err_csv_empty">File is empty</string>
     <string name="err_csv_account_missing">Account line not found</string>
     <string name="err_csv_header_missing">Table header not found</string>
-    <string name="err_csv_no_bookings">No bookings found — is this a ledger export from KMyMoney or Ausgaben?</string>
+    <string name="err_csv_no_bookings">No bookings found — is this a ledger export from KMyMoney or KMySync?</string>
     <string name="err_csv_depot_unsupported">Portfolios are not supported in CSV mode (current prices cannot be represented this way). Please work without a portfolio account, or switch to the KMyMoney file mode.</string>
     <string name="skip_account_not_found">Account not found (%1$s)</string>
     <string name="skip_category_not_found">Category not found (%1$s)</string>

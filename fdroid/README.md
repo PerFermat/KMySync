@@ -1,6 +1,6 @@
 # F-Droid packaging
 
-Ausgaben ships two build flavors of the phone app (`:app`):
+KMySync ships two build flavors of the phone app (`:app`):
 
 - **`full`** — with the Wear OS companion bridge over Google Play Services (Wear Data Layer).
   This is what the GitHub releases use (`assembleFullRelease`).

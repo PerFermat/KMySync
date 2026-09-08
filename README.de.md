@@ -1,4 +1,4 @@
-# Ausgaben
+# KMySync
 
 [English](README.md) · **Deutsch**
 
@@ -8,7 +8,15 @@ nach KMyMoney, statt alles später von Hand nachzutragen.
 
 > Offline-first · kein Konto, keine Werbung, kein Tracking · Open Source.
 
-📖 Das vollständige **[Benutzerhandbuch (PDF, Deutsch)](docs/Handbuch-Ausgaben-de.pdf)** beschreibt jede
+> [!NOTE]
+> **KMySync hieß früher „Ausgaben".** Es ist dasselbe Programm, nur unter neuem Namen.
+> Wer „Ausgaben" bereits installiert hat, spielt die neue Fassung einfach darüber – sie kommt als
+> ganz normales Update: Paket-Kennung (`de.spahr.ausgaben`) und Signaturschlüssel bleiben gleich,
+> deine Buchungen, Profile, Einstellungen und Belege bleiben also unangetastet. Es gibt nichts zu
+> exportieren, zu deinstallieren oder zu übertragen. Nur der Name und die Beschriftung im
+> App-Menü ändern sich.
+
+📖 Das vollständige **[Benutzerhandbuch (PDF, Deutsch)](docs/Handbuch-KMySync-de.pdf)** beschreibt jede
 Funktion im Detail, mit Bildschirmfotos.
 
 <p>
@@ -72,7 +80,7 @@ zur F-Droid-Paketierung in [`fdroid/`](fdroid/).
 ## Funktionen im Überblick
 
 Diese Liste nennt nur die Hauptfunktionen. Die genaue Bedienung, alle Feinheiten und Bildschirmfotos
-stehen im **[Benutzerhandbuch](docs/Handbuch-Ausgaben-de.pdf)**.
+stehen im **[Benutzerhandbuch](docs/Handbuch-KMySync-de.pdf)**.
 
 - **Buchungen erfassen** – Ausgabe, Einnahme, Umbuchung, Splitbuchungen; eigene Rechentastatur im
   Betragsfeld.
@@ -191,7 +199,7 @@ lokal in einen selbst gewählten Ordner exportiert.
   weder Passwort noch Benutzernamen.
 
 Alle Feinheiten – Ports, Gast-Zugänge, Domänen, Fehlerbilder – stehen im
-**[Benutzerhandbuch](docs/Handbuch-Ausgaben-de.pdf)**.
+**[Benutzerhandbuch](docs/Handbuch-KMySync-de.pdf)**.
 
 ## Lizenz
 
