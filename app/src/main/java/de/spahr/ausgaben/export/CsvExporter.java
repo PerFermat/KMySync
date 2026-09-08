@@ -78,7 +78,7 @@ public class CsvExporter {
         return sb.toString();
     }
 
-    /** Erzeugt den Dateinamen mit Zeitstempel, z. B. Ausgaben-20260629-153012.csv */
+    /** Erzeugt den Dateinamen mit Zeitstempel, z. B. KMySync-20260629-153012.csv */
     public String buildFileName() {
         return "KMySync-" + timestampFormat.format(new Date()) + ".csv";
     }

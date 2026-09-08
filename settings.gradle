@@ -13,7 +13,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Ausgaben"
+rootProject.name = "KMySync"
 include ':app'
 include ':wear'
 include ':mpandroidchart'

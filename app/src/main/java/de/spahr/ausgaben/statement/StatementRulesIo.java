@@ -29,7 +29,14 @@ import java.util.Map;
  */
 public final class StatementRulesIo {
 
-    /** Steht im Kopf jeder Datei; eine Datei ohne dieses Merkmal wird nicht angefaßt. */
+    /**
+     * Steht im Kopf jeder Datei; eine Datei ohne dieses Merkmal wird nicht angefaßt.
+     *
+     * <p>Trägt noch den alten Namen der App und behält ihn: Das Merkmal steht <b>in</b> den Dateien,
+     * die schon im Umlauf sind, und ein Wechsel machte sie mit einem Schlag zu „keine Regeldatei
+     * dieser App". Der Name der Datei ist eine andere Sache — der darf sich ändern, weil ihn beim
+     * Einlesen niemand ansieht.</p>
+     */
     public static final String APP = "ausgaben-statement-rules";
 
     /** Die Fassung des Dateiformats, die diese App schreibt und höchstens lesen kann. */
