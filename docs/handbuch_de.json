@@ -1718,11 +1718,6 @@
       "text": "Vor jedem Rückschreiben legt die App automatisch eine <b>zeitgestempelte Sicherung</b> der .kmy im Unterordner «Backup» neben dem Original an – ein Fallback, falls mit der Datei einmal etwas nicht stimmt."
     },
     {
-      "type": "p",
-      "id": "b-0169b",
-      "text": "Zurückgeschrieben wird zudem <b>nie unmittelbar über die vorhandene Datei</b>: Die App legt den neuen Stand zuerst vollständig als Zwischendatei neben der .kmy ab und läßt sie den Server erst danach an deren Stelle setzen – ein Schritt, den der Server in einem Zug ausführt. Bricht die Übertragung vorher ab, etwa durch ein Zeitlimit oder ein Funkloch, bleibt Ihre .kmy <b>unverändert und lesbar</b>; die angefangene Zwischendatei wird weggeräumt. Der Export meldet dann einen Fehler, und die Buchungen bleiben unexportiert."
-    },
-    {
       "type": "h2",
       "id": "b-0170",
       "text": "Schutz vor Überschreiben"
@@ -1731,11 +1726,6 @@
       "type": "p",
       "id": "b-0171",
       "text": "Arbeitet jemand am Rechner in KMyMoney, während die App exportiert, dürfen dessen Änderungen nicht verloren gehen: Wurde die Datei zwischenzeitlich geändert, bricht der Export ab und schreibt nichts – die Buchungen bleiben unexportiert und lassen sich nach einem erneuten Import ohne Verlust nochmals exportieren."
-    },
-    {
-      "type": "p",
-      "id": "b-0171b",
-      "text": "Ändern Sie eine bereits übertragene Buchung, wird ihre Transaktion in der Datei ersetzt. Was <b>KMyMoney</b> daran führt und die App gar nicht kennt, bleibt dabei stehen: der <b>Abgleich-Status</b> samt Datum, die Aktion und die Angaben aus dem Bankimport. Eine abgeglichene Buchung bleibt also abgeglichen, auch wenn Sie am Handy noch die Notiz ändern."
     },
     {
       "type": "h1",
