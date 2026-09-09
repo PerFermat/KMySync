@@ -79,6 +79,19 @@ public interface RemoteStorage {
     default void delete(String folder, String fileName) throws IOException {
     }
 
+    /**
+     * Benennt eine Datei innerhalb desselben Ordners um und ersetzt dabei ein vorhandenes Ziel. Der
+     * Vorgang läuft auf dem Server und ist dort unteilbar – darauf beruht das gefahrlose Ersetzen der
+     * KMyMoney-Datei (siehe {@link SafeReplace}): geschrieben wird erst vollständig unter einem
+     * Zwischennamen, das Ziel wird nur durch dieses Umbenennen ersetzt.
+     *
+     * <p>Standard: nicht unterstützt. Ein Backend ohne Umbenennen muss weiterhin direkt schreiben – dann
+     * bleibt das alte Risiko bestehen, deshalb implementieren es WebDAV und SMB beide.</p>
+     */
+    default void move(String folder, String fromName, String toName) throws IOException {
+        throw new IOException("Umbenennen wird von diesem Server nicht unterstützt");
+    }
+
     String downloadText(String folder, String fileName) throws IOException;
 
     byte[] downloadBytes(String folder, String fileName) throws IOException;

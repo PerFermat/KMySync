@@ -142,7 +142,12 @@ public class KmyExportCoordinator {
 
                 progress(listener, r.getString(de.spahr.ausgaben.R.string.kmy_progress_writing));
                 byte[] packed = KmyDocument.gzip(res.xml);
-                storage.uploadBytes(folder, file, packed, version);
+                // Nicht über die vorhandene Datei schreiben: erst vollständig in eine Zwischendatei,
+                // dann auf dem Server umbenennen. Ein Abbruch mittendrin (Timeout, Funkloch) läßt sonst
+                // einen unlesbaren Torso zurück – genau so ging schon einmal eine .kmy verloren.
+                de.spahr.ausgaben.net.SafeReplace.cleanUp(storage, folder, file);
+                de.spahr.ausgaben.net.SafeReplace.replace(storage, folder, file, packed, version,
+                        tsFormat.format(new Date()));
 
                 // Die Datei ist geschrieben; jetzt zieht der lokale Stand nach — und zwar als ein
                 // Vorgang. Vorher waren das bis zu fünf einzelne Schreibzugriffe, und ein Abbruch

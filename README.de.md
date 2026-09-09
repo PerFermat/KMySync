@@ -141,7 +141,10 @@ Neuinstallieren ist nie nötig. Beträge liegen durchgehend als `long` in Cent, 
 **KMyMoney.** Die `.kmy`-Datei ist gzip-gepacktes XML und wird direkt gelesen **und geschrieben** –
 samt Splits, Umbuchungen, Depot und geplanten Buchungen. Geschrieben wird in den vorhandenen Baum
 hinein (gleiche Transaktions-Kennungen an gleicher Stelle), damit KMyMoney die Datei unverändert
-weiterverwendet; vor jedem Schreiben legt die App eine Sicherung an.
+weiterverwendet; vor jedem Schreiben legt die App eine Sicherung an. Zurückgeschrieben wird nie über die
+vorhandene Datei: `SafeReplace` legt den neuen Stand vollständig als Zwischendatei ab und läßt ihn den
+Server anschließend an deren Stelle setzen (WebDAV `MOVE` bzw. SMB-`rename`, serverseitig unteilbar) –
+bricht die Übertragung ab, bleibt die `.kmy` unverändert lesbar.
 
 **Prüfbarkeit.** Alles, was rechnet oder entscheidet, steckt in reinen Klassen **ohne Android** –
 `PayeeAmounts`, `PayeeCategories`, `AccountScope`, `BudgetMath`, `RadiusFilter`, `EditStatus`,

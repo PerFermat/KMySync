@@ -1718,6 +1718,11 @@
       "text": "Vor jedem Rückschreiben legt die App automatisch eine <b>zeitgestempelte Sicherung</b> der .kmy im Unterordner «Backup» neben dem Original an – ein Fallback, falls mit der Datei einmal etwas nicht stimmt."
     },
     {
+      "type": "p",
+      "id": "b-0169b",
+      "text": "Zurückgeschrieben wird zudem <b>nie unmittelbar über die vorhandene Datei</b>: Die App legt den neuen Stand zuerst vollständig als Zwischendatei neben der .kmy ab und läßt sie den Server erst danach an deren Stelle setzen – ein Schritt, den der Server in einem Zug ausführt. Bricht die Übertragung vorher ab, etwa durch ein Zeitlimit oder ein Funkloch, bleibt Ihre .kmy <b>unverändert und lesbar</b>; die angefangene Zwischendatei wird weggeräumt. Der Export meldet dann einen Fehler, und die Buchungen bleiben unexportiert."
+    },
+    {
       "type": "h2",
       "id": "b-0170",
       "text": "Schutz vor Überschreiben"

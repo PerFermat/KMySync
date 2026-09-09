@@ -115,6 +115,28 @@ public class SmbStorage implements RemoteStorage {
         });
     }
 
+    /**
+     * Benennt innerhalb desselben Ordners um und ersetzt ein vorhandenes Ziel. Der Server führt das in
+     * einem Zug aus – anders als beim direkten Überschreiben (dort kürzt {@code FILE_OVERWRITE_IF} die
+     * Datei erst auf null) kann das Ziel dabei nie halb geschrieben zurückbleiben.
+     */
+    @Override
+    public void move(String folder, String fromName, String toName) throws IOException {
+        final String dir = joinPath(base, folder);
+        final String from = joinPath(dir, fromName);
+        final String to = joinPath(dir, toName);
+        withShare(disk -> {
+            // Zum Umbenennen wird DELETE auf der Quelle verlangt (SMB benennt „durch Löschen des
+            // alten Namens" um); das Ziel darf ersetzt werden.
+            try (com.hierynomus.smbj.share.File f = disk.openFile(from,
+                    EnumSet.of(AccessMask.DELETE, AccessMask.GENERIC_READ), null,
+                    SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
+                f.rename(to, true);
+            }
+            return null;
+        });
+    }
+
     /** Dateistand als {@code "changeTime:size"}; leer, wenn die Datei (noch) nicht lesbar ist. */
     @Override
     public String fileVersion(String folder, String fileName) throws IOException {

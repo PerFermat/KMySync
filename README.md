@@ -140,6 +140,9 @@ required. Amounts are `long` cents throughout, never floating point.
 **KMyMoney.** The `.kmy` file is gzipped XML and is read **and written** directly — splits, transfers,
 portfolio and schedules included. Writing happens into the existing tree (same transaction ids in the
 same place) so KMyMoney carries on with the file unchanged; a backup is written before every such run.
+The write-back never goes over the existing file: `SafeReplace` stores the new state in full as a
+temporary file and then has the server put it in its place (WebDAV `MOVE` / SMB `rename`, atomic
+server-side) — if the transfer breaks off, the `.kmy` stays readable and unchanged.
 
 **Testability.** Everything that computes or decides lives in pure classes **without Android** —
 `PayeeAmounts`, `PayeeCategories`, `AccountScope`, `BudgetMath`, `RadiusFilter`, `EditStatus`,

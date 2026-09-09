@@ -31,7 +31,17 @@ public class NextcloudUploader {
     private static final MediaType XML = MediaType.parse("application/xml; charset=utf-8");
     private static final MediaType OCTET = MediaType.parse("application/octet-stream");
 
-    private final OkHttpClient client = new OkHttpClient();
+    /**
+     * Die Vorgabe von OkHttp sind 10 s je Lese-/Schreibvorgang – zu knapp für eine KMyMoney-Datei von
+     * einigen hundert Kilobyte über eine langsame Leitung. Ein Abbruch mittendrin ließ früher eine halb
+     * geschriebene Datei auf dem Server zurück; abgesichert ist das inzwischen über {@link SafeReplace},
+     * aber der Export soll gar nicht erst grundlos scheitern.
+     */
+    private final OkHttpClient client = new OkHttpClient.Builder()
+            .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+            .build();
     /** true = Nextcloud-Pfadschema, false = generisches WebDAV (Basis-URL ist die Wurzel). */
     private final boolean nextcloudLayout;
 
@@ -169,6 +179,27 @@ public class NextcloudUploader {
         try (Response response = client.newCall(request).execute()) {
             // 201 = angelegt, 405 = existiert bereits.
             if (!response.isSuccessful() && response.code() != 405) {
+                throw new IOException("HTTP " + response.code() + " " + response.message());
+            }
+        }
+    }
+
+    /**
+     * Benennt eine Datei im selben Ordner per WebDAV-MOVE um; ein vorhandenes Ziel wird ersetzt
+     * ({@code Overwrite: T}). Der Server führt das in einem Zug aus – deshalb kann das Ziel dabei nie
+     * halb geschrieben zurückbleiben.
+     */
+    public void move(String baseUrl, String user, String password, String folder,
+                     String fromName, String toName) throws IOException {
+        Request request = new Request.Builder()
+                .url(buildUrl(baseUrl, user, folder, fromName))
+                .header("Authorization", Credentials.basic(user, password))
+                .header("Destination", buildUrl(baseUrl, user, folder, toName))
+                .header("Overwrite", "T")
+                .method("MOVE", null)
+                .build();
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
                 throw new IOException("HTTP " + response.code() + " " + response.message());
             }
         }
