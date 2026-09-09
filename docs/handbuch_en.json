@@ -1728,6 +1728,11 @@
       "text": "If somebody works in KMyMoney on the computer while the app exports, their changes must not be lost: if the file changed in the meantime, the export aborts and writes nothing – the bookings stay unexported and can be exported again after a fresh import, without any loss."
     },
     {
+      "type": "p",
+      "id": "b-0171b",
+      "text": "When you change a booking that was already transferred, its transaction in the file is replaced. Whatever <b>KMyMoney</b> keeps on it and the app does not know about stays untouched: the <b>reconciliation state</b> along with its date, the action, and the details from the bank import. A reconciled booking therefore stays reconciled, even if you only edit its note on the phone."
+    },
+    {
       "type": "h1",
       "id": "b-0173",
       "text": "18. Wear OS (watch)"

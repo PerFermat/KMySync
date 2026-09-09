@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE KMYMONEY-FILE>
+<!-- Grundlage für die Tests zum Status „bearbeitet": eine Ausgabe, eine Umbuchung und zwei Zwillinge
+     (gleicher Tag, gleicher Betrag), an denen sich zeigen muss, dass nicht zweimal derselbe Block
+     getroffen wird. -->
+<KMYMONEY-FILE>
+  <FILEINFO>
+    <CREATION_DATE date="2026-01-01"/>
+    <LAST_MODIFIED_DATE date="2026-01-01"/>
+    <VERSION id="1"/>
+    <FIXVERSION id="11"/>
+  </FILEINFO>
+  <PAYEES count="1">
+    <PAYEE id="P000001" name="Bäcker" email="" reference="" matchingenabled="0"/>
+  </PAYEES>
+  <ACCOUNTS count="4">
+    <ACCOUNT id="A000001" parentaccount="AStd::Asset" lastreconciled="" lastmodified="2026-01-01" institution="" opened="2026-01-01" number="" type="3" name="Bargeld" description="" currency="EUR"/>
+    <ACCOUNT id="A000002" parentaccount="AStd::Asset" lastreconciled="" lastmodified="2026-01-01" institution="" opened="2026-01-01" number="" type="1" name="Girokonto" description="" currency="EUR"/>
+    <ACCOUNT id="A000003" parentaccount="AStd::Expense" lastreconciled="" lastmodified="2026-01-01" institution="" opened="2026-01-01" number="" type="13" name="Essen" description="" currency="EUR"/>
+    <ACCOUNT id="A000004" parentaccount="AStd::Expense" lastreconciled="" lastmodified="2026-01-01" institution="" opened="2026-01-01" number="" type="13" name="Auto" description="" currency="EUR"/>
+  </ACCOUNTS>
+  <TRANSACTIONS count="4">
+    <TRANSACTION id="T000000000000000001" postdate="2026-01-05" memo="" entrydate="2026-01-05" commodity="EUR">
+      <SPLITS>
+        <SPLIT id="S0001" payee="P000001" reconciledate="2026-02-01" action="Interest" reconcileflag="1" value="-250/100" shares="-250/100" price="1/1" memo="" account="A000001" number="42" bankid="B-123"/>
+        <SPLIT id="S0002" payee="P000001" reconciledate="2026-02-01" action="Interest" reconcileflag="2" value="250/100" shares="250/100" price="1/1" memo="" account="A000003" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <TRANSACTION id="T000000000000000002" postdate="2026-01-06" memo="" entrydate="2026-01-06" commodity="EUR">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="" action="" reconcileflag="0" value="-1000/100" shares="-1000/100" price="1/1" memo="" account="A000001" number="" bankid=""/>
+        <SPLIT id="S0002" payee="" reconciledate="" action="" reconcileflag="0" value="1000/100" shares="1000/100" price="1/1" memo="" account="A000002" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <TRANSACTION id="T000000000000000003" postdate="2026-01-07" memo="" entrydate="2026-01-07" commodity="EUR">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="" action="" reconcileflag="0" value="-500/100" shares="-500/100" price="1/1" memo="" account="A000001" number="" bankid=""/>
+        <SPLIT id="S0002" payee="" reconciledate="" action="" reconcileflag="0" value="500/100" shares="500/100" price="1/1" memo="" account="A000003" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <TRANSACTION id="T000000000000000004" postdate="2026-01-07" memo="" entrydate="2026-01-07" commodity="EUR">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="" action="" reconcileflag="0" value="-500/100" shares="-500/100" price="1/1" memo="" account="A000001" number="" bankid=""/>
+        <SPLIT id="S0002" payee="" reconciledate="" action="" reconcileflag="0" value="500/100" shares="500/100" price="1/1" memo="" account="A000003" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+  </TRANSACTIONS>
+  <SCHEDULES/>
+  <SECURITIES/>
+  <CURRENCIES/>
+  <PRICES/>
+  <BUDGETS/>
+  <KEYVALUEPAIRS>
+    <PAIR key="kmm-baseCurrency" value="EUR"/>
+  </KEYVALUEPAIRS>
+</KMYMONEY-FILE>

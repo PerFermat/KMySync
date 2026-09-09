@@ -168,8 +168,12 @@ public class KmyExporter {
                 if (built == null) {
                     continue; // übersprungen (Konto/Kategorie/Währung), in result.skipped vermerkt
                 }
-                xml = found.replacedBy(transactionElement(found.txId, dateFor(b.createdAt), today,
-                        built.memo, built.commodity, built.splits));
+                // Was KMyMoney führt und die App nicht kennt (Abgleich, Aktion, Bankimport), aus der
+                // vorhandenen Transaktion übernehmen – sonst fiele es beim Neubau auf die Vorgaben.
+                xml = found.replacedBy(withCarriedAttributes(
+                        transactionElement(found.txId, dateFor(b.createdAt), today,
+                                built.memo, built.commodity, built.splits),
+                        found.block));
             }
             result.updated++;
             result.writtenIds.add(b.id);
@@ -404,6 +408,70 @@ public class KmyExporter {
             }
         }
         return false;
+    }
+
+    /**
+     * Attribute, die <b>KMyMoney</b> führt und die App gar nicht kennt: der Abgleich-Zustand samt Datum,
+     * die Aktion und die Angaben des Bankimports. Ein neu gebauter Split schreibt hier Vorgabewerte –
+     * beim Ersetzen einer vorhandenen Transaktion würden sie damit stillschweigend verlorengehen.
+     */
+    private static final String[] CARRIED_ATTRS =
+            {"reconcileflag", "reconciledate", "action", "bankid", "number"};
+
+    /**
+     * Überträgt {@link #CARRIED_ATTRS} aus der vorhandenen Transaktion in die neu gebaute. Zugeordnet
+     * wird über das <b>Konto</b> des Splits, weil sich Reihenfolge und Anzahl der Splits beim Bearbeiten
+     * ändern können (aus einer Kategorie werden zwei); mehrere Splits auf dasselbe Konto werden der
+     * Reihe nach bedient. Ein Split, den es vorher nicht gab, behält die Vorgabewerte.
+     *
+     * <p>Ohne das verlor eine bearbeitete Buchung beim Rückschreiben ihren Abgleich-Status
+     * ({@code reconcileflag="1"} → {@code "0"}) und ihre Aktion – in der Datei unauffällig, in KMyMoney
+     * aber der Unterschied zwischen „abgeglichen" und „offen".</p>
+     */
+    private String withCarriedAttributes(String newTx, String oldBlock) {
+        // Konto → Werte der alten Splits, in Reihenfolge.
+        Map<String, List<Map<String, String>>> old = new HashMap<>();
+        Matcher om = SPLIT_TAG.matcher(oldBlock);
+        while (om.find()) {
+            String tag = om.group();
+            Matcher am = ACCOUNT_ATTR.matcher(tag);
+            if (!am.find()) {
+                continue;
+            }
+            Map<String, String> values = new HashMap<>();
+            for (String attr : CARRIED_ATTRS) {
+                Matcher vm = Pattern.compile("\\b" + attr + "=\"([^\"]*)\"").matcher(tag);
+                if (vm.find()) {
+                    values.put(attr, vm.group(1));
+                }
+            }
+            old.computeIfAbsent(am.group(1), k -> new ArrayList<>()).add(values);
+        }
+        if (old.isEmpty()) {
+            return newTx;
+        }
+        StringBuilder out = new StringBuilder();
+        Matcher nm = SPLIT_TAG.matcher(newTx);
+        int last = 0;
+        while (nm.find()) {
+            out.append(newTx, last, nm.start());
+            String tag = nm.group();
+            Matcher am = ACCOUNT_ATTR.matcher(tag);
+            List<Map<String, String>> queue = am.find() ? old.get(am.group(1)) : null;
+            if (queue != null && !queue.isEmpty()) {
+                Map<String, String> values = queue.remove(0);
+                for (Map.Entry<String, String> e : values.entrySet()) {
+                    tag = Pattern.compile("\\b" + e.getKey() + "=\"[^\"]*\"")
+                            .matcher(tag)
+                            .replaceFirst(Matcher.quoteReplacement(
+                                    e.getKey() + "=\"" + e.getValue() + "\""));
+                }
+            }
+            out.append(tag);
+            last = nm.end();
+        }
+        out.append(newTx.substring(last));
+        return out.toString();
     }
 
     /**

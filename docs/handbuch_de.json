@@ -1733,6 +1733,11 @@
       "text": "Arbeitet jemand am Rechner in KMyMoney, während die App exportiert, dürfen dessen Änderungen nicht verloren gehen: Wurde die Datei zwischenzeitlich geändert, bricht der Export ab und schreibt nichts – die Buchungen bleiben unexportiert und lassen sich nach einem erneuten Import ohne Verlust nochmals exportieren."
     },
     {
+      "type": "p",
+      "id": "b-0171b",
+      "text": "Ändern Sie eine bereits übertragene Buchung, wird ihre Transaktion in der Datei ersetzt. Was <b>KMyMoney</b> daran führt und die App gar nicht kennt, bleibt dabei stehen: der <b>Abgleich-Status</b> samt Datum, die Aktion und die Angaben aus dem Bankimport. Eine abgeglichene Buchung bleibt also abgeglichen, auch wenn Sie am Handy noch die Notiz ändern."
+    },
+    {
       "type": "h1",
       "id": "b-0173",
       "text": "18. Wear OS (Uhr)"
