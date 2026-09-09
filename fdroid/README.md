@@ -22,14 +22,21 @@ via F-Droid; it stays a GitHub-only artifact (its microphone permission is unaff
      | strings | grep -c com/google/android/gms   # expect 0
    ```
 
-2. Open a Request For Packaging (RFP) issue, or a merge request against
-   [fdroiddata](https://gitlab.com/fdroid/fdroiddata) adding
-   `metadata/de.spahr.ausgaben.yml`. Use [`de.spahr.ausgaben.yml`](de.spahr.ausgaben.yml) in this
-   folder as the starting point (it builds the `foss` flavor; MPAndroidChart is vendored as a git
-   submodule and built from source, so the recipe just needs `submodules: yes` — no JitPack, no
-   srclib).
+2. Tag the release (`git tag v2.0 && git push origin v2.0`). The recipe points at that tag, so
+   without it the F-Droid build fails immediately.
 
-3. Store listing texts and screenshots are provided as Fastlane metadata under
+3. Open a merge request against [fdroiddata](https://gitlab.com/fdroid/fdroiddata) adding
+   `metadata/de.spahr.ausgaben.yml`. **Copy [`de.spahr.ausgaben.yml`](de.spahr.ausgaben.yml) from
+   this folder verbatim** — it is kept ready to paste, which is why it carries no notes addressed
+   at us; everything explaining *our* side lives in this README instead. Keep the file name and the
+   package id `de.spahr.ausgaben`: F-Droid keys apps by applicationId, not by display name, and
+   keeping it is what lets existing installs update across the rename to KMySync. The display name
+   comes from `app_name` / fastlane `title.txt` and needs no entry in the recipe.
+
+   Only this first submission is manual. `UpdateCheckMode: Tags` plus `AutoUpdateMode: Version v%v`
+   make F-Droid pick up every later version from its tag on its own — no further merge request.
+
+4. Store listing texts and screenshots are provided as Fastlane metadata under
    `fastlane/metadata/android/{en-US,de-DE,es-ES}/` and are picked up automatically. From the
    **second** F-Droid release onwards, each one needs a `changelogs/<versionCode>.txt` per language:
    F-Droid shows the file whose name matches the versionCode being published. The first release

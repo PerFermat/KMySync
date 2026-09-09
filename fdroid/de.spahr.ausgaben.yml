@@ -1,22 +1,3 @@
-# F-Droid build recipe for KMySync (reference copy).
-#
-# Filename and package id stay de.spahr.ausgaben: F-Droid keys apps by applicationId, not by
-# display name, and keeping it is what makes existing installs updatable across the rename.
-# The display name comes from app_name / fastlane title.txt, so it needs no entry here.
-#
-# This is the metadata that goes into the fdroiddata repository as
-# metadata/de.spahr.ausgaben.yml (via a merge request), NOT into this app repo's build.
-# It builds the GMS-free "foss" product flavor of the :app module. The Wear OS companion
-# (:wear) needs Google Play Services and is intentionally NOT packaged for F-Droid.
-#
-# MPAndroidChart does not come from JitPack (which F-Droid does not allow): the app repo vendors
-# it as a git submodule (third_party/MPAndroidChart, pinned to tag v3.1.0) and builds it from
-# source as the ':mpandroidchart' Gradle module (see mpandroidchart/build.gradle and
-# app/build.gradle). No srclib entry and no prebuild hack are needed — `submodules: yes` below is
-# what makes fdroidserver check the submodule out.
-#
-# Before opening the MR: tag v2.0 must exist and carry versionCode 14 (see `git tag v2.0`).
-
 Categories:
   - Money
 License: GPL-3.0-only
@@ -33,19 +14,21 @@ Builds:
     versionCode: 14
     commit: v2.0
     subdir: app
+    # The "foss" product flavor is the phone app without any Google Play Services. The Wear OS
+    # companion (:wear) needs the Google Wear Data Layer and is deliberately not packaged here.
     gradle:
       - foss
+    # MPAndroidChart does not come from JitPack: the repo vendors it as a git submodule
+    # (third_party/MPAndroidChart, pinned to tag v3.1.0) and builds it from source as the
+    # ':mpandroidchart' Gradle module, so no srclib is needed - only the submodule checkout.
     submodules: yes
-    # Google Play Services appear in the source tree twice, and in neither place do they reach the
-    # built APK: as `fullImplementation` for the "full" flavor, and in the :wear module, which
-    # F-Droid does not build at all. Without these entries the scanner would report them as a
-    # non-free dependency. Verified on the finished APK: zero com/google/android/gms strings.
+    # Google Play Services appear in the source tree in two places that never reach the built
+    # APK: as `fullImplementation` for the "full" flavor, which is not built here, and in the
+    # :wear module. Verified on the finished APK: zero com/google/android/gms strings.
     scanignore:
       - app/build.gradle
       - app/src/full
       - wear
-    # Output of :app:assembleFossRelease (unsigned; F-Droid signs it):
-    # app/build/outputs/apk/foss/release/app-foss-release-unsigned.apk
 
 AutoUpdateMode: Version v%v
 UpdateCheckMode: Tags
