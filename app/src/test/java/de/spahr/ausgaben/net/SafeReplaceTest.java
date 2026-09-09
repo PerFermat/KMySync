@@ -63,8 +63,10 @@ public class SafeReplaceTest {
         try {
             SafeReplace.replace(s, "", "michael.kmy", NEU, "", "20260909-0337");
             fail("der Fehler muss durchgereicht werden");
-        } catch (IOException expected) {
-            // so gewollt
+        } catch (RemoteMoveException expected) {
+            // Eigene Ausnahme: alles geschrieben, nur das Ersetzen ging nicht.
+        } catch (IOException e) {
+            fail("erwartet war RemoteMoveException, nicht " + e);
         }
 
         assertArrayEquals(ALT, s.files.get("michael.kmy"));

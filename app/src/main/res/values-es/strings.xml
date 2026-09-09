@@ -576,6 +576,9 @@
     <string name="conn_testing">Probando conexión…</string>
     <string name="conn_ok">Conexión exitosa</string>
     <string name="conn_failed">Error de conexión: %1$s</string>
+    <string name="conn_rights_title">Permisos insuficientes</string>
+    <string name="conn_no_write">La conexión funciona, pero no se puede crear nada en la carpeta.\n\nAllí hacen falta tres permisos: <b>escritura</b>, <b>cambio de nombre</b> y <b>borrado</b>.\n\nMensaje del servidor:\n%1$s</string>
+    <string name="conn_no_rename">La conexión funciona y se puede escribir, pero el servidor no permite <b>cambiar el nombre</b>.\n\nPor qué hace falta: al transferir, la aplicación escribe primero tu archivo de KMyMoney completo con un nombre temporal y solo después lo coloca en su sitio. Solo así una interrupción – una zona sin cobertura, un tiempo de espera agotado – no puede sobrescribir a medias tu archivo y dejarlo ilegible. Para retirar el archivo temporal hace falta <b>borrado</b>.\n\nPor tanto la carpeta necesita: <b>escritura</b>, <b>cambio de nombre</b> y <b>borrado</b>. Sin eso no es posible exportar.\n\nMensaje del servidor:\n%1$s</string>
     <string name="kmy_browse">Seleccionar .kmy</string>
     <string name="folder_browse">Explorar carpeta</string>
     <string name="folder_choose_this">✓  Usar esta carpeta</string>
@@ -661,6 +664,7 @@
     <string name="kmy_result_scheduled">, %1$d programa(s) avanzado(s)</string>
     <string name="kmy_result_backup">Copia de seguridad: %1$s</string>
     <string name="kmy_conflict">El .kmy fue modificado en el meantime (probablemente en el ordenador). No se escribió nada – reimporta las cuentas y exporta de nuevo.</string>
+    <string name="kmy_move_failed">El archivo se transfirió por completo, pero no se pudo colocar en su sitio (%1$s). Tu archivo de KMyMoney está intacto; vuelve a transferirlo más tarde.</string>
     <string name="kmy_skipped">%1$d omitido(s): %2$s</string>
 
     <!-- Mensajes -->

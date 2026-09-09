@@ -579,6 +579,10 @@
     <string name="conn_testing">Verbindung wird getestet…</string>
     <string name="conn_ok">Verbindung erfolgreich</string>
     <string name="conn_failed">Verbindung fehlgeschlagen: %1$s</string>
+    <string name="conn_rights_title">Zugriffsrechte reichen nicht</string>
+    <string name="conn_no_write">Die Verbindung steht, aber im Ordner läßt sich nichts anlegen.\n\nBenötigt werden dort drei Rechte: <b>Schreiben</b>, <b>Umbenennen</b> und <b>Löschen</b>.\n\nMeldung des Servers:\n%1$s</string>
+    <string name="conn_no_rename">Die Verbindung steht und Schreiben klappt, aber der Server läßt kein <b>Umbenennen</b> zu.\n\nWarum das nötig ist: Beim Übertragen schreibt die App Ihre KMyMoney-Datei zuerst vollständig unter einem Zwischennamen und läßt sie erst dann an ihren Platz setzen. Nur so kann ein Abbruch – Funkloch, Zeitlimit – Ihre Datei nicht halb überschreiben und unlesbar machen. Zum Aufräumen der Zwischendatei gehört <b>Löschen</b> dazu.\n\nBenötigt werden im Ordner also: <b>Schreiben</b>, <b>Umbenennen</b> und <b>Löschen</b>. Ohne das ist ein Export nicht möglich.\n\nMeldung des Servers:\n%1$s</string>
+    <string name="kmy_move_failed">Die Datei wurde vollständig übertragen, konnte aber nicht an ihren Platz gesetzt werden (%1$s). Ihre KMyMoney-Datei ist unverändert; bitte später erneut übertragen.</string>
     <string name="kmy_browse">.kmy auswählen</string>
     <string name="folder_browse">Ordner durchsuchen</string>
     <string name="folder_choose_this">✓  Diesen Ordner wählen</string>

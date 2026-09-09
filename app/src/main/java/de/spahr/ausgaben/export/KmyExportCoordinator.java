@@ -190,6 +190,13 @@ public class KmyExportCoordinator {
             } catch (de.spahr.ausgaben.net.RemoteConflictException e) {
                 // Fremdänderung erkannt: nichts geschrieben, nichts als exportiert markiert.
                 complete(listener, r.getString(de.spahr.ausgaben.R.string.kmy_conflict), false);
+            } catch (de.spahr.ausgaben.net.RemoteMoveException e) {
+                // Übertragen hat geklappt, nur das Ersetzen nicht – ein anderer Sachverhalt als ein
+                // Netzfehler, und die Datei ist nachweislich unberührt. Das soll die Meldung sagen.
+                Throwable cause = e.getCause() == null ? e : e.getCause();
+                String msg = cause.getMessage() == null ? cause.toString() : cause.getMessage();
+                complete(listener,
+                        r.getString(de.spahr.ausgaben.R.string.kmy_move_failed, msg), false);
             } catch (Exception e) {
                 String msg = e.getMessage() == null ? e.toString() : e.getMessage();
                 complete(listener, r.getString(de.spahr.ausgaben.R.string.export_failed, msg), false);

@@ -57,7 +57,15 @@ public final class SafeReplace {
                     throw new RemoteConflictException("Datei wurde zwischenzeitlich geändert: " + file);
                 }
             }
-            storage.move(folder, tmp, file);
+            try {
+                storage.move(folder, tmp, file);
+            } catch (IOException | RuntimeException e) {
+                // Eigene Ausnahme: hier ist alles geschrieben, nur das Ersetzen ging nicht. Für den
+                // Nutzer ein anderer Sachverhalt als ein Netzfehler mittendrin – und die Zieldatei ist
+                // garantiert unberührt.
+                throw new RemoteMoveException(
+                        "Umbenennen auf dem Server nicht möglich: " + tmp + " → " + file, e);
+            }
         } catch (IOException | RuntimeException e) {
             // Die Zwischendatei ist wertlos, sobald es schiefging – wegräumen, aber den eigentlichen
             // Fehler nicht dadurch verdecken, dass auch das Aufräumen scheitert.

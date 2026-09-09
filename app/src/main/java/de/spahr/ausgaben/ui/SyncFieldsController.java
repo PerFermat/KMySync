@@ -139,8 +139,32 @@ final class SyncFieldsController {
         toast(R.string.conn_testing, Toast.LENGTH_SHORT);
         new Thread(() -> {
             try {
-                RemoteStorage.from(serverType, url, user, password).testConnection();
-                imVordergrund(() -> toast(R.string.conn_ok, Toast.LENGTH_LONG));
+                RemoteStorage storage = RemoteStorage.from(serverType, url, user, password);
+                storage.testConnection();
+                // Verbinden und Auflisten allein sagt nichts darüber, ob der Export später gelingt: der
+                // schreibt erst eine Zwischendatei und benennt sie um. Genau das hier einmal im Kleinen
+                // durchspielen – sonst fiele ein Server ohne Umbenennen erst beim ersten Übertragen auf.
+                de.spahr.ausgaben.net.RemoteSelfTest.Result probe =
+                        de.spahr.ausgaben.net.RemoteSelfTest.run(storage, "",
+                                new java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US)
+                                        .format(new java.util.Date()));
+                if (probe.ok()) {
+                    imVordergrund(() -> toast(R.string.conn_ok, Toast.LENGTH_LONG));
+                } else {
+                    final int text = probe.step == de.spahr.ausgaben.net.RemoteSelfTest.Step.WRITE
+                            ? R.string.conn_no_write
+                            : R.string.conn_no_rename;
+                    final String grund = serverError(probe.cause);
+                    // Bewußt ein Dialog statt eines Toasts: hier ist zu erklären, welche Rechte der
+                    // Ordner braucht und warum ausgerechnet Umbenennen und Löschen dazugehören.
+                    imVordergrund(() -> new AppDialog(activity)
+                            .setTitle(R.string.conn_rights_title)
+                            .setMessage(androidx.core.text.HtmlCompat.fromHtml(
+                                    activity.getString(text, grund),
+                                    androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY))
+                            .setPositiveButton(android.R.string.ok, null)
+                            .show());
+                }
             } catch (Exception e) {
                 meldeFehler(e);
             }

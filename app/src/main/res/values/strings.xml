@@ -580,6 +580,10 @@
     <string name="conn_testing">Testing connection…</string>
     <string name="conn_ok">Connection successful</string>
     <string name="conn_failed">Connection failed: %1$s</string>
+    <string name="conn_rights_title">Insufficient permissions</string>
+    <string name="conn_no_write">The connection works, but nothing can be created in the folder.\n\nThree permissions are needed there: <b>write</b>, <b>rename</b> and <b>delete</b>.\n\nServer message:\n%1$s</string>
+    <string name="conn_no_rename">The connection works and writing succeeds, but the server does not allow <b>renaming</b>.\n\nWhy this is needed: when transferring, the app first writes your KMyMoney file in full under a temporary name and only then has it put in place. That is the only way an interruption – a dead spot, a timeout – cannot half-overwrite your file and leave it unreadable. Clearing the temporary file away needs <b>delete</b>.\n\nSo the folder needs: <b>write</b>, <b>rename</b> and <b>delete</b>. Without those an export is not possible.\n\nServer message:\n%1$s</string>
+    <string name="kmy_move_failed">The file was transferred in full but could not be put in place (%1$s). Your KMyMoney file is unchanged; please transfer again later.</string>
     <string name="kmy_browse">Select .kmy</string>
     <string name="folder_browse">Browse folder</string>
     <string name="folder_choose_this">✓  Use this folder</string>
