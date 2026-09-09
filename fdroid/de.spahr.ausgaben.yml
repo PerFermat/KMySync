@@ -9,15 +9,13 @@
 # It builds the GMS-free "foss" product flavor of the :app module. The Wear OS companion
 # (:wear) needs Google Play Services and is intentionally NOT packaged for F-Droid.
 #
-# MPAndroidChart no longer comes from JitPack (which F-Droid does not allow): the app repo now
-# vendors it as a git submodule (third_party/MPAndroidChart, pinned to tag v3.1.0) and builds it
-# from source as the ':mpandroidchart' Gradle module (see mpandroidchart/build.gradle and
-# app/build.gradle). No srclib entry or prebuild sed hack is needed any more — just make sure
-# `submodules: yes` is set below so fdroidserver checks out the submodule too.
+# MPAndroidChart does not come from JitPack (which F-Droid does not allow): the app repo vendors
+# it as a git submodule (third_party/MPAndroidChart, pinned to tag v3.1.0) and builds it from
+# source as the ':mpandroidchart' Gradle module (see mpandroidchart/build.gradle and
+# app/build.gradle). No srclib entry and no prebuild hack are needed — `submodules: yes` below is
+# what makes fdroidserver check the submodule out.
 #
-# Still to do before opening the MR:
-#  - Point `commit:` at a tag that actually contains this fix (i.e. v1.3 or later, once tagged;
-#    v1.2 still used the JitPack dependency and won't build without network access to JitPack).
+# Before opening the MR: tag v2.0 must exist and carry versionCode 14 (see `git tag v2.0`).
 
 Categories:
   - Money
@@ -31,17 +29,25 @@ RepoType: git
 Repo: https://github.com/PerFermat/KMySync.git
 
 Builds:
-  - versionName: "1.3"       # TODO: update once v1.3 (or later) is tagged
-    versionCode: 4           # TODO: must match the tagged commit's app/build.gradle
-    commit: v1.3             # TODO: this tag does not exist yet — replace before submitting
+  - versionName: "2.0"
+    versionCode: 14
+    commit: v2.0
     subdir: app
     gradle:
       - foss
     submodules: yes
+    # Google Play Services appear in the source tree twice, and in neither place do they reach the
+    # built APK: as `fullImplementation` for the "full" flavor, and in the :wear module, which
+    # F-Droid does not build at all. Without these entries the scanner would report them as a
+    # non-free dependency. Verified on the finished APK: zero com/google/android/gms strings.
+    scanignore:
+      - app/build.gradle
+      - app/src/full
+      - wear
     # Output of :app:assembleFossRelease (unsigned; F-Droid signs it):
     # app/build/outputs/apk/foss/release/app-foss-release-unsigned.apk
 
 AutoUpdateMode: Version v%v
 UpdateCheckMode: Tags
-CurrentVersion: "1.3"
-CurrentVersionCode: 4
+CurrentVersion: "2.0"
+CurrentVersionCode: 14

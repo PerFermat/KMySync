@@ -30,4 +30,9 @@ via F-Droid; it stays a GitHub-only artifact (its microphone permission is unaff
    srclib).
 
 3. Store listing texts and screenshots are provided as Fastlane metadata under
-   `fastlane/metadata/android/{en-US,de-DE}/` and are picked up automatically.
+   `fastlane/metadata/android/{en-US,de-DE,es-ES}/` and are picked up automatically. From the
+   **second** F-Droid release onwards, each one needs a `changelogs/<versionCode>.txt` per language:
+   F-Droid shows the file whose name matches the versionCode being published. The first release
+   deliberately has none — a "what changed" text would refer to versions that were never on F-Droid.
+   The existing `changelogs/{1,2,6,7,8,13}.txt` belong to the GitHub history and stay unpublished
+   here, because only the packaged versionCode is ever shown.

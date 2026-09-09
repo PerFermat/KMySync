@@ -1,20 +1,22 @@
-KMySync is a mobile companion to the desktop finance software KMyMoney. Record cash expenses, income and transfers on the go and export them into KMyMoney, instead of typing everything in by hand later.
-
-Note: KMySync was previously called “Ausgaben”. It is the same program under a new name. If you already have “Ausgaben” installed, KMySync arrives as a normal update – all your bookings, profiles, settings and receipts are kept. There is nothing to export, uninstall or migrate.
+KMySync is a mobile companion to the desktop finance software KMyMoney. Record cash expenses, income and transfers on the go, keep track of your portfolio, and write it all back into KMyMoney instead of typing it in by hand later.
 
 The app works fully offline and without any vendor account: data is exchanged with KMyMoney through a folder you provide yourself (WebDAV, Nextcloud or SMB/Samba). No ads, no tracking.
 
 Features:
 
 * Seamless KMyMoney integration via .kmy files or CSV import
+* Several profiles — keep several KMyMoney files side by side, each with its own bookings, its own accent colour and its own backup
 * Sync through a shared WebDAV or SMB folder — your own server, your data
 * Split bookings and transfers, categories, and per-account "places" (track where your cash physically is)
 * Charts and analysis per account, place or total
-* Portfolio import (securities with buys/sells/dividends, latest prices, net worth)
+* Portfolio with holdings, latest price and net worth
+* Record transactions for securities you already hold — buys, sells and dividends, with quantity, price, fees and taxes, including optional PDF recognition of the statement; written back into KMyMoney
 * Fuzzy voice entry with optional location-based payee suggestion
-* Multilingual — English and German built in, more languages via upload
+* Multilingual — English, German and Spanish built in, more languages via upload
 * Biometric lock and encrypted credentials
 
-Note on this F-Droid build: it is the phone app without Google Play Services. The optional Wear OS companion (voice entry from a watch) requires the Google Wear Data Layer and is only available from the project's GitHub releases.
+On the PDF recognition: the app reads the statement's text layer, recognises the security, the date and the amounts, and learns per bank and portfolio where those values sit in the document. It does not work with every bank — scanned documents are out of reach, and unusual layouts can escape it. It is off by default and is switched on in the settings.
+
+Note on this F-Droid build: it is the phone app without Google Play Services. The optional Wear OS companion (voice entry from a watch) requires the Google Wear Data Layer and is only available from the project's GitHub releases: https://github.com/PerFermat/KMySync/releases
 
 Free and open source (GPL-3.0).

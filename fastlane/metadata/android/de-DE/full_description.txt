@@ -1,20 +1,22 @@
-KMySync ist eine mobile Ergänzung zur Desktop-Finanzsoftware KMyMoney. Erfassen Sie Bargeld-Ausgaben, -Einnahmen und Umbuchungen unterwegs und exportieren Sie sie nach KMyMoney, statt alles später von Hand nachzutragen.
-
-Hinweis: KMySync hieß früher „Ausgaben". Es ist dasselbe Programm unter neuem Namen. Wer „Ausgaben" bereits installiert hat, erhält KMySync als ganz normales Update – alle Buchungen, Profile, Einstellungen und Belege bleiben erhalten. Es ist nichts zu exportieren, zu deinstallieren oder zu übertragen.
+KMySync ist eine mobile Ergänzung zur Desktop-Finanzsoftware KMyMoney. Erfassen Sie Bargeld-Ausgaben, -Einnahmen und Umbuchungen unterwegs, führen Sie Ihr Depot mit und schreiben Sie alles nach KMyMoney zurück, statt es später von Hand nachzutragen.
 
 Die App arbeitet vollständig offline und ohne Herstellerkonto: Der Datenaustausch mit KMyMoney läuft über einen von Ihnen bereitgestellten Ordner (WebDAV, Nextcloud oder SMB/Samba). Keine Werbung, kein Tracking.
 
 Funktionen:
 
 * Nahtlose KMyMoney-Integration über .kmy-Dateien oder CSV-Import
+* Mehrere Profile — mehrere KMyMoney-Dateien getrennt nebeneinander führen, jede mit eigenen Buchungen, eigener Akzentfarbe und eigener Sicherung
 * Sync über einen gemeinsamen WebDAV- oder SMB-Ordner — eigener Server, eigene Daten
 * Splitbuchungen und Umbuchungen, Kategorien und Orte je Konto (wo das Bargeld physisch liegt)
 * Diagramme und Auswertung je Konto, Ort oder gesamt
-* Depot-Import (Wertpapiere mit Käufen/Verkäufen/Dividenden, letzter Kurs, Gesamtvermögen)
+* Depot mit Beständen, letztem Kurs und Gesamtvermögen
+* Wertpapier-Buchungen zu bereits vorhandenen Papieren eintragen — Kauf, Verkauf und Dividende, mit Stückzahl, Kurs, Gebühren und Steuern, inklusive optionaler PDF-Erkennung der Abrechnung; wird nach KMyMoney zurückgeschrieben
 * Unscharfe Spracheingabe mit optionaler standortbasierter Empfänger-Erkennung
-* Mehrsprachig — Deutsch und Englisch eingebaut, weitere Sprachen per Upload
+* Mehrsprachig — Deutsch, Englisch und Spanisch eingebaut, weitere Sprachen per Upload
 * Biometrische Sperre und verschlüsselte Zugangsdaten
 
-Hinweis zu diesem F-Droid-Build: Es ist die Handy-App ohne Google Play Services. Die optionale Wear-OS-App (Spracheingabe von der Uhr) benötigt den Google Wear Data Layer und ist nur über die GitHub-Releases des Projekts erhältlich.
+Zur PDF-Erkennung: Die App liest die Textebene der Abrechnung, erkennt das Wertpapier, das Datum und die Beträge und lernt dabei je Bank und Depot, wo die Werte im Beleg stehen. Das gelingt nicht bei jeder Bank — eingescannte Belege bleiben außen vor, und ungewöhnliche Aufbauten können sich der Erkennung entziehen. Ab Werk ist sie ausgeschaltet und lässt sich in den Einstellungen aktivieren.
+
+Hinweis zu diesem F-Droid-Build: Es ist die Handy-App ohne Google Play Services. Die optionale Wear-OS-App (Spracheingabe von der Uhr) benötigt den Google Wear Data Layer und ist nur über die GitHub-Releases des Projekts erhältlich: https://github.com/PerFermat/KMySync/releases
 
 Freie und quelloffene Software (GPL-3.0).
