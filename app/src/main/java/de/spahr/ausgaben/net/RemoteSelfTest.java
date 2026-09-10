@@ -54,8 +54,8 @@ public final class RemoteSelfTest {
      * @param stamp Zeitstempel für die Namen (vom Aufrufer, damit testbar)
      */
     public static Result run(RemoteStorage storage, String folder, String stamp) {
-        String from = ".kmysync-probe-" + stamp + "." + SafeReplace.TMP_EXT;
-        String to = ".kmysync-probe-" + stamp + "-ok." + SafeReplace.TMP_EXT;
+        String from = probeName(stamp);
+        String to = renamedProbeName(stamp);
         try {
             storage.uploadBytes(folder, from, PROBE);
         } catch (IOException | RuntimeException e) {
@@ -69,6 +69,21 @@ public final class RemoteSelfTest {
         }
         cleanUp(storage, folder, to);
         return new Result(Step.OK, null);
+    }
+
+    /**
+     * Name der Probe-Datei. Der Punkt am Anfang hält sie aus der Anzeige heraus, der Rest nennt App und
+     * Zeitpunkt – damit ein Überbleibsel (abgebrochene Verbindung) zuzuordnen ist. Auch die Diagnosen
+     * benutzen diesen Namen, damit es nur <b>eine</b> Auskunft darüber gibt, wonach der Nutzer im
+     * Zweifel suchen muss.
+     */
+    public static String probeName(String stamp) {
+        return ".kmysync-probe-" + stamp + "." + SafeReplace.TMP_EXT;
+    }
+
+    /** Der Name, auf den die Probe umbenannt wird – das prüft das Umbenennen-Recht. */
+    public static String renamedProbeName(String stamp) {
+        return ".kmysync-probe-" + stamp + "-ok." + SafeReplace.TMP_EXT;
     }
 
     private static void cleanUp(RemoteStorage storage, String folder, String name) {

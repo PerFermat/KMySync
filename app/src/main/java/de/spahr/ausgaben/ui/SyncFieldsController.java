@@ -120,10 +120,9 @@ final class SyncFieldsController {
         urlLayout.setVisibility(fields);
         userLayout.setVisibility(fields);
         passwordLayout.setVisibility(fields);
+        // „Verbindung testen" gehört zu den Eingabefeldern und ist nur verdeckt, solange der
+        // SMB-Assistent sie für sich hat; er hat seine eigene Probe.
         activity.findViewById(R.id.btnTestConnection).setVisibility(fields);
-        // Die Diagnose gilt der eingerichteten Verbindung – gerade beim Erststart ist sie das
-        // Werkzeug, mit dem man überhaupt herausfindet, woran es hakt.
-        activity.findViewById(R.id.btnSmbDiagnose).setVisibility(smb ? View.VISIBLE : View.GONE);
         // Rückweg zum Assistenten nur, solange SMB gewählt und gerade manuell eingegeben wird.
         activity.findViewById(R.id.btnSmbSearch).setVisibility(smb && !wizard ? View.VISIBLE : View.GONE);
         smbWizard.setVisible(wizard);
@@ -131,45 +130,9 @@ final class SyncFieldsController {
 
     // ---- Verbindung ----
 
-    void testConnection() {
-        final String serverType = selectedServerType;
-        final String url = textOf(editUrl);
-        final String user = textOf(editUser);
-        final String password = passwordOrSaved();
-        toast(R.string.conn_testing, Toast.LENGTH_SHORT);
-        new Thread(() -> {
-            try {
-                RemoteStorage storage = RemoteStorage.from(serverType, url, user, password);
-                storage.testConnection();
-                // Verbinden und Auflisten allein sagt nichts darüber, ob der Export später gelingt: der
-                // schreibt erst eine Zwischendatei und benennt sie um. Genau das hier einmal im Kleinen
-                // durchspielen – sonst fiele ein Server ohne Umbenennen erst beim ersten Übertragen auf.
-                de.spahr.ausgaben.net.RemoteSelfTest.Result probe =
-                        de.spahr.ausgaben.net.RemoteSelfTest.run(storage, "",
-                                new java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US)
-                                        .format(new java.util.Date()));
-                if (probe.ok()) {
-                    imVordergrund(() -> toast(R.string.conn_ok, Toast.LENGTH_LONG));
-                } else {
-                    final int text = probe.step == de.spahr.ausgaben.net.RemoteSelfTest.Step.WRITE
-                            ? R.string.conn_no_write
-                            : R.string.conn_no_rename;
-                    final String grund = serverError(probe.cause);
-                    // Bewußt ein Dialog statt eines Toasts: hier ist zu erklären, welche Rechte der
-                    // Ordner braucht und warum ausgerechnet Umbenennen und Löschen dazugehören.
-                    imVordergrund(() -> new AppDialog(activity)
-                            .setTitle(R.string.conn_rights_title)
-                            .setMessage(androidx.core.text.HtmlCompat.fromHtml(
-                                    activity.getString(text, grund),
-                                    androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY))
-                            .setPositiveButton(android.R.string.ok, null)
-                            .show());
-                }
-            } catch (Exception e) {
-                meldeFehler(e);
-            }
-        }).start();
-    }
+    // „Verbindung testen" liegt in der Maske (siehe {@code DiagnosticsDialog}): Geprüft wird der
+    // Ordner, in den die App wirklich schreibt, und den kennt erst die Maske – im .kmy-Modus der
+    // Ordner der Datei, im CSV-Modus der Export-Ordner.
 
     /** Leeres Passwortfeld heißt: das gespeicherte gilt weiter. */
     private String passwordOrSaved() {

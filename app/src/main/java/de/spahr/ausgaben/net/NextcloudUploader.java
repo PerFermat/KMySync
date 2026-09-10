@@ -71,7 +71,7 @@ public class NextcloudUploader {
 
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-                throw new IOException("HTTP " + response.code() + " " + response.message());
+                throw new HttpStatusException(response.code(), response.message());
             }
         }
     }
@@ -104,7 +104,7 @@ public class NextcloudUploader {
                 throw new RemoteConflictException("HTTP 412 (If-Match): " + fileName);
             }
             if (!response.isSuccessful()) {
-                throw new IOException("HTTP " + response.code() + " " + response.message());
+                throw new HttpStatusException(response.code(), response.message());
             }
         }
     }
@@ -128,7 +128,7 @@ public class NextcloudUploader {
             ResponseBody rb = response.body();
             String xml = rb == null ? "" : rb.string();
             if (!response.isSuccessful()) {
-                throw new IOException("HTTP " + response.code() + " " + response.message());
+                throw new HttpStatusException(response.code(), response.message());
             }
             return parseEtag(xml);
         }
@@ -179,7 +179,7 @@ public class NextcloudUploader {
         try (Response response = client.newCall(request).execute()) {
             // 201 = angelegt, 405 = existiert bereits.
             if (!response.isSuccessful() && response.code() != 405) {
-                throw new IOException("HTTP " + response.code() + " " + response.message());
+                throw new HttpStatusException(response.code(), response.message());
             }
         }
     }
@@ -200,7 +200,7 @@ public class NextcloudUploader {
                 .build();
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-                throw new IOException("HTTP " + response.code() + " " + response.message());
+                throw new HttpStatusException(response.code(), response.message());
             }
         }
     }
@@ -215,7 +215,7 @@ public class NextcloudUploader {
                 .build();
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful() && response.code() != 404) {
-                throw new IOException("HTTP " + response.code() + " " + response.message());
+                throw new HttpStatusException(response.code(), response.message());
             }
         }
     }
@@ -237,7 +237,7 @@ public class NextcloudUploader {
             ResponseBody rb = response.body();
             String xml = rb == null ? "" : rb.string();
             if (!response.isSuccessful()) {
-                throw new IOException("HTTP " + response.code() + " " + response.message());
+                throw new HttpStatusException(response.code(), response.message());
             }
             return parseNames(xml, ext);
         }
@@ -260,7 +260,7 @@ public class NextcloudUploader {
             ResponseBody rb = response.body();
             String xml = rb == null ? "" : rb.string();
             if (!response.isSuccessful()) {
-                throw new IOException("HTTP " + response.code() + " " + response.message());
+                throw new HttpStatusException(response.code(), response.message());
             }
             return parseFolders(xml, pathOf(url));
         }
@@ -279,7 +279,7 @@ public class NextcloudUploader {
             ResponseBody rb = response.body();
             String content = rb == null ? "" : rb.string();
             if (!response.isSuccessful()) {
-                throw new IOException("HTTP " + response.code() + " " + response.message());
+                throw new HttpStatusException(response.code(), response.message());
             }
             return content;
         }
@@ -309,7 +309,7 @@ public class NextcloudUploader {
         try (Response response = client.newCall(request).execute()) {
             ResponseBody rb = response.body();
             if (!response.isSuccessful()) {
-                throw new IOException("HTTP " + response.code() + " " + response.message());
+                throw new HttpStatusException(response.code(), response.message());
             }
             if (rb == null) {
                 return new byte[0];
@@ -467,7 +467,7 @@ public class NextcloudUploader {
      * WebDAV-Wurzel: bei Nextcloud {@code <base>/remote.php/dav/files/<user>}, bei generischem WebDAV die
      * eingetragene Basis-URL selbst (der Nutzer gibt dort die vollständige DAV-Wurzel an).
      */
-    private String rootUrl(String baseUrl, String user) {
+    String rootUrl(String baseUrl, String user) {
         String base = baseUrl.trim();
         while (base.endsWith("/")) {
             base = base.substring(0, base.length() - 1);
@@ -496,14 +496,16 @@ public class NextcloudUploader {
         }
     }
 
-    private String buildFolderUrl(String baseUrl, String user, String folder) {
+    /** Paketsichtbar, damit {@link WebDavDiagnostics} genau dieselben URLs prüft wie der Normalbetrieb. */
+    String buildFolderUrl(String baseUrl, String user, String folder) {
         StringBuilder sb = new StringBuilder(rootUrl(baseUrl, user));
         appendFolder(sb, folder);
         sb.append("/");
         return sb.toString();
     }
 
-    private String buildUrl(String baseUrl, String user, String folder, String fileName) {
+    /** Paketsichtbar – siehe {@link #buildFolderUrl}. */
+    String buildUrl(String baseUrl, String user, String folder, String fileName) {
         StringBuilder sb = new StringBuilder(rootUrl(baseUrl, user));
         appendFolder(sb, folder);
         sb.append("/").append(encodePath(fileName));

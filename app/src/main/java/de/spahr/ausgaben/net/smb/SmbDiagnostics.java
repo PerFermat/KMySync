@@ -10,6 +10,9 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
+import de.spahr.ausgaben.net.Diagnostics;
+import de.spahr.ausgaben.net.Diagnostics.Step;
+import de.spahr.ausgaben.net.RemoteSelfTest;
 import de.spahr.ausgaben.settings.SettingsStore;
 
 /**
@@ -26,33 +29,6 @@ import de.spahr.ausgaben.settings.SettingsStore;
  */
 public final class SmbDiagnostics {
 
-    /** Ein Schritt der Kette: Beschriftung, Ergebnis, Dauer und im Fehlerfall der rohe Grund. */
-    public static final class Step {
-        public final String label;
-        public final boolean ok;
-        public final String detail;
-        public final long millis;
-
-        Step(String label, boolean ok, String detail, long millis) {
-            this.label = label;
-            this.ok = ok;
-            this.detail = detail == null ? "" : detail;
-            this.millis = millis;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder(ok ? "✓ " : "✗ ").append(label);
-            if (!detail.isEmpty()) {
-                sb.append(": ").append(detail);
-            }
-            if (millis >= 0) {
-                sb.append(" (").append(millis).append(" ms)");
-            }
-            return sb.toString();
-        }
-    }
-
     private SmbDiagnostics() {
     }
 
@@ -65,8 +41,8 @@ public final class SmbDiagnostics {
 
     /**
      * Läuft die Kette Verbinden → Anmelden → Freigaben → Freigabe öffnen → Ordner lesen →
-     * <b>Schreibrecht</b> → Datei durch und bricht beim ersten Fehler ab, der alles Weitere sinnlos
-     * macht.
+     * <b>Schreiben → Umbenennen → Aufräumen</b> → Datei durch und bricht beim ersten Fehler ab, der
+     * alles Weitere sinnlos macht.
      *
      * @param url    {@code smb://Host[:Port]/Freigabe[/Basis]} wie in den Einstellungen
      * @param folder Zielordner relativ zur Freigabe (leer = die Freigabe selbst)
@@ -163,7 +139,7 @@ public final class SmbDiagnostics {
                             reason(e), System.currentTimeMillis() - t0));
                     return steps;
                 }
-                steps.add(writableStep(disk, dir));
+                writeRenameCleanup(disk, dir, steps);
                 if (!file.isEmpty()) {
                     t0 = System.currentTimeMillis();
                     boolean exists;
@@ -194,31 +170,63 @@ public final class SmbDiagnostics {
     }
 
     /**
-     * Darf die App in den Zielordner <b>schreiben</b>? Ein nur lesbares Verzeichnis fällt sonst erst
-     * beim Rückschreiben auf – nach dem Herunterladen, Bearbeiten und Zusammenführen. Geprüft wird mit
-     * einer winzigen Datei, die sofort wieder verschwindet; der Name beginnt mit einem Punkt und nennt
-     * die App, damit ein Überbleibsel (abgebrochene Verbindung) zuzuordnen ist.
+     * Die drei Rechte, die ein Export wirklich braucht: <b>schreiben</b>, <b>umbenennen</b>,
+     * <b>löschen</b>. Ein nur lesbares Verzeichnis fällt sonst erst beim Rückschreiben auf – nach dem
+     * Herunterladen, Bearbeiten und Zusammenführen.
+     *
+     * <p>Warum Umbenennen einen eigenen Schritt bekommt: Der Export schreibt die Datei erst vollständig
+     * unter einem Zwischennamen und hängt sie dann ein (siehe {@code SafeReplace}). SMB benennt „durch
+     * Löschen des alten Namens" um und verlangt dafür <b>DELETE auf der Quelle</b> – ein anderes Recht
+     * als das Anlegen. Ein Ordner, in dem Anlegen und Löschen geht, das Umbenennen aber nicht, kam
+     * früher hier sauber durch und scheiterte erst beim ersten echten Übertragen.</p>
+     *
+     * <p>Geprüft wird mit einer winzigen Datei, die sofort wieder verschwindet; ihr Name kommt aus
+     * {@link RemoteSelfTest#probeName(String)}, damit ein Überbleibsel zuzuordnen ist.</p>
      */
-    private static Step writableStep(DiskShare disk, String dir) {
-        String probe = join(dir, ".ausgaben-schreibtest.tmp");
+    private static void writeRenameCleanup(DiskShare disk, String dir, List<Step> steps) {
+        String stamp = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US)
+                .format(new java.util.Date());
+        String from = join(dir, RemoteSelfTest.probeName(stamp));
+        String to = join(dir, RemoteSelfTest.renamedProbeName(stamp));
+
         long t0 = System.currentTimeMillis();
         try {
-            disk.openFile(probe, EnumSet.of(AccessMask.GENERIC_WRITE),
+            disk.openFile(from, EnumSet.of(AccessMask.GENERIC_WRITE),
                     null, SMB2ShareAccess.ALL,
                     SMB2CreateDisposition.FILE_OVERWRITE_IF, null).close();
         } catch (Exception e) {
-            return new Step("Schreiben im Ordner", false,
+            steps.add(new Step("Schreiben im Ordner", false,
                     reason(e) + " – die App braucht ein beschreibbares Verzeichnis",
-                    System.currentTimeMillis() - t0);
+                    System.currentTimeMillis() - t0));
+            return;
         }
+        steps.add(new Step("Schreiben im Ordner", true, "", System.currentTimeMillis() - t0));
+
+        t0 = System.currentTimeMillis();
+        String liegengeblieben = from;
         try {
-            disk.rm(probe);
+            try (com.hierynomus.smbj.share.File f = disk.openFile(from,
+                    EnumSet.of(AccessMask.DELETE, AccessMask.GENERIC_READ), null,
+                    SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
+                f.rename(to, true);
+            }
+            liegengeblieben = to;
+            steps.add(new Step("Umbenennen im Ordner", true, "", System.currentTimeMillis() - t0));
         } catch (Exception e) {
-            return new Step("Schreiben im Ordner", true,
-                    "Anlegen ging, Aufräumen nicht (" + reason(e) + ") – bitte " + probe + " löschen",
-                    System.currentTimeMillis() - t0);
+            steps.add(new Step("Umbenennen im Ordner", false,
+                    reason(e) + " – " + Diagnostics.UMBENENNEN_NOETIG,
+                    System.currentTimeMillis() - t0));
         }
-        return new Step("Schreiben im Ordner", true, "", System.currentTimeMillis() - t0);
+
+        t0 = System.currentTimeMillis();
+        try {
+            disk.rm(liegengeblieben);
+            steps.add(new Step("Aufräumen im Ordner", true, "", System.currentTimeMillis() - t0));
+        } catch (Exception e) {
+            steps.add(new Step("Aufräumen im Ordner", false,
+                    reason(e) + " – bitte " + liegengeblieben + " von Hand löschen",
+                    System.currentTimeMillis() - t0));
+        }
     }
 
     /**
@@ -262,31 +270,25 @@ public final class SmbDiagnostics {
         }
     }
 
+    /** Die Kopfzeile des Berichts – sie sagt dem Empfänger, worum es überhaupt geht. */
+    public static final String TITLE = "SMB-Diagnose (KMySync)";
+
     /** Kompletter Bericht als Text – genau das, was der Nutzer kopiert und schickt. */
     public static String report(List<Step> steps) {
-        StringBuilder sb = new StringBuilder("SMB-Diagnose (KMySync)\n");
-        for (Step s : steps) {
-            sb.append(s).append('\n');
-        }
-        return sb.toString().trim();
+        return Diagnostics.report(TITLE, steps);
     }
 
     /** Erster Fehlerschritt oder {@code null}, wenn alles geklappt hat. */
     public static Step firstFailure(List<Step> steps) {
-        for (Step s : steps) {
-            if (!s.ok) {
-                return s;
-            }
-        }
-        return null;
+        return Diagnostics.firstFailure(steps);
     }
 
-    /** Rohtext einer Ausnahme, einzeilig – der Statuscode ist hier das Wertvolle. */
+    /**
+     * Rohtext einer Ausnahme, einzeilig – der Statuscode ist hier das Wertvolle. Bei SMB kommt er aus
+     * {@link SmbErrors#textOf}, das hinter einem nackten Statuscode die Erklärung mitliefert.
+     */
     private static String reason(Throwable e) {
-        String raw = SmbErrors.textOf(e).replaceAll("\\s+", " ").trim();
-        if (raw.length() > 200) {
-            raw = raw.substring(0, 200) + "…";
-        }
+        String raw = Diagnostics.shorten(SmbErrors.textOf(e));
         return raw.isEmpty() ? e.getClass().getSimpleName() : raw;
     }
 

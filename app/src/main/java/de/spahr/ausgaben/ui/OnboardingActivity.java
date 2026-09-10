@@ -222,9 +222,7 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
                 });
 
         ((MaterialButton) findViewById(R.id.btnTestConnection))
-                .setOnClickListener(v -> syncFields.testConnection());
-        ((MaterialButton) findViewById(R.id.btnSmbDiagnose))
-                .setOnClickListener(v -> runSmbDiagnostics());
+                .setOnClickListener(v -> runDiagnostics());
         findViewById(R.id.btnSmbSearch).setOnClickListener(v -> {
             smbWizard.restart();
             syncFields.applyServerTypeHints();
@@ -552,18 +550,26 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
     // ---- Verbindung testen / .kmy auswählen (gleiches Verhalten wie in den Einstellungen) ----
 
     /**
-     * SMB-Diagnose: läuft die ganze Kette in einer Anmeldung durch und zeigt je Schritt Ergebnis und
-     * rohen Statuscode – beim Erststart die schnellste Antwort auf „warum geht es nicht?".
+     * Diagnose: läuft die ganze Kette durch und zeigt je Schritt Ergebnis und rohen Statuscode – beim
+     * Erststart die schnellste Antwort auf „warum geht es nicht?". Welche Kette, hängt an der
+     * Serverart.
      */
-    private void runSmbDiagnostics() {
+    private void runDiagnostics() {
         String pw = textOf(editPassword);
         // Geprüft wird der Ordner, in den die App wirklich schreibt: im .kmy-Modus der Ordner der
         // Datei (samt Datei), im CSV-Modus der Export-Ordner.
         boolean kmy = SettingsStore.MODE_KMY.equals(selectedExportMode);
         String path = kmy ? textOf(editKmyPath) : textOf(editFolder);
-        SmbDiagnosticsDialog.run(this, textOf(editUrl), textOf(editUser),
-                pw.isEmpty() ? settings.getPassword() : pw,
-                kmy ? RemotePath.folderOf(path) : path, kmy ? RemotePath.fileOf(path) : "");
+        String folder = kmy ? RemotePath.folderOf(path) : path;
+        String file = kmy ? RemotePath.fileOf(path) : "";
+        String password = pw.isEmpty() ? settings.getPassword() : pw;
+        String type = syncFields.serverType();
+        if (SettingsStore.SERVER_SMB.equals(type)) {
+            DiagnosticsDialog.runSmb(this, textOf(editUrl), textOf(editUser), password, folder, file);
+        } else {
+            DiagnosticsDialog.runWebDav(this, textOf(editUrl), textOf(editUser), password,
+                    !SettingsStore.SERVER_WEBDAV.equals(type), folder, file);
+        }
     }
 
     // ---- Konten importieren (gleicher Ablauf wie MainActivity.onAddAccountClicked) ----
