@@ -14,7 +14,7 @@ import com.google.android.material.textfield.TextInputLayout;
 
 /**
  * Übersetzt beim Aufblasen jedes Views die Text-Attribute ({@code android:text}, {@code hint}, Toolbar-
- * Titel, {@code contentDescription}), die auf einen {@code @string}-Schlüssel verweisen, anhand des aktiven
+ * Titel, {@code contentDescription}, {@code helperText}), die auf einen {@code @string}-Schlüssel verweisen, anhand des aktiven
  * {@link Strings}-Katalogs. Notwendig, weil {@code @string/…} in Layouts direkt aus dem kompilierten
  * String-Pool gelesen wird und die {@code Resources}-Überschreibung umgeht. Code-Texte
  * ({@code getString(...)}) laufen weiterhin über die {@code Resources}-Überschreibung.
@@ -90,9 +90,15 @@ public class I18nViewFactory implements LayoutInflater.Factory2 {
         }
     }
 
-    private static boolean isTextAttr(String attr) {
+    /**
+     * {@code helperText} ist dabei, seit es auffiel: Der Hinweis unter dem Betragsfeld blieb in der
+     * Sprache des <b>Geräts</b> stehen, während die Maske ringsum der Sprache der <b>App</b> folgte –
+     * in einer englischen Oberfläche stand dann ein deutscher Satz.
+     */
+    static boolean isTextAttr(String attr) {
         return "text".equals(attr) || "hint".equals(attr) || "title".equals(attr)
-                || "subtitle".equals(attr) || "contentDescription".equals(attr);
+                || "subtitle".equals(attr) || "contentDescription".equals(attr)
+                || "helperText".equals(attr);
     }
 
     private void apply(View view, String attr, String text) {
@@ -117,6 +123,11 @@ public class I18nViewFactory implements LayoutInflater.Factory2 {
             case "subtitle":
                 if (view instanceof Toolbar) {
                     ((Toolbar) view).setSubtitle(text);
+                }
+                break;
+            case "helperText":
+                if (view instanceof TextInputLayout) {
+                    ((TextInputLayout) view).setHelperText(text);
                 }
                 break;
             case "contentDescription":
