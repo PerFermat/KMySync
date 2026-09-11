@@ -122,6 +122,8 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
     /** Assistent für SMB; ersetzt bei diesem Server-Typ die Felder URL/Benutzer/Passwort. */
     private SmbWizardController smbWizard;
     private SyncFieldsController syncFields;
+    /** Das gelbe Band während „Verbindung testen" – siehe {@link DiagnosticsBanner}. */
+    private DiagnosticsBanner diagBanner;
     private LinearLayout importStatus;
     private View importProgress;
     private TextView importStatusText;
@@ -223,6 +225,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         // Serverart, Verbindungsprobe und Ordner-Browser – der gemeinsame Block beider
         // Einrichtungsmasken, siehe {@link SyncFieldsController}.
         syncFields = new SyncFieldsController(this, settings, smbWizard);
+        diagBanner = new DiagnosticsBanner(this);
 
         setupLanguages();
         setupExportMode();
@@ -758,9 +761,9 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         String password = pw.isEmpty() ? settings.getPassword() : pw;
         String type = syncFields.serverType();
         if (SettingsStore.SERVER_SMB.equals(type)) {
-            DiagnosticsDialog.runSmb(this, textOf(editUrl), textOf(editUser), password, folder, file);
+            DiagnosticsDialog.runSmb(this, diagBanner, textOf(editUrl), textOf(editUser), password, folder, file);
         } else {
-            DiagnosticsDialog.runWebDav(this, textOf(editUrl), textOf(editUser), password,
+            DiagnosticsDialog.runWebDav(this, diagBanner, textOf(editUrl), textOf(editUser), password,
                     !SettingsStore.SERVER_WEBDAV.equals(type), folder, file);
         }
     }

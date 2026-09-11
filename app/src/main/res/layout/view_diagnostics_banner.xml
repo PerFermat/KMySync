@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Das gelbe Band während „Verbindung testen" – eingebunden von activity_profile_settings.xml und
+  activity_onboarding.xml, weil es in beiden Masken dasselbe ist (siehe DiagnosticsBanner).
+
+  In einer Zeile: links der zuletzt fertige Schritt mit Haken oder Kreuz, rechts der gerade laufende
+  samt Warte-Symbol. Links darf gekürzt werden – die Schrittbeschriftungen nennen mitunter ganze
+  Ordnernamen –, rechts nicht, denn dort steht, worauf gerade gewartet wird.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/diagBanner"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:layout_marginTop="8dp"
+    android:visibility="gone">
+
+    <de.spahr.ausgaben.ui.ShimmerView
+        android:id="@+id/diagShimmer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp">
+
+        <TextView
+            android:id="@+id/diagLast"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/diagSpinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:indeterminate="true"
+            app:indicatorColor="@color/import_banner_text"
+            app:indicatorSize="16dp"
+            app:trackThickness="2dp" />
+
+        <TextView
+            android:id="@+id/diagCurrent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:textColor="@color/import_banner_text"
+            android:textSize="14sp" />
+    </LinearLayout>
+</FrameLayout>

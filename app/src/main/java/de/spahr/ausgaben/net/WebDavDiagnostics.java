@@ -5,7 +5,6 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -15,6 +14,7 @@ import java.util.regex.Pattern;
 
 import javax.net.ssl.SSLException;
 
+import de.spahr.ausgaben.net.Diagnostics.Log;
 import de.spahr.ausgaben.net.Diagnostics.Step;
 import okhttp3.Credentials;
 import okhttp3.HttpUrl;
@@ -89,7 +89,18 @@ public final class WebDavDiagnostics {
      */
     public static List<Step> run(String baseUrl, String user, String password,
                                  boolean nextcloudLayout, String folder, String file) {
-        List<Step> steps = new ArrayList<>();
+        return run(baseUrl, user, password, nextcloudLayout, folder, file, null);
+    }
+
+    /**
+     * Wie oben, mit Anzeige für den gerade laufenden Schritt.
+     *
+     * @param progress Anzeige; {@code null} = ohne
+     */
+    public static List<Step> run(String baseUrl, String user, String password,
+                                 boolean nextcloudLayout, String folder, String file,
+                                 Diagnostics.Progress progress) {
+        Log log = new Log(progress);
         NextcloudUploader urls = new NextcloudUploader(nextcloudLayout);
         String base = baseUrl == null ? "" : baseUrl.trim();
         String who = "Benutzer " + (user == null || user.trim().isEmpty() ? "leer" : "gesetzt");
@@ -97,10 +108,9 @@ public final class WebDavDiagnostics {
         HttpUrl parsed = base.isEmpty() ? null : HttpUrl.parse(base);
         if (parsed == null) {
             // Ohne brauchbare Adresse gibt es nichts zu prüfen – das ist die ganze Auskunft.
-            steps.add(new Step("Adresse", false, (base.isEmpty() ? "keine Adresse" : mask(base, user))
-                    + " – erwartet wird https://server" + (nextcloudLayout ? "" : "/pfad/zur/dav-wurzel"),
-                    -1));
-            return steps;
+            log.note("Adresse", false, (base.isEmpty() ? "keine Adresse" : mask(base, user))
+                    + " – erwartet wird https://server" + (nextcloudLayout ? "" : "/pfad/zur/dav-wurzel"));
+            return log.steps();
         }
 
         String root = urls.rootUrl(base, user == null ? "" : user);
@@ -117,21 +127,21 @@ public final class WebDavDiagnostics {
                     + " dort nur https://server hin, den Rest hängt die App an");
             adresseOk = false;
         }
-        steps.add(new Step("Adresse", adresseOk, wie.toString(), -1));
+        log.note("Adresse", adresseOk, wie.toString());
         if (!adresseOk) {
-            return steps;
+            return log.steps();
         }
 
         // 2./3. Erreichbarkeit und Umleitung: bewusst ohne Anmeldung, damit ein 401 hier nicht mit
         // einem Netzproblem verwechselt wird. OPTIONS verrät zudem, ob dort überhaupt WebDAV spricht.
-        long t0 = System.currentTimeMillis();
+        log.begin("Erreichbarkeit");
         Response options;
         try {
             options = CLIENT.newCall(new Request.Builder().url(root + "/")
                     .method("OPTIONS", null).build()).execute();
         } catch (Exception e) {
-            steps.add(new Step("Erreichbarkeit", false, netzgrund(e), System.currentTimeMillis() - t0));
-            return steps;
+            log.fail(netzgrund(e));
+            return log.steps();
         }
         try {
             StringBuilder was = new StringBuilder("HTTP ").append(options.code());
@@ -143,52 +153,48 @@ public final class WebDavDiagnostics {
                 was.append(", erlaubt: ").append(allow.toUpperCase(Locale.US).contains("MOVE")
                         ? "MOVE dabei" : "MOVE nicht dabei");
             }
-            steps.add(new Step("Erreichbarkeit", true, was.toString(),
-                    System.currentTimeMillis() - t0));
+            log.ok(was.toString());
             Response first = options.priorResponse();
             if (first != null) {
-                steps.add(new Step("Umleitung", true, mask(first.request().url().toString(), user)
+                log.note("Umleitung", true, mask(first.request().url().toString(), user)
                         + " → " + mask(options.request().url().toString(), user)
-                        + " – besser gleich die Zieladresse eintragen", -1));
+                        + " – besser gleich die Zieladresse eintragen");
             }
         } finally {
             options.close();
         }
 
         // 4. Anmelden: PROPFIND Depth 0 auf die Wurzel. Erst hier zählt das Passwort.
-        t0 = System.currentTimeMillis();
+        log.begin("Anmelden");
         try {
             propfind(root + "/", user, password, "0",
                     "<d:prop><d:resourcetype/></d:prop>");
-            steps.add(new Step("Anmelden", true, "", System.currentTimeMillis() - t0));
+            log.ok("");
         } catch (Exception e) {
-            steps.add(new Step("Anmelden", false, grundMitDeutung(e, anmeldeDeutung(code(e), nextcloudLayout)),
-                    System.currentTimeMillis() - t0));
-            return steps;
+            log.fail(grundMitDeutung(e, anmeldeDeutung(code(e), nextcloudLayout)));
+            return log.steps();
         }
 
         // 5. Zielordner lesen.
         String folderUrl = urls.buildFolderUrl(base, user == null ? "" : user, folder);
         String ordner = folder == null || folder.trim().isEmpty() ? "die Wurzel" : "„" + folder + "\"";
-        t0 = System.currentTimeMillis();
+        log.begin("Ordner " + ordner + " lesen");
         try {
             String xml = propfind(folderUrl, user, password, "1",
                     "<d:prop><d:resourcetype/></d:prop>");
-            steps.add(new Step("Ordner " + ordner + " lesen", true, eintraege(xml) + " Einträge",
-                    System.currentTimeMillis() - t0));
+            log.ok(eintraege(xml) + " Einträge");
         } catch (Exception e) {
-            steps.add(new Step("Ordner " + ordner + " lesen", false, grundMitDeutung(e,
-                    code(e) == 404 ? "diesen Ordner gibt es dort nicht" : ordnerDeutung(code(e))),
-                    System.currentTimeMillis() - t0));
-            return steps;
+            log.fail(grundMitDeutung(e,
+                    code(e) == 404 ? "diesen Ordner gibt es dort nicht" : ordnerDeutung(code(e))));
+            return log.steps();
         }
 
-        writeRenameCleanup(urls, base, user, password, folder, steps);
+        writeRenameCleanup(urls, base, user, password, folder, log);
 
         if (file != null && !file.trim().isEmpty()) {
-            dateiUndVersion(urls, base, user, password, folder, file.trim(), steps);
+            dateiUndVersion(urls, base, user, password, folder, file.trim(), log);
         }
-        return steps;
+        return log.steps();
     }
 
     /**
@@ -199,7 +205,7 @@ public final class WebDavDiagnostics {
      * echten Übertragen auf.
      */
     private static void writeRenameCleanup(NextcloudUploader urls, String base, String user,
-                                           String password, String folder, List<Step> steps) {
+                                           String password, String folder, Log log) {
         String stamp = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(new Date());
         String u = user == null ? "" : user;
         String fromName = RemoteSelfTest.probeName(stamp);
@@ -207,18 +213,16 @@ public final class WebDavDiagnostics {
         String from = urls.buildUrl(base, u, folder, fromName);
         String to = urls.buildUrl(base, u, folder, toName);
 
-        long t0 = System.currentTimeMillis();
+        log.begin("Schreiben im Ordner");
         try {
             send(new Request.Builder().url(from).put(RequestBody.create(PROBE, OCTET)), user, password);
         } catch (Exception e) {
-            steps.add(new Step("Schreiben im Ordner", false, grundMitDeutung(e,
-                    "die App braucht ein beschreibbares Verzeichnis"),
-                    System.currentTimeMillis() - t0));
+            log.fail(grundMitDeutung(e, "die App braucht ein beschreibbares Verzeichnis"));
             return;
         }
-        steps.add(new Step("Schreiben im Ordner", true, "", System.currentTimeMillis() - t0));
+        log.ok("");
 
-        t0 = System.currentTimeMillis();
+        log.begin("Umbenennen im Ordner");
         String liegengeblieben = fromName;
         String weg = from;
         try {
@@ -228,20 +232,17 @@ public final class WebDavDiagnostics {
                     .method("MOVE", null), user, password);
             liegengeblieben = toName;
             weg = to;
-            steps.add(new Step("Umbenennen im Ordner", true, "", System.currentTimeMillis() - t0));
+            log.ok("");
         } catch (Exception e) {
-            steps.add(new Step("Umbenennen im Ordner", false, grundMitDeutung(e, UMBENENNEN_NOETIG),
-                    System.currentTimeMillis() - t0));
+            log.fail(grundMitDeutung(e, UMBENENNEN_NOETIG));
         }
 
-        t0 = System.currentTimeMillis();
+        log.begin("Aufräumen im Ordner");
         try {
             send(new Request.Builder().url(weg).delete(), user, password);
-            steps.add(new Step("Aufräumen im Ordner", true, "", System.currentTimeMillis() - t0));
+            log.ok("");
         } catch (Exception e) {
-            steps.add(new Step("Aufräumen im Ordner", false, grundMitDeutung(e,
-                    "bitte " + liegengeblieben + " von Hand löschen"),
-                    System.currentTimeMillis() - t0));
+            log.fail(grundMitDeutung(e, "bitte " + liegengeblieben + " von Hand löschen"));
         }
     }
 
@@ -252,29 +253,23 @@ public final class WebDavDiagnostics {
      * {@link WebDavStorage#fileVersion} und {@link SafeReplace}).
      */
     private static void dateiUndVersion(NextcloudUploader urls, String base, String user,
-                                        String password, String folder, String file,
-                                        List<Step> steps) {
+                                        String password, String folder, String file, Log log) {
         String url = urls.buildUrl(base, user == null ? "" : user, folder, file);
-        long t0 = System.currentTimeMillis();
+        log.begin("Datei „" + file + "\" prüfen");
         String xml;
         try {
             xml = propfind(url, user, password, "0",
                     "<d:prop><d:getetag/><d:getcontentlength/></d:prop>");
         } catch (Exception e) {
-            steps.add(new Step("Datei „" + file + "\" prüfen", false, grundMitDeutung(e,
-                    code(e) == 404 ? "diese Datei gibt es dort nicht" : ""),
-                    System.currentTimeMillis() - t0));
+            log.fail(grundMitDeutung(e, code(e) == 404 ? "diese Datei gibt es dort nicht" : ""));
             return;
         }
         String size = tag(xml, "getcontentlength");
-        steps.add(new Step("Datei „" + file + "\" prüfen", true,
-                size.isEmpty() ? "vorhanden" : "vorhanden, " + size + " Bytes",
-                System.currentTimeMillis() - t0));
+        log.ok(size.isEmpty() ? "vorhanden" : "vorhanden, " + size + " Bytes");
         String etag = tag(xml, "getetag");
-        steps.add(new Step("Versionskennung (ETag)", !etag.isEmpty(),
+        log.note("Versionskennung (ETag)", !etag.isEmpty(),
                 etag.isEmpty() ? "der Server liefert keine – dann erkennt die App beim Rückschreiben"
-                        + " nicht, ob jemand anders die Datei zwischenzeitlich geändert hat" : "vorhanden",
-                -1));
+                        + " nicht, ob jemand anders die Datei zwischenzeitlich geändert hat" : "vorhanden");
     }
 
     // ---- HTTP ----

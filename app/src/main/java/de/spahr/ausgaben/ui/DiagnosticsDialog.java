@@ -34,31 +34,35 @@ final class DiagnosticsDialog {
     }
 
     /** SMB: prüft im Hintergrund und zeigt das Ergebnis. */
-    static void runSmb(Activity activity, String url, String user, String password, String folder,
-                       String file) {
-        run(activity, R.string.diag_title_smb, SmbDiagnostics.TITLE,
-                () -> SmbDiagnostics.run(url, user, password, folder, file));
+    static void runSmb(Activity activity, DiagnosticsBanner banner, String url, String user,
+                       String password, String folder, String file) {
+        run(activity, banner, R.string.diag_title_smb, SmbDiagnostics.TITLE,
+                () -> SmbDiagnostics.run(url, user, password, folder, file, banner));
     }
 
     /** WebDAV/Nextcloud: dasselbe, nur die andere Kette. */
-    static void runWebDav(Activity activity, String url, String user, String password,
-                          boolean nextcloudLayout, String folder, String file) {
-        run(activity, R.string.diag_title_webdav, WebDavDiagnostics.TITLE,
-                () -> WebDavDiagnostics.run(url, user, password, nextcloudLayout, folder, file));
+    static void runWebDav(Activity activity, DiagnosticsBanner banner, String url, String user,
+                          String password, boolean nextcloudLayout, String folder, String file) {
+        run(activity, banner, R.string.diag_title_webdav, WebDavDiagnostics.TITLE,
+                () -> WebDavDiagnostics.run(url, user, password, nextcloudLayout, folder, file,
+                        banner));
     }
 
-    private static void run(Activity activity, int title, String reportTitle,
-                            Callable<List<Step>> work) {
-        Toast.makeText(activity, R.string.conn_testing, Toast.LENGTH_SHORT).show();
+    private static void run(Activity activity, DiagnosticsBanner banner, int title,
+                            String reportTitle, Callable<List<Step>> work) {
+        banner.start();
         new Thread(() -> {
             final String report;
             final boolean ok;
-            List<Step> steps = null;
+            List<Step> steps;
             try {
                 steps = work.call();
             } catch (Exception e) {
                 // Die Prüfung selbst darf nicht wortlos scheitern – dann wäre gar nichts gewonnen.
                 steps = null;
+            } finally {
+                // Auch im Fehlerfall: ein Band, das bleibt, ginge nie wieder weg.
+                banner.stop();
             }
             if (steps == null) {
                 ok = false;

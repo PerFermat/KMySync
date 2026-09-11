@@ -40,6 +40,11 @@
     <color name="import_banner_text">#000000</color>
     <!-- Wandernder Verlauf im Import-Banner (etwas kräftigeres Gelb) -->
     <color name="import_banner_shimmer">#FFEB3B</color>
+    <!-- Haken und Kreuz im Band während „Verbindung testen". Eigene Namen statt income_green und
+         expense_red: die stehen für Einnahmen und Ausgaben, und eine Änderung dort soll nicht
+         ungewollt hier landen. Beide Töne müssen auf dem gelben Grund des Bandes lesbar sein. -->
+    <color name="diag_ok">#1B5E20</color>
+    <color name="diag_fail">#B71C1C</color>
     <!-- Zeile der Erkennungsliste, die noch nicht buchbar ist: gedecktes Rot, auf dem die dunkle
          Schrift der Liste lesbar bleibt (siehe values-night für den Gegenpart). -->
     <color name="statement_error_bg">#FFCDD2</color>

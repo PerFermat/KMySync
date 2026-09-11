@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.net;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -50,6 +51,88 @@ public final class Diagnostics {
                     + " Zwischennamen und läßt sie dann einhängen – nur so kann ein Abbruch die Datei"
                     + " nicht halb überschreiben. Der Ordner braucht dafür schreiben, umbenennen und"
                     + " löschen; ohne Umbenennen ist ein Export nicht möglich";
+
+    /**
+     * Empfänger des Fortschritts, während die Kette läuft.
+     *
+     * <p>Eine Prüfung dauert: Jeder Schritt geht über die Leitung, und hakt es wirklich, läuft jeder
+     * einzelne in seine Zeitüberschreitung. Ohne Rückmeldung steht die Maske dann minutenlang still
+     * und niemand weiß, ob noch etwas passiert. Darf {@code null} sein – im Bericht selbst und in den
+     * Tests wird nichts angezeigt.</p>
+     *
+     * <p>Gerufen wird aus dem Hintergrund-Thread; das Umschalten auf die Oberfläche ist Sache des
+     * Empfängers.</p>
+     */
+    public interface Progress {
+        /** Dieser Schritt fängt gerade an. */
+        void beginning(String label);
+
+        /** Dieser Schritt ist fertig – mit seinem Ergebnis. */
+        void finished(Step step);
+    }
+
+    /**
+     * Sammelt die Schritte, misst nebenbei die Dauer und meldet beides weiter.
+     *
+     * <p>Vorher stand {@code t0 = System.currentTimeMillis()} in jeder Diagnose ein gutes Dutzend Mal
+     * wiederholt da, und die Beschriftung noch einmal beim Anlegen des Schrittes. Hier steht jede der
+     * beiden nur noch einmal je Schritt – und der Fortschritt fällt dabei von selbst ab.</p>
+     */
+    public static final class Log {
+
+        private final List<Step> steps = new ArrayList<>();
+        private final Progress progress;
+        private String label = "";
+        private long startedAt;
+
+        public Log(Progress progress) {
+            this.progress = progress;
+        }
+
+        /** Ein Schritt fängt an: Beschriftung merken, Uhr stellen, Anzeige benachrichtigen. */
+        public void begin(String label) {
+            this.label = label == null ? "" : label;
+            this.startedAt = System.currentTimeMillis();
+            if (progress != null) {
+                progress.beginning(this.label);
+            }
+        }
+
+        /** Der laufende Schritt hat geklappt. */
+        public Step ok(String detail) {
+            return add(new Step(label, true, detail, System.currentTimeMillis() - startedAt));
+        }
+
+        /** Der laufende Schritt ist gescheitert. */
+        public Step fail(String detail) {
+            return add(new Step(label, false, detail, System.currentTimeMillis() - startedAt));
+        }
+
+        /**
+         * Eine Zeile ohne eigene Dauer – für Auskünfte, die nebenbei abfallen (die Adresse selbst, der
+         * ausgehandelte Dialekt, eine Umleitung). Sie zu stoppen wäre sinnlos.
+         */
+        public Step note(String label, boolean ok, String detail) {
+            this.label = label == null ? "" : label;
+            if (progress != null) {
+                progress.beginning(this.label);
+            }
+            return add(new Step(this.label, ok, detail, -1));
+        }
+
+        private Step add(Step step) {
+            steps.add(step);
+            if (progress != null) {
+                progress.finished(step);
+            }
+            return step;
+        }
+
+        /** Die bisher gesammelten Schritte – die Liste selbst, nicht eine Abschrift. */
+        public List<Step> steps() {
+            return steps;
+        }
+    }
 
     private Diagnostics() {
     }

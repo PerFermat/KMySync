@@ -6,11 +6,11 @@ import com.hierynomus.mssmb2.SMB2ShareAccess;
 import com.hierynomus.smbj.session.Session;
 import com.hierynomus.smbj.share.DiskShare;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
 import de.spahr.ausgaben.net.Diagnostics;
+import de.spahr.ausgaben.net.Diagnostics.Log;
 import de.spahr.ausgaben.net.Diagnostics.Step;
 import de.spahr.ausgaben.net.RemoteSelfTest;
 import de.spahr.ausgaben.settings.SettingsStore;
@@ -39,18 +39,25 @@ public final class SmbDiagnostics {
         return run(url, user, password, folderOf(kmyPath), fileOf(kmyPath));
     }
 
+    /** Ohne Anzeige – für den Bericht allein und für die Tests. */
+    public static List<Step> run(String url, String user, String password, String folder,
+                                 String file) {
+        return run(url, user, password, folder, file, null);
+    }
+
     /**
      * Läuft die Kette Verbinden → Anmelden → Freigaben → Freigabe öffnen → Ordner lesen →
      * <b>Schreiben → Umbenennen → Aufräumen</b> → Datei durch und bricht beim ersten Fehler ab, der
      * alles Weitere sinnlos macht.
      *
-     * @param url    {@code smb://Host[:Port]/Freigabe[/Basis]} wie in den Einstellungen
-     * @param folder Zielordner relativ zur Freigabe (leer = die Freigabe selbst)
-     * @param file   zu prüfende Datei in diesem Ordner (leer = nur den Ordner prüfen)
+     * @param url      {@code smb://Host[:Port]/Freigabe[/Basis]} wie in den Einstellungen
+     * @param folder   Zielordner relativ zur Freigabe (leer = die Freigabe selbst)
+     * @param file     zu prüfende Datei in diesem Ordner (leer = nur den Ordner prüfen)
+     * @param progress Anzeige für den laufenden Schritt; {@code null} = ohne
      */
     public static List<Step> run(String url, String user, String password, String folder,
-                                 String file) {
-        List<Step> steps = new ArrayList<>();
+                                 String file, Diagnostics.Progress progress) {
+        Log log = new Log(progress);
         String[] parts = SettingsStore.parseSmb(url);
         String host = parts[0];
         String share = parts[1];
@@ -60,22 +67,22 @@ public final class SmbDiagnostics {
                 ? "leer (Gast/anonym)" : "gesetzt");
         if (host.isEmpty() || share.isEmpty()) {
             // Ohne Host oder Freigabe gibt es nichts zu prüfen – das ist die ganze Auskunft.
-            steps.add(new Step("Adresse", false, (host.isEmpty() ? "kein Host" : host)
+            log.note("Adresse", false, (host.isEmpty() ? "kein Host" : host)
                     + ", " + (share.isEmpty() ? "keine Freigabe" : "Freigabe „" + share + "\"")
-                    + " – erwartet wird smb://Host/Freigabe", -1));
-            return steps;
+                    + " – erwartet wird smb://Host/Freigabe");
+            return log.steps();
         }
-        steps.add(new Step("Adresse " + host + ":" + (port > 0 ? port : 445)
+        log.note("Adresse " + host + ":" + (port > 0 ? port : 445)
                 + ", Freigabe „" + share + "\"" + (base.isEmpty() ? "" : ", Basis „" + base + "\"")
-                + ", " + who, true, "", -1));
+                + ", " + who, true, "");
 
-        long t0 = System.currentTimeMillis();
+        log.begin("Verbinden");
         SmbSessions.Link link;
         try {
             link = SmbSessions.open(host, port, false);
         } catch (Exception e) {
-            steps.add(new Step("Verbinden", false, reason(e), System.currentTimeMillis() - t0));
-            return steps;
+            log.fail(reason(e));
+            return log.steps();
         }
         try {
             StringBuilder how = new StringBuilder();
@@ -86,74 +93,66 @@ public final class SmbDiagnostics {
             if (link.plainFallback) {
                 how.append(how.length() > 0 ? ", " : "").append("erst ohne Verschlüsselungs-/DFS-Zusage");
             }
-            steps.add(new Step("Verbinden", true, how.toString(), System.currentTimeMillis() - t0));
-            steps.add(new Step("Aushandeln", true, negotiated(link), -1));
+            log.ok(how.toString());
+            log.note("Aushandeln", true, negotiated(link));
 
-            t0 = System.currentTimeMillis();
+            log.begin("Anmelden");
             Session session;
             try {
                 session = SmbSessions.authenticate(link.connection, user, password);
             } catch (Exception e) {
-                steps.add(new Step("Anmelden", false, reason(e), System.currentTimeMillis() - t0));
-                return steps;
+                log.fail(reason(e));
+                return log.steps();
             }
-            steps.add(new Step("Anmelden", true,
-                    (session.isGuest() ? "als Gast" : "als Benutzer") + ", " + encryption(session),
-                    System.currentTimeMillis() - t0));
+            log.ok((session.isGuest() ? "als Gast" : "als Benutzer") + ", " + encryption(session));
 
-            t0 = System.currentTimeMillis();
+            log.begin("Freigaben lesen (IPC$)");
             try {
                 List<String> shares = SmbShares.listOn(session, host);
-                steps.add(new Step("Freigaben lesen (IPC$)", true, shares.size() + " gefunden"
-                        + (shares.contains(share) ? "" : ", „" + share + "\" ist nicht darunter"),
-                        System.currentTimeMillis() - t0));
+                log.ok(shares.size() + " gefunden"
+                        + (shares.contains(share) ? "" : ", „" + share + "\" ist nicht darunter"));
             } catch (Exception e) {
                 // Kein Abbruch: manche Server verbieten nur die Auskunft, nicht den Zugriff.
-                steps.add(new Step("Freigaben lesen (IPC$)", false, reason(e),
-                        System.currentTimeMillis() - t0));
+                log.fail(reason(e));
             }
 
-            t0 = System.currentTimeMillis();
+            log.begin("Freigabe „" + share + "\" öffnen");
             DiskShare disk;
             try {
                 disk = (DiskShare) session.connectShare(share);
             } catch (Exception e) {
-                steps.add(new Step("Freigabe „" + share + "\" öffnen", false, reason(e),
-                        System.currentTimeMillis() - t0));
-                return steps;
+                log.fail(reason(e));
+                return log.steps();
             }
             try {
-                steps.add(new Step("Freigabe „" + share + "\" öffnen", true, "",
-                        System.currentTimeMillis() - t0));
+                log.ok("");
                 String dir = join(base, folder);
-                t0 = System.currentTimeMillis();
+                log.begin("Ordner „" + (dir.isEmpty() ? "\\" : dir) + "\" lesen");
                 try {
                     int count = 0;
                     for (Object ignored : disk.list(dir)) {
                         count++;
                     }
-                    steps.add(new Step("Ordner „" + (dir.isEmpty() ? "\\" : dir) + "\" lesen", true,
-                            count + " Einträge", System.currentTimeMillis() - t0));
+                    log.ok(count + " Einträge");
                 } catch (Exception e) {
-                    steps.add(new Step("Ordner „" + (dir.isEmpty() ? "\\" : dir) + "\" lesen", false,
-                            reason(e), System.currentTimeMillis() - t0));
-                    return steps;
+                    log.fail(reason(e));
+                    return log.steps();
                 }
-                writeRenameCleanup(disk, dir, steps);
+                writeRenameCleanup(disk, dir, log);
                 if (!file.isEmpty()) {
-                    t0 = System.currentTimeMillis();
+                    log.begin("Datei „" + file + "\" prüfen");
                     boolean exists;
                     try {
                         exists = disk.fileExists(join(dir, file));
                     } catch (Exception e) {
-                        steps.add(new Step("Datei „" + file + "\" prüfen", false, reason(e),
-                                System.currentTimeMillis() - t0));
-                        return steps;
+                        log.fail(reason(e));
+                        return log.steps();
                     }
-                    steps.add(new Step("Datei „" + file + "\" prüfen", exists,
-                            exists ? "vorhanden" : "nicht gefunden", System.currentTimeMillis() - t0));
                     if (exists) {
-                        steps.add(fileWritableStep(disk, join(dir, file), file));
+                        log.ok("vorhanden");
+                        fileWritableStep(disk, join(dir, file), file, log);
+                    } else {
+                        log.fail("nicht gefunden");
                     }
                 }
             } finally {
@@ -166,7 +165,7 @@ public final class SmbDiagnostics {
         } finally {
             link.close();
         }
-        return steps;
+        return log.steps();
     }
 
     /**
@@ -183,26 +182,24 @@ public final class SmbDiagnostics {
      * <p>Geprüft wird mit einer winzigen Datei, die sofort wieder verschwindet; ihr Name kommt aus
      * {@link RemoteSelfTest#probeName(String)}, damit ein Überbleibsel zuzuordnen ist.</p>
      */
-    private static void writeRenameCleanup(DiskShare disk, String dir, List<Step> steps) {
+    private static void writeRenameCleanup(DiskShare disk, String dir, Log log) {
         String stamp = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US)
                 .format(new java.util.Date());
         String from = join(dir, RemoteSelfTest.probeName(stamp));
         String to = join(dir, RemoteSelfTest.renamedProbeName(stamp));
 
-        long t0 = System.currentTimeMillis();
+        log.begin("Schreiben im Ordner");
         try {
             disk.openFile(from, EnumSet.of(AccessMask.GENERIC_WRITE),
                     null, SMB2ShareAccess.ALL,
                     SMB2CreateDisposition.FILE_OVERWRITE_IF, null).close();
         } catch (Exception e) {
-            steps.add(new Step("Schreiben im Ordner", false,
-                    reason(e) + " – die App braucht ein beschreibbares Verzeichnis",
-                    System.currentTimeMillis() - t0));
+            log.fail(reason(e) + " – die App braucht ein beschreibbares Verzeichnis");
             return;
         }
-        steps.add(new Step("Schreiben im Ordner", true, "", System.currentTimeMillis() - t0));
+        log.ok("");
 
-        t0 = System.currentTimeMillis();
+        log.begin("Umbenennen im Ordner");
         String liegengeblieben = from;
         try {
             try (com.hierynomus.smbj.share.File f = disk.openFile(from,
@@ -211,21 +208,17 @@ public final class SmbDiagnostics {
                 f.rename(to, true);
             }
             liegengeblieben = to;
-            steps.add(new Step("Umbenennen im Ordner", true, "", System.currentTimeMillis() - t0));
+            log.ok("");
         } catch (Exception e) {
-            steps.add(new Step("Umbenennen im Ordner", false,
-                    reason(e) + " – " + Diagnostics.UMBENENNEN_NOETIG,
-                    System.currentTimeMillis() - t0));
+            log.fail(reason(e) + " – " + Diagnostics.UMBENENNEN_NOETIG);
         }
 
-        t0 = System.currentTimeMillis();
+        log.begin("Aufräumen im Ordner");
         try {
             disk.rm(liegengeblieben);
-            steps.add(new Step("Aufräumen im Ordner", true, "", System.currentTimeMillis() - t0));
+            log.ok("");
         } catch (Exception e) {
-            steps.add(new Step("Aufräumen im Ordner", false,
-                    reason(e) + " – bitte " + liegengeblieben + " von Hand löschen",
-                    System.currentTimeMillis() - t0));
+            log.fail(reason(e) + " – bitte " + liegengeblieben + " von Hand löschen");
         }
     }
 
@@ -234,17 +227,15 @@ public final class SmbDiagnostics {
      * schreibgeschützte Datei im offenen Ordner der andere. Die Datei wird nur zum Schreiben
      * <b>geöffnet</b> und sofort wieder geschlossen – ihr Inhalt bleibt unberührt.
      */
-    private static Step fileWritableStep(DiskShare disk, String path, String name) {
-        long t0 = System.currentTimeMillis();
+    private static void fileWritableStep(DiskShare disk, String path, String name, Log log) {
+        log.begin("Datei „" + name + "\" beschreibbar");
         try {
             disk.openFile(path, EnumSet.of(AccessMask.GENERIC_WRITE),
                     null, SMB2ShareAccess.ALL,
                     SMB2CreateDisposition.FILE_OPEN, null).close();
-            return new Step("Datei „" + name + "\" beschreibbar", true, "",
-                    System.currentTimeMillis() - t0);
+            log.ok("");
         } catch (Exception e) {
-            return new Step("Datei „" + name + "\" beschreibbar", false,
-                    reason(e) + " – Rückschreiben wäre nicht möglich", System.currentTimeMillis() - t0);
+            log.fail(reason(e) + " – Rückschreiben wäre nicht möglich");
         }
     }
 

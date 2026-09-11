@@ -573,7 +573,6 @@
     <string name="diag_show_report">Mostrar informe</string>
     <string name="dialog_close">Cerrar</string>
     <string name="conn_test">Probar conexión</string>
-    <string name="conn_testing">Probando conexión…</string>
     <string name="conn_ok">Conexión exitosa</string>
     <string name="conn_failed">Error de conexión: %1$s</string>
     <string name="kmy_browse">Seleccionar .kmy</string>

@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -47,6 +48,58 @@ public class DiagnosticsTest {
         assertNotNull(Diagnostics.firstFailure(steps));
         assertEquals("Anmelden", Diagnostics.firstFailure(steps).label);
         assertNull(Diagnostics.firstFailure(Collections.singletonList(step("Alles", true, "", 1))));
+    }
+
+    /**
+     * Der Fortschritt ist das, woran der Nutzer während der Prüfung sieht, daß noch etwas passiert:
+     * zu jedem Schritt erst „fängt an", dann „fertig" – und beides mit derselben Beschriftung.
+     */
+    @Test
+    public void everyStepIsAnnouncedBeforeItIsReported() {
+        List<String> gemeldet = new ArrayList<>();
+        Diagnostics.Log log = new Diagnostics.Log(new Diagnostics.Progress() {
+            @Override
+            public void beginning(String label) {
+                gemeldet.add("an: " + label);
+            }
+
+            @Override
+            public void finished(Step step) {
+                gemeldet.add((step.ok ? "ok: " : "weg: ") + step.label);
+            }
+        });
+
+        log.begin("Verbinden");
+        log.ok("");
+        log.begin("Anmelden");
+        log.fail("STATUS_LOGON_FAILURE");
+        log.note("Aushandeln", true, "SMB_3_1_1");
+
+        assertEquals(Arrays.asList("an: Verbinden", "ok: Verbinden",
+                "an: Anmelden", "weg: Anmelden",
+                "an: Aushandeln", "ok: Aushandeln"), gemeldet);
+        assertEquals(3, log.steps().size());
+        assertEquals("Anmelden", Diagnostics.firstFailure(log.steps()).label);
+    }
+
+    /** Der Bericht allein und die Tests brauchen keine Anzeige – ohne Empfänger läuft es genauso. */
+    @Test
+    public void logWorksWithoutAnyListener() {
+        Diagnostics.Log log = new Diagnostics.Log(null);
+        log.begin("Verbinden");
+        Step step = log.ok("über Port 445");
+        assertEquals("Verbinden", step.label);
+        assertTrue(step.ok);
+        // Die Dauer wird gemessen, also nicht als „keine Dauer" (-1) ausgewiesen.
+        assertTrue(String.valueOf(step.millis), step.millis >= 0);
+        assertEquals(1, log.steps().size());
+    }
+
+    /** Eine Zeile ohne eigene Dauer bleibt eine ohne – sie zu stoppen wäre sinnlos. */
+    @Test
+    public void noteHasNoDuration() {
+        Diagnostics.Log log = new Diagnostics.Log(null);
+        assertEquals(-1, log.note("Adresse", true, "server:445").millis);
     }
 
     /** Ein Stapelauszug im Bericht wäre unlesbar – der Grund bleibt einzeilig und gekürzt. */

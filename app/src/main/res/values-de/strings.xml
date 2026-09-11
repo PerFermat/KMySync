@@ -576,7 +576,6 @@
     <string name="diag_show_report">Bericht anzeigen</string>
     <string name="dialog_close">Schließen</string>
     <string name="conn_test">Verbindung testen</string>
-    <string name="conn_testing">Verbindung wird getestet…</string>
     <string name="conn_ok">Verbindung erfolgreich</string>
     <string name="conn_failed">Verbindung fehlgeschlagen: %1$s</string>
     <string name="kmy_move_failed">Die Datei wurde vollständig übertragen, konnte aber nicht an ihren Platz gesetzt werden (%1$s). Ihre KMyMoney-Datei ist unverändert; bitte später erneut übertragen.</string>

@@ -198,6 +198,10 @@
                 android:layout_marginTop="8dp"
                 android:text="@string/conn_test" />
 
+            <!-- Fortschritt der Prüfung: links der letzte Schritt mit ✓/✗, rechts der laufende.
+                 Sitzt direkt unter dem Knopf, weil man beim Drücken ohnehin hierher schaut. -->
+            <include layout="@layout/view_diagnostics_banner" />
+
             <!-- Zurück zum SMB-Assistenten, wenn zuvor „Server manuell eingeben" gewählt wurde. -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSmbSearch"

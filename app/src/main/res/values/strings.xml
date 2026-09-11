@@ -577,7 +577,6 @@
     <string name="diag_show_report">Show report</string>
     <string name="dialog_close">Close</string>
     <string name="conn_test">Test connection</string>
-    <string name="conn_testing">Testing connection…</string>
     <string name="conn_ok">Connection successful</string>
     <string name="conn_failed">Connection failed: %1$s</string>
     <string name="kmy_move_failed">The file was transferred in full but could not be put in place (%1$s). Your KMyMoney file is unchanged; please transfer again later.</string>

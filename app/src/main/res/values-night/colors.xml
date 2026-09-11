@@ -27,6 +27,11 @@
     <color name="import_banner_text">#FFFFFF</color>
     <!-- Wandernder Verlauf im Import-Banner (etwas helleres Amber) -->
     <color name="import_banner_shimmer">#FFB300</color>
+    <!-- Haken und Kreuz im Band. Der Grund bleibt auch nachts ein Amber (#F57F17) und damit hell –
+         deshalb hier keine aufgehellten Töne wie bei income_green/expense_red, sondern kräftige
+         dunkle, die darauf stehen. Nur eine Spur satter als im Hell-Modus. -->
+    <color name="diag_ok">#134016</color>
+    <color name="diag_fail">#7F0000</color>
     <!-- Erkennungsliste: dasselbe Signal, aber dunkel genug für weiße Schrift. -->
     <color name="statement_error_bg">#5D2C2C</color>
     <!-- Der Doppelungs-Hinweis, ebenfalls dunkel genug für weiße Schrift. -->

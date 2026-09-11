@@ -30,6 +30,35 @@ public class WebDavDiagnosticsTest {
         assertTrue(report, report.contains("✗ Erreichbarkeit"));
     }
 
+    /**
+     * Was das Band anzeigt, muss zum Bericht passen: Jeder gemeldete Schritt steht auch dort, und
+     * angekündigt war er vorher. Sonst zeigte die Anzeige etwas anderes als das Ergebnis.
+     */
+    @Test
+    public void progressMatchesTheReport() {
+        java.util.List<String> angekuendigt = new java.util.ArrayList<>();
+        java.util.List<Diagnostics.Step> fertig = new java.util.ArrayList<>();
+        java.util.List<Diagnostics.Step> steps = WebDavDiagnostics.run(
+                "http://127.0.0.1:1", "hts", "geheim", true, "", "", new Diagnostics.Progress() {
+                    @Override
+                    public void beginning(String label) {
+                        angekuendigt.add(label);
+                    }
+
+                    @Override
+                    public void finished(Diagnostics.Step step) {
+                        fertig.add(step);
+                    }
+                });
+
+        assertFalse("es muss etwas gemeldet worden sein", fertig.isEmpty());
+        assertEquals(steps.size(), fertig.size());
+        for (int i = 0; i < steps.size(); i++) {
+            assertEquals(steps.get(i).label, fertig.get(i).label);
+            assertEquals(steps.get(i).label, angekuendigt.get(i));
+        }
+    }
+
     @Test
     public void emptyAddressSaysSoInsteadOfConnecting() {
         String report = WebDavDiagnostics.report(
