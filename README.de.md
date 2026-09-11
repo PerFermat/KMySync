@@ -192,14 +192,14 @@ ein unsigniertes Release.
 ## Sync-Ziel einrichten (Nextcloud / WebDAV / SMB)
 
 In den Einstellungen den **Server-Typ** wählen, dann Basis-URL/Freigabe, Benutzername und Passwort
-eintragen; ein Button **„Verbindung testen"** prüft die Zugangsdaten. Ohne konfiguriertes Sync-Ziel wird
+eintragen; ein Button **„Verbindung testen"** prüft die Verbindung. Ohne konfiguriertes Sync-Ziel wird
 lokal in einen selbst gewählten Ordner exportiert.
 
 - **Nextcloud**: Basis-URL des Servers + ein **App-Passwort** (Nextcloud → Sicherheit → App-Passwort).
 - **WebDAV (generisch)**: vollständige DAV-Wurzel-URL, Auth per HTTP-Basic.
 - **SMB/Samba**: ein **Einrichtungsassistent** sucht die Server im lokalen Netz, danach Freigabe und
   Zielordner durchklicken. SMB2/3, auch verschlüsselte, anonyme und DFS-Freigaben.
-- **Diagnose**: Der Knopf „Verbindung prüfen (Diagnose)" geht die ganze Kette bis zum Schreibrecht
+- **Diagnose**: „Verbindung testen" geht die ganze Kette bis zum Schreib-, Umbenenn- und Löschrecht
   durch und zeigt je Schritt Ergebnis, Dauer und Fehlercode. Der Bericht läßt sich kopieren und enthält
   weder Passwort noch Benutzernamen.
 

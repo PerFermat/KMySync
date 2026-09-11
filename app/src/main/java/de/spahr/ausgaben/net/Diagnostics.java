@@ -43,6 +43,23 @@ public final class Diagnostics {
     }
 
     /**
+     * Name der Probe-Datei, mit der beide Diagnosen die drei nötigen Rechte prüfen. Der Punkt am
+     * Anfang hält sie aus der Anzeige heraus, der Rest nennt App und Zeitpunkt – damit ein
+     * Überbleibsel (abgebrochene Verbindung) zuzuordnen ist und der Bericht sagen kann, wonach der
+     * Nutzer im Zweifel suchen muss.
+     *
+     * @param stamp Zeitstempel für den Namen (vom Aufrufer, damit testbar)
+     */
+    public static String probeName(String stamp) {
+        return ".kmysync-probe-" + stamp + "." + SafeReplace.TMP_EXT;
+    }
+
+    /** Der Name, auf den die Probe umbenannt wird – das prüft das Umbenennen-Recht. */
+    public static String renamedProbeName(String stamp) {
+        return ".kmysync-probe-" + stamp + "-ok." + SafeReplace.TMP_EXT;
+    }
+
+    /**
      * Warum ausgerechnet das Umbenennen dazugehört – die Erklärung, die vorher in einem eigenen
      * Rechte-Dialog stand und jetzt dort steht, wo sie gebraucht wird: an der gescheiterten Zeile.
      */

@@ -208,8 +208,8 @@ public final class WebDavDiagnostics {
                                            String password, String folder, Log log) {
         String stamp = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(new Date());
         String u = user == null ? "" : user;
-        String fromName = RemoteSelfTest.probeName(stamp);
-        String toName = RemoteSelfTest.renamedProbeName(stamp);
+        String fromName = Diagnostics.probeName(stamp);
+        String toName = Diagnostics.renamedProbeName(stamp);
         String from = urls.buildUrl(base, u, folder, fromName);
         String to = urls.buildUrl(base, u, folder, toName);
 

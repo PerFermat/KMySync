@@ -12,7 +12,6 @@ import java.util.List;
 import de.spahr.ausgaben.net.Diagnostics;
 import de.spahr.ausgaben.net.Diagnostics.Log;
 import de.spahr.ausgaben.net.Diagnostics.Step;
-import de.spahr.ausgaben.net.RemoteSelfTest;
 import de.spahr.ausgaben.settings.SettingsStore;
 
 /**
@@ -180,13 +179,13 @@ public final class SmbDiagnostics {
      * früher hier sauber durch und scheiterte erst beim ersten echten Übertragen.</p>
      *
      * <p>Geprüft wird mit einer winzigen Datei, die sofort wieder verschwindet; ihr Name kommt aus
-     * {@link RemoteSelfTest#probeName(String)}, damit ein Überbleibsel zuzuordnen ist.</p>
+     * {@link Diagnostics#probeName(String)}, damit ein Überbleibsel zuzuordnen ist.</p>
      */
     private static void writeRenameCleanup(DiskShare disk, String dir, Log log) {
         String stamp = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US)
                 .format(new java.util.Date());
-        String from = join(dir, RemoteSelfTest.probeName(stamp));
-        String to = join(dir, RemoteSelfTest.renamedProbeName(stamp));
+        String from = join(dir, Diagnostics.probeName(stamp));
+        String to = join(dir, Diagnostics.renamedProbeName(stamp));
 
         log.begin("Schreiben im Ordner");
         try {

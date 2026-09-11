@@ -1854,7 +1854,7 @@
         "<b>Nextcloud</b>: base URL of the server + app password (Nextcloud → Security → App password).",
         "<b>WebDAV (generic)</b>: full DAV root URL, auth via HTTP basic.",
         "<b>SMB/Samba</b>: set up through a <b>wizard</b> – see below. SMB2/3.",
-        "<b>«Test connection»</b> checks the credentials."
+        "<b>«Test connection»</b> checks more than the credentials: the whole chain up to the write permission – see below."
       ]
     },
     {
@@ -1941,7 +1941,7 @@
     {
       "type": "h2",
       "id": "b-0195",
-      "text": "Check connection (diagnostics)"
+      "text": "Test connection"
     },
     {
       "type": "text_with_single_shot",
@@ -1950,31 +1950,98 @@
         {
           "type": "p",
           "id": "b-0197",
-          "text": "The button <b>«Check connection (diagnostics)»</b> – in the settings <b>and</b> in the first-start wizard – walks the whole chain in <b>one</b> login and shows, for every step, whether it worked, how long it took and, on failure, the raw status code:"
+          "text": "The button <b>«Test connection»</b> – in the settings <b>and</b> in the first-start wizard, for <b>every</b> server type – checks far more than the credentials. It walks the whole chain, right up to the question that matters in the end: may the app <b>write</b>, <b>rename</b> and <b>delete</b> in this folder?"
         },
         {
-          "type": "bullets",
-          "id": "b-0198",
-          "items": [
-            "<b>Connect</b> (noting it if the default port was used instead of the configured one),",
-            "<b>Negotiate</b>: which SMB dialect, whether the server requires signing and whether encryption was negotiated,",
-            "<b>Log in</b>: as a user or as guest, encrypted or not,",
-            "<b>Read shares</b>, <b>open share</b>, <b>read folder</b>,",
-            "<b>Write in the folder</b> – the app creates a tiny test file and deletes it right away. A <b>read-only</b> directory would otherwise only surface when writing back, that is after you have already recorded bookings.",
-            "<b>Check the file</b> and, if it exists, whether it is <b>writable</b> (.kmy mode only)."
-          ]
+          "type": "h3",
+          "id": "b-0197a",
+          "text": "What you see while it runs"
         },
         {
           "type": "p",
-          "id": "b-0199",
-          "text": "<b>«Copy report»</b> puts the result on the clipboard – meant for sending along with a bug report. The report contains <b>neither the password nor the user name</b> (only «set» or «empty»)."
+          "id": "b-0197b",
+          "text": "A check takes a few seconds, and when something really is wrong, every single step first waits out its timeout. That is why a <b>yellow band</b> appears below the button: on the left the step that finished last, with a green check or a red cross, on the right the one currently running. So you can always see how far it got and what it is working on – instead of a screen that simply sits still."
+        },
+        {
+          "type": "h3",
+          "id": "b-0197c",
+          "text": "When everything works"
+        },
+        {
+          "type": "p",
+          "id": "b-0197d",
+          "text": "Then one sentence is enough: <b>«Connection successful»</b>. If you want the details anyway, <b>«Show report»</b> opens the full list."
         }
       ],
       "shot": {
         "fname": "SMB Diagnose.png",
-        "caption": "Diagnostics: every step with duration and status code",
+        "caption": "The report: every step with duration and status code",
         "width": 6.0
       }
+    },
+    {
+      "type": "h3",
+      "id": "b-0197e",
+      "text": "When something is wrong"
+    },
+    {
+      "type": "p",
+      "id": "b-0197f",
+      "text": "Then the <b>report appears right away</b>: for every step whether it worked, how long it took and, on failure, the <b>raw status code</b> – plus, where possible, what it means. An «HTTP 401», for instance, names the most common cause straight away: with two-factor authentication switched on, this field needs an <b>app password</b>, not the account password."
+    },
+    {
+      "type": "p",
+      "id": "b-0199",
+      "text": "<b>«Copy report»</b> puts the result on the clipboard – meant for sending along with a bug report. The report contains <b>neither the password nor the user name</b>: the user appears only as «set» or «empty», and in the Nextcloud address as «&lt;user&gt;». Server, port and path layout are in there in plain text – without them nobody could help you from a distance."
+    },
+    {
+      "type": "h3",
+      "id": "b-0198a",
+      "text": "The steps for SMB/Samba"
+    },
+    {
+      "type": "p",
+      "id": "b-0198b",
+      "text": "The whole chain runs in <b>one</b> login – just as normal operation does:"
+    },
+    {
+      "type": "bullets",
+      "id": "b-0198",
+      "items": [
+        "<b>Connect</b> (noting it if the default port was used instead of the configured one),",
+        "<b>Negotiate</b>: which SMB dialect, whether the server requires signing and whether encryption was negotiated,",
+        "<b>Log in</b>: as a user or as guest, encrypted or not,",
+        "<b>Read shares</b>, <b>open share</b>, <b>read folder</b>,",
+        "<b>Write</b>, <b>rename</b> and <b>clean up</b> in the folder – using a tiny test file that disappears again right away,",
+        "<b>Check the file</b> and, if it exists, whether it is <b>writable</b> (.kmy mode only)."
+      ]
+    },
+    {
+      "type": "h3",
+      "id": "b-0198c",
+      "text": "The steps for Nextcloud and WebDAV"
+    },
+    {
+      "type": "bullets",
+      "id": "b-0198d",
+      "items": [
+        "<b>Address</b>: how the app reads your server address. This is also where the most common typo shows up – if with server type «Nextcloud» the path «/remote.php/dav/…» is already part of the base URL, it would end up in there twice.",
+        "<b>Reachability</b>: whether anybody answers there at all, and whether they <b>speak WebDAV</b>. If you accidentally entered the address of the web interface, it says so here.",
+        "<b>Redirect</b>: where the server forwards you, if it does (from «http» to «https», say).",
+        "<b>Log in</b>: user and password. A refused login is told apart by reason – wrong credentials, a protective layer in front of the server, or a wrong address are different things.",
+        "<b>Read folder</b>, then <b>write</b>, <b>rename</b> and <b>clean up</b> in it,",
+        "<b>Check the file</b> with its size, and the <b>version tag (ETag)</b> – if the server supplies none, the app cannot tell when writing back whether somebody else changed the file in the meantime (.kmy mode only)."
+      ]
+    },
+    {
+      "type": "h3",
+      "id": "b-0198e",
+      "text": "Why renaming and deleting are part of it"
+    },
+    {
+      "type": "p",
+      "id": "b-0198f",
+      "text": "When transferring, the app first writes your KMyMoney file <b>in full</b> under a temporary name and only then has it put in place – that is the only way an interruption (a dead spot, a timeout) cannot half-overwrite your file and leave it unreadable. The folder needs all three permissions for that. A folder where creating and deleting work but renaming does not would otherwise only surface on the first real transfer – that is, after you have already recorded bookings."
     },
     {
       "type": "h2",

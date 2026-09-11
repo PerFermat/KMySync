@@ -185,7 +185,7 @@ present locally (Android Studio creates it automatically). A signed release buil
 ## Setting up a sync target (Nextcloud / WebDAV / SMB)
 
 In the settings choose the **server type**, then enter base URL/share, username and password; a **"Test
-connection"** button checks the credentials. Without a configured sync target, export goes locally into a
+connection"** button checks the connection. Without a configured sync target, export goes locally into a
 folder you choose.
 
 - **Nextcloud**: base URL of the server + an **app password** (Nextcloud → Settings → Security → App
@@ -193,7 +193,7 @@ folder you choose.
 - **WebDAV (generic)**: the full DAV root URL, auth via HTTP basic.
 - **SMB/Samba**: a **setup wizard** scans the local network for servers, then you pick a share and
   browse to the target folder. SMB2/3, encrypted, anonymous and DFS shares included.
-- **Diagnostics**: the button "Check connection (diagnostics)" walks the whole chain up to the write
+- **Diagnostics**: "Test connection" walks the whole chain up to the write, rename and delete
   permission and shows, per step, the result, the duration and the error code. The report can be copied
   and contains neither the password nor the user name.
 

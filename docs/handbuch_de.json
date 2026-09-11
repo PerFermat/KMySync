@@ -1859,7 +1859,7 @@
         "<b>Nextcloud</b>: Basis-URL des Servers + App-Passwort (Nextcloud → Sicherheit → App-Passwort).",
         "<b>WebDAV (generisch)</b>: vollständige DAV-Wurzel-URL, Auth per HTTP-Basic.",
         "<b>SMB/Samba</b>: wird per <b>Assistent</b> eingerichtet – siehe unten. SMB2/3.",
-        "<b>«Verbindung testen»</b> prüft die Zugangsdaten."
+        "<b>«Verbindung testen»</b> prüft nicht nur die Zugangsdaten, sondern die ganze Kette bis zum Schreibrecht – siehe unten."
       ]
     },
     {
@@ -1946,7 +1946,7 @@
     {
       "type": "h2",
       "id": "b-0195",
-      "text": "Verbindung prüfen (Diagnose)"
+      "text": "Verbindung testen"
     },
     {
       "type": "text_with_single_shot",
@@ -1955,31 +1955,98 @@
         {
           "type": "p",
           "id": "b-0197",
-          "text": "Der Knopf <b>«Verbindung prüfen (Diagnose)»</b> – in den Einstellungen <b>und</b> im Erststart-Assistenten – geht die ganze Kette in <b>einer</b> Anmeldung durch und zeigt je Schritt, ob er geklappt hat, wie lange er gedauert hat und im Fehlerfall den rohen Statuscode:"
+          "text": "Der Knopf <b>«Verbindung testen»</b> – in den Einstellungen <b>und</b> im Erststart-Assistenten, für <b>alle</b> Server-Typen – prüft weit mehr als die Zugangsdaten. Er geht die ganze Kette durch, bis hin zu der Frage, die am Ende zählt: Darf die App in diesen Ordner <b>schreiben</b>, <b>umbenennen</b> und <b>löschen</b>?"
         },
         {
-          "type": "bullets",
-          "id": "b-0198",
-          "items": [
-            "<b>Verbinden</b> (mit Hinweis, falls über den Standardport statt des eingetragenen),",
-            "<b>Aushandeln</b>: welcher SMB-Dialekt, ob der Server Signierung verlangt und ob Verschlüsselung ausgehandelt wurde,",
-            "<b>Anmelden</b>: als Benutzer oder als Gast, verschlüsselt oder nicht,",
-            "<b>Freigaben lesen</b>, <b>Freigabe öffnen</b>, <b>Ordner lesen</b>,",
-            "<b>Schreiben im Ordner</b> – die App legt eine winzige Testdatei an und löscht sie sofort wieder. Ein <b>nur lesbares</b> Verzeichnis fällt sonst erst beim Rückschreiben auf, also nachdem Sie schon gebucht haben.",
-            "<b>Datei prüfen</b> und, wenn sie existiert, ob sie <b>beschreibbar</b> ist (nur .kmy-Modus)."
-          ]
+          "type": "h3",
+          "id": "b-0197a",
+          "text": "Was Sie während der Prüfung sehen"
         },
         {
           "type": "p",
-          "id": "b-0199",
-          "text": "<b>«Bericht kopieren»</b> legt das Ergebnis in die Zwischenablage – gedacht zum Weiterschicken bei einer Fehlermeldung. Der Bericht enthält <b>weder Passwort noch Benutzernamen</b> (nur «gesetzt» oder «leer»)."
+          "id": "b-0197b",
+          "text": "Eine Prüfung dauert einige Sekunden, und hakt es wirklich, wartet jeder einzelne Schritt erst seine Zeit ab. Deshalb erscheint unter dem Knopf ein <b>gelbes Band</b>: links steht der zuletzt abgeschlossene Schritt mit grünem Haken oder rotem Kreuz, rechts der gerade laufende. So ist jederzeit zu sehen, wie weit es gekommen ist und woran gerade gearbeitet wird – statt einer Maske, die stillsteht."
+        },
+        {
+          "type": "h3",
+          "id": "b-0197c",
+          "text": "Wenn alles klappt"
+        },
+        {
+          "type": "p",
+          "id": "b-0197d",
+          "text": "Dann genügt ein Satz: <b>«Verbindung erfolgreich»</b>. Wer es genau wissen will, öffnet mit <b>«Bericht anzeigen»</b> trotzdem die vollständige Liste."
         }
       ],
       "shot": {
         "fname": "SMB Diagnose.png",
-        "caption": "Diagnose: jeder Schritt mit Dauer und Statuscode",
+        "caption": "Der Bericht: jeder Schritt mit Dauer und Statuscode",
         "width": 6.0
       }
+    },
+    {
+      "type": "h3",
+      "id": "b-0197e",
+      "text": "Wenn etwas hakt"
+    },
+    {
+      "type": "p",
+      "id": "b-0197f",
+      "text": "Dann steht der <b>Bericht sofort</b> da: je Schritt, ob er geklappt hat, wie lange er gedauert hat und im Fehlerfall der <b>rohe Statuscode</b> – und dazu, soweit möglich, was er bedeutet. Ein «HTTP 401» etwa nennt den häufigsten Grund gleich mit: Bei eingeschalteter Zwei-Faktor-Anmeldung gehört hier ein <b>App-Passwort</b> hin, nicht das Kontopasswort."
+    },
+    {
+      "type": "p",
+      "id": "b-0199",
+      "text": "<b>«Bericht kopieren»</b> legt das Ergebnis in die Zwischenablage – gedacht zum Weiterschicken bei einer Fehlermeldung. Der Bericht enthält <b>weder Passwort noch Benutzernamen</b>: der Benutzer erscheint nur als «gesetzt» oder «leer», in der Nextcloud-Adresse als «&lt;Benutzer&gt;». Server, Port und Pfadaufbau stehen im Klartext darin – ohne sie könnte Ihnen aus der Ferne niemand helfen."
+    },
+    {
+      "type": "h3",
+      "id": "b-0198a",
+      "text": "Die Schritte bei SMB/Samba"
+    },
+    {
+      "type": "p",
+      "id": "b-0198b",
+      "text": "Die ganze Kette läuft in <b>einer</b> Anmeldung – so, wie es auch der Normalbetrieb tut:"
+    },
+    {
+      "type": "bullets",
+      "id": "b-0198",
+      "items": [
+        "<b>Verbinden</b> (mit Hinweis, falls über den Standardport statt des eingetragenen),",
+        "<b>Aushandeln</b>: welcher SMB-Dialekt, ob der Server Signierung verlangt und ob Verschlüsselung ausgehandelt wurde,",
+        "<b>Anmelden</b>: als Benutzer oder als Gast, verschlüsselt oder nicht,",
+        "<b>Freigaben lesen</b>, <b>Freigabe öffnen</b>, <b>Ordner lesen</b>,",
+        "<b>Schreiben</b>, <b>Umbenennen</b> und <b>Aufräumen</b> im Ordner – mit einer winzigen Testdatei, die sofort wieder verschwindet,",
+        "<b>Datei prüfen</b> und, wenn sie existiert, ob sie <b>beschreibbar</b> ist (nur .kmy-Modus)."
+      ]
+    },
+    {
+      "type": "h3",
+      "id": "b-0198c",
+      "text": "Die Schritte bei Nextcloud und WebDAV"
+    },
+    {
+      "type": "bullets",
+      "id": "b-0198d",
+      "items": [
+        "<b>Adresse</b>: wie die App die Server-Adresse versteht. Hier fällt auch der häufigste Tippfehler auf – wenn bei Server-Typ «Nextcloud» der Pfad «/remote.php/dav/…» schon in der Basis-URL steht, stünde er hinterher doppelt da.",
+        "<b>Erreichbarkeit</b>: ob dort überhaupt jemand antwortet und ob er <b>WebDAV spricht</b>. Trägt man versehentlich die Adresse der Weboberfläche ein, steht es hier.",
+        "<b>Umleitung</b>: wohin der Server weiterleitet, falls er das tut (etwa von «http» auf «https»).",
+        "<b>Anmelden</b>: Benutzer und Passwort. Ein abgewiesener Zugang wird nach Grund unterschieden – falsche Zugangsdaten, ein vorgeschalteter Schutz oder eine falsche Adresse sind verschiedene Dinge.",
+        "<b>Ordner lesen</b>, dann <b>Schreiben</b>, <b>Umbenennen</b> und <b>Aufräumen</b> darin,",
+        "<b>Datei prüfen</b> samt Größe und die <b>Versionskennung (ETag)</b> – liefert der Server keine, kann die App beim Rückschreiben nicht erkennen, ob jemand anders die Datei zwischenzeitlich geändert hat (nur .kmy-Modus)."
+      ]
+    },
+    {
+      "type": "h3",
+      "id": "b-0198e",
+      "text": "Warum Umbenennen und Löschen dazugehören"
+    },
+    {
+      "type": "p",
+      "id": "b-0198f",
+      "text": "Beim Übertragen schreibt die App Ihre KMyMoney-Datei erst <b>vollständig</b> unter einem Zwischennamen und läßt sie dann einhängen – nur so kann ein Abbruch (Funkloch, Zeitüberschreitung) Ihre Datei nicht halb überschreiben und unlesbar zurücklassen. Dafür braucht der Ordner alle drei Rechte. Ein Ordner, in dem zwar Anlegen und Löschen geht, das Umbenennen aber nicht, fiele sonst erst beim ersten echten Übertragen auf – also nachdem Sie schon gebucht haben."
     },
     {
       "type": "h2",
