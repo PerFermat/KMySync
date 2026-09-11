@@ -65,6 +65,13 @@ public class SmbWizardController {
     private final TextView errorText;
     private final MaterialButton btnToLogin;
 
+    /**
+     * Wird gerufen, wenn der Assistent einen anderen Schritt zeigt. Die Maske entscheidet daraufhin
+     * neu, was <b>um</b> den Assistenten herum sichtbar ist – „Verbindung testen" etwa gehört an den
+     * Schluss, wenn Freigabe und Zugangsdaten feststehen, und vorher nirgendwo hin.
+     */
+    private Runnable onStepChanged;
+
     private SmbDiscovery discovery;
     private final List<SmbDiscovery.Server> servers = new ArrayList<>();
     private String selectedHost = "";
@@ -142,6 +149,19 @@ public class SmbWizardController {
             forceSearch = false;
             search();
         }
+    }
+
+    /** Die Maske hängt sich hier ein, um auf Schrittwechsel zu reagieren (siehe {@link #onStepChanged}). */
+    public void setOnStepChanged(Runnable listener) {
+        this.onStepChanged = listener;
+    }
+
+    /**
+     * true, wenn der Assistent bei seiner Zusammenfassung steht – Freigabe gewählt, Zugangsdaten
+     * übernommen. Erst dann gibt es überhaupt etwas zu testen.
+     */
+    public boolean isDone() {
+        return stepDone.getVisibility() == View.VISIBLE;
     }
 
     /** true, sobald der Benutzer „Server manuell eingeben" gewählt hat. */
@@ -414,6 +434,7 @@ public class SmbWizardController {
         stepLogin.setVisibility(step == stepLogin ? View.VISIBLE : View.GONE);
         stepShares.setVisibility(step == stepShares ? View.VISIBLE : View.GONE);
         stepDone.setVisibility(step == stepDone ? View.VISIBLE : View.GONE);
+        stepChanged();
     }
 
     /** Blendet alle Schritte aus und zeigt nur die Fortschrittszeile mit dem passenden Text. */
@@ -425,6 +446,13 @@ public class SmbWizardController {
         stepDone.setVisibility(View.GONE);
         busyText.setText(textRes);
         busy.setVisibility(View.VISIBLE);
+        stepChanged();
+    }
+
+    private void stepChanged() {
+        if (onStepChanged != null) {
+            onStepChanged.run();
+        }
     }
 
     private void clearBusy() {

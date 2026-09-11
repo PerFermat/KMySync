@@ -72,6 +72,9 @@ final class SyncFieldsController {
         this.urlLayout = activity.findViewById(R.id.urlLayout);
         this.userLayout = activity.findViewById(R.id.userLayout);
         this.passwordLayout = activity.findViewById(R.id.passwordLayout);
+        // Der Assistent entscheidet über seine Schritte selbst; was daneben sichtbar ist, gehört
+        // hierher. Deshalb meldet er nur, daß sich etwas geändert hat.
+        smbWizard.setOnStepChanged(this::applyServerTypeHints);
     }
 
     /** Die gewählte Serverart — Nextcloud, WebDAV oder SMB. */
@@ -120,9 +123,12 @@ final class SyncFieldsController {
         urlLayout.setVisibility(fields);
         userLayout.setVisibility(fields);
         passwordLayout.setVisibility(fields);
-        // „Verbindung testen" gehört zu den Eingabefeldern und ist nur verdeckt, solange der
-        // SMB-Assistent sie für sich hat; er hat seine eigene Probe.
-        activity.findViewById(R.id.btnTestConnection).setVisibility(fields);
+        // „Verbindung testen" braucht Zugangsdaten, sonst gibt es nichts zu prüfen: bei manueller
+        // Eingabe stehen sie in den Feldern, im Assistenten erst an seinem Schluß. Gerade dort ist der
+        // Knopf wichtig – der Assistent hat sich zwar angemeldet und Freigaben gelesen, über den
+        // Zielordner und das Schreibrecht darin sagt das aber nichts.
+        activity.findViewById(R.id.btnTestConnection)
+                .setVisibility(!wizard || smbWizard.isDone() ? View.VISIBLE : View.GONE);
         // Rückweg zum Assistenten nur, solange SMB gewählt und gerade manuell eingegeben wird.
         activity.findViewById(R.id.btnSmbSearch).setVisibility(smb && !wizard ? View.VISIBLE : View.GONE);
         smbWizard.setVisible(wizard);
