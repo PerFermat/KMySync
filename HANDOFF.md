@@ -75,7 +75,7 @@ unzip -p app/build/outputs/apk/foss/release/app-foss-release*.apk 'classes*.dex'
 
 - Konto besteht (nur E-Mail-Bestätigung, keine Ausweisprüfung). Anmeldung per SSO, deshalb kein
   Passwort – für Git über HTTPS bräuchte es ein Personal Access Token. Über die Weboberfläche irrelevant.
-- `fdroid/fdroiddata` geforkt nach **`gitlab.com/PerFermat/Data`**, öffentlich, nur Branch `master`.
+- `fdroid/fdroiddata` geforkt nach **`gitlab.com/PerFermat/fdroiddata`** (öffentlich).
 - Das Rezept liegt dort als `metadata/de.spahr.ausgaben.yml` im Branch
   **`add-kmysync-de.spahr.ausgaben`**. **Noch kein Merge Request** – zum Zeitpunkt dieser Notiz fehlte
   der Tag `v2.0`; inzwischen gibt es ihn, der MR kann eröffnet werden.
@@ -101,8 +101,12 @@ unzip -p app/build/outputs/apk/foss/release/app-foss-release*.apk 'classes*.dex'
    `master`.
    **Titelformat geklärt** (aus der Vorlage „App inclusion" von fdroiddata): `New app: KMySync`.
    Ebenfalls dort verlangt: Der **Fork muss öffentlich** sein und der Quell-Branch **darf nicht
-   geschützt** sein, sonst kann fdroiddata nicht fast-forward mergen. Die ausgefüllte Checkliste und
-   der Punkt zu Reproducible Builds stehen in `fdroid/README.md`.
+   geschützt** sein, sonst kann fdroiddata nicht fast-forward mergen. Beides ist am 12.09.2026 über
+   die GitLab-API geprüft und erfüllt: Fork `public`, Branch `add-kmysync-de.spahr.ausgaben`
+   ungeschützt. Dass `master` im Fork geschützt ist, stört nicht — es zählt der Quell-Branch. Auch
+   das Rezept im Fork stimmt mit `fdroid/de.spahr.ausgaben.yml` überein (nur der Zeilenumbruch am
+   Dateiende fehlt dort, ohne Folgen). Die ausgefüllte Checkliste und der Punkt zu Reproducible
+   Builds stehen in `fdroid/README.md`.
 5. Danach `versionName`/`versionCode` im Repo auf die nächste Entwicklungsversion heben.
 
 Ein Entwurf für die MR-Beschreibung (Flavor, scanignore-Begründung, Submodul statt JitPack) steht in
