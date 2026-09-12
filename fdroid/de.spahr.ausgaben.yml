@@ -22,6 +22,12 @@ Builds:
     # (third_party/MPAndroidChart, pinned to tag v3.1.0) and builds it from source as the
     # ':mpandroidchart' Gradle module, so no srclib is needed - only the submodule checkout.
     submodules: true
+    # The Wear OS module is not built here and ':app' does not depend on it, but it sits in the
+    # tree the scanner walks and pulls in the Google Wear Data Layer. Deleting it before the scan
+    # keeps that dependency out of the build entirely. Verified that ':app:assembleFossRelease'
+    # succeeds without the directory present.
+    scandelete:
+      - wear
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
