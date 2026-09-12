@@ -57,9 +57,13 @@ unzip -p app/build/outputs/apk/foss/release/app-foss-release*.apk 'classes*.dex'
 
 - `fdroid/de.spahr.ausgaben.yml` stand auf `versionName 1.3` / `versionCode 4` / `commit: v1.3` –
   **einem Tag, den es nie gab**. So eingereicht wäre der Build sofort gescheitert. Jetzt 2.0 / 14 / v2.0.
-- `scanignore` für `app/build.gradle`, `app/src/full`, `wear` ergänzt: Google Play Services stehen im
-  Quellbaum, landen aber in keinem gebauten Artefakt. Vorsichtsmaßnahme gegen den F-Droid-Scanner, der
-  den ganzen Baum durchsucht, nicht nur das Gebaute.
+- `scanignore` für `app/build.gradle`, `app/src/full`, `wear` war ergänzt worden – **am 12.09.2026 in
+  der Prüfung beanstandet und wieder entfernt** („scanignore is not allowed"). Es war ohnehin
+  weitgehend überflüssig: Der Scanner wertet Gradle-Flavors aus, sucht bei `gradle: - foss` also nach
+  `fossImplementation` und übersieht die `fullImplementation`-Zeile mit GMS von selbst; in
+  `app/src/full` liegt nur Quelltext. Offen bleibt allein `wear/build.gradle:65` mit
+  `implementation 'com.google.android.gms:play-services-wearable'` ohne Flavor-Präfix – ob der Scanner
+  daran Anstoß nimmt, zeigt erst ein CI-Lauf.
 - Die an uns gerichteten Kopfzeilen aus dem Rezept entfernt – die Datei ist jetzt **wörtlich
   einfügbar**. Alles, was uns betrifft, steht in `fdroid/README.md`.
 - Store-Texte (`fastlane/metadata/android/{de-DE,en-US,es-ES}/full_description.txt`): mehrere Profile
@@ -109,7 +113,7 @@ unzip -p app/build/outputs/apk/foss/release/app-foss-release*.apk 'classes*.dex'
    Builds stehen in `fdroid/README.md`.
 5. Danach `versionName`/`versionCode` im Repo auf die nächste Entwicklungsversion heben.
 
-Ein Entwurf für die MR-Beschreibung (Flavor, scanignore-Begründung, Submodul statt JitPack) steht in
+Ein Entwurf für die MR-Beschreibung (Flavor, Submodul statt JitPack) steht in
 `fdroid/README.md`.
 
 **Erwartung dämpfen:** Die Prüfung eines neuen Programms bei F-Droid dauert Tage bis Wochen, sie

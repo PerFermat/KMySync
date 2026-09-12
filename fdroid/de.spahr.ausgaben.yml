@@ -22,13 +22,6 @@ Builds:
     # (third_party/MPAndroidChart, pinned to tag v3.1.0) and builds it from source as the
     # ':mpandroidchart' Gradle module, so no srclib is needed - only the submodule checkout.
     submodules: yes
-    # Google Play Services appear in the source tree in two places that never reach the built
-    # APK: as `fullImplementation` for the "full" flavor, which is not built here, and in the
-    # :wear module. Verified on the finished APK: zero com/google/android/gms strings.
-    scanignore:
-      - app/build.gradle
-      - app/src/full
-      - wear
 
 AutoUpdateMode: Version v%v
 UpdateCheckMode: Tags
