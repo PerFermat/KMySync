@@ -36,6 +36,24 @@ via F-Droid; it stays a GitHub-only artifact (its microphone permission is unaff
    Only this first submission is manual. `UpdateCheckMode: Tags` plus `AutoUpdateMode: Version v%v`
    make F-Droid pick up every later version from its tag on its own — no further merge request.
 
+   What fdroiddata expects of the merge request itself (from its **App inclusion** template):
+
+   - the **title must read `New app: <app name>`** — so `New app: KMySync`;
+   - the **fork must be public** and the source branch **must not be protected**, because fdroiddata
+     merges fast-forward and has to be able to rebase;
+   - tick "the original app author has been notified" yourself — you are the author;
+   - two boxes are already true here and worth pointing out: the Fastlane metadata lives in this
+     repository, and releases are tagged with auto-update enabled;
+   - "external repos as git submodules instead of srclibs" is likewise already the case
+     (MPAndroidChart, pinned to v3.1.0).
+
+   One box deserves a deliberate answer rather than a reflex: **Reproducible Builds**. Enabling it
+   means F-Droid verifies its build against the APK signed with your key and then ships *your*
+   signature, so users can move between the GitHub download and F-Droid without reinstalling.
+   Declining means F-Droid signs with its own key — and the template is explicit that this **cannot
+   be switched on later**. The GitHub release notes for 2.0 already advertise the build as
+   reproducible from source.
+
 4. Store listing texts and screenshots are provided as Fastlane metadata under
    `fastlane/metadata/android/{en-US,de-DE,es-ES}/` and are picked up automatically. From the
    **second** F-Droid release onwards, each one needs a `changelogs/<versionCode>.txt` per language:

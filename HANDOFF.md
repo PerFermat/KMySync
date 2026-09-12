@@ -99,9 +99,10 @@ unzip -p app/build/outputs/apk/foss/release/app-foss-release*.apk 'classes*.dex'
 
 4. **Merge Request** im Fork eröffnen, von `add-kmysync-de.spahr.ausgaben` gegen `fdroid/fdroiddata`
    `master`.
-   **Achtung:** fdroiddata schreibt ein **Format für den MR-Titel** vor (Commit „Require MR title format
-   in MR templates"). Welches genau, ist offen – GitLab zeigt es in der MR-Vorlage. Erst lesen, dann
-   formulieren.
+   **Titelformat geklärt** (aus der Vorlage „App inclusion" von fdroiddata): `New app: KMySync`.
+   Ebenfalls dort verlangt: Der **Fork muss öffentlich** sein und der Quell-Branch **darf nicht
+   geschützt** sein, sonst kann fdroiddata nicht fast-forward mergen. Die ausgefüllte Checkliste und
+   der Punkt zu Reproducible Builds stehen in `fdroid/README.md`.
 5. Danach `versionName`/`versionCode` im Repo auf die nächste Entwicklungsversion heben.
 
 Ein Entwurf für die MR-Beschreibung (Flavor, scanignore-Begründung, Submodul statt JitPack) steht in
