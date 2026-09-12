@@ -37,9 +37,13 @@ via F-Droid; it stays a GitHub-only artifact (its microphone permission is unaff
    make F-Droid pick up every later version from its tag on its own — no further merge request.
 
 4. Store listing texts and screenshots are provided as Fastlane metadata under
-   `fastlane/metadata/android/{en-US,de-DE,es-ES}/` and are picked up automatically. From the
-   **second** F-Droid release onwards, each one needs a `changelogs/<versionCode>.txt` per language:
-   F-Droid shows the file whose name matches the versionCode being published. The first release
-   deliberately has none — a "what changed" text would refer to versions that were never on F-Droid.
-   The existing `changelogs/{1,2,6,7,8,13}.txt` belong to the GitHub history and stay unpublished
-   here, because only the packaged versionCode is ever shown.
+   `fastlane/metadata/android/{en-US,de-DE,es-ES}/` and are picked up automatically. Each release
+   needs a `changelogs/<versionCode>.txt` per language: F-Droid shows the file whose name matches
+   the versionCode being published, and only that one — the older `changelogs/{1,2,6,7,8,13}.txt`
+   belong to the GitHub history and stay unpublished here.
+
+   The first release was originally planned **without** one, on the grounds that a "what changed"
+   text would point at versions that were never on F-Droid. `changelogs/14.txt` was written anyway
+   and is part of tag `v2.0`; it was left in place rather than moving a pushed tag. Worth knowing
+   when reading it there: its opening sentence about the rename to KMySync is addressed at people
+   coming from the GitHub releases, not at first-time F-Droid users.

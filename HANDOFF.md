@@ -4,7 +4,8 @@
 > Rechnern arbeitet und der andere Claude die lokalen Notizen dieses Rechners nicht sieht. Sobald die
 > Einreichung durch ist, kann sie gelöscht werden.
 >
-> Stand: 2026-09-09, letzter Commit `8c748ce`.
+> Stand: 2026-09-12. **2.0 ist veröffentlicht** – Tag `v2.0` (Commit `c08dcef`) und GitHub-Release mit
+> den drei signierten APKs sind draußen. Offen ist nur noch der Merge Request; siehe unten.
 
 ## Worum es geht
 
@@ -76,19 +77,25 @@ unzip -p app/build/outputs/apk/foss/release/app-foss-release*.apk 'classes*.dex'
   Passwort – für Git über HTTPS bräuchte es ein Personal Access Token. Über die Weboberfläche irrelevant.
 - `fdroid/fdroiddata` geforkt nach **`gitlab.com/PerFermat/Data`**, öffentlich, nur Branch `master`.
 - Das Rezept liegt dort als `metadata/de.spahr.ausgaben.yml` im Branch
-  **`add-kmysync-de.spahr.ausgaben`**. **Noch kein Merge Request** – der Tag `v2.0` fehlt ja, ein jetzt
-  eröffneter MR liefe sofort in einen Build-Fehler.
+  **`add-kmysync-de.spahr.ausgaben`**. **Noch kein Merge Request** – zum Zeitpunkt dieser Notiz fehlte
+  der Tag `v2.0`; inzwischen gibt es ihn, der MR kann eröffnet werden.
 
-## Offen – alles am Tag der Veröffentlichung
+## Erledigt am 2026-09-12
 
-1. **Remote abgleichen** (`git fetch`), siehe Regeln unten.
-2. **Taggen und pushen:**
-   ```bash
-   git tag -a v2.0 -m "KMySync 2.0"
-   git push origin v2.0
-   ```
-3. **GitHub-Release** mit den drei signierten APKs: `app-full-release.apk`, `app-foss-release.apk`,
-   `wear-release.apk`.
+1. ~~Remote abgleichen.~~
+2. ~~Taggen und pushen.~~ Tag `v2.0` zeigt auf `c08dcef`.
+3. ~~GitHub-Release.~~ <https://github.com/PerFermat/KMySync/releases/tag/v2.0> mit den drei signierten
+   APKs, Notes samt SHA-256-Summen und Zertifikat-Fingerabdruck. Vor dem Tag geprüft: versionCode 14 /
+   versionName 2.0 in beiden APKs, Signaturzertifikat gleich wie bei v1.12 (`571fd757…afc3c`), im
+   `foss`-APK **0** Treffer auf `com/google/android/gms` (im `full`-APK 1557).
+
+   **Abweichung von der Planung:** `changelogs/14.txt` wurde in allen drei Sprachen angelegt und liegt
+   im Tag, obwohl die Erstveröffentlichung bewusst ohne Änderungstext geplant war (siehe den Punkt
+   weiter oben). Bewusst belassen, statt einen gepushten Tag zu verschieben – Einordnung steht in
+   `fdroid/README.md`.
+
+## Offen
+
 4. **Merge Request** im Fork eröffnen, von `add-kmysync-de.spahr.ausgaben` gegen `fdroid/fdroiddata`
    `master`.
    **Achtung:** fdroiddata schreibt ein **Format für den MR-Titel** vor (Commit „Require MR title format
