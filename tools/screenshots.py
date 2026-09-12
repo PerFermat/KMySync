@@ -10,6 +10,11 @@ aller Bilder, die das Handbuch verlangt.
     tools/screenshots.py --lang en       # englischer Satz nach screenshots/en/
     tools/screenshots.py --rohe-leiste   # Statusleiste unangetastet lassen
 
+Welcher Datenbestand im Emulator steht, wird im Fenster gewählt („Bestand"): Deutsch oder English.
+Für den englischen Satz braucht es einen englischen Bestand, denn Kontonamen, Empfänger und
+Kategorien stehen in der Datenbank und nicht in den Übersetzungen. Beide erzeugt
+tools/bestand_aufbereiten.py; sie liegen bewusst außerhalb des Projektordners.
+
 Das Skript navigiert nicht selbst durch die App – gesteuerte Tipper werden bei jedem Umbau der
 Oberfläche brüchig. Sie bedienen den Emulator, das Fenster nimmt Ihnen den Rest ab.
 
@@ -37,8 +42,21 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAKET = "de.spahr.ausgaben"
 AVD = "Pixel_7_API_35"
 SOLL_GROESSE = (1080, 2400)          # Maß der vorhandenen 28 Bilder; Abweichung wird gemeldet
-DEMO_DB = os.path.expanduser("~/Nextcloud/ausgaben-anonymisiert.db")
 ROH = os.path.join(REPO, "build", "screenshots-roh")
+# Wohin die Ausgabe des Emulators geht – siehe emulator_starten().
+EMULATOR_LOG = os.path.join(REPO, "build", "emulator.log")
+
+# Die beiden Bestände für die Aufnahme, erzeugt von tools/bestand_aufbereiten.py. Der englische Satz
+# braucht einen englischen Bestand: Kontonamen, Empfänger und Kategorien stehen in der Datenbank und
+# nicht in den Übersetzungen – ein deutscher Kontoname im englischen Handbuch fiele sofort auf.
+#
+# Bewusst außerhalb des Projektordners und fest eingetragen statt frei wählbar. Die Vorlage, aus der
+# beide entstehen, trägt Klarnamen und Bankverbindungen mit sich; was daraus erzeugt wird, soll
+# nicht versehentlich durch eine unaufbereitete Datei ersetzt werden können.
+BESTAENDE = [
+    ("Deutsch", os.path.expanduser("~/Nextcloud/kmysync-bestand-de.db")),
+    ("English", os.path.expanduser("~/Nextcloud/kmysync-bestand-en.db")),
+]
 
 # Dasselbe Rot wie in docs/img/export_button.png, damit die Markierungen im Handbuch nicht
 # zweierlei Rot zeigen. Aus dem vorhandenen Bild ausgelesen.
@@ -125,7 +143,19 @@ def geraete():
 
 
 def emulator_starten(melden=lambda t: None):
-    """Startet den Emulator im Hintergrund und wartet, bis Android hochgefahren ist."""
+    """Startet den Emulator im Hintergrund und wartet, bis Android hochgefahren ist.
+
+    <b>Warum Software-Rendering:</b> Mit der voreingestellten GPU-Durchreichung stürzte der Emulator
+    hier wiederholt ab – im Kernelprotokoll steht dann ein Schwung gleichzeitiger Segfaults in
+    {@code libgfxstream_backend.so}, der Grafikschicht des Emulators. Die Kombination aus Intel Iris
+    Xe und Mesa ist dafür bekannt.
+
+    <p>{@code swiftshader_indirect} schaltet nicht diese Schicht ab – die bleibt geladen –, sondern
+    das, worauf sie aufsetzt: Statt des Intel-Treibers rechnet SwiftShader auf der CPU (im Protokoll
+    steht dann „ICD set to 'swiftshader'"). Genau das Zusammenspiel, in dem es krachte, findet damit
+    nicht mehr statt. Langsamer, aber es läuft durch – und für Bildaufnahmen zählt das. Die
+    Aufnahmen sehen gleich aus und hängen sogar weniger vom Treiber des Rechners ab.</p>
+    """
     binaer = None
     for wurzel in (os.environ.get("ANDROID_HOME"), os.environ.get("ANDROID_SDK_ROOT"),
                    os.path.expanduser("~/Android/Sdk")):
@@ -135,8 +165,13 @@ def emulator_starten(melden=lambda t: None):
     if binaer is None:
         binaer = "emulator"
 
-    melden(f"{AVD} startet …")
-    subprocess.Popen([binaer, "-avd", AVD], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # Die Ausgabe gehörte früher nach /dev/null. Brach der Emulator ab, stand nirgends warum –
+    # die eine Auskunft, die man dann braucht, war weggeworfen.
+    os.makedirs(os.path.dirname(EMULATOR_LOG), exist_ok=True)
+    protokoll = open(EMULATOR_LOG, "w")
+    melden(f"{AVD} startet … (Protokoll: {EMULATOR_LOG})")
+    subprocess.Popen([binaer, "-avd", AVD, "-gpu", "swiftshader_indirect"],
+                     stdout=protokoll, stderr=subprocess.STDOUT)
     for versuch in range(180):
         time.sleep(2)
         for serial in geraete():
@@ -151,6 +186,37 @@ def emulator_starten(melden=lambda t: None):
 
 
 # ------------------------------------------------------------------ Datenstand
+def aktive_db_datei(adb):
+    """Dateiname der Datenbank, die die App gerade wirklich öffnet.
+
+    Nicht zu erraten: Nur das aus einer Altinstallation migrierte Profil heißt „ausgaben.db"; jedes
+    später angelegte – und damit auch das einzige eines frisch aufgesetzten Emulators – heißt
+    „ausgaben_<uuid>.db" (siehe ProfileManager.dbFileNameFor). Wer fest auf „ausgaben.db" kopiert,
+    legt den Bestand neben die Datei, die die App liest, und wundert sich über den alten Stand.
+
+    Gelesen wird dieselbe Auskunft, aus der es auch die App nimmt: das aktive Profil und sein
+    Dateiname aus shared_prefs/ausgaben_profiles.xml. Läßt sich das nicht lesen (ganz frische
+    Installation, noch keine Einstellungen), bleibt es beim Altnamen – dann gibt es ohnehin nichts
+    zu überschreiben.
+    """
+    import json
+    import xml.etree.ElementTree as ET
+
+    lauf = adb.shell("run-as", PAKET, "cat", "shared_prefs/ausgaben_profiles.xml", pruefen=False)
+    if lauf.returncode != 0 or not lauf.stdout.strip():
+        return "ausgaben.db"
+    try:
+        wurzel = ET.fromstring(lauf.stdout)
+        werte = {k.get("name"): (k.text or "") for k in wurzel}
+        aktiv = werte.get("active_profile_id", "")
+        for profil in json.loads(werte.get("profiles", "[]")):
+            if profil.get("id") == aktiv:
+                return profil.get("dbFileName") or "ausgaben.db"
+    except Exception:
+        pass          # unlesbar ist so gut wie nicht vorhanden – der Altname trägt weiter
+    return "ausgaben.db"
+
+
 def bestand_einspielen(adb, quelle, melden):
     if not os.path.isfile(quelle):
         melden(f"{quelle} gibt es nicht – Datenstand bleibt, wie er ist.")
@@ -161,6 +227,7 @@ def bestand_einspielen(adb, quelle, melden):
                "Erst umstellen:  ./gradlew :app:installFullDebug")
         return
 
+    db = aktive_db_datei(adb)
     ziel = "/data/local/tmp/ausgaben-demo.db"
     adb.lauf("push", quelle, ziel)
     adb.shell("am", "force-stop", PAKET)
@@ -169,15 +236,15 @@ def bestand_einspielen(adb, quelle, melden):
     # shlex.quote ist nötig, weil adb die Argumente wieder zu einer Zeile fügt und die Shell auf
     # dem Gerät sie erneut zerlegt – ohne Anführungszeichen liefe nur das rm unter run-as.
     auftrag = (f"mkdir -p databases; "
-               f"rm -f databases/ausgaben.db-wal databases/ausgaben.db-shm; "
-               f"cp {ziel} databases/ausgaben.db")
+               f"rm -f databases/{db}-wal databases/{db}-shm; "
+               f"cp {ziel} databases/{db}")
     kopie = adb.shell("run-as", PAKET, "sh", "-c", shlex.quote(auftrag), pruefen=False)
     adb.shell("rm", "-f", ziel, pruefen=False)
     if kopie.returncode != 0:
         melden(f"Kopieren fehlgeschlagen: {(kopie.stderr or kopie.stdout).strip()}")
         return
     adb.shell("am", "start", "-n", f"{PAKET}/.ui.MainActivity")
-    melden("Bestand eingespielt, App neu gestartet.")
+    melden(f"{os.path.basename(quelle)} → {db}, App neu gestartet.")
 
 
 # ------------------------------------------------------------------ Statusleiste
@@ -294,6 +361,7 @@ class Fenster:
         self.faktor_neu = 1.0
         self.zieh_start = None
         self.zieh_form = None
+        self.bestaende = []            # Pfade hinter den Namen im Auswahlfeld
 
         self._aufbauen()
         self._sprache_uebernehmen()
@@ -307,8 +375,16 @@ class Fenster:
         kopf.pack(fill="x")
         self.geraet_text = ttk.Label(kopf, text="Gerät: –")
         self.geraet_text.pack(side="left")
-        ttk.Button(kopf, text="Bestand einspielen",
-                   command=self._bestand).pack(side="left", padx=12)
+
+        # Der Bestand bestimmt, was auf den Bildern steht. Für den englischen und den spanischen Satz
+        # braucht es einen Bestand in der jeweiligen Sprache; deshalb ist er hier zu wählen und nicht
+        # auf eine Datei festgelegt. Angezeigt wird nur der Dateiname – der ganze Pfad sprengte die
+        # Zeile und steht ohnehin im Hinweis unter dem Feld.
+        ttk.Separator(kopf, orient="vertical").pack(side="left", fill="y", padx=12)
+        ttk.Label(kopf, text="Bestand:").pack(side="left")
+        self.bestand_feld = ttk.Combobox(kopf, width=14, state="readonly")
+        self.bestand_feld.pack(side="left", padx=4)
+        ttk.Button(kopf, text="Einspielen", command=self._bestand).pack(side="left", padx=(6, 12))
         ttk.Checkbutton(kopf, text="Live-Blick", variable=self.live_an).pack(side="left")
 
         ttk.Separator(kopf, orient="vertical").pack(side="left", fill="y", padx=12)
@@ -383,9 +459,12 @@ class Fenster:
 
     # -------------------------------------------------- Sprache und Handbuchbau
     def _sprache_uebernehmen(self):
-        """Umschalten wechselt beides zugleich: die Liste kommt aus dem anderen Handbuch, und
-        abgelegt wird im zugehörigen Ordner. Beides auseinanderlaufen zu lassen wäre die sicherste
-        Art, ein deutsches Bild im englischen Satz zu versenken."""
+        """Umschalten wechselt alles zugleich: die Liste kommt aus dem anderen Handbuch, abgelegt
+        wird im zugehörigen Ordner, und der vorgeschlagene Bestand ist der passende. Beides
+        auseinanderlaufen zu lassen wäre die sicherste Art, ein deutsches Bild im englischen Satz zu
+        versenken – eingespielt wird der Bestand aber erst auf Knopfdruck, denn das wirft den Stand
+        im Emulator weg."""
+        self._bestaende_fuellen()
         self.handbuch, self.ablage_rel = HANDBUCH[self.sprache.get()]
         self.ablage = os.path.join(REPO, self.ablage_rel)
         self.bilder = bilder_aus_handbuch(os.path.join(REPO, self.handbuch))
@@ -621,16 +700,34 @@ class Fenster:
         self._melden(f"Gespeichert: {self.ablage_rel}/{name}   ·   roh in "
                      f"build/screenshots-roh/{self.sprache.get()}/")
 
-    # -------------------------------------------------- Ende
+    # -------------------------------------------------- Datenstand
+    def _bestaende_fuellen(self):
+        """Stellt die beiden Bestände ein und wählt den zur Sprache passenden vor."""
+        beschriftungen = []
+        for name, pfad in BESTAENDE:
+            beschriftungen.append(name if os.path.isfile(pfad) else f"{name} (fehlt)")
+        self.bestand_feld["values"] = beschriftungen
+        self.bestand_feld.current(1 if self.sprache.get() == "en" else 0)
+
+    def _bestand_pfad(self):
+        blick = self.bestand_feld.current()
+        return BESTAENDE[blick][1] if 0 <= blick < len(BESTAENDE) else ""
+
     def _bestand(self):
         if self.adb is None:
             self._melden("Kein Gerät.")
             return
+        quelle = self._bestand_pfad()
+        if not os.path.isfile(quelle):
+            self._melden(f"{quelle} gibt es nicht – erst tools/bestand_aufbereiten.py laufen lassen.")
+            return
         if not messagebox.askyesno("Datenstand",
-                                   f"Anonymisierten Bestand einspielen?\n\n{self.args.daten}\n\n"
+                                   f"Diesen Bestand einspielen?\n\n{quelle}\n\n"
                                    "Der bisherige Stand im Emulator geht dabei verloren."):
             return
-        bestand_einspielen(self.adb, self.args.daten, self._melden)
+        bestand_einspielen(self.adb, quelle, self._melden)
+
+    # -------------------------------------------------- Ende
 
     def _schliessen(self):
         # Die Statusleiste stellt leiste_zurueck_beim_ende zurück – das greift auch dann, wenn
@@ -643,10 +740,23 @@ def main():
     p.add_argument("--lang", choices=("de", "en"), default="de",
                    help="welches Handbuch die Liste vorgibt und wohin abgelegt wird")
     p.add_argument("--geraet", help="Seriennummer; ohne Angabe der laufende Emulator")
-    p.add_argument("--daten", default=DEMO_DB, help="anonymisierter Bestand zum Einspielen")
     p.add_argument("--rohe-leiste", action="store_true",
                    help="Statusleiste unangetastet lassen (echte Uhrzeit, echte Symbole)")
+    p.add_argument("--emulator-starten", action="store_true",
+                   help="nur den Emulator hochfahren, Seriennummer ausgeben und beenden "
+                        "(für screenshots.sh, damit der AVD-Name nur hier steht)")
     args = p.parse_args()
+
+    if args.emulator_starten:
+        # Ohne Fenster: Das Shell-Skript braucht vor dem Installieren ein Gerät und soll die
+        # Wartelogik nicht ein zweites Mal mitbringen.
+        laeuft = [s for s in geraete() if s.startswith("emulator-")]
+        serial = laeuft[0] if laeuft else emulator_starten(lambda t: print(t, file=sys.stderr))
+        if not serial:
+            print(f"{AVD} ist nicht rechtzeitig hochgefahren.", file=sys.stderr)
+            return 1
+        print(serial)
+        return 0
 
     wurzel = tk.Tk()
     try:
@@ -655,7 +765,8 @@ def main():
         pass
     Fenster(wurzel, args)
     wurzel.mainloop()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
