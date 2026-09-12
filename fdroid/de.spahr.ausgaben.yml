@@ -21,9 +21,9 @@ Builds:
     # MPAndroidChart does not come from JitPack: the repo vendors it as a git submodule
     # (third_party/MPAndroidChart, pinned to tag v3.1.0) and builds it from source as the
     # ':mpandroidchart' Gradle module, so no srclib is needed - only the submodule checkout.
-    submodules: yes
+    submodules: true
 
-AutoUpdateMode: Version v%v
+AutoUpdateMode: Version
 UpdateCheckMode: Tags
 CurrentVersion: "2.0"
 CurrentVersionCode: 14
