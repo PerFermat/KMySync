@@ -89,10 +89,11 @@ unzip -p app/build/outputs/apk/foss/release/app-foss-release*.apk 'classes*.dex'
    versionName 2.0 in beiden APKs, Signaturzertifikat gleich wie bei v1.12 (`571fd757…afc3c`), im
    `foss`-APK **0** Treffer auf `com/google/android/gms` (im `full`-APK 1557).
 
-   **Abweichung von der Planung:** `changelogs/14.txt` wurde in allen drei Sprachen angelegt und liegt
-   im Tag, obwohl die Erstveröffentlichung bewusst ohne Änderungstext geplant war (siehe den Punkt
-   weiter oben). Bewusst belassen, statt einen gepushten Tag zu verschieben – Einordnung steht in
-   `fdroid/README.md`.
+   **Zu beachten:** `changelogs/14.txt` wurde versehentlich angelegt und liegt deshalb **im Tag**,
+   obwohl die Erstveröffentlichung bewusst ohne Änderungstext geplant war (siehe den Punkt weiter
+   oben). Aus `main` ist die Datei wieder entfernt. Zieht der F-Droid-Build seine Metadaten aus dem
+   getaggten Commit, erscheint sie bei der ersten Veröffentlichung trotzdem – dann hilft nur, den Tag
+   neu zu setzen. Vor dem Merge Request prüfen, ob einem das den Eingriff wert ist.
 
 ## Offen
 
