@@ -132,7 +132,8 @@ public final class ReceiptZip {
                              PauseListener paused, boolean[] gaveUp, boolean allowDownload)
             throws IOException {
         String firstName = ReceiptPages.firstPageName(job.tagName, job.ext);
-        if (!allowDownload && !Receipts.localFile(app, firstName).exists()) {
+        boolean lagSchonDa = Receipts.localFile(app, firstName).exists();
+        if (!allowDownload && !lagSchonDa) {
             result.skipped++; // der Nutzer wollte nicht laden – keine Anfrage, keine Wartezeit
             return;
         }
@@ -150,8 +151,15 @@ public final class ReceiptZip {
             return;
         }
         // Die erste Seite liegt jetzt vor; von dort aus die Folgeseiten einsammeln.
+        //
+        // Beim Server nachfragen aber nur, wenn dieser Beleg ohnehin von dort kam: Es gibt keine
+        // Seitenzahl in der Notiz, das Ende einer Folge zeigt sich erst an einer Anfrage, die ins Leere
+        // greift. Für einen einseitigen Beleg ist das eine vergebliche Anfrage (und wegen des zweiten,
+        // früheren Ablageorts sogar zwei) – über eine Internetverbindung knapp eine Sekunde. Bei einem
+        // Beleg, der schon auf dem Gerät liegt, wäre diese Sekunde vollends umsonst: Seine Seiten sind
+        // vollständig da, sonst hätte ihn die Vorsortierung gar nicht als vorhanden gezählt.
         for (String page : ReceiptPages.pagesFrom(app, firstName, job.year, job.ext, storage,
-                allowDownload)) {
+                allowDownload && !lagSchonDa)) {
             File file = Receipts.localFile(app, page);
             if (!file.exists()) {
                 continue; // Folgeseite nicht zu holen – der Beleg selbst ist trotzdem dabei
