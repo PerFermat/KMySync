@@ -74,4 +74,17 @@ public class ReceiptPagesTest {
         assertEquals(Collections.singletonList("abc_p1.pdf"),
                 ReceiptPages.renumber(Collections.singletonList("abc_p2.pdf")));
     }
+
+    @Test
+    public void firstPageName_istSeiteEinsDerBasis() {
+        assertEquals("abc_p1.pdf", ReceiptPages.firstPageName("abc", NoteReceipt.PDF));
+        assertEquals("abc_p1.jpg", ReceiptPages.firstPageName("abc", NoteReceipt.JPG));
+    }
+
+    @Test
+    public void firstPageName_laesstAltbelegeUnangetastet() {
+        // Ein Foto mit Jahres-Präfix benennt seine Datei selbst; daraus „2026_abc_p1.jpg" zu machen
+        // würde auf dem Server ins Leere greifen.
+        assertEquals("2026_abc.jpg", ReceiptPages.firstPageName("2026_abc.jpg", NoteReceipt.JPG));
+    }
 }

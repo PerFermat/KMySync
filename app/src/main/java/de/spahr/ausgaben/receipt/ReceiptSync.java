@@ -96,22 +96,62 @@ public final class ReceiptSync {
      * mit Jahres-Präfix).</p>
      */
     public static File ensureLocal(Context context, String file, int year) {
+        return ensureLocal(context, file, year, null);
+    }
+
+    /**
+     * Wie {@link #ensureLocal(Context, String, int)}, nutzt aber eine <b>mitgebrachte</b> Verbindung.
+     *
+     * <p>Für Läufe über viele Belege: Sonst entsteht je Datei eine neue {@code RemoteStorage} und damit
+     * ein neuer TLS-Handshake zum Server – bei einem Export über 238 Belege 238 Verbindungsaufbauten,
+     * an denen der Verbindungspool von OkHttp folgenlos vorbeiläuft. {@code null} heißt: selbst
+     * aufbauen, wie bisher.</p>
+     */
+    public static File ensureLocal(Context context, String file, int year, RemoteStorage shared) {
+        return fetch(context, file, year, shared).file;
+    }
+
+    /** Ergebnis von {@link #fetch} – die Datei und, wenn sie fehlt, der Grund. */
+    public static final class Fetched {
+        /** Die lokale Datei, sobald vorhanden; sonst {@code null}. */
+        public final File file;
+        /**
+         * {@code true} = der Server hat geantwortet, die Datei gibt es dort nicht. Ein zweiter Versuch
+         * ändert daran nichts; {@code false} bei einem Verbindungsproblem – das lohnt eine Wiederholung.
+         */
+        public final boolean notFound;
+
+        Fetched(File file, boolean notFound) {
+            this.file = file;
+            this.notFound = notFound;
+        }
+    }
+
+    /**
+     * Wie {@link #ensureLocal(Context, String, int, RemoteStorage)}, sagt aber, <b>warum</b> eine Datei
+     * fehlt. Für den Beleg-Export, der zwischen „gibt es nicht" und „komme nicht dran" unterscheiden
+     * muss: Das eine ist ein Befund, das andere ein Grund, es gleich noch einmal zu versuchen.
+     */
+    public static Fetched fetch(Context context, String file, int year, RemoteStorage shared) {
         final Context ctx = context.getApplicationContext();
         File local = Receipts.localFile(ctx, file);
         if (local.exists()) {
-            return local;
+            return new Fetched(local, false);
         }
         SettingsStore settings = new SettingsStore(ctx);
         int y = year >= 0 ? year : NoteReceipt.yearOf(file);
         if (!settings.hasRemoteConfig() || y < 0) {
-            return null;
+            return new Fetched(null, false);
         }
-        RemoteStorage storage;
-        try {
-            storage = RemoteStorage.from(settings);
-        } catch (Exception e) {
-            return null;
+        RemoteStorage storage = shared;
+        if (storage == null) {
+            try {
+                storage = RemoteStorage.from(settings);
+            } catch (Exception e) {
+                return new Fetched(null, false);
+            }
         }
+        boolean allMissing = true;
         // Neuer Ort zuerst, danach der frühere – so bleiben vorhandene Uploads erreichbar.
         for (String base : new String[]{remoteBase(settings), legacyBase(settings)}) {
             try {
@@ -119,12 +159,26 @@ public final class ReceiptSync {
                 try (FileOutputStream fos = new FileOutputStream(local)) {
                     fos.write(bytes);
                 }
-                return local;
+                return new Fetched(local, false);
             } catch (Exception e) {
                 local.delete(); // halb geschriebene Datei nicht stehen lassen
+                allMissing &= saysNotFound(e);
             }
         }
-        return null;
+        return new Fetched(null, allMissing);
+    }
+
+    /**
+     * Heißt dieser Fehler „die Datei gibt es dort nicht"? Über WebDAV ist das ein HTTP 404; SMB meldet
+     * dasselbe nur im Text seiner {@code IOException}. Im Zweifel lautet die Antwort {@code false} –
+     * dann wird noch einmal versucht, und das ist der harmlosere Irrtum.
+     */
+    private static boolean saysNotFound(Exception e) {
+        if (e instanceof de.spahr.ausgaben.net.HttpStatusException) {
+            return ((de.spahr.ausgaben.net.HttpStatusException) e).code == 404;
+        }
+        String m = e == null || e.getMessage() == null ? "" : e.getMessage().toUpperCase(java.util.Locale.ROOT);
+        return m.contains("STATUS_OBJECT_NAME_NOT_FOUND") || m.contains("STATUS_NO_SUCH_FILE");
     }
 
     /** Wie {@link #ensureLocal(Context, String, int)} mit dem Jahr aus dem Dateinamen (Altbelege). */

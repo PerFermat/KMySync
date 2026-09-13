@@ -104,6 +104,17 @@
     <string name="receipt_export_missing">%1$d waren nicht zu holen (weder auf diesem Gerät noch auf dem Server erreichbar).</string>
     <string name="receipt_export_empty">Kein einziger Beleg war zu holen – %1$d fehlen. Es wurde keine Datei angelegt.</string>
     <string name="receipt_export_failed">Export fehlgeschlagen: %1$s</string>
+    <string name="receipt_export_paused">Pausiert – KMySync offen lassen</string>
+    <string name="receipt_export_not_found">• %1$d liegen nicht auf dem Server</string>
+    <string name="receipt_export_unreachable">• %1$d waren nicht erreichbar (Verbindung)</string>
+    <string name="receipt_export_pending">• %1$d kamen nicht mehr dran: der Lauf hat nach zu langer Pause im Hintergrund aufgehört</string>
+    <string name="receipt_export_retry">Den Export noch einmal starten holt die fehlenden nach – die schon geholten Belege liegen dann auf dem Gerät und sind sofort dabei.</string>
+    <string name="receipt_export_skipped">• %1$d wurden auf deinen Wunsch nicht geladen</string>
+    <string name="receipt_download_ask">%1$d Belege liegen auf dem Gerät, %2$d müssten erst vom Server geladen werden.</string>
+    <string name="receipt_download_takes_time">Das Laden dauert – lass die App dabei offen. Der Lauf pausiert sonst und macht erst weiter, wenn du zurückkommst.</string>
+    <string name="receipt_download_metered">Die aktuelle Verbindung ist getaktet und kostet dabei Geld.</string>
+    <string name="receipt_download_all">Alle exportieren</string>
+    <string name="receipt_download_local_only">Nur die vorhandenen (%1$d)</string>
     <string name="action_filter">Filtern</string>
     <string name="action_analysis">Auswertung</string>
     <string name="action_balance">Bestände</string>

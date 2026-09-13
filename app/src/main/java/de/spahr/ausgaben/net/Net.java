@@ -29,4 +29,25 @@ public final class Net {
         NetworkCapabilities caps = cm.getNetworkCapabilities(network);
         return caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
     }
+
+    /**
+     * true, wenn die aktuelle Verbindung Geld kostet – Mobilfunk oder ein WLAN, das der Nutzer als
+     * getaktet gekennzeichnet hat.
+     *
+     * <p>Im Zweifel {@code false}: Ohne Auskunft stünde die Warnung vor größeren Downloads sonst
+     * ständig ohne Grund da, und eine Warnung, die immer kommt, liest niemand mehr.</p>
+     */
+    public static boolean isMetered(Context context) {
+        ConnectivityManager cm = (ConnectivityManager)
+                context.getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) {
+            return false;
+        }
+        Network network = cm.getActiveNetwork();
+        if (network == null) {
+            return false;
+        }
+        NetworkCapabilities caps = cm.getNetworkCapabilities(network);
+        return caps != null && !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED);
+    }
 }

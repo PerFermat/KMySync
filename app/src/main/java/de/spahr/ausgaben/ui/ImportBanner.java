@@ -81,6 +81,16 @@ public final class ImportBanner {
         return (done, total) -> set(phaseLabel, ImportPhase.map(done, total, from, to));
     }
 
+    /**
+     * Nur den Text wechseln, die Zahl unberührt lassen – für einen Lauf, der zwischendurch pausiert und
+     * danach dort weitermacht, wo er war. Aus jedem Thread erlaubt ({@code label} ist volatile).
+     */
+    public void label(String phaseLabel) {
+        if (phaseLabel != null) {
+            label = phaseLabel;
+        }
+    }
+
     /** Meldung von Hand – für Phasen, die von sich aus nicht zählen. */
     public void set(String phaseLabel, int p) {
         if (phaseLabel != null) {

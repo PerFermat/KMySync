@@ -42,6 +42,16 @@ public final class ReceiptPages {
      * von der ersten Fassung an immer ein {@code _p<n>}.
      */
     public static List<String> find(Context context, String tagName, int year, String ext) {
+        return find(context, tagName, year, ext, null);
+    }
+
+    /**
+     * Wie {@link #find(Context, String, int, String)}, nutzt zum Nachladen aber eine mitgebrachte
+     * Verbindung – siehe {@link ReceiptSync#ensureLocal(Context, String, int,
+     * de.spahr.ausgaben.net.RemoteStorage)}. {@code null} heißt: je Datei selbst aufbauen.
+     */
+    public static List<String> find(Context context, String tagName, int year, String ext,
+                                    de.spahr.ausgaben.net.RemoteStorage shared) {
         List<String> pages = new ArrayList<>();
         if (tagName == null || tagName.trim().isEmpty()) {
             return pages;
@@ -64,25 +74,60 @@ public final class ReceiptPages {
         if (!pages.isEmpty()) {
             return pages;
         }
-        // Nichts lokal (z. B. nach einem Handywechsel): vom Netzlaufwerk nachladen. Der Tag benennt bei
-        // Altbelegen die Datei selbst, sonst nur die Basis – dann ist Seite 1 die erste zu holende Datei.
-        String first = photos && NoteReceipt.yearOf(tagName) >= 0
-                ? tagName
-                : NoteReceipt.pageName(base, 1, ext);
-        File got = ReceiptSync.ensureLocal(app, first, year);
+        // Nichts lokal (z. B. nach einem Handywechsel): vom Netzlaufwerk nachladen.
+        String first = firstPageName(tagName, ext);
+        File got = ReceiptSync.ensureLocal(app, first, year, shared);
         if (got == null || !got.exists()) {
             return pages;
         }
-        pages.add(first);
-        for (int n = NoteReceipt.pageOf(first) + 1; n <= MAX_PAGES; n++) {
+        return pagesFrom(app, first, year, ext, shared, true);
+    }
+
+    /**
+     * Die Seiten eines Belegs, dessen <b>erste Seite schon vorliegt</b>. Die Folgeseiten werden bei
+     * Bedarf nachgeladen ({@code allowDownload}) oder nur lokal gesucht.
+     *
+     * <p>Nötig, weil der Beleg-Export die erste Seite einzeln holt – nur an ihr ist zu erkennen, ob ein
+     * Beleg auf dem Server fehlt oder nur die Verbindung klemmt. Danach dürfen die Folgeseiten nicht
+     * bloß lokal gesucht werden: Sonst verlöre ein mehrseitiger Beleg alles ab Seite 2.</p>
+     */
+    public static List<String> pagesFrom(Context context, String firstName, int year, String ext,
+                                         de.spahr.ausgaben.net.RemoteStorage shared,
+                                         boolean allowDownload) {
+        Context app = context.getApplicationContext();
+        List<String> pages = new ArrayList<>();
+        if (firstName == null) {
+            return pages;
+        }
+        pages.add(firstName);
+        String base = NoteReceipt.baseOf(firstName);
+        for (int n = NoteReceipt.pageOf(firstName) + 1; n <= MAX_PAGES; n++) {
             String name = NoteReceipt.pageName(base, n, ext);
-            File f = ReceiptSync.ensureLocal(app, name, year);
+            File f = allowDownload
+                    ? ReceiptSync.ensureLocal(app, name, year, shared)
+                    : Receipts.localFile(app, name);
             if (f == null || !f.exists()) {
                 break;
             }
             pages.add(name);
         }
         return pages;
+    }
+
+    /**
+     * Die erste vom Netzlaufwerk zu holende Datei zu einem Beleg-Tag. Der Tag benennt bei Altbelegen
+     * (Fotos mit Jahres-Präfix) die Datei selbst, sonst nur die Basis – dann ist es Seite 1.
+     *
+     * <p>Öffentlich, weil der Beleg-Export sie einzeln anfragt: Nur an dieser ersten Datei lässt sich
+     * unterscheiden, ob ein Beleg gar nicht auf dem Server liegt oder ob nur die Verbindung klemmt.</p>
+     *
+     * <p>Rein und testbar.</p>
+     */
+    public static String firstPageName(String tagName, String ext) {
+        String base = NoteReceipt.baseOf(tagName);
+        return NoteReceipt.JPG.equals(ext) && NoteReceipt.yearOf(tagName) >= 0
+                ? tagName
+                : NoteReceipt.pageName(base, 1, ext);
     }
 
     /**

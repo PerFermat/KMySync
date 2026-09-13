@@ -241,6 +241,8 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     private ActivityResultLauncher<String> receiptZipLauncher;
     /** Was beim Antippen des Menüpunkts feststand – der Speicherdialog kommt ja erst danach. */
     private java.util.List<de.spahr.ausgaben.receipt.ReceiptExportJobs.Job> receiptExportJobs;
+    /** Antwort auf die Rückfrage vor dem Speicherdialog: fehlende Belege nachladen? */
+    private boolean receiptExportDownload = true;
     private ActivityResultLauncher<Intent> voiceLauncher;
     private VoiceEntryController voiceEntry;
     private ActivityResultLauncher<Intent> editLauncher;
@@ -1196,11 +1198,56 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
             }
         }
         repository.securityInfoForBookings(kandidaten, info -> {
-            receiptExportJobs = de.spahr.ausgaben.receipt.ReceiptExportJobs.collect(
-                    filtered, uebersetzteBewegungsarten(info));
-            receiptZipLauncher.launch("belege-" + new java.text.SimpleDateFormat("yyyyMMdd-HHmmss",
-                    java.util.Locale.US).format(new java.util.Date()) + ".zip");
+            de.spahr.ausgaben.receipt.ReceiptExportPlan plan =
+                    de.spahr.ausgaben.receipt.ReceiptExportPlan.of(this,
+                            de.spahr.ausgaben.receipt.ReceiptExportJobs.collect(
+                                    filtered, uebersetzteBewegungsarten(info)));
+            // Gepackt wird in der Reihenfolge der Liste: erst die Belege, die schon hier liegen. Bricht
+            // das Nachladen später ab, stehen sie deshalb auf jeden Fall in der Datei.
+            receiptExportJobs = plan.ordered();
+            if (!plan.needsDownload()) {
+                receiptExportDownload = true; // nichts zu holen – die Frage erübrigt sich
+                startReceiptZipPicker();
+                return;
+            }
+            askReceiptDownload(plan);
         });
+    }
+
+    /**
+     * Vor dem Nachladen fragen. Nicht nur wegen der Kosten an einer getakteten Verbindung: Ein paar
+     * hundert Dateien vom Server zu holen dauert, und wer das vorher weiß, entscheidet anders, als wenn
+     * die App wortlos loslegt. Deshalb kommt die Frage auch im WLAN.
+     */
+    private void askReceiptDownload(de.spahr.ausgaben.receipt.ReceiptExportPlan plan) {
+        int da = plan.local.size();
+        int fehlt = plan.remote.size();
+        StringBuilder text = new StringBuilder()
+                .append(getString(R.string.receipt_download_ask, da, fehlt))
+                .append("\n\n")
+                .append(getString(R.string.receipt_download_takes_time));
+        if (de.spahr.ausgaben.net.Net.isMetered(this)) {
+            text.append("\n\n").append(getString(R.string.receipt_download_metered));
+        }
+        new AppDialog(this)
+                .setTitle(R.string.receipt_export_title)
+                .setMessage(text.toString())
+                .setPositiveButton(R.string.receipt_download_all, (d, w) -> {
+                    receiptExportDownload = true;
+                    startReceiptZipPicker();
+                })
+                .setNeutralButton(getString(R.string.receipt_download_local_only, da), (d, w) -> {
+                    receiptExportDownload = false;
+                    startReceiptZipPicker();
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    /** Speicherort wählen lassen; geschrieben wird erst in {@link #writeReceiptZip}. */
+    private void startReceiptZipPicker() {
+        receiptZipLauncher.launch("belege-" + new java.text.SimpleDateFormat("yyyyMMdd-HHmmss",
+                java.util.Locale.US).format(new java.util.Date()) + ".zip");
     }
 
     /**
@@ -1223,13 +1270,18 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     /** Packt die vorgemerkten Belege in die gewählte Datei; das Holen vom Server kann dauern. */
     private void writeReceiptZip(android.net.Uri uri) {
         final java.util.List<de.spahr.ausgaben.receipt.ReceiptExportJobs.Job> jobs = receiptExportJobs;
+        final boolean download = receiptExportDownload;
         receiptExportJobs = null;
         if (jobs == null || jobs.isEmpty()) {
             return;
         }
         final String label = getString(R.string.receipt_export_running);
+        final String pausedLabel = getString(R.string.receipt_export_paused);
         importBanner.start(label);
         final de.spahr.ausgaben.util.ProgressListener progress = importBanner.phase(label, 0, 100);
+        // Der Lauf schläft, solange die App im Hintergrund ist – das Banner sagt, warum nichts vorangeht.
+        final de.spahr.ausgaben.receipt.ReceiptZip.PauseListener pause =
+                p -> importBanner.label(p ? pausedLabel : label);
         new Thread(() -> {
             de.spahr.ausgaben.receipt.ReceiptZip.Result result = null;
             String error = null;
@@ -1237,12 +1289,16 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                 if (out == null) {
                     throw new java.io.IOException("kein Schreibzugriff");
                 }
-                result = de.spahr.ausgaben.receipt.ReceiptZip.write(this, out, jobs, progress);
+                result = de.spahr.ausgaben.receipt.ReceiptZip.write(this, out, jobs, progress, pause,
+                        download);
             } catch (Exception e) {
                 error = String.valueOf(e.getMessage());
             }
             final de.spahr.ausgaben.receipt.ReceiptZip.Result done = result;
             final String failed = error;
+            if (isFinishing() || isDestroyed()) {
+                return; // niemand mehr da, dem man etwas melden könnte – die Datei steht trotzdem
+            }
             runOnUiThread(() -> {
                 importBanner.finish();
                 if (failed != null) {
@@ -1265,20 +1321,48 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
             }
             new AppDialog(this)
                     .setTitle(R.string.receipt_export_title)
-                    .setMessage(getString(R.string.receipt_export_empty, r.missing))
+                    .setMessage(getString(R.string.receipt_export_empty, r.missing())
+                            + gruende(r))
                     .setPositiveButton(android.R.string.ok, null)
                     .show();
             return;
         }
         String text = getString(R.string.receipt_export_done, r.written);
-        if (r.missing > 0) {
-            text += "\n\n" + getString(R.string.receipt_export_missing, r.missing);
+        if (r.missing() > 0) {
+            text += "\n\n" + getString(R.string.receipt_export_missing, r.missing()) + gruende(r);
         }
         new AppDialog(this)
                 .setTitle(R.string.receipt_export_title)
                 .setMessage(text)
                 .setPositiveButton(android.R.string.ok, null)
                 .show();
+    }
+
+    /**
+     * Die Gründe hinter der Zahl der fehlenden Belege – je Grund eine Zeile, und nur die, die
+     * zutreffen. „Nicht gefunden" und „keine Verbindung" verlangen ganz verschiedene Schritte, deshalb
+     * standen sie nie zu Recht in derselben Zahl.
+     */
+    private String gruende(de.spahr.ausgaben.receipt.ReceiptZip.Result r) {
+        StringBuilder sb = new StringBuilder();
+        if (r.notFound > 0) {
+            sb.append("\n").append(getString(R.string.receipt_export_not_found, r.notFound));
+        }
+        if (r.unreachable > 0) {
+            sb.append("\n").append(getString(R.string.receipt_export_unreachable, r.unreachable));
+        }
+        if (r.pending > 0) {
+            sb.append("\n").append(getString(R.string.receipt_export_pending, r.pending));
+        }
+        if (r.skipped > 0) {
+            sb.append("\n").append(getString(R.string.receipt_export_skipped, r.skipped));
+        }
+        // Nur wo ein zweiter Anlauf etwas bringt: Was der Server nicht hat, holt auch die zehnte
+        // Wiederholung nicht.
+        if (r.unreachable + r.pending + r.skipped > 0) {
+            sb.append("\n\n").append(getString(R.string.receipt_export_retry));
+        }
+        return sb.toString();
     }
 
     // ---- Saldo-Leiste (Durchschalten) ----

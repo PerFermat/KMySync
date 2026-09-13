@@ -115,11 +115,15 @@ public class AusgabenApp extends Application implements Application.ActivityLife
     @Override
     public void onActivityStarted(@NonNull Activity activity) {
         startedActivities++;
+        // Derselbe Zähler, zweiter Zweck: lange Netzläufe (Beleg-Export) legen sich schlafen, solange
+        // keine Ansicht sichtbar ist – siehe ForegroundGate.
+        de.spahr.ausgaben.util.ForegroundGate.enter();
     }
 
     @Override
     public void onActivityStopped(@NonNull Activity activity) {
         startedActivities--;
+        de.spahr.ausgaben.util.ForegroundGate.leave();
         // Alle Activities gestoppt und kein reiner Konfigurationswechsel → App ist im Hintergrund → sperren.
         if (startedActivities <= 0 && !activity.isChangingConfigurations()) {
             startedActivities = 0;
