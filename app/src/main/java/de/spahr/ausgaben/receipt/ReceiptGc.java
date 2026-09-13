@@ -63,7 +63,12 @@ public final class ReceiptGc {
         if (db.bookingDao().countAll() == 0) {
             return;
         }
+        // Beide Seiten zählen: Eine Depotbewegung trägt ihren Beleg-Tag selbst, und bei den aus
+        // KMyMoney eingelesenen gibt es gar keine Geldbuchung dazu (booking_id = 0). Fragte der Lauf
+        // nur die Buchungen, hielte er jede Wertpapierabrechnung für verwaist – und löschte sie, sobald
+        // sie zum Ansehen einmal heruntergeladen wurde, lokal und in allen Jahresordnern des Servers.
         Set<String> keep = basesOf(db.bookingDao().getReceiptNotes());
+        keep.addAll(basesOf(db.securityDao().getReceiptNotes()));
         Set<String> pending = new HashSet<>();
         for (String entry : Receipts.pending(ctx)) {
             pending.add(Receipts.entryFile(entry));

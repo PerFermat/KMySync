@@ -161,6 +161,15 @@ public interface SecurityDao {
     @Query("DELETE FROM security_tx WHERE id = :id")
     void deleteTxById(long id);
 
+    /**
+     * Nur die Notizen der Bewegungen mit Beleg-Verweis – das Gegenstück zu
+     * {@code BookingDao.getReceiptNotes} für die Depotseite. Ohne sie hielte der Aufräumlauf die
+     * Abrechnung einer eingelesenen Bewegung für verwaist: die trägt ihren Tag allein hier
+     * ({@code booking_id = 0}, siehe {@link SecurityTx#note}).
+     */
+    @Query("SELECT note FROM security_tx WHERE note LIKE '%BELEG:%' OR note LIKE '%BELEG (PDF):%'")
+    List<String> getReceiptNotes();
+
     /** In der App erfasste Bewegungen, die noch in die Datei geschrieben werden müssen. */
     @Query("SELECT * FROM security_tx WHERE pending = 1 ORDER BY date ASC, id ASC")
     List<SecurityTx> getPendingTx();
