@@ -120,7 +120,7 @@ Ein Entwurf für die MR-Beschreibung (Flavor, Submodul statt JitPack) steht in
 passiert ehrenamtlich. Erst nach dem Merge baut und veröffentlicht F-Droid.
 
 **Gute Nachricht:** Nur diese erste Einreichung geht von Hand. `UpdateCheckMode: Tags` plus
-`AutoUpdateMode: Version v%v` holen jede spätere Version automatisch vom Tag – kein weiterer MR.
+`AutoUpdateMode: Version` holen jede spätere Version automatisch vom Tag – kein weiterer MR.
 
 ## Regeln für dieses Projekt
 

@@ -6,30 +6,23 @@ SourceCode: https://github.com/PerFermat/KMySync
 IssueTracker: https://github.com/PerFermat/KMySync/issues
 Changelog: https://github.com/PerFermat/KMySync/releases
 
+AutoName: KMySync
+
 RepoType: git
 Repo: https://github.com/PerFermat/KMySync.git
 
 Builds:
-  - versionName: "2.0"
+  - versionName: '2.0'
     versionCode: 14
     commit: c08dcefca5ca10741f5452fdc174504a4d422c7d
     subdir: app
-    # The "foss" product flavor is the phone app without any Google Play Services. The Wear OS
-    # companion (:wear) needs the Google Wear Data Layer and is deliberately not packaged here.
+    submodules: true
     gradle:
       - foss
-    # MPAndroidChart does not come from JitPack: the repo vendors it as a git submodule
-    # (third_party/MPAndroidChart, pinned to tag v3.1.0) and builds it from source as the
-    # ':mpandroidchart' Gradle module, so no srclib is needed - only the submodule checkout.
-    submodules: true
-    # The Wear OS module is not built here and ':app' does not depend on it, but it sits in the
-    # tree the scanner walks and pulls in the Google Wear Data Layer. Deleting it before the scan
-    # keeps that dependency out of the build entirely. Verified that ':app:assembleFossRelease'
-    # succeeds without the directory present.
     scandelete:
       - wear
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: "2.0"
+CurrentVersion: '2.0'
 CurrentVersionCode: 14

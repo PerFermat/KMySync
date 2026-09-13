@@ -27,13 +27,29 @@ via F-Droid; it stays a GitHub-only artifact (its microphone permission is unaff
 
 3. Open a merge request against [fdroiddata](https://gitlab.com/fdroid/fdroiddata) adding
    `metadata/de.spahr.ausgaben.yml`. **Copy [`de.spahr.ausgaben.yml`](de.spahr.ausgaben.yml) from
-   this folder verbatim** — it is kept ready to paste, which is why it carries no notes addressed
-   at us; everything explaining *our* side lives in this README instead. Keep the file name and the
+   this folder verbatim** — it is kept ready to paste, which is why it carries no comments at all.
+
+   That is not a style choice. The CI job `fdroid rewritemeta` rewrites every recipe into a
+   canonical form and **strips all comments** doing so, so a commented file fails the pipeline.
+   The same job dictates `'2.0'` over `"2.0"` and `submodules` before `gradle`; `checkupdates`
+   additionally wants `AutoName`. What would have been comments is recorded here instead:
+
+   - `gradle: - foss` — the phone app without any Google Play Services. The Wear OS companion
+     (`:wear`) needs the Google Wear Data Layer and is deliberately not packaged.
+   - `submodules: true` — MPAndroidChart does not come from JitPack. The repo vendors it as a git
+     submodule (`third_party/MPAndroidChart`, pinned to tag `v3.1.0`) and builds it from source as
+     the `:mpandroidchart` module, so no srclib is needed — only the submodule checkout.
+   - `scandelete: - wear` — `:app` does not depend on `:wear`, but the module sits in the tree the
+     scanner walks and pulls in the Google Wear Data Layer. Deleting it before the scan keeps that
+     dependency out entirely; verified that `:app:assembleFossRelease` succeeds without the
+     directory. (`scanignore` is not allowed in fdroiddata.)
+
+   Keep the file name and the
    package id `de.spahr.ausgaben`: F-Droid keys apps by applicationId, not by display name, and
    keeping it is what lets existing installs update across the rename to KMySync. The display name
    comes from `app_name` / fastlane `title.txt` and needs no entry in the recipe.
 
-   Only this first submission is manual. `UpdateCheckMode: Tags` plus `AutoUpdateMode: Version v%v`
+   Only this first submission is manual. `UpdateCheckMode: Tags` plus `AutoUpdateMode: Version`
    make F-Droid pick up every later version from its tag on its own — no further merge request.
 
    What fdroiddata expects of the merge request itself (from its **App inclusion** template):
