@@ -93,11 +93,24 @@ unzip -p app/build/outputs/apk/foss/release/app-foss-release*.apk 'classes*.dex'
    versionName 2.0 in beiden APKs, Signaturzertifikat gleich wie bei v1.12 (`571fd757…afc3c`), im
    `foss`-APK **0** Treffer auf `com/google/android/gms` (im `full`-APK 1557).
 
-   **Zu beachten:** `changelogs/14.txt` wurde versehentlich angelegt und liegt deshalb **im Tag**,
-   obwohl die Erstveröffentlichung bewusst ohne Änderungstext geplant war (siehe den Punkt weiter
-   oben). Aus `main` ist die Datei wieder entfernt. Zieht der F-Droid-Build seine Metadaten aus dem
-   getaggten Commit, erscheint sie bei der ersten Veröffentlichung trotzdem – dann hilft nur, den Tag
-   neu zu setzen. Vor dem Merge Request prüfen, ob einem das den Eingriff wert ist.
+   **Zu beachten – inzwischen bestätigt:** `changelogs/14.txt` wurde versehentlich angelegt und liegt
+   deshalb **im Commit `c08dcef`**, obwohl die Erstveröffentlichung bewusst ohne Änderungstext geplant
+   war (siehe den Punkt weiter oben). Aus `main` ist die Datei entfernt – und genau das beweist, woher
+   F-Droid seine Metadaten nimmt: Der Linter der Pipeline vom 13.09.2026 beanstandet `whatsNew` in
+   allen drei Sprachen, obwohl es die Datei in `main` nicht gibt. **Gelesen wird der gebaute Commit,
+   nicht der Branch.**
+
+   Die Datei ist mit 1228 / 1136 / 1327 Zeichen weit über der Empfehlung von 500. Der Befund ist
+   „Minor", `fdroid lint` bleibt grün, der Merge wird nicht blockiert.
+
+   **Bewusst nicht behoben.** Das Rezept pinnt den vollen Commit-Hash, nicht den Tag; die Datei
+   loszuwerden bräuchte also einen neuen Commit und damit einen neuen versionCode, ein neues
+   GitHub-Release, neue Prüfsummen und einen neuen Prüflauf. Für eine Formatwarnung steht das in
+   keinem Verhältnis. Die erste F-Droid-Seite zeigt daher einen Änderungstext, der sich auf nie dort
+   veröffentlichte GitHub-Versionen bezieht, womöglich abgeschnitten.
+
+   **Lehre für das nächste Release:** je Sprache eine knappe `changelogs/<versionCode>.txt` unter
+   500 Zeichen anlegen – *vor* dem Taggen, denn danach ist sie nicht mehr korrigierbar.
 
 ## Offen
 
