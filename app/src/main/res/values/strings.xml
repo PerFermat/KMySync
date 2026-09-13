@@ -104,7 +104,10 @@
     <string name="receipt_export_missing">%1$d could not be fetched (not on this device and not reachable on the server).</string>
     <string name="receipt_export_empty">Not a single receipt could be fetched — %1$d are missing. No file was created.</string>
     <string name="receipt_export_failed">Export failed: %1$s</string>
-    <string name="receipt_export_paused">Paused — keep KMySync open</string>
+    <string name="receipt_export_running_count">Packing receipts (%1$d/%2$d)</string>
+    <string name="receipt_export_running_fetch">Fetching and packing receipts…</string>
+    <string name="receipt_export_running_fetch_count">Fetching and packing (%1$d/%2$d)</string>
+    <string name="receipt_export_paused">Paused — keep the app open</string>
     <string name="receipt_export_not_found">• %1$d not on the server</string>
     <string name="receipt_export_unreachable">• %1$d could not be reached (connection)</string>
     <string name="receipt_export_pending">• %1$d were not reached: the run stopped after waiting too long in the background</string>

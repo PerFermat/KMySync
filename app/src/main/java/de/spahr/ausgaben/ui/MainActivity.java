@@ -243,6 +243,8 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     private java.util.List<de.spahr.ausgaben.receipt.ReceiptExportJobs.Job> receiptExportJobs;
     /** Antwort auf die Rückfrage vor dem Speicherdialog: fehlende Belege nachladen? */
     private boolean receiptExportDownload = true;
+    /** Wieviele der vorgemerkten Belege schon auf dem Gerät liegen – sie stehen in der Liste vorn. */
+    private int receiptExportLocal;
     private ActivityResultLauncher<Intent> voiceLauncher;
     private VoiceEntryController voiceEntry;
     private ActivityResultLauncher<Intent> editLauncher;
@@ -1205,6 +1207,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
             // Gepackt wird in der Reihenfolge der Liste: erst die Belege, die schon hier liegen. Bricht
             // das Nachladen später ab, stehen sie deshalb auf jeden Fall in der Datei.
             receiptExportJobs = plan.ordered();
+            receiptExportLocal = plan.local.size();
             if (!plan.needsDownload()) {
                 receiptExportDownload = true; // nichts zu holen – die Frage erübrigt sich
                 startReceiptZipPicker();
@@ -1271,17 +1274,33 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     private void writeReceiptZip(android.net.Uri uri) {
         final java.util.List<de.spahr.ausgaben.receipt.ReceiptExportJobs.Job> jobs = receiptExportJobs;
         final boolean download = receiptExportDownload;
+        // Bis hierher liegen die Belege schon auf dem Gerät – ab da wird geholt (die Liste ist
+        // vorsortiert, siehe ReceiptExportPlan.ordered).
+        final int lokal = download ? receiptExportLocal : jobs == null ? 0 : jobs.size();
         receiptExportJobs = null;
         if (jobs == null || jobs.isEmpty()) {
             return;
         }
-        final String label = getString(R.string.receipt_export_running);
         final String pausedLabel = getString(R.string.receipt_export_paused);
-        importBanner.start(label);
-        final de.spahr.ausgaben.util.ProgressListener progress = importBanner.phase(label, 0, 100);
+        importBanner.start(getString(lokal > 0
+                ? R.string.receipt_export_running
+                : R.string.receipt_export_running_fetch));
+        // Der Text zählt mit: Bei 238 Belegen sagt ein Prozentwert allein zu wenig darüber, wie weit
+        // der Lauf ist und wie lange er noch braucht. Und er sagt, woran es gerade liegt, wenn es
+        // langsam vorangeht – Packen dauert Millisekunden, Holen dauert.
+        final String[] zaehlend = {getString(R.string.receipt_export_running)};
+        final de.spahr.ausgaben.util.ProgressListener progress = (done, total) -> {
+            boolean holt = done >= lokal && total > lokal;
+            zaehlend[0] = getString(holt
+                    ? R.string.receipt_export_running_fetch_count
+                    : R.string.receipt_export_running_count, done, total);
+            importBanner.set(zaehlend[0],
+                    de.spahr.ausgaben.export.ImportPhase.map(done, total, 0, 100));
+        };
         // Der Lauf schläft, solange die App im Hintergrund ist – das Banner sagt, warum nichts vorangeht.
+        // Danach steht wieder der Zählstand da, bei dem er stehengeblieben ist.
         final de.spahr.ausgaben.receipt.ReceiptZip.PauseListener pause =
-                p -> importBanner.label(p ? pausedLabel : label);
+                p -> importBanner.label(p ? pausedLabel : zaehlend[0]);
         new Thread(() -> {
             de.spahr.ausgaben.receipt.ReceiptZip.Result result = null;
             String error = null;

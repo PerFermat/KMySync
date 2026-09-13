@@ -85,6 +85,8 @@
                         android:layout_weight="1"
                         android:textStyle="bold"
                         android:textColor="@color/import_banner_text"
+                        android:maxLines="1"
+                        android:ellipsize="end"
                         android:text="@string/import_running_banner" />
 
                     <TextView
