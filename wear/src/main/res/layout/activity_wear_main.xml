@@ -169,10 +169,9 @@
     </FrameLayout>
 
     <!--
-        Zustand D: Bestätigung der Zifferneingabe (Betrag, Empfänger, Countdown). Ebenfalls neben dem
-        eingerückten Rahmen, weil die Farbe der Buchungsart die ganze runde Fläche tragen soll – im
-        Einzug bliebe ein Quadrat auf schwarzem Grund stehen. Der Inhalt hält über die Innenabstände
-        Abstand vom Rand; unten mehr, sonst stößt der Abbrechen-Knopf an die Rundung.
+        Zustand D: Bestätigung der Zifferneingabe (Betrag, Empfänger, Countdown). Neben dem
+        eingerückten Rahmen, damit sich die Innenabstände frei wählen lassen: unten mehr als oben,
+        sonst stößt der Abbrechen-Knopf an die Rundung.
     -->
     <LinearLayout
         android:id="@+id/numberConfirmView"

@@ -623,17 +623,6 @@ public class WearMainActivity extends WearLocalizedActivity {
                 ? payeeCandidates.get(payeePick) : getString(R.string.wear_payee_none));
     }
 
-    /**
-     * Schwarz oder Weiß – je nachdem, worauf es steht. Das Gelb der Umbuchung ist so hell, daß weiße
-     * Schrift darauf kaum zu lesen wäre; Rot und Grün sind dunkel genug für Weiß.
-     */
-    private static int textAuf(int hintergrund) {
-        double helligkeit = (0.299 * android.graphics.Color.red(hintergrund)
-                + 0.587 * android.graphics.Color.green(hintergrund)
-                + 0.114 * android.graphics.Color.blue(hintergrund)) / 255.0;
-        return helligkeit > 0.6 ? android.graphics.Color.BLACK : android.graphics.Color.WHITE;
-    }
-
     /** Der gewählte Empfänger oder leer („ohne Empfänger" bzw. keiner in der Nähe). */
     private String chosenPayee() {
         return payeePick < payeeCandidates.size() ? payeeCandidates.get(payeePick) : "";
@@ -676,14 +665,6 @@ public class WearMainActivity extends WearLocalizedActivity {
         requestTileUpdate();
 
         confirmAmount.setText(amt);
-        // Die Buchungsart trägt die ganze Fläche: Auf einen Blick ist zu sehen, ob gerade eine
-        // Ausgabe oder eine Einnahme weggeht – der Knopf, mit dem man sie gewählt hat, ist längst
-        // aus dem Bild.
-        int grund = typeColor(pendingType);
-        numberConfirmView.setBackgroundColor(grund);
-        int schrift = textAuf(grund);
-        confirmAmount.setTextColor(schrift);
-        payeeName.setTextColor(schrift);
         showOnly(numberConfirmView);
         keepScreenOn(true);
         startCancelCountdown(btnCancelNumber);
