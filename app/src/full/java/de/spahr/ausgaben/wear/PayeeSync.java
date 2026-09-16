@@ -71,6 +71,13 @@ public final class PayeeSync {
 
     /** Die Zeilen in der Rangordnung des Handys; je Empfänger bleibt das beste Auftreten. */
     private static String buildList(Context app) {
+        // Ist der Standort in den Einstellungen abgeschaltet, geht gar nichts an die Uhr. Das Handy
+        // verwirft dann auch die Koordinaten einer Uhr-Buchung und blendet die eigene Ziffernmaske
+        // aus – dann darf die Uhr nicht als Einzige weiter nach Standort vorschlagen. Die leere
+        // Liste räumt außerdem auf, was vor dem Abschalten schon drüben lag.
+        if (!new SettingsStore(app).isGpsEnabled()) {
+            return "";
+        }
         AppDatabase db = AppDatabase.getInstance(app);
         Map<String, String[]> gefunden = new LinkedHashMap<>();   // key = Name klein → Zeilenfelder
         for (PayeeCorrection a : db.payeeCorrectionDao().getWithGps(1)) {
