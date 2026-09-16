@@ -15,6 +15,7 @@ public final class Receipts {
 
     private static final String PREFS = "receipts";
     private static final String KEY_PENDING = "pending";
+    private static final String KEY_MOVES = "moves";
 
     private Receipts() {
     }
@@ -94,6 +95,62 @@ public final class Receipts {
         if (removeFile(s, file)) {
             prefs(ctx).edit().putStringSet(KEY_PENDING, s).apply();
         }
+    }
+
+    // ---- Offene Jahreswechsel ----
+
+    /**
+     * Offene Umzüge in der Form {@code <vonJahr>|<nachJahr>|<datei>}.
+     *
+     * <p>Wird das Buchungsdatum über einen Jahreswechsel geschoben, muss die Datei auf dem Server in
+     * den neuen Jahresordner. Klappt das gerade nicht (offline), war der Beleg bisher verloren: Die
+     * Notiz nennt das neue Jahr, die Datei liegt im alten, und niemand versuchte es je wieder. Deshalb
+     * steht der Vorsatz hier, bis er ausgeführt ist – wie die Merkliste der offenen Uploads.</p>
+     */
+    public static synchronized Set<String> moves(Context ctx) {
+        return new HashSet<>(prefs(ctx).getStringSet(KEY_MOVES, new HashSet<>()));
+    }
+
+    /** Merkt einen Umzug vor. Ein schon vorgemerkter Umzug derselben Datei wird zusammengefasst. */
+    public static synchronized void addMove(Context ctx, String file, int fromYear, int toYear) {
+        if (file == null || fromYear == toYear) {
+            return;
+        }
+        Set<String> s = moves(ctx);
+        // Schon vorgemerkt? Dann zählt der ursprüngliche Ausgangsordner, nicht der zwischenzeitliche:
+        // Verschiebt der Nutzer 2024 → 2025 → 2026, ohne dass es dazwischen klappte, liegt die Datei
+        // immer noch in 2024.
+        int von = fromYear;
+        for (java.util.Iterator<String> it = s.iterator(); it.hasNext(); ) {
+            String e = it.next();
+            String[] teile = e.split("\\|", 3);
+            if (teile.length == 3 && teile[2].equals(file)) {
+                try {
+                    von = Integer.parseInt(teile[0]);
+                } catch (NumberFormatException ignored) {
+                    // unbrauchbarer Altstand – dann gilt das übergebene Jahr
+                }
+                it.remove();
+            }
+        }
+        if (von != toYear) {
+            s.add(von + "|" + toYear + "|" + file);
+        }
+        prefs(ctx).edit().putStringSet(KEY_MOVES, s).apply();
+    }
+
+    /** Streicht einen erledigten (oder gegenstandslosen) Umzug. */
+    public static synchronized void removeMove(Context ctx, String entry) {
+        Set<String> s = moves(ctx);
+        if (s.remove(entry)) {
+            prefs(ctx).edit().putStringSet(KEY_MOVES, s).apply();
+        }
+    }
+
+    /** Ausgangsjahr, Zieljahr und Datei eines Umzugs-Eintrags; {@code null}, wenn unbrauchbar. */
+    public static String[] moveParts(String entry) {
+        String[] teile = entry == null ? null : entry.split("\\|", 3);
+        return teile != null && teile.length == 3 ? teile : null;
     }
 
     /** Entfernt alle Einträge zu {@code file} – mit und ohne Jahresangabe. */

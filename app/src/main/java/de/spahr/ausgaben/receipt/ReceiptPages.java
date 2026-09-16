@@ -200,6 +200,27 @@ public final class ReceiptPages {
             return;
         }
         Context app = context.getApplicationContext();
+        // Erst vormerken, dann versuchen: Klappt es jetzt nicht, steht der Vorsatz fest und der
+        // nächste Anlauf weiß noch, aus welchem Jahr die Datei zu holen ist.
+        for (String page : pages) {
+            for (String name : new String[]{page, NoteReceipt.originalName(page)}) {
+                Receipts.addMove(app, name, fromYear, toYear);
+            }
+        }
+        movePending(app);
+    }
+
+    /**
+     * Führt die vorgemerkten Jahreswechsel aus, so weit es geht. Was misslingt, bleibt vorgemerkt.
+     *
+     * <p><b>Blockierend</b> – vom Aufrufer auf einem Hintergrund-Thread nutzen.</p>
+     */
+    public static void movePending(Context context) {
+        Context app = context.getApplicationContext();
+        java.util.Set<String> offen = Receipts.moves(app);
+        if (offen.isEmpty()) {
+            return;
+        }
         de.spahr.ausgaben.settings.SettingsStore settings =
                 new de.spahr.ausgaben.settings.SettingsStore(app);
         if (!settings.hasRemoteConfig()) {
@@ -212,18 +233,26 @@ public final class ReceiptPages {
             return;
         }
         String base = ReceiptSync.remoteBase(settings);
-        String from = base + "/" + fromYear;
-        String to = base + "/" + toYear;
-        for (String page : pages) {
-            for (String name : new String[]{page, NoteReceipt.originalName(page)}) {
-                try {
-                    byte[] bytes = storage.downloadBytes(from, name);
-                    storage.ensureFolder(base);
-                    storage.ensureFolder(to);
-                    storage.uploadBytes(to, name, bytes);
-                    storage.delete(from, name);
-                } catch (Exception e) {
-                    // Datei gibt es dort nicht (z. B. kein Original) oder gerade offline – überspringen.
+        for (String entry : offen) {
+            String[] teile = Receipts.moveParts(entry);
+            if (teile == null) {
+                Receipts.removeMove(app, entry); // unbrauchbar – nicht endlos mitschleppen
+                continue;
+            }
+            String name = teile[2];
+            try {
+                String from = base + "/" + teile[0];
+                String to = base + "/" + teile[1];
+                storage.ensureFolder(base);
+                storage.ensureFolder(to);
+                storage.move(from, name, to, name);
+                Receipts.removeMove(app, entry);
+            } catch (Exception e) {
+                // Nicht jeder Fehlschlag ist ein Netzproblem: Ein Original gibt es oft gar nicht, und
+                // eine Datei, die nie hochgeladen wurde, liegt auch nicht im alten Ordner. Solche
+                // Einträge dürfen nicht ewig bleiben – wer offline ist, behält seinen Eintrag.
+                if (de.spahr.ausgaben.net.Net.isOnline(app)) {
+                    Receipts.removeMove(app, entry);
                 }
             }
         }

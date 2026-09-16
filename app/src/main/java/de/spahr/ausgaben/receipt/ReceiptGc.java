@@ -84,33 +84,79 @@ public final class ReceiptGc {
         RemoteStorage storage = remote(ctx);
         String base = storage == null ? null : ReceiptSync.remoteBase(new SettingsStore(ctx));
         List<String> yearFolders = yearFolders(storage, base);
+        Set<String> angelegt = new HashSet<>();
         for (String name : orphans) {
             if (pending.contains(name)) {
                 continue; // noch nicht hochgeladen – die gehört noch jemandem
             }
             Receipts.localFile(ctx, name).delete();
             Receipts.removePending(ctx, name);
-            // Der Dateiname trägt kein Jahr mehr, also in allen Jahresordnern löschen – ein Fehlschlag
-            // (Datei liegt dort nicht) ist harmlos.
+            // Der Dateiname trägt kein Jahr mehr, also in allen Jahresordnern nachsehen – ein
+            // Fehlschlag (Datei liegt dort nicht) ist harmlos.
             for (String folder : yearFolders) {
-                try {
-                    storage.delete(folder, name);
-                } catch (Exception e) {
-                    // offline oder schon weg – beim nächsten Lauf erneut
-                }
+                toTrash(storage, base, folder, name, angelegt);
             }
         }
     }
 
-    /** Die vorhandenen Jahresordner unter {@code base}; leer, wenn es keinen Server gibt. */
-    private static List<String> yearFolders(RemoteStorage storage, String base) {
+    /** Der Papierkorb neben den Jahresordnern. */
+    private static final String TRASH_DIR = "Papierkorb";
+
+    /**
+     * Schiebt eine verwaiste Datei in den Papierkorb, statt sie zu löschen.
+     *
+     * <p>Der Lauf urteilt über Dateien, die er selbst nicht erzeugt hat, und er urteilt anhand dessen,
+     * was die Datenbank gerade weiß. Genau daran ist er schon einmal gescheitert: Weil er die
+     * Depotbewegungen nicht kannte, hielt er 22 Wertpapierabrechnungen für herrenlos und löschte sie
+     * auf dem Server – zu retten waren sie nur, weil die Quell-PDFs zufällig noch woanders lagen. Ein
+     * Papierkorb macht das nächste Fehlurteil folgenlos; wegräumen kann der Nutzer selbst.</p>
+     *
+     * <p>Der Jahresordner wird im Papierkorb beibehalten, damit eine zurückgeholte Datei weiß, wohin
+     * sie gehört. Angelegt wird er erst, wenn wirklich etwas hineinkommt – sonst entstünde bei jedem
+     * Lauf für jedes Jahr ein leerer Ordner.</p>
+     */
+    private static void toTrash(RemoteStorage storage, String base, String yearFolder, String name,
+                                Set<String> angelegt) {
+        if (storage == null || base == null) {
+            return;
+        }
+        String jahr = yearFolder.substring(yearFolder.lastIndexOf('/') + 1);
+        String ziel = base + "/" + TRASH_DIR + "/" + jahr;
+        try {
+            storage.move(yearFolder, name, ziel, name);
+            return;
+        } catch (Exception e) {
+            if (!angelegt.add(ziel)) {
+                return; // Ordner gibt es schon – dann lag die Datei hier einfach nicht
+            }
+        }
+        // Zweiter Anlauf mit angelegtem Zielordner. Scheitert auch der, liegt die Datei nicht in
+        // diesem Jahr (der Regelfall) oder es ist gerade kein Netz – beides folgenlos.
+        try {
+            storage.ensureFolder(base + "/" + TRASH_DIR);
+            storage.ensureFolder(ziel);
+            storage.move(yearFolder, name, ziel, name);
+        } catch (Exception ignored) {
+            // beim nächsten Lauf erneut
+        }
+    }
+
+    /**
+     * Die vorhandenen Jahresordner unter {@code base}; leer, wenn es keinen Server gibt.
+     *
+     * <p>Der Papierkorb ist selbst ein Unterordner von {@code base} und bleibt ausgenommen – sonst
+     * räumte der Lauf ihn in sich selbst und schöbe das schon Weggeräumte eine Ebene tiefer.</p>
+     */
+    static List<String> yearFolders(RemoteStorage storage, String base) {
         List<String> out = new ArrayList<>();
         if (storage == null) {
             return out;
         }
         try {
             for (String name : storage.listFolders(base)) {
-                out.add(base + "/" + name);
+                if (!TRASH_DIR.equalsIgnoreCase(name)) {
+                    out.add(base + "/" + name);
+                }
             }
         } catch (Exception e) {
             // Ordner (noch) nicht da oder offline – dann bleibt es beim lokalen Aufräumen.

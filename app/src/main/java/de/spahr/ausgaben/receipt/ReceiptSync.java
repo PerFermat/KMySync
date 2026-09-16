@@ -48,13 +48,19 @@ public final class ReceiptSync {
         return RemotePath.join(settings.getFolder(), REMOTE_SUBDIR);
     }
 
-    /** Lädt alle offenen Belege hoch (No-op ohne Remote-Konfiguration bzw. ohne offene Dateien). */
+    /**
+     * Lädt alle offenen Belege hoch und holt die offenen Jahreswechsel nach (No-op ohne
+     * Remote-Konfiguration bzw. ohne offene Vorgänge).
+     */
     public static void syncPending(Context context) {
         final Context ctx = context.getApplicationContext();
         final SettingsStore settings = new SettingsStore(ctx);
         if (!settings.hasRemoteConfig()) {
             return;
         }
+        // Auf demselben Faden wie die Uploads: Ein Umzug, der beim letzten Mal nicht klappte, würde
+        // sonst nie wieder versucht – und der Beleg bliebe im alten Jahresordner unauffindbar.
+        IO.execute(() -> ReceiptPages.movePending(ctx));
         final Set<String> pending = Receipts.pending(ctx);
         if (pending.isEmpty()) {
             return;

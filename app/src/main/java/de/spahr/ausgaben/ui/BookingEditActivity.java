@@ -2273,8 +2273,14 @@ public class BookingEditActivity extends LocalizedActivity {
 
     /**
      * Wurde das Buchungsdatum über einen Jahreswechsel geschoben, wandern die bereits hochgeladenen Bilder
-     * auf dem Server in den neuen Jahresordner. Läuft im Hintergrund; misslingt es (offline), findet der
-     * Rückfall in {@code ReceiptSync.ensureLocal} die Dateien weiterhin.
+     * auf dem Server in den neuen Jahresordner. Läuft im Hintergrund.
+     *
+     * <p>Misslingt es (offline), bleibt der Umzug vorgemerkt und wird beim nächsten Abgleich nachgeholt
+     * ({@code ReceiptPages.movePending}). Darauf kommt es an: Die Notiz nennt ab sofort das neue Jahr,
+     * und {@code ensureLocal} sucht nur dort. Hier stand früher, ein Rückfall in {@code ensureLocal}
+     * finde die Datei weiterhin – das stimmte nie, denn der Rückfall probiert einen anderen
+     * Basisordner, aber dasselbe Jahr. Auf diesem Gerät fiel es nur deshalb nicht auf, weil die lokale
+     * Kopie liegen bleibt; auf jedem anderen war der Beleg weg.</p>
      */
     private void moveReceiptYear(int newYear) {
         if (booking == null || origReceiptYear < 0 || origReceiptYear == newYear) {
