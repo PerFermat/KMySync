@@ -125,6 +125,8 @@
     <string name="receipt_download_all">Alle exportieren</string>
     <string name="receipt_download_local_only">Nur die vorhandenen (%1$d)</string>
     <string name="action_filter">Filtern</string>
+    <string name="action_import_all">Alles importieren</string>
+    <string name="action_reports">Berichte</string>
     <string name="action_analysis">Auswertung</string>
     <string name="action_balance">Bestände</string>
     <string name="action_budget">Budget</string>

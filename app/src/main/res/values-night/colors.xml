@@ -16,6 +16,8 @@
     <color name="saldo_bar_bg">#3A3A3A</color>
     <color name="saldo_bar_flash">#565656</color>
     <color name="list_divider">#333333</color>
+    <!-- Menü-Icons: nachts ist der Menügrund dunkel, dort bleibt Weiß richtig. -->
+    <color name="menu_icon">#FFFFFF</color>
     <!-- Geschlossene Konten: auf dunklem Grund ist der Abstand zur weißen Schrift so schon richtig. -->
     <color name="closed_account_text">#757575</color>
     <!-- Homescreen-Widget (Nacht) -->

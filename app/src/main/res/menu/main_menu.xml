@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Das Band trägt in beiden Menüs dieselben drei Symbole in derselben Reihenfolge – Exportieren,
+    Alles importieren, Filtern (siehe depot_menu.xml). Alle drei stehen auf „always": So sind sie
+    überall an derselben Stelle, und nur so stimmt auch die Ausnahmeliste in MenuIcons – ein Symbol,
+    das mal im Band und mal im Menü landet, wäre in einem der beiden Fälle falsch gefärbt.
+-->
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
@@ -6,49 +12,74 @@
         android:id="@+id/action_export"
         android:icon="@drawable/ic_export"
         android:title="@string/action_export"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
+
+    <!--
+        Bisher kam man an „alles importieren" nur über zwei unsichtbare Griffe: nach unten wischen,
+        während „Alle Konten" gewählt ist, oder lang auf „Alle Konten" in der Schublade drücken. Mit
+        einem einzelnen Konto in der Auswahl ging es gar nicht. Nur im KMyMoney-Modus sichtbar
+        (siehe onPrepareOptionsMenu) – im CSV-Modus gibt es weder Depots noch Planungen.
+    -->
+    <item
+        android:id="@+id/action_import_all"
+        android:icon="@drawable/ic_import"
+        android:title="@string/action_import_all"
+        app:showAsAction="always" />
 
     <item
         android:id="@+id/action_filter"
         android:icon="@drawable/ic_filter"
         android:title="@string/action_filter"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
 
     <!-- Nur bei gesetztem Filter sichtbar (siehe onPrepareOptionsMenu). -->
     <item
         android:id="@+id/action_export_receipts"
+        android:icon="@drawable/ic_pdf"
         android:title="@string/action_export_receipts"
         app:showAsAction="never" />
 
+    <!--
+        Die fünf Auswertungen standen früher gleichrangig neben Profilwechsel und Einstellungen –
+        acht Zeilen, in denen nichts zusammengehörte. Gebündelt bleiben oben vier übrig.
+        showAsAction gilt nur für die oberste Ebene; im Untermenü trägt deshalb keiner mehr eines.
+    -->
     <item
-        android:id="@+id/action_analysis"
+        android:id="@+id/action_reports"
         android:icon="@drawable/ic_chart"
-        android:title="@string/action_analysis"
-        app:showAsAction="ifRoom" />
+        android:title="@string/action_reports"
+        app:showAsAction="never">
+        <menu>
+            <item
+                android:id="@+id/action_analysis"
+                android:icon="@drawable/ic_chart"
+                android:title="@string/action_analysis" />
 
-    <item
-        android:id="@+id/action_categories"
-        android:title="@string/action_categories"
-        app:showAsAction="never" />
+            <item
+                android:id="@+id/action_categories"
+                android:icon="@drawable/ic_pie"
+                android:title="@string/action_categories" />
 
-    <item
-        android:id="@+id/action_balance"
-        android:title="@string/action_balance"
-        app:showAsAction="never" />
+            <item
+                android:id="@+id/action_balance"
+                android:icon="@drawable/ic_wallet"
+                android:title="@string/action_balance" />
 
-    <item
-        android:id="@+id/action_budget"
-        android:icon="@drawable/ic_budget"
-        android:title="@string/action_budget"
-        app:showAsAction="never" />
+            <item
+                android:id="@+id/action_budget"
+                android:icon="@drawable/ic_budget"
+                android:title="@string/action_budget" />
 
-    <item
-        android:id="@+id/action_scheduled"
-        android:title="@string/action_scheduled"
-        app:showAsAction="never" />
+            <item
+                android:id="@+id/action_scheduled"
+                android:icon="@drawable/ic_calendar"
+                android:title="@string/action_scheduled" />
+        </menu>
+    </item>
 
     <item
         android:id="@+id/action_switch_profile"
+        android:icon="@drawable/ic_switch"
         android:title="@string/action_switch_profile"
         app:showAsAction="never" />
 

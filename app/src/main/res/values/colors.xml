@@ -14,6 +14,9 @@
     <color name="widget_text">#1B1B1B</color>
     <color name="widget_text_secondary">#6B6B6B</color>
     <color name="grey_text">#757575</color>
+    <!-- Icons im aufgeklappten Menü: schwarz. Ein Symbol ist Fläche ohne Strichstärke, ein mittleres
+         Grau wirkt daran blass – auf dem hellen Menügrund ist voller Kontrast richtig. -->
+    <color name="menu_icon">#000000</color>
     <!-- Untertitel der Toolbar (z. B. „Filter aktiv"): helles Grau auf dem grünen Band – lesbar,
          aber vom weißen Titel abgesetzt. Ohne diese Angabe bliebe der Untertitel schwarz. -->
     <color name="toolbar_subtitle">#CCFFFFFF</color>

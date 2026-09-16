@@ -7,6 +7,7 @@
         <item name="colorSecondary">@color/green_accent</item>
         <item name="colorOnSecondary">@color/white</item>
         <item name="android:statusBarColor">@color/green_dark</item>
+        <item name="toolbarStyle">@style/Widget.Ausgaben.Toolbar</item>
     </style>
 
     <!-- Unsichtbare Aktivität für die Sprach-Schnellerfassung aus dem Widget (nur der System-Sprachdialog
@@ -20,10 +21,33 @@
         <item name="android:windowAnimationStyle">@null</item>
     </style>
 
-    <!-- Toolbar-Icons (Aktionen + Überlauf-Punkte) immer weiß auf grünem Grund.
-         Nur die Icon-Tönung anpassen; das Überlauf-Menü nutzt weiter das App-Theme (lesbar in beiden Modi). -->
+    <!-- Toolbar-Icons (Aktionen + Überlauf-Punkte) immer weiß auf grünem Grund. -->
     <style name="ThemeOverlay.Ausgaben.Toolbar" parent="">
         <item name="colorControlNormal">@color/white</item>
+    </style>
+
+    <!--
+        Hier stand einmal, das Überlauf-Menü nutze weiter das App-Theme. Das stimmte nicht: Ohne
+        eigenes popupTheme nimmt das Menü den Theme-Kontext der Toolbar – also das Weiß von oben.
+        Alles darin war damit weiß auf hellem Grund.
+
+        Es braucht BEIDE Hälften, sie greifen an verschiedenen Zeitpunkten:
+
+        • Der Aufklapp-Pfeil bei „Berichte" und alles andere, was der Aufklapper selbst zeichnet,
+          hängt am popupTheme – das hier.
+        • Die Symbole der Einträge nicht: Ihr {@code ?attr/colorControlNormal} ist längst aufgelöst,
+          wenn das Menü aufgeblasen wird. Sie werden in {@link MenuIcons} nachträglich umgefärbt.
+
+        Gesetzt wird das nicht in 25 Layouts, sondern einmal über den Toolbar-Standardstil des
+        App-Themes. Der Elternstil ist genau der, den Material3 ohnehin verwendet – es kommt nur
+        popupTheme hinzu, am Aussehen der Leisten ändert sich nichts.
+    -->
+    <style name="Widget.Ausgaben.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="popupTheme">@style/ThemeOverlay.Ausgaben.Popup</item>
+    </style>
+
+    <style name="ThemeOverlay.Ausgaben.Popup" parent="">
+        <item name="colorControlNormal">@color/menu_icon</item>
     </style>
 
     <!-- Bestätigungs-/Filter-Dialoge: Button-Text grün (hell) / weiß (dunkel) -->

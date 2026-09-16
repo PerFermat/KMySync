@@ -2034,8 +2034,10 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         getMenuInflater().inflate(R.menu.main_menu, menu);
         // Menü-Titel kommen aus dem String-Pool (umgehen die Übersetzung) → per getString neu setzen.
         setMenuTitle(menu, R.id.action_export, R.string.action_export);
+        setMenuTitle(menu, R.id.action_import_all, R.string.action_import_all);
         setMenuTitle(menu, R.id.action_export_receipts, R.string.action_export_receipts);
         setMenuTitle(menu, R.id.action_filter, R.string.action_filter);
+        setMenuTitle(menu, R.id.action_reports, R.string.action_reports);
         setMenuTitle(menu, R.id.action_analysis, R.string.action_analysis);
         setMenuTitle(menu, R.id.action_categories, R.string.action_categories);
         setMenuTitle(menu, R.id.action_balance, R.string.action_balance);
@@ -2043,6 +2045,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         setMenuTitle(menu, R.id.action_scheduled, R.string.action_scheduled);
         setMenuTitle(menu, R.id.action_switch_profile, R.string.action_switch_profile);
         setMenuTitle(menu, R.id.action_settings, R.string.action_settings);
+        MenuIcons.tintOverflow(this, menu);
         return true;
     }
 
@@ -2052,6 +2055,12 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         android.view.MenuItem scheduled = menu.findItem(R.id.action_scheduled);
         if (scheduled != null) {
             scheduled.setVisible(settings.isKmyMode());
+        }
+        // „Alles importieren" ebenfalls nur dort: Im CSV-Modus gibt es weder Depots noch Planungen,
+        // „alles" hätte also keine Bedeutung – der CSV-Import bleibt, wo er ist.
+        android.view.MenuItem importAll = menu.findItem(R.id.action_import_all);
+        if (importAll != null) {
+            importAll.setVisible(settings.isKmyMode());
         }
         // „Belege exportieren" bezieht sich auf die gefilterte Auswahl – ohne Filter ergäbe es nichts.
         android.view.MenuItem receipts = menu.findItem(R.id.action_export_receipts);
@@ -2078,6 +2087,11 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         int id = item.getItemId();
         if (id == R.id.action_export) {
             doExport();
+            return true;
+        } else if (id == R.id.action_import_all) {
+            // Derselbe Weg wie der lange Druck auf „Alle Konten" in der Schublade: Prüfungen,
+            // Fehlermeldungen und die Sicherheitsfrage stecken schon dort drin.
+            onImportRequested("", true);
             return true;
         } else if (id == R.id.action_export_receipts) {
             exportReceipts();

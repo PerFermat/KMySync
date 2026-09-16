@@ -384,7 +384,9 @@ public class DepotActivity extends LocalizedActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.depot_menu, menu);
         setMenuTitle(menu, R.id.action_export, R.string.action_export);
+        setMenuTitle(menu, R.id.action_import_all, R.string.action_import_all);
         setMenuTitle(menu, R.id.action_filter, R.string.action_filter);
+        setMenuTitle(menu, R.id.action_reports, R.string.action_reports);
         setMenuTitle(menu, R.id.action_analysis, R.string.action_analysis);
         setMenuTitle(menu, R.id.action_statement_rules, R.string.statement_rules);
         MenuItem rules = menu.findItem(R.id.action_statement_rules);
@@ -397,6 +399,7 @@ public class DepotActivity extends LocalizedActivity {
         setMenuTitle(menu, R.id.action_scheduled, R.string.action_scheduled);
         setMenuTitle(menu, R.id.action_switch_profile, R.string.action_switch_profile);
         setMenuTitle(menu, R.id.action_settings, R.string.action_settings);
+        MenuIcons.tintOverflow(this, menu);
         return true;
     }
 
@@ -429,6 +432,11 @@ public class DepotActivity extends LocalizedActivity {
         if (id == R.id.action_export) {
             // Export direkt hier ausführen – die Depot-Ansicht bleibt geöffnet (kein Wechsel zur Liste).
             doExport();
+            return true;
+        } else if (id == R.id.action_import_all) {
+            // Derselbe Weg wie der lange Druck auf „Alle Konten" in der Schublade – samt
+            // Sicherheitsfrage. null heißt: Konten, Depots und geplante Buchungen in einem Zug.
+            onImportRequested(null);
             return true;
         } else if (id == R.id.action_analysis) {
             if (depot != null && !depot.isEmpty()) {
