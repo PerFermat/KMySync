@@ -6,6 +6,9 @@
     <string name="wear_type_transfer">Traspaso</string>
     <string name="wear_type_expense">Gasto</string>
     <string name="wear_cancel">Cancelar</string>
+    <!-- Letzte Stelle der Empfaenger-Runde im Zahlenblock: bewusst keiner. -->
+    <string name="wear_payee_none">sin destinatario</string>
+    <string name="wear_payee_next">Siguiente destinatario</string>
     <string name="wear_prompt">Di un apunte, p. ej. \"peluquería 20 euros\"</string>
     <!-- Bis der Erkennungsdienst wirklich aufnimmt; erst danach „Speak now". -->
     <string name="wear_preparing">Un momento…</string>

@@ -66,6 +66,19 @@ public class WearMainActivity extends WearLocalizedActivity {
     private final StringBuilder amountInput = new StringBuilder();
     private boolean numberEntryActive;
 
+    /** Zweite Seite der Zifferneingabe: Betrag, Empfänger, Widerruf. */
+    private View numberConfirmView;
+    private TextView confirmAmount;
+    private Button btnCancelNumber;
+    private View btnPayeeNext;
+    private TextView payeeName;
+    /** Betrag der laufenden Bestätigung – der Text wird bei jedem Empfängerwechsel neu gebaut. */
+    private String pendingAmount = "";
+    /** Empfänger im 100-m-Umkreis, der nächstgelegene zuerst; leer = keiner in der Nähe. */
+    private final java.util.List<String> payeeCandidates = new java.util.ArrayList<>();
+    /** Gewählter Empfänger; die Stelle hinter dem letzten steht für „ohne Empfänger". */
+    private int payeePick;
+
     /** Zuletzt geprüfte Erreichbarkeit des Phones; optimistisch, bis die Abfrage antwortet. */
     private boolean phoneConnected = true;
 
@@ -159,6 +172,18 @@ public class WearMainActivity extends WearLocalizedActivity {
         findViewById(R.id.btnComma).setOnClickListener(v -> appendComma());
         findViewById(R.id.btnBack).setOnClickListener(v -> backspace());
         findViewById(R.id.btnEnter).setOnClickListener(v -> submitNumber());
+
+        // Zweite Seite: Betrag bestätigen, Empfänger durchschalten, Widerruf mit Countdown.
+        numberConfirmView = findViewById(R.id.numberConfirmView);
+        confirmAmount = findViewById(R.id.confirmAmount);
+        btnCancelNumber = findViewById(R.id.btnCancelNumber);
+        btnCancelNumber.setOnClickListener(v -> cancelConfirm());
+        payeeName = findViewById(R.id.payeeName);
+        btnPayeeNext = findViewById(R.id.btnPayeeNext);
+        // Ein Tipp auf den Namen schaltet ebenfalls weiter – auf dem kleinen Bildschirm trifft man
+        // ihn eher als den Knopf.
+        btnPayeeNext.setOnClickListener(v -> cyclePayee());
+        payeeName.setOnClickListener(v -> cyclePayee());
 
         permissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(), granted -> {
@@ -436,14 +461,27 @@ public class WearMainActivity extends WearLocalizedActivity {
 
     /** Was beiden Zuständen gemeinsam ist. */
     private void showSprachflaeche() {
-        typeSelection.setVisibility(View.GONE);
-        confirmView.setVisibility(View.VISIBLE);
+        showOnly(confirmView);
         confirmType.setText(typeLabel(pendingType));
         confirmType.setTextColor(typeColor(pendingType));
         btnCancel.setVisibility(View.GONE);
-        numberView.setVisibility(View.GONE);
         btnNumberPad.setVisibility(View.VISIBLE); // stille Zifferneingabe anbieten
         keepScreenOn(true);
+    }
+
+    /**
+     * Zeigt genau eine der vier Flächen und blendet die übrigen aus.
+     *
+     * <p>Vorher hat jeder Übergang seine eigenen Sichtbarkeiten gesetzt – und einer vergaß die
+     * Bestätigungsseite. Die blieb dann stehen und schien unter dem Zahlenblock durch, weil der als
+     * letzter im Layout steht und deshalb obenauf liegt. Mit einer Stelle für alle vier kann das
+     * nicht mehr passieren.</p>
+     */
+    private void showOnly(View sichtbar) {
+        typeSelection.setVisibility(sichtbar == typeSelection ? View.VISIBLE : View.GONE);
+        confirmView.setVisibility(sichtbar == confirmView ? View.VISIBLE : View.GONE);
+        numberView.setVisibility(sichtbar == numberView ? View.VISIBLE : View.GONE);
+        numberConfirmView.setVisibility(sichtbar == numberConfirmView ? View.VISIBLE : View.GONE);
     }
 
     /** Ein kurzer Stoß. Fehlt der Uhr ein Vibrationsmotor, geschieht schlicht nichts. */
@@ -480,9 +518,7 @@ public class WearMainActivity extends WearLocalizedActivity {
         numberEntryActive = true;
         amountInput.setLength(0);
         updateNumberDisplay();
-        typeSelection.setVisibility(View.GONE);
-        confirmView.setVisibility(View.GONE);
-        numberView.setVisibility(View.VISIBLE);
+        showOnly(numberView);
         keepScreenOn(true);
     }
 
@@ -520,6 +556,89 @@ public class WearMainActivity extends WearLocalizedActivity {
         numberDisplay.setText(amountInput.length() == 0 ? "0" : amountInput.toString());
     }
 
+    /** Empfänger im 100-m-Umkreis neu bestimmen (aus der vom Handy übertragenen Liste). */
+    private void refreshPayees() {
+        payeeCandidates.clear();
+        payeePick = 0;
+        String coords = location.currentCoords();
+        double[] ll = parseCoords(coords);
+        if (ll != null) {
+            payeeCandidates.addAll(
+                    PayeeStore.nearby(this, ll[0], ll[1], BalanceStore.selectedAccount(this)));
+        }
+        // Bleibt die Zeile leer, sind drei Dinge möglich: kein Fix, keine übertragene Liste, oder
+        // wirklich keiner in der Nähe. Ohne diese Zeile ist das am Handgelenk nicht zu unterscheiden.
+        // Die Koordinaten selbst stehen bewusst nicht im Protokoll – wo jemand einkauft, gehört
+        // nicht ins Systemlog.
+        android.util.Log.d("AusgabenWearPayees", "Standort " + (coords == null ? "fehlt" : "da")
+                + ", Kandidaten=" + payeeCandidates.size());
+        updatePayeeRow();
+    }
+
+    /** „lat, lon" in Zahlen; {@code null}, wenn nichts Brauchbares dasteht. */
+    private static double[] parseCoords(String coords) {
+        if (coords == null) {
+            return null;
+        }
+        int comma = coords.indexOf(',');
+        if (comma <= 0) {
+            return null;
+        }
+        try {
+            return new double[]{Double.parseDouble(coords.substring(0, comma).trim()),
+                    Double.parseDouble(coords.substring(comma + 1).trim())};
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Weiter zum nächsten Empfänger; nach dem letzten kommt „ohne Empfänger", dann wieder von vorn.
+     * Jede Änderung stellt den Countdown zurück – gebucht wird, wenn zehn Sekunden nichts passiert.
+     */
+    private void cyclePayee() {
+        if (payeeCandidates.isEmpty()) {
+            return;
+        }
+        payeePick = (payeePick + 1) % (payeeCandidates.size() + 1);
+        updatePayeeRow();
+        if (confirmEntryId != null) {
+            store.updateText(confirmEntryId, withPayee(pendingAmount));
+            startCancelCountdown(btnCancelNumber);
+        }
+    }
+
+    private void updatePayeeRow() {
+        if (payeeCandidates.isEmpty()) {
+            // Keiner in der Nähe: Zeile und Knopf bleiben weg, gebucht wird der reine Betrag – das
+            // Handy sucht den Empfänger dann wie bisher selbst. Die Seite kommt trotzdem, damit der
+            // Widerruf überall gleich funktioniert.
+            payeeName.setVisibility(View.GONE);
+            btnPayeeNext.setVisibility(View.GONE);
+            return;
+        }
+        payeeName.setVisibility(View.VISIBLE);
+        btnPayeeNext.setVisibility(View.VISIBLE);
+        payeeName.setText(payeePick < payeeCandidates.size()
+                ? payeeCandidates.get(payeePick) : getString(R.string.wear_payee_none));
+    }
+
+    /**
+     * Schwarz oder Weiß – je nachdem, worauf es steht. Das Gelb der Umbuchung ist so hell, daß weiße
+     * Schrift darauf kaum zu lesen wäre; Rot und Grün sind dunkel genug für Weiß.
+     */
+    private static int textAuf(int hintergrund) {
+        double helligkeit = (0.299 * android.graphics.Color.red(hintergrund)
+                + 0.587 * android.graphics.Color.green(hintergrund)
+                + 0.114 * android.graphics.Color.blue(hintergrund)) / 255.0;
+        return helligkeit > 0.6 ? android.graphics.Color.BLACK : android.graphics.Color.WHITE;
+    }
+
+    /** Der gewählte Empfänger oder leer („ohne Empfänger" bzw. keiner in der Nähe). */
+    private String chosenPayee() {
+        return payeePick < payeeCandidates.size() ? payeeCandidates.get(payeePick) : "";
+    }
+
     /** Enter: Betrag als stille Buchung ablegen (Art = gewählter Typ) und übertragen. */
     private void submitNumber() {
         String amt = amountInput.toString();
@@ -535,18 +654,57 @@ public class WearMainActivity extends WearLocalizedActivity {
         if (val <= 0) {
             return;
         }
-        long now = System.currentTimeMillis();
-        // text = nur Betrag → das Phone parst leeren Empfänger + Betrag → Auflösung per Standort.
-        // Zunächst ohne Koordinaten und mit zurückgehaltenem readyAt ablegen; der Standort wird
-        // anschließend aufgelöst (bis ~1 Min auf frischen Fix warten), dann wird gesendet.
-        String id = UUID.randomUUID().toString();
-        store.add(new PendingEntry(id, amt, pendingType, "",
-                BalanceStore.selectedAccount(this), BalanceStore.selectedPlace(this),
-                now, now + LOCATION_WAIT_MS));
+        showNumberConfirm(amt);
+    }
+
+    /**
+     * Zweite Seite: Betrag, Empfänger und der 10-Sekunden-Widerruf – derselbe Ablauf wie nach der
+     * Spracherfassung. Der Eintrag wird schon hier abgelegt (mit zurückgehaltenem {@code readyAt}),
+     * damit ein Absturz in den zehn Sekunden den getippten Betrag nicht verschluckt; „Abbrechen"
+     * nimmt ihn wieder heraus.
+     */
+    private void showNumberConfirm(String amt) {
         numberEntryActive = false;
+        pendingAmount = amt;
+        refreshPayees();
+
+        long now = System.currentTimeMillis();
+        confirmEntryId = UUID.randomUUID().toString();
+        store.add(new PendingEntry(confirmEntryId, withPayee(amt), pendingType, "",
+                BalanceStore.selectedAccount(this), BalanceStore.selectedPlace(this),
+                now, now + CANCEL_WINDOW_MS + LOCATION_WAIT_MS));
         requestTileUpdate();
-        resolveLocationThenSend(id);
-        showTypeSelection();
+
+        confirmAmount.setText(amt);
+        // Die Buchungsart trägt die ganze Fläche: Auf einen Blick ist zu sehen, ob gerade eine
+        // Ausgabe oder eine Einnahme weggeht – der Knopf, mit dem man sie gewählt hat, ist längst
+        // aus dem Bild.
+        int grund = typeColor(pendingType);
+        numberConfirmView.setBackgroundColor(grund);
+        int schrift = textAuf(grund);
+        confirmAmount.setTextColor(schrift);
+        payeeName.setTextColor(schrift);
+        showOnly(numberConfirmView);
+        keepScreenOn(true);
+        startCancelCountdown(btnCancelNumber);
+    }
+
+    /**
+     * Baut den Satz, den das Phone auswertet – so, wie man ihn auch sprechen würde:
+     * „Edeka 12,50 €". Damit läuft die Buchung durch dieselbe Kette wie eine gesprochene, inklusive
+     * Alias-Korrektur, Vorlage, Kategorie und Konto.
+     *
+     * <p>Der Name steht <b>vorn</b> und die Währung hinten, und das ist kein Geschmack: Der Auswerter
+     * nimmt bevorzugt die Zahl vor einem Währungswort und sonst die letzte Zahl im Satz. Bei
+     * „12,50 Aral 24" wäre die letzte Zahl die 24 aus dem Namen – der Betrag wäre falsch.</p>
+     */
+    private String withPayee(String amt) {
+        String payee = chosenPayee();
+        if (payee.isEmpty()) {
+            return amt;
+        }
+        String currency = PayeeStore.currency(this);
+        return currency.isEmpty() ? payee + " " + amt : payee + " " + amt + " " + currency;
     }
 
     /** Löst den Standort auf (Warten auf frischen Fix / Rückfall) und sendet den Eintrag danach. */
@@ -582,12 +740,26 @@ public class WearMainActivity extends WearLocalizedActivity {
         btnCancel.setVisibility(View.VISIBLE);
         btnNumberPad.setVisibility(View.GONE);
 
+        startCancelCountdown(btnCancel);
+    }
+
+    /**
+     * Der 10-Sekunden-Widerruf: Der Knopf zählt herunter, danach wird gebucht. Beide Wege teilen ihn
+     * sich – die Spracherfassung und die Bestätigungsseite des Zahlenblocks –, damit sich das Warten
+     * überall gleich anfühlt.
+     */
+    private void startCancelCountdown(Button target) {
         stopTimer();
         confirmTimer = new CountDownTimer(CANCEL_WINDOW_MS, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
                 long secs = (millisUntilFinished + 999) / 1000;
-                btnCancel.setText(getString(R.string.wear_cancel) + " (" + secs + ")");
+                target.setText(getString(R.string.wear_cancel) + " (" + secs + ")");
+                // Beim Öffnen liegt oft noch kein Fix vor. Kommt er während des Countdowns, soll die
+                // Empfängerzeile noch erscheinen, statt bis zur nächsten Buchung zu fehlen.
+                if (numberConfirmView.getVisibility() == View.VISIBLE && payeeCandidates.isEmpty()) {
+                    refreshPayees();
+                }
             }
 
             @Override
@@ -638,6 +810,7 @@ public class WearMainActivity extends WearLocalizedActivity {
     private void showTypeSelection() {
         confirmView.setVisibility(View.GONE);
         numberView.setVisibility(View.GONE);
+        numberConfirmView.setVisibility(View.GONE);
         numberEntryActive = false;
         keepScreenOn(false);
         typeSelection.setVisibility(View.VISIBLE);
@@ -651,6 +824,12 @@ public class WearMainActivity extends WearLocalizedActivity {
             showTypeSelection();
             return;
         }
+        // Auf der Bestätigungsseite wirkt Zurück wie „Abbrechen": Der Eintrag liegt schon, er muß
+        // wieder heraus – sonst würde er trotz Verlassens gebucht.
+        if (numberConfirmView.getVisibility() == View.VISIBLE) {
+            cancelConfirm();
+            return;
+        }
         super.onBackPressed();
     }
 
@@ -662,7 +841,7 @@ public class WearMainActivity extends WearLocalizedActivity {
         ContextCompat.registerReceiver(this, balanceReceiver,
                 new IntentFilter(WearPaths.ACTION_BALANCE_CHANGED), ContextCompat.RECEIVER_NOT_EXPORTED);
         updateBalance();
-        refreshBalanceFromDataLayer();
+        refreshFromDataLayer();
         refreshPhoneConnection();
         if (location != null && hasLocationPermission()) {
             location.start();
@@ -767,7 +946,14 @@ public class WearMainActivity extends WearLocalizedActivity {
         if (location != null) {
             location.stop();
         }
-        // App verlassen zählt nicht als Abbrechen → Eintrag bleibt gespeichert und wird später gesendet.
+        // Auf der Bestätigungsseite des Zahlenblocks zählt Weggehen als Zustimmung: Wer den Betrag
+        // getippt und den Empfänger gewählt hat, ist fertig – er wartet nur noch. Also sofort
+        // buchen, statt den Eintrag mit zurückgehaltenem Sendezeitpunkt liegen zu lassen.
+        if (numberConfirmView.getVisibility() == View.VISIBLE && confirmEntryId != null) {
+            finalizeConfirm();
+        }
+        // Sonst: App verlassen zählt nicht als Abbrechen → Eintrag bleibt gespeichert und wird
+        // später gesendet.
         stopTimer();
         destroySpeech();
         keepScreenOn(false);
@@ -890,10 +1076,11 @@ public class WearMainActivity extends WearLocalizedActivity {
     }
 
     /**
-     * Liest den aktuellen Saldo einmalig aus dem lokalen Data-Layer-Cache (billig, kein Netz) und zeigt ihn
-     * an. Nötig, weil der reine Change-Listener einen bereits (unverändert) vorliegenden Saldo nicht liefert.
+     * Liest Saldo und Empfänger einmalig aus dem lokalen Data-Layer-Cache (billig, kein Netz) und zeigt
+     * den Saldo an. Nötig, weil der reine Change-Listener bereits (unverändert) vorliegende Daten nicht
+     * liefert – nach einer Neuinstallation der Uhr-App stünde sonst beides dauerhaft leer da.
      */
-    private void refreshBalanceFromDataLayer() {
+    private void refreshFromDataLayer() {
         try {
             com.google.android.gms.wearable.Wearable.getDataClient(this).getDataItems()
                     .addOnSuccessListener(items -> {
@@ -905,6 +1092,18 @@ public class WearMainActivity extends WearLocalizedActivity {
                                                     .getDataMap();
                                     BalanceStore.save(this, m.getString("text", ""));
                                     BalanceStore.saveList(this, m.getString("list", ""));
+                                } else if (WearPaths.PATH_PAYEES.equals(item.getUri().getPath())) {
+                                    // Im selben Durchgang: onDataChanged feuert nur bei Änderungen,
+                                    // und nach einer Neuinstallation der Uhr-App liegt das DataItem
+                                    // längst unverändert da – das Handy schickt es nie wieder.
+                                    com.google.android.gms.wearable.DataMap m =
+                                            com.google.android.gms.wearable.DataMapItem.fromDataItem(item)
+                                                    .getDataMap();
+                                    String liste = m.getString("list", "");
+                                    PayeeStore.save(this, liste, m.getString("currency", ""));
+                                    android.util.Log.d("AusgabenWearPayees", "aus dem Cache: "
+                                            + (liste.isEmpty() ? 0 : liste.split("\n").length)
+                                            + " Empfänger");
                                 }
                             }
                         } finally {

@@ -65,4 +65,7 @@ dependencies {
     implementation 'com.google.android.gms:play-services-wearable:18.2.0'
     implementation 'androidx.wear.tiles:tiles:1.1.0'
     implementation 'androidx.concurrent:concurrent-futures:1.1.0'
+    // Für die reinen Regeln der Uhr (Lesen der Empfängerliste, Rangfolge im Umkreis): Die laufen
+    // ohne Android und lassen sich deshalb hier prüfen statt nur am Handgelenk.
+    testImplementation 'junit:junit:4.13.2'
 }

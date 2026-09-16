@@ -137,6 +137,21 @@ public class WearLocation {
         persist(loc);
     }
 
+    /**
+     * Der zwischengespeicherte Standort <b>ohne Warten</b> – für die Empfängerliste im Zahlenblock,
+     * die sofort dastehen soll. Liefert {@code null}, wenn kein Fix der letzten fünf Minuten
+     * vorliegt; dann bleibt die Zeile weg und der Aufrufer fragt später noch einmal.
+     */
+    @Nullable
+    public String currentCoords() {
+        String cached = cachedCoords();
+        if (cached != null) {
+            return cached;
+        }
+        Location persisted = loadPersisted();
+        return persisted == null ? null : format(persisted);
+    }
+
     /** Zuletzt gespeicherte Messung als „lat, lon", falls ≤ 5 Minuten alt; sonst {@code null}. */
     @Nullable
     private String cachedCoords() {

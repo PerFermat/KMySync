@@ -12,6 +12,8 @@ public final class WearPaths {
     public static final String PATH_LANGUAGE = "/language";
     /** Phone → Uhr: fertig formatierter Standardort-Saldo (DataItem {text}). */
     public static final String PATH_BALANCE = "/balance";
+    /** Phone → Uhr: Empfänger mit Standorten für die Umkreisliste (DataItem {list, currency}). */
+    public static final String PATH_PAYEES = "/payees";
 
     /** Interner Broadcast: offene Anzahl hat sich geändert (Zähler aktualisieren). */
     public static final String ACTION_PENDING_CHANGED = "de.spahr.ausgaben.wear.PENDING_CHANGED";

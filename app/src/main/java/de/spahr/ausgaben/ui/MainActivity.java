@@ -630,6 +630,9 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         refreshBookings();
         // Standardort-Saldo an die Uhr spiegeln (No-op im foss-Flavor; nur bei Änderung übertragen).
         de.spahr.ausgaben.wear.BalanceSync.publish(this);
+        // Dasselbe für die Empfänger mit Standort: Die Uhr baut ihre Umkreisliste daraus auch dann,
+        // wenn das Handy gar nicht dabei ist.
+        de.spahr.ausgaben.wear.PayeeSync.publish(this);
         // Homescreen-Widgets mit dem aktuellen Saldo/den letzten Buchungen versorgen.
         de.spahr.ausgaben.widget.AusgabenWidget.refreshAll(this);
         // Export/Sync aus dem Depot-Menü nachholen.

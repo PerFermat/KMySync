@@ -56,6 +56,13 @@ public class WearMessageListenerService extends WearableListenerService {
                 // Tile ereignisgesteuert aktualisieren (kein Polling).
                 androidx.wear.tiles.TileService.getUpdater(this)
                         .requestUpdate(ExpenseTileService.class);
+            } else if (event.getType() == DataEvent.TYPE_CHANGED
+                    && WearPaths.PATH_PAYEES.equals(path)) {
+                // Empfänger mit Standorten: liegen auf der Uhr, damit die Umkreisliste auch ohne
+                // Handy steht – unterwegs ist es oft nicht dabei.
+                DataMap map = DataMapItem.fromDataItem(event.getDataItem()).getDataMap();
+                PayeeStore.save(this, map.getString("list", ""), map.getString("currency", ""));
+                Log.d(TAG, "Empfänger empfangen");
             }
         }
     }

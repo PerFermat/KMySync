@@ -6,6 +6,9 @@
     <string name="wear_type_transfer">Transfer</string>
     <string name="wear_type_expense">Expense</string>
     <string name="wear_cancel">Cancel</string>
+    <!-- Letzte Stelle der Empfaenger-Runde im Zahlenblock: bewusst keiner. -->
+    <string name="wear_payee_none">no payee</string>
+    <string name="wear_payee_next">Next payee</string>
     <string name="wear_prompt">Say a booking, e.g. \"Barber 20 euros\"</string>
     <!-- Bis der Erkennungsdienst wirklich aufnimmt; erst danach „Speak now". -->
     <string name="wear_preparing">One moment…</string>

@@ -6,6 +6,9 @@
     <string name="wear_type_transfer">Umbuchung</string>
     <string name="wear_type_expense">Ausgabe</string>
     <string name="wear_cancel">Abbrechen</string>
+    <!-- Letzte Stelle der Empfaenger-Runde im Zahlenblock: bewusst keiner. -->
+    <string name="wear_payee_none">ohne Empfänger</string>
+    <string name="wear_payee_next">Nächster Empfänger</string>
     <string name="wear_prompt">Buchung sagen, z. B. „Frisör 20 Euro"</string>
     <!-- Bis der Erkennungsdienst wirklich aufnimmt; erst danach „Sprich jetzt". -->
     <string name="wear_preparing">Moment…</string>

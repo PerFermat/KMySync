@@ -54,6 +54,8 @@ public final class LocaleManager {
             {"wear_type_transfer", "Umbuchung", "Transfer", "Traspaso"},
             {"wear_type_expense", "Ausgabe", "Expense", "Gasto"},
             {"wear_cancel", "Abbrechen", "Cancel", "Cancelar"},
+            {"wear_payee_none", "ohne Empfänger", "no payee", "sin destinatario"},
+            {"wear_payee_next", "Nächster Empfänger", "Next payee", "Siguiente destinatario"},
             {"wear_switch", "Konto/Ort wechseln", "Switch account/place", "Cambiar cuenta/lugar"},
             {"wear_prompt", "Buchung sagen, z. B. „Frisör 20 Euro\"", "Say a booking, e.g. \"Barber 20 euros\"", "Di un apunte, p. ej. \"peluquería 20 euros\""},
             {"wear_preparing", "Moment…", "One moment…", "Un momento…"},

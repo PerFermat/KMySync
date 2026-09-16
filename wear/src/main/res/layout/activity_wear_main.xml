@@ -166,63 +166,144 @@
                 android:visibility="gone" />
         </LinearLayout>
 
-        <!-- Zustand C: stille Zifferneingabe (Zahlenblock) -->
-        <ScrollView
-            android:id="@+id/numberView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:fillViewport="true"
-            android:visibility="gone">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center_horizontal"
-                android:padding="4dp">
-
-                <TextView
-                    android:id="@+id/numberDisplay"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:minHeight="26dp"
-                    android:text="0"
-                    android:textColor="@android:color/white"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-
-                <GridLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:columnCount="3">
-
-                    <Button android:id="@+id/btnD1" style="@style/WearKey" android:text="1" />
-                    <Button android:id="@+id/btnD2" style="@style/WearKey" android:text="2" />
-                    <Button android:id="@+id/btnD3" style="@style/WearKey" android:text="3" />
-                    <Button android:id="@+id/btnD4" style="@style/WearKey" android:text="4" />
-                    <Button android:id="@+id/btnD5" style="@style/WearKey" android:text="5" />
-                    <Button android:id="@+id/btnD6" style="@style/WearKey" android:text="6" />
-                    <Button android:id="@+id/btnD7" style="@style/WearKey" android:text="7" />
-                    <Button android:id="@+id/btnD8" style="@style/WearKey" android:text="8" />
-                    <Button android:id="@+id/btnD9" style="@style/WearKey" android:text="9" />
-                    <Button android:id="@+id/btnComma" style="@style/WearKey" android:text="," />
-                    <Button android:id="@+id/btnD0" style="@style/WearKey" android:text="0" />
-                    <Button android:id="@+id/btnBack" style="@style/WearKey" android:text="⌫" />
-                </GridLayout>
-
-                <ImageButton
-                    android:id="@+id/btnEnter"
-                    android:layout_width="52dp"
-                    android:layout_height="40dp"
-                    android:layout_marginTop="4dp"
-                    android:background="@drawable/bg_circle"
-                    android:backgroundTint="@color/type_income"
-                    android:contentDescription="@string/wear_cancel"
-                    android:scaleType="center"
-                    android:src="@drawable/ic_check" />
-            </LinearLayout>
-        </ScrollView>
     </FrameLayout>
+
+    <!--
+        Zustand D: Bestätigung der Zifferneingabe (Betrag, Empfänger, Countdown). Ebenfalls neben dem
+        eingerückten Rahmen, weil die Farbe der Buchungsart die ganze runde Fläche tragen soll – im
+        Einzug bliebe ein Quadrat auf schwarzem Grund stehen. Der Inhalt hält über die Innenabstände
+        Abstand vom Rand; unten mehr, sonst stößt der Abbrechen-Knopf an die Rundung.
+    -->
+    <LinearLayout
+        android:id="@+id/numberConfirmView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingHorizontal="34dp"
+        android:paddingTop="30dp"
+        android:paddingBottom="40dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/confirmAmount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textColor="@android:color/white"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <!--
+            Empfänger im 100-m-Umkreis: immer nur einer. Der graue Knopf darunter schaltet zum
+            nächsten und nach dem letzten auf „ohne Empfänger" – dieselbe Runde wie in der
+            Ziffernmaske am Handy. Liegt keiner so nah, bleiben Zeile und Knopf weg.
+        -->
+        <TextView
+            android:id="@+id/payeeName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="@android:color/white"
+            android:textSize="15sp"
+            android:visibility="gone" />
+
+        <ImageButton
+            android:id="@+id/btnPayeeNext"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="#757575"
+            android:contentDescription="@string/wear_payee_next"
+            android:scaleType="center"
+            android:src="@drawable/ic_cycle"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btnCancelNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/wear_cancel" />
+    </LinearLayout>
+
+    <!--
+        Zustand C: stille Zifferneingabe (Zahlenblock). Bewusst NEBEN dem eingerückten Rahmen und
+        damit über die volle Fläche: Im runden Einzug bleiben nur rund 160 dp, dort ließen sich vier
+        Tastenreihen nur mit Scrollen oder mit Tasten unterbringen, die kein Finger mehr trifft. Die
+        äußersten Ecken der Ecktasten liegen dafür knapp am Rand – die Flächen bleiben treffbar.
+    -->
+    <LinearLayout
+        android:id="@+id/numberView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <!--
+            Die Reihen folgen der Rundung: Oben und unten ist der Bildschirm schmal, deshalb rücken
+            die erste und die letzte Reihe weit ein, die mittleren kaum. Mit einem gleichmäßigen
+            Raster wären die Ecktasten vom Rand angeschnitten. Höhen: 28 + 4×40 = 188 dp von 228 dp,
+            damit paßt alles ohne Scrollen auf den Schirm.
+        -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="28dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="50dp">
+
+            <TextView
+                android:id="@+id/numberDisplay"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="0"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <!-- Weiter zur Bestätigung; steht neben dem Betrag, damit unten die vierte Tastenreihe
+                 Platz hat. -->
+            <ImageButton
+                android:id="@+id/btnEnter"
+                android:layout_width="34dp"
+                android:layout_height="26dp"
+                android:background="@drawable/bg_circle"
+                android:backgroundTint="@color/type_income"
+                android:contentDescription="@string/wear_number_entry"
+                android:scaleType="center"
+                android:src="@drawable/ic_check" />
+        </LinearLayout>
+
+        <LinearLayout style="@style/WearKeyRow" android:paddingHorizontal="30dp">
+            <Button android:id="@+id/btnD1" style="@style/WearKey" android:text="1" />
+            <Button android:id="@+id/btnD2" style="@style/WearKey" android:text="2" />
+            <Button android:id="@+id/btnD3" style="@style/WearKey" android:text="3" />
+        </LinearLayout>
+
+        <LinearLayout style="@style/WearKeyRow" android:paddingHorizontal="8dp">
+            <Button android:id="@+id/btnD4" style="@style/WearKey" android:text="4" />
+            <Button android:id="@+id/btnD5" style="@style/WearKey" android:text="5" />
+            <Button android:id="@+id/btnD6" style="@style/WearKey" android:text="6" />
+        </LinearLayout>
+
+        <LinearLayout style="@style/WearKeyRow" android:paddingHorizontal="14dp">
+            <Button android:id="@+id/btnD7" style="@style/WearKey" android:text="7" />
+            <Button android:id="@+id/btnD8" style="@style/WearKey" android:text="8" />
+            <Button android:id="@+id/btnD9" style="@style/WearKey" android:text="9" />
+        </LinearLayout>
+
+        <LinearLayout style="@style/WearKeyRow" android:paddingHorizontal="50dp">
+            <Button android:id="@+id/btnComma" style="@style/WearKey" android:text="," />
+            <Button android:id="@+id/btnD0" style="@style/WearKey" android:text="0" />
+            <Button android:id="@+id/btnBack" style="@style/WearKey" android:text="⌫" />
+        </LinearLayout>
+    </LinearLayout>
 </androidx.wear.widget.BoxInsetLayout>

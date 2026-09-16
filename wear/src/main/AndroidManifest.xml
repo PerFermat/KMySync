@@ -51,6 +51,9 @@
                 <data android:scheme="wear" android:host="*" android:pathPrefix="/expense" />
                 <data android:scheme="wear" android:host="*" android:pathPrefix="/language" />
                 <data android:scheme="wear" android:host="*" android:pathPrefix="/balance" />
+                <!-- Ohne diese Zeile stellt das System den Pfad gar nicht zu: Das Handy sendet, der
+                     Listener schweigt, und man sucht den Fehler auf der falschen Seite. -->
+                <data android:scheme="wear" android:host="*" android:pathPrefix="/payees" />
             </intent-filter>
         </service>
 

@@ -4,11 +4,21 @@
         <item name="android:colorBackground">@android:color/black</item>
     </style>
 
-    <!-- Kompakte Taste für den Zahlenblock auf der Uhr. -->
+    <!-- Eine Tastenreihe des Zahlenblocks; der seitliche Einzug folgt der Rundung (siehe Layout). -->
+    <style name="WearKeyRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:orientation">horizontal</item>
+    </style>
+
+    <!--
+        Kompakte Taste für den Zahlenblock auf der Uhr. 36 dp hoch statt früher 42: Erst damit passen
+        vier Reihen samt Betragszeile auf die 228 dp des Schirms, ohne daß gescrollt werden muß.
+    -->
     <style name="WearKey" parent="Widget.AppCompat.Button">
         <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">42dp</item>
-        <item name="android:layout_columnWeight">1</item>
+        <item name="android:layout_height">36dp</item>
+        <item name="android:layout_weight">1</item>
         <item name="android:layout_margin">2dp</item>
         <item name="android:minWidth">0dp</item>
         <item name="android:minHeight">0dp</item>

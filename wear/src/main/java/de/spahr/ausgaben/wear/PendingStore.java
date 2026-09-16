@@ -59,6 +59,25 @@ public class PendingStore {
         save(out);
     }
 
+    /**
+     * Setzt den Buchungstext neu – auf der Bestätigungsseite des Zahlenblocks, wenn der Empfänger
+     * durchgeschaltet wird. Der Eintrag liegt da schon, damit ein Absturz in den zehn Sekunden den
+     * getippten Betrag nicht verschluckt.
+     */
+    public synchronized void updateText(String id, String text) {
+        List<PendingEntry> entries = getPending();
+        List<PendingEntry> out = new ArrayList<>();
+        for (PendingEntry e : entries) {
+            if (e.id.equals(id)) {
+                out.add(new PendingEntry(e.id, text, e.type, e.gps, e.account, e.place,
+                        e.timestamp, e.readyAt));
+            } else {
+                out.add(e);
+            }
+        }
+        save(out);
+    }
+
     public synchronized void remove(String id) {
         List<PendingEntry> entries = getPending();
         List<PendingEntry> kept = new ArrayList<>();

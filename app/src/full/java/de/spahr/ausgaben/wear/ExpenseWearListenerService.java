@@ -85,6 +85,9 @@ public class ExpenseWearListenerService extends WearableListenerService {
                         sendBroadcast(new Intent(ACTION_BOOKINGS_CHANGED).setPackage(getPackageName()));
                         // Uhr-Buchung ändert ggf. den Standardort-Saldo → an die Uhr zurückspiegeln.
                         BalanceSync.publish(this);
+                        // Die Buchung bringt womöglich einen neuen Standort mit – der gehört in die
+                        // Umkreisliste der Uhr, sonst fehlt genau der Ort, an dem man gerade steht.
+                        PayeeSync.publish(this);
                     }
                 }
                 markProcessed(id);
@@ -101,9 +104,11 @@ public class ExpenseWearListenerService extends WearableListenerService {
 
     @Override
     public void onPeerConnected(@NonNull Node peer) {
-        // Bei Verbindung mit der Uhr die aktuelle Sprache + Wear-Texte sowie den Standardort-Saldo senden.
+        // Bei Verbindung mit der Uhr die aktuelle Sprache + Wear-Texte, den Standardort-Saldo und die
+        // Empfänger mit Standort senden – Letztere braucht die Uhr, wenn sie später allein unterwegs ist.
         LanguageSync.publish(this);
         BalanceSync.publish(this);
+        PayeeSync.publish(this);
     }
 
     private SharedPreferences prefs() {
