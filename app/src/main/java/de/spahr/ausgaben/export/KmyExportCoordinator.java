@@ -139,6 +139,9 @@ public class KmyExportCoordinator {
                 String backup = BACKUP_DIR + "/" + backupName;
                 storage.ensureFolder(backupFolder);
                 storage.uploadBytes(backupFolder, backupName, raw);
+                // Erst nach der neuen Sicherung aufräumen: Geht das Löschen der alten schief, steht die
+                // frische schon da. Beiwerk – Fehler dabei bleiben folgenlos.
+                KmyBackups.prune(storage, backupFolder, file, KmyBackups.KEEP);
 
                 progress(listener, r.getString(de.spahr.ausgaben.R.string.kmy_progress_writing));
                 byte[] packed = KmyDocument.gzip(res.xml);
