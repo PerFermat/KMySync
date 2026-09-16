@@ -78,6 +78,14 @@ public class BookingEditActivity extends LocalizedActivity {
      * die Buchungsliste bietet damit „Rückgängig" an. Bei Umbuchungen nicht gesetzt.
      */
     public static final String EXTRA_UNDO_BOOKING = "undo_booking";
+    /**
+     * Ergebnis-Extra der Ansicht: der Nutzer hat den Stift getippt und will diese Buchung bearbeiten.
+     * Die Ansicht macht dafür zu und die Liste öffnet den Editor frisch – die Sperre in der laufenden
+     * Activity wieder aufzuheben wäre der fehleranfälligere Weg, weil {@code applyReadOnly} Felder
+     * sperrt, Dropdown-Pfeile entfernt und Knöpfe versteckt, und weil Zweige wie die GPS-Zeile nur bei
+     * {@code !readOnly} überhaupt anlaufen.
+     */
+    public static final String EXTRA_REQUEST_EDIT = "request_edit";
     /** Öffnet eine geplante Buchung ({@link de.spahr.ausgaben.db.ScheduledTransaction}) nur zur Ansicht. */
     public static final String EXTRA_SCHEDULED_ID = "scheduled_id";
     /** Öffnet eine geplante Buchung als NEUE Buchung vorbefüllt („jetzt buchen"); nicht schreibgeschützt. */
@@ -1146,6 +1154,35 @@ public class BookingEditActivity extends LocalizedActivity {
         gpsRowCoords = parseGpsCoords(booking.note);
         loadReceiptPages(booking.note, yearFromMillis(booking.createdAt));
         updateNoteTagRows();
+        showEditAction();
+    }
+
+    /**
+     * Stift in der Toolbar – der einzige sichtbare Weg aus der Ansicht ins Bearbeiten. Vorher ging das
+     * nur über den langen Druck in der Liste, und den sieht niemand.
+     *
+     * <p>Nur für echte Buchungen: Die Vorschau einer <b>geplanten</b> Buchung landet ebenfalls hier
+     * ({@link #bindScheduledPreview}), ist aber gar nicht änderbar – sie wird gebucht oder
+     * übersprungen. Ihr Vorschau-Objekt steht in keiner Tabelle und hat deshalb keine id.</p>
+     */
+    private void showEditAction() {
+        if (booking == null || booking.id <= 0
+                || getIntent().getLongExtra(EXTRA_SCHEDULED_ID, -1) >= 0) {
+            return;
+        }
+        toolbar.inflateMenu(R.menu.booking_view_menu);
+        toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() != R.id.action_edit_booking) {
+                return false;
+            }
+            // Die Liste öffnet den Editor frisch; sie hält dafür ohnehin den Launcher, über den nach
+            // einem Löschen „Rückgängig" zurückkommt.
+            Intent res = new Intent();
+            res.putExtra(EXTRA_REQUEST_EDIT, booking.id);
+            setResult(RESULT_OK, res);
+            finish();
+            return true;
+        });
     }
 
     /** Zeigt „Kontostand vor/nach der Buchung" für das Konto dieser Buchung. */

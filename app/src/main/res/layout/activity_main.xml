@@ -105,13 +105,52 @@
                 android:layout_height="0dp"
                 android:layout_weight="1">
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recyclerBookings"
+                <!--
+                    Das Wischen nach unten verträgt nur ein Kind, deshalb der Rahmen: Liste und
+                    Leer-Hinweis liegen übereinander. Wichtig ist, dass der Hinweis INNERHALB des
+                    Wischbereichs sitzt – sonst ließe sich auf dem leeren Bildschirm nicht mehr
+                    nachladen, also genau dort nicht, wo es am nötigsten ist.
+                -->
+                <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:clipToPadding="false"
-                    android:paddingHorizontal="16dp"
-                    android:paddingBottom="88dp" />
+                    android:layout_height="match_parent">
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerBookings"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:clipToPadding="false"
+                        android:paddingHorizontal="16dp"
+                        android:paddingBottom="88dp" />
+
+                    <LinearLayout
+                        android:id="@+id/emptyBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal"
+                        android:paddingHorizontal="32dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/emptyText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textColor="@color/grey_text"
+                            android:textSize="15sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/emptyAction"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="@string/empty_reset_filter"
+                            android:visibility="gone" />
+                    </LinearLayout>
+                </FrameLayout>
             </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
         </LinearLayout>
 

@@ -365,11 +365,12 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         adapter.setListener(new BookingAdapter.Listener() {
             @Override
             public void onClick(Booking b) {
-                // Kurzer Druck: Buchung nur ansehen (ohne Änderungsmöglichkeit).
+                // Kurzer Druck: Buchung nur ansehen (ohne Änderungsmöglichkeit). Über denselben
+                // Launcher wie das Bearbeiten, weil die Ansicht ihren Stift als Ergebnis zurückmeldet.
                 Intent i = new Intent(MainActivity.this, BookingEditActivity.class);
                 i.putExtra(BookingEditActivity.EXTRA_BOOKING_ID, b.id);
                 i.putExtra(BookingEditActivity.EXTRA_READ_ONLY, true);
-                startActivity(i);
+                editLauncher.launch(i);
             }
 
             @Override
@@ -458,12 +459,17 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                         writeReceiptZip(uri);
                     }
                 });
-        // Buchungs-Editor: liefert nach dem Löschen die Daten für „Rückgängig" zurück.
+        // Buchungs-Editor: liefert nach dem Löschen die Daten für „Rückgängig" zurück – und aus der
+        // Ansicht den Wunsch, dieselbe Buchung jetzt zu bearbeiten (Stift in der Toolbar).
         editLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(), result -> {
-                    if (result.getResultCode() == RESULT_OK) {
-                        showUndoDelete(result.getData());
+                    if (result.getResultCode() != RESULT_OK) {
+                        return;
                     }
+                    if (openEditorFromView(result.getData())) {
+                        return;
+                    }
+                    showUndoDelete(result.getData());
                 });
         voiceLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -493,6 +499,23 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                 }
             }
         });
+    }
+
+    /**
+     * Hat die Ansicht den Stift zurückgemeldet, öffnet das denselben Editor im Bearbeiten-Modus.
+     * Wieder über den Launcher, damit ein Löschen von dort aus weiterhin „Rückgängig" anbietet.
+     *
+     * @return true, wenn es um das Bearbeiten ging – dann ist nichts zu löschen gewesen.
+     */
+    private boolean openEditorFromView(Intent data) {
+        long id = data == null ? -1 : data.getLongExtra(BookingEditActivity.EXTRA_REQUEST_EDIT, -1);
+        if (id < 0) {
+            return false;
+        }
+        Intent i = new Intent(this, BookingEditActivity.class);
+        i.putExtra(BookingEditActivity.EXTRA_BOOKING_ID, id);
+        editLauncher.launch(i);
+        return true;
     }
 
     /**
@@ -1041,12 +1064,40 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         adapter.setItems(filtered);
         buildSaldoViews();
         showSaldo();
+        showEmptyHint(filtered.size());
 
         boolean active = isFilterActive();
         if (getSupportActionBar() != null) {
             getSupportActionBar().setSubtitle(active
                     ? getString(R.string.filter_active, filtered.size()) : null);
         }
+    }
+
+    /**
+     * Sagt bei leerer Liste, warum sie leer ist. Ein leerer Bildschirm sieht bei einem zu engen
+     * Filter sonst genauso aus wie eine App, in die noch nichts importiert wurde.
+     */
+    private void showEmptyHint(int shown) {
+        EmptyListState state = EmptyListState.of(allBookings.size(), shown, isFilterActive(),
+                !selectedAccount.isEmpty());
+        View box = findViewById(R.id.emptyBox);
+        if (state == EmptyListState.NONE) {
+            box.setVisibility(View.GONE);
+            return;
+        }
+        int text;
+        if (state == EmptyListState.NO_BOOKINGS) {
+            text = R.string.empty_no_bookings;
+        } else if (state == EmptyListState.NO_MATCH) {
+            text = R.string.empty_no_match;
+        } else {
+            text = R.string.empty_account;
+        }
+        ((TextView) findViewById(R.id.emptyText)).setText(text);
+        View action = findViewById(R.id.emptyAction);
+        action.setVisibility(state.offersFilterReset() ? View.VISIBLE : View.GONE);
+        action.setOnClickListener(v -> resetFilter());
+        box.setVisibility(View.VISIBLE);
     }
 
     /** Vorzeichenbehafteter Betrag: Ausgaben zählen negativ, Einnahmen positiv. */
@@ -1893,24 +1944,31 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                         flashSaldoBar();
                     }
                 })
-                .setNeutralButton(R.string.filter_reset, (d, w) -> {
-                    filterPayee = "";
-                    filterCategory = "";
-                    filterTag = "";
-                    filterCategoryIsMain = false;
-                    filterCategoryIsIncome = null;
-                    filterAmountFrom = null;
-                    filterAmountTo = null;
-                    filterDateFrom = null;
-                    filterDateTo = null;
-                    filterRadiusM = 0;
-                    filterCenter = null;
-                    saldoIndex = 0;
-                    applyFilter();
-                    showSaldo();
-                    flashSaldoBar();
-                })
+                .setNeutralButton(R.string.filter_reset, (d, w) -> resetFilter())
                 .show();
+    }
+
+    /**
+     * Räumt alle Filterkriterien ab. Gerufen vom Neutral-Knopf des Filterdialogs und vom Knopf im
+     * Leer-Hinweis – die Zuweisungen stehen deshalb nur einmal da, sonst würde das nächste neue
+     * Kriterium an einer der beiden Stellen vergessen.
+     */
+    private void resetFilter() {
+        filterPayee = "";
+        filterCategory = "";
+        filterTag = "";
+        filterCategoryIsMain = false;
+        filterCategoryIsIncome = null;
+        filterAmountFrom = null;
+        filterAmountTo = null;
+        filterDateFrom = null;
+        filterDateTo = null;
+        filterRadiusM = 0;
+        filterCenter = null;
+        saldoIndex = 0;
+        applyFilter();
+        showSaldo();
+        flashSaldoBar();
     }
 
     /** Beschriftet den Umkreis-Knopf mit der eingestellten Stufe („Umkreis aus", „Umkreis 500 m"). */

@@ -288,6 +288,11 @@
     <string name="delete_booking">Buchung löschen</string>
     <string name="edit_title">Buchung bearbeiten</string>
     <string name="booking_view_title">Buchung</string>
+    <string name="action_edit_booking">Bearbeiten</string>
+    <string name="empty_no_bookings">Noch keine Buchungen.\nZum Laden nach unten ziehen.</string>
+    <string name="empty_no_match">Keine Buchung passt zum Filter.</string>
+    <string name="empty_account">Hier gibt es noch keine Buchungen.</string>
+    <string name="empty_reset_filter">Filter zurücksetzen</string>
     <string name="balance_before">Kontostand vor der Buchung: %1$s</string>
     <string name="balance_after">Kontostand nach der Buchung: %1$s</string>
     <string name="widget_small_desc">Saldo des Standardorts</string>

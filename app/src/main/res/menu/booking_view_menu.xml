@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Menü der schreibgeschützten Buchungsansicht. Ohne diesen Stift führt aus der Ansicht kein
+    sichtbarer Weg ins Bearbeiten – der ginge nur über den langen Druck in der Liste, und den sieht
+    niemand. Bei geplanten Buchungen wird das Menü nicht aufgeblasen (sie sind nicht änderbar).
+-->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_edit_booking"
+        android:icon="@drawable/ic_edit"
+        android:title="@string/action_edit_booking"
+        app:showAsAction="always" />
+
+</menu>

@@ -289,6 +289,11 @@
     <string name="delete_booking">Delete booking</string>
     <string name="edit_title">Edit booking</string>
     <string name="booking_view_title">Booking</string>
+    <string name="action_edit_booking">Edit</string>
+    <string name="empty_no_bookings">No bookings yet.\nPull down to load them.</string>
+    <string name="empty_no_match">No booking matches the filter.</string>
+    <string name="empty_account">No bookings here yet.</string>
+    <string name="empty_reset_filter">Reset filter</string>
     <string name="balance_before">Balance before this booking: %1$s</string>
     <string name="balance_after">Balance after this booking: %1$s</string>
     <string name="widget_small_desc">Default-place balance</string>
