@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -34,8 +35,12 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.VH> {
     private Map<Long, List<BookingSplit>> splitsByBooking = new HashMap<>();
     /** Angezeigter (vorzeichenbehafteter) Betrag je Buchung – überschreibt den Gesamtbetrag (Kategorie-Filter). */
     private Map<Long, Long> amountOverride = new HashMap<>();
-    private final SimpleDateFormat dateFormat =
+    private static final SimpleDateFormat DAY =
+            new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY);
+    private static final SimpleDateFormat DAY_TIME =
             new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.GERMANY);
+    /** Zeigt die Liste nur ein einziges Konto? Dann ist sein Name in jeder Zeile überflüssig. */
+    private boolean singleAccount;
     private Listener listener;
 
     public void setListener(Listener listener) {
@@ -58,7 +63,56 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.VH> {
         if (bookings != null) {
             items.addAll(bookings);
         }
+        singleAccount = onlyOneAccount(items);
         notifyDataSetChanged();
+    }
+
+    /**
+     * Tragen alle Buchungen denselben Kontonamen? Das trifft die Kontowahl aus der Schublade, greift
+     * aber auch, wenn eine Kontengruppe oder ein Filter faktisch nur ein Konto übrig lässt.
+     */
+    static boolean onlyOneAccount(List<Booking> bookings) {
+        if (bookings == null || bookings.isEmpty()) {
+            return false;
+        }
+        String first = bookings.get(0).account;
+        for (Booking b : bookings) {
+            if (!first.equalsIgnoreCase(b.account)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Die graue Zeile unter dem Empfänger. Das Datum steht vorn, weil es in jeder Zeile gebraucht
+     * wird: Früher kam der Kontoname zuerst, und bei langen Namen war vom Datum nichts mehr zu sehen
+     * (die Zeile ist einzeilig und wird hinten abgeschnitten).
+     *
+     * <p>Die Uhrzeit kommt nur dazu, wenn sie etwas aussagt und Platz ist – also wenn die Liste
+     * ohnehin nur ein Konto zeigt und die Zeit nicht 00:00 ist. Importierte Buchungen tragen immer
+     * 00:00, dort wäre sie eine Scheingenauigkeit.
+     */
+    static String subtitle(long createdAt, String account, boolean singleAccount) {
+        Date when = new Date(createdAt);
+        String date = singleAccount && hasTime(createdAt)
+                ? DAY_TIME.format(when) : DAY.format(when);
+        if (singleAccount || account == null || account.isEmpty()) {
+            return date;
+        }
+        return date + " · " + account;
+    }
+
+    /** Steckt in dem Zeitstempel eine echte Uhrzeit? Sekunden zählen dabei nicht mit. */
+    private static boolean hasTime(long createdAt) {
+        // Ohne Datum in der .kmy-Datei fällt der Import auf 0 zurück – daraus wäre je nach Zeitzone
+        // eine erfundene Uhrzeit geworden.
+        if (createdAt <= 0) {
+            return false;
+        }
+        Calendar c = Calendar.getInstance();
+        c.setTimeInMillis(createdAt);
+        return c.get(Calendar.HOUR_OF_DAY) != 0 || c.get(Calendar.MINUTE) != 0;
     }
 
     @NonNull
@@ -82,9 +136,8 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.VH> {
         } else {
             h.payee.setText(b.payee.isEmpty() ? "—" : b.payee);
         }
-        // Konto und Datum in einer kompakten Zeile (kMyMoney-Stil): „Konto · TT.MM.JJJJ HH:mm".
-        String date = dateFormat.format(new Date(b.createdAt));
-        String line = b.account.isEmpty() ? date : b.account + " · " + date;
+        // Datum und Konto in einer kompakten Zeile: „TT.MM.JJJJ · Konto".
+        String line = subtitle(b.createdAt, b.account, singleAccount);
         List<BookingSplit> parts = splitsByBooking.get(b.id);
         if (parts != null && parts.size() >= 2) {
             line = line + "  ·  " + h.account.getContext().getString(R.string.split_marker);
