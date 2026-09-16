@@ -68,10 +68,21 @@ public final class ReceiptZip {
         public int skipped;
         /** Behandelte Belege (Buchungen mit Beleg). */
         public int receipts;
+        /** {@code true}, wenn der Nutzer den Lauf abgebrochen hat. */
+        public boolean cancelled;
 
         /** Belege, die aus welchem Grund auch immer nicht in der Datei stehen. */
         public int missing() {
             return notFound + unreachable + pending + skipped;
+        }
+
+        /**
+         * Lohnt ein zweiter Lauf? Nur bei Belegen, die beim nächsten Mal anders ausgehen können: Was
+         * der Server nicht hat, hat er auch morgen nicht, und „auf Wunsch nicht geladen" war eine
+         * Entscheidung, die nicht ungefragt wieder aufgemacht wird.
+         */
+        public boolean worthRetrying() {
+            return unreachable + pending > 0;
         }
     }
 
@@ -94,10 +105,12 @@ public final class ReceiptZip {
      * @param paused        darf {@code null} sein; meldet Beginn und Ende einer Pause
      * @param allowDownload {@code false} = nur packen, was auf dem Gerät liegt; der Rest wird als
      *                      {@link Result#skipped} gezählt, ohne dass eine Anfrage hinausgeht
+     * @param cancelled     darf {@code null} sein; meldet den Abbruchwunsch des Nutzers. Abgebrochen
+     *                      wird geordnet: Die Datei wird regulär geschlossen und bleibt lesbar.
      */
     public static Result write(Context context, OutputStream out, List<ReceiptExportJobs.Job> jobs,
-                               ProgressListener progress, PauseListener paused, boolean allowDownload)
-            throws IOException {
+                               ProgressListener progress, PauseListener paused, boolean allowDownload,
+                               ReceiptSync.Cancelled cancelled) throws IOException {
         Context app = context.getApplicationContext();
         Result result = new Result();
         Set<String> usedNames = new HashSet<>();
@@ -109,9 +122,16 @@ public final class ReceiptZip {
         try (ZipOutputStream zip = new ZipOutputStream(out)) {
             int total = jobs == null ? 0 : jobs.size();
             for (int i = 0; jobs != null && i < total; i++) {
+                if (stopped(cancelled)) {
+                    // Abbruch: Der Rest ist offen, die Datei wird gleich ordentlich geschlossen.
+                    result.cancelled = true;
+                    result.pending += total - i;
+                    break;
+                }
                 ReceiptExportJobs.Job job = jobs.get(i);
                 result.receipts++;
-                pack(app, zip, job, storage, usedNames, result, paused, gaveUp, allowDownload);
+                pack(app, zip, job, storage, usedNames, result, paused, gaveUp, allowDownload,
+                        cancelled);
                 if (progress != null) {
                     progress.onProgress(i + 1, total);
                 }
@@ -120,17 +140,22 @@ public final class ReceiptZip {
         return result;
     }
 
-    /** Wie oben, mit Nachladen und ohne Pausenmeldung. */
+    /** Wie oben, mit Nachladen, ohne Pausenmeldung und ohne Abbruchmöglichkeit. */
     public static Result write(Context context, OutputStream out, List<ReceiptExportJobs.Job> jobs,
                                ProgressListener progress) throws IOException {
-        return write(context, out, jobs, progress, null, true);
+        return write(context, out, jobs, progress, null, true, null);
+    }
+
+    /** Will der Nutzer aufhören? */
+    private static boolean stopped(ReceiptSync.Cancelled cancelled) {
+        return cancelled != null && cancelled.get();
     }
 
     /** Einen Beleg samt aller Seiten in die Datei legen und das Ergebnis verbuchen. */
     private static void pack(Context app, ZipOutputStream zip, ReceiptExportJobs.Job job,
                              RemoteStorage storage, Set<String> usedNames, Result result,
-                             PauseListener paused, boolean[] gaveUp, boolean allowDownload)
-            throws IOException {
+                             PauseListener paused, boolean[] gaveUp, boolean allowDownload,
+                             ReceiptSync.Cancelled cancelled) throws IOException {
         String firstName = ReceiptPages.firstPageName(job.tagName, job.ext);
         boolean lagSchonDa = Receipts.localFile(app, firstName).exists();
         if (!allowDownload && !lagSchonDa) {
@@ -139,7 +164,8 @@ public final class ReceiptZip {
         }
         // Erst die erste Seite, und zwar einzeln: Nur an ihr lässt sich „kennt der Server nicht" von
         // „komme gerade nicht dran" unterscheiden.
-        ReceiptSync.Fetched first = fetchWithRetry(app, firstName, job.year, storage, paused, gaveUp);
+        ReceiptSync.Fetched first = fetchWithRetry(app, firstName, job.year, storage, paused, gaveUp,
+                cancelled);
         if (first.file == null) {
             if (first.notFound) {
                 result.notFound++;
@@ -180,13 +206,14 @@ public final class ReceiptZip {
      */
     private static ReceiptSync.Fetched fetchWithRetry(Context app, String file, int year,
                                                       RemoteStorage storage, PauseListener paused,
-                                                      boolean[] gaveUp) {
+                                                      boolean[] gaveUp,
+                                                      ReceiptSync.Cancelled cancelled) {
         ReceiptSync.Fetched last = ReceiptSync.fetch(app, file, year, storage);
         if (last.file != null || last.notFound || gaveUp[0]) {
             return last;
         }
         for (int attempt = 1; attempt < MAX_ATTEMPTS; attempt++) {
-            if (!awaitReady(app, paused)) {
+            if (stopped(cancelled) || !awaitReady(app, paused, cancelled)) {
                 gaveUp[0] = true; // ab hier nur noch, was ohne Netz zu haben ist
                 return last;
             }
@@ -209,7 +236,8 @@ public final class ReceiptZip {
      *
      * @return {@code false}, wenn die Frist abgelaufen ist – dann soll der Lauf aufhören
      */
-    private static boolean awaitReady(Context app, PauseListener paused) {
+    private static boolean awaitReady(Context app, PauseListener paused,
+                                      ReceiptSync.Cancelled cancelled) {
         if (ForegroundGate.isForeground() && Net.isOnline(app)) {
             return true;
         }
@@ -219,6 +247,9 @@ public final class ReceiptZip {
         try {
             long deadline = System.currentTimeMillis() + MAX_PAUSE_MS;
             while (System.currentTimeMillis() < deadline) {
+                if (stopped(cancelled)) {
+                    return false; // aus der Pause heraus abgebrochen
+                }
                 long rest = deadline - System.currentTimeMillis();
                 if (!ForegroundGate.awaitForeground(Math.min(rest, RETRY_DELAY_MS))) {
                     continue; // noch im Hintergrund – weiter warten, bis die Frist abläuft

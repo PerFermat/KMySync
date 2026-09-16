@@ -773,6 +773,16 @@ public class Repository {
         });
     }
 
+    /** Buchungen zu einer Liste von Nummern – für den wiederaufgenommenen Beleg-Export. */
+    public void getBookingsByIds(final List<Long> ids, final Callback<List<Booking>> callback) {
+        executor.execute(() -> {
+            final List<Booking> result = ids == null || ids.isEmpty()
+                    ? new java.util.ArrayList<>()
+                    : bookingDao.getByIds(ids);
+            mainHandler.post(() -> callback.onResult(result));
+        });
+    }
+
     /** Buchungen im Zeitraum, ohne Umbuchungen – Grundlage für den Kategorie-Drilldown. */
     public void getBookingsBetween(final long fromMs, final long toMs, final Callback<List<Booking>> callback) {
         executor.execute(() -> {

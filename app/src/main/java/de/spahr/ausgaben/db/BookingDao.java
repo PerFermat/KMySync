@@ -22,6 +22,14 @@ public interface BookingDao {
     @Query("SELECT * FROM booking WHERE id = :id")
     Booking getById(long id);
 
+    /**
+     * Buchungen zu einer Liste von Nummern – für den wiederaufgenommenen Beleg-Export, der sich nur
+     * die Nummern gemerkt hat und die Belegliste daraus neu bildet. Eine inzwischen gelöschte Buchung
+     * fehlt dann einfach.
+     */
+    @Query("SELECT * FROM booking WHERE id IN (:ids) ORDER BY created_at DESC, id DESC")
+    List<Booking> getByIds(List<Long> ids);
+
     /** Zuletzt angelegte Buchung, deren Empfänger den Suchbegriff enthält (für die Sprach-Schnellerfassung). */
     @Query("SELECT * FROM booking WHERE payee LIKE '%' || :term || '%' COLLATE NOCASE "
             + "ORDER BY created_at DESC, id DESC LIMIT 1")

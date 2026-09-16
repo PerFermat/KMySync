@@ -245,6 +245,10 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     private boolean receiptExportDownload = true;
     /** Wieviele der vorgemerkten Belege schon auf dem Gerät liegen – sie stehen in der Liste vorn. */
     private int receiptExportLocal;
+    /** Der Dateiname, unter dem gespeichert wird – gemerkt für einen späteren zweiten Anlauf. */
+    private String receiptExportName = "";
+    /** Gesetzt, solange ein Beleg-Export läuft; darüber bricht das Banner ihn ab. */
+    private java.util.concurrent.atomic.AtomicBoolean receiptExportCancel;
     private ActivityResultLauncher<Intent> voiceLauncher;
     private VoiceEntryController voiceEntry;
     private ActivityResultLauncher<Intent> editLauncher;
@@ -442,6 +446,15 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         receiptZipLauncher = registerForActivityResult(
                 new ActivityResultContracts.CreateDocument("application/zip"), uri -> {
                     if (uri != null) {
+                        // Dauerhaftes Schreibrecht erbitten: Nur damit läßt sich ein abgebrochener
+                        // Lauf später in dieselbe Datei wiederholen. Ob der Dateianbieter das gewährt,
+                        // steht ihm frei – ohne das Recht entfällt nur die Wiederaufnahme.
+                        try {
+                            getContentResolver().takePersistableUriPermission(
+                                    uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                        } catch (Exception ignored) {
+                            // kein dauerhaftes Recht – der Lauf selbst geht trotzdem
+                        }
                         writeReceiptZip(uri);
                     }
                 });
@@ -564,6 +577,9 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         // Belege gelöschter Buchungen entsorgen – nur einmal je App-Start, damit das „Rückgängig" nach
         // dem Löschen (onResume läuft auch beim Zurückkommen aus dem Editor) seine Bilder behält.
         de.spahr.ausgaben.receipt.ReceiptGc.runOncePerStart(this);
+        // Kam der letzte Beleg-Export nie ans Ende? Dann einmal je App-Start anbieten, ihn zu
+        // wiederholen – ebenfalls nur einmal, sonst stünde die Frage bei jeder Rückkehr aus dem Editor.
+        offerReceiptExportResume();
         boolean gps = settings.isGpsEnabled();
         // Ziffern-Button (stille Betrag-only-Erfassung) nur bei aktivem Standort anbieten.
         findViewById(R.id.fabNumber).setVisibility(gps ? View.VISIBLE : View.GONE);
@@ -1247,10 +1263,90 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                 .show();
     }
 
+    /**
+     * Bietet an, einen unterbrochenen oder unvollständig gebliebenen Beleg-Export zu wiederholen.
+     *
+     * <p>Ein zweiter Lauf ist billig: Alles, was der erste schon geholt hat, liegt jetzt auf dem Gerät
+     * und rauscht durch. Geschrieben wird in dieselbe Datei – ohne weitere Rückfrage, auch die
+     * Entscheidung über das Nachladen gilt von damals.</p>
+     */
+    private void offerReceiptExportResume() {
+        final de.spahr.ausgaben.receipt.ReceiptExportResume.Pending offen =
+                de.spahr.ausgaben.receipt.ReceiptExportResume.askOncePerStart(this);
+        if (offen == null) {
+            return;
+        }
+        String wann = java.text.DateFormat.getDateTimeInstance(
+                java.text.DateFormat.SHORT, java.text.DateFormat.SHORT).format(
+                        new java.util.Date(offen.startedAt));
+        new AppDialog(this)
+                .setTitle(R.string.receipt_export_title)
+                .setMessage(getString(R.string.receipt_export_resume_ask, offen.name, wann))
+                .setPositiveButton(R.string.receipt_export_resume, (d, w) -> resumeReceiptExport(offen))
+                .setNegativeButton(R.string.cancel, (d, w) -> {
+                    // Der Nutzer will die Datei nicht mehr. Unbrauchbar? Dann weg damit – lesbar?
+                    // Dann bleibt sie, sie enthält ja Belege.
+                    de.spahr.ausgaben.receipt.ReceiptExportResume.clear(this);
+                    removeIfBroken(android.net.Uri.parse(offen.uri));
+                })
+                .show();
+    }
+
+    /** Baut die Belegliste aus den gemerkten Buchungsnummern neu und schreibt dieselbe Datei. */
+    private void resumeReceiptExport(de.spahr.ausgaben.receipt.ReceiptExportResume.Pending offen) {
+        final android.net.Uri uri = android.net.Uri.parse(offen.uri);
+        repository.getBookingsByIds(offen.bookingIds, bookings -> {
+            if (bookings.isEmpty()) {
+                de.spahr.ausgaben.receipt.ReceiptExportResume.clear(this);
+                Toast.makeText(this, R.string.receipt_export_none, Toast.LENGTH_LONG).show();
+                return;
+            }
+            repository.securityInfoForBookings(bookings, info -> {
+                de.spahr.ausgaben.receipt.ReceiptExportPlan plan =
+                        de.spahr.ausgaben.receipt.ReceiptExportPlan.of(this,
+                                de.spahr.ausgaben.receipt.ReceiptExportJobs.collect(
+                                        bookings, uebersetzteBewegungsarten(info)));
+                receiptExportName = offen.name;
+                writeReceiptZip(uri, plan.ordered(), offen.allowDownload, plan.local.size(), true);
+            });
+        });
+    }
+
     /** Speicherort wählen lassen; geschrieben wird erst in {@link #writeReceiptZip}. */
     private void startReceiptZipPicker() {
-        receiptZipLauncher.launch("belege-" + new java.text.SimpleDateFormat("yyyyMMdd-HHmmss",
-                java.util.Locale.US).format(new java.util.Date()) + ".zip");
+        receiptExportName = "belege-" + new java.text.SimpleDateFormat("yyyyMMdd-HHmmss",
+                java.util.Locale.US).format(new java.util.Date()) + ".zip";
+        receiptZipLauncher.launch(receiptExportName);
+    }
+
+    /**
+     * Macht das Fortschrittsbanner zum Abbruchknopf, solange ein Beleg-Export läuft. Ein Lauf über
+     * hunderte Belege dauert; ohne diesen Ausweg bliebe nur, die App abzuwürgen – und genau das
+     * hinterlässt die unbrauchbare Datei, um die es hier geht.
+     */
+    private void showExportBannerCancel(boolean laeuft) {
+        View banner = findViewById(R.id.importBanner);
+        if (banner == null) {
+            return;
+        }
+        banner.setClickable(laeuft);
+        banner.setOnClickListener(laeuft ? v -> askCancelReceiptExport() : null);
+    }
+
+    private void askCancelReceiptExport() {
+        final java.util.concurrent.atomic.AtomicBoolean flag = receiptExportCancel;
+        if (flag == null) {
+            return;
+        }
+        new AppDialog(this)
+                .setTitle(R.string.receipt_export_title)
+                .setMessage(R.string.receipt_export_cancel_ask)
+                .setPositiveButton(R.string.receipt_export_cancel, (d, w) -> {
+                    flag.set(true);
+                    importBanner.label(getString(R.string.receipt_export_cancelling));
+                })
+                .setNegativeButton(R.string.receipt_export_keep_running, null)
+                .show();
     }
 
     /**
@@ -1272,15 +1368,38 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
 
     /** Packt die vorgemerkten Belege in die gewählte Datei; das Holen vom Server kann dauern. */
     private void writeReceiptZip(android.net.Uri uri) {
-        final java.util.List<de.spahr.ausgaben.receipt.ReceiptExportJobs.Job> jobs = receiptExportJobs;
-        final boolean download = receiptExportDownload;
+        writeReceiptZip(uri, receiptExportJobs, receiptExportDownload, receiptExportLocal, false);
+        receiptExportJobs = null;
+    }
+
+    /**
+     * Der eigentliche Lauf.
+     *
+     * @param wieder {@code true} beim Wiederaufnehmen: Die Datei wird dann gekürzt und von vorn
+     *               beschrieben, statt eine frisch angelegte zu füllen.
+     */
+    private void writeReceiptZip(android.net.Uri uri,
+                                 java.util.List<de.spahr.ausgaben.receipt.ReceiptExportJobs.Job> jobs,
+                                 final boolean download, int lokalCount, boolean wieder) {
         // Bis hierher liegen die Belege schon auf dem Gerät – ab da wird geholt (die Liste ist
         // vorsortiert, siehe ReceiptExportPlan.ordered).
-        final int lokal = download ? receiptExportLocal : jobs == null ? 0 : jobs.size();
-        receiptExportJobs = null;
+        final int lokal = download ? lokalCount : jobs == null ? 0 : jobs.size();
         if (jobs == null || jobs.isEmpty()) {
             return;
         }
+        // Ab jetzt gilt der Lauf als begonnen. Stirbt der Prozess mittendrin, findet die App den
+        // Merker beim nächsten Start und bietet an, ihn zu wiederholen.
+        if (!wieder) {
+            java.util.List<Long> ids = new ArrayList<>(jobs.size());
+            for (de.spahr.ausgaben.receipt.ReceiptExportJobs.Job j : jobs) {
+                ids.add(j.bookingId);
+            }
+            de.spahr.ausgaben.receipt.ReceiptExportResume.start(this, uri.toString(),
+                    receiptExportName, download, ids);
+        }
+        final java.util.concurrent.atomic.AtomicBoolean abbruch =
+                new java.util.concurrent.atomic.AtomicBoolean();
+        receiptExportCancel = abbruch;
         final String pausedLabel = getString(R.string.receipt_export_paused);
         importBanner.start(getString(lokal > 0
                 ? R.string.receipt_export_running
@@ -1301,24 +1420,40 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         // Danach steht wieder der Zählstand da, bei dem er stehengeblieben ist.
         final de.spahr.ausgaben.receipt.ReceiptZip.PauseListener pause =
                 p -> importBanner.label(p ? pausedLabel : zaehlend[0]);
+        // Das Banner ist jetzt der Abbruchknopf.
+        showExportBannerCancel(true);
+        final java.util.List<de.spahr.ausgaben.receipt.ReceiptExportJobs.Job> auftraege = jobs;
         new Thread(() -> {
             de.spahr.ausgaben.receipt.ReceiptZip.Result result = null;
             String error = null;
-            try (java.io.OutputStream out = getContentResolver().openOutputStream(uri)) {
+            // „wt" kürzt eine vorhandene Datei auf null – beim Wiederaufnehmen darf hinter dem neuen
+            // Archiv nichts vom alten stehenbleiben.
+            try (java.io.OutputStream out = getContentResolver().openOutputStream(uri, "wt")) {
                 if (out == null) {
                     throw new java.io.IOException("kein Schreibzugriff");
                 }
-                result = de.spahr.ausgaben.receipt.ReceiptZip.write(this, out, jobs, progress, pause,
-                        download);
+                result = de.spahr.ausgaben.receipt.ReceiptZip.write(this, out, auftraege, progress,
+                        pause, download, abbruch::get);
             } catch (Exception e) {
                 error = String.valueOf(e.getMessage());
             }
             final de.spahr.ausgaben.receipt.ReceiptZip.Result done = result;
             final String failed = error;
+            // Offen bleibt der Merker nur, wenn ein zweiter Lauf etwas bringt. Nach einem Abbruch
+            // gehört er ebenfalls weg – der Nutzer hat gerade gesagt, dass er aufhören will.
+            de.spahr.ausgaben.receipt.ReceiptExportResume.finished(this,
+                    done != null && done.worthRetrying() && !done.cancelled);
+            if (done != null && done.cancelled) {
+                // Regulär geschlossen heißt in aller Regel: lesbar. Prüfen und nur wegwerfen, was
+                // wirklich niemand mehr öffnen kann.
+                removeIfBroken(uri);
+            }
             if (isFinishing() || isDestroyed()) {
                 return; // niemand mehr da, dem man etwas melden könnte – die Datei steht trotzdem
             }
             runOnUiThread(() -> {
+                receiptExportCancel = null;
+                showExportBannerCancel(false);
                 importBanner.finish();
                 if (failed != null) {
                     Toast.makeText(this, getString(R.string.receipt_export_failed, failed),
@@ -1355,6 +1490,64 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                 .setMessage(text)
                 .setPositiveButton(android.R.string.ok, null)
                 .show();
+    }
+
+    /**
+     * Wirft die Datei weg, wenn sie <b>sicher</b> unbrauchbar ist – sonst bleibt sie liegen.
+     *
+     * <p>Eine abgebrochene Datei ist lesbar und enthält, was bis dahin gepackt wurde; die ist etwas
+     * wert. Nur wo der Prozess mitten im Schreiben starb, fehlt das Dateiende und kein Packprogramm
+     * kommt mehr hinein. Lässt sich das nicht feststellen, wird nicht gelöscht: Eine kaputte Datei,
+     * die herumsteht, ist der kleinere Schaden als eine gelöschte, die in Ordnung war.</p>
+     */
+    private void removeIfBroken(android.net.Uri uri) {
+        Boolean heil = zipLooksComplete(uri);
+        if (heil == null || heil) {
+            return;
+        }
+        try {
+            android.provider.DocumentsContract.deleteDocument(getContentResolver(), uri);
+        } catch (Exception ignored) {
+            // Manche Anbieter lassen das nicht zu – dann bleibt die Datei eben liegen.
+        }
+    }
+
+    /**
+     * Ist die ZIP-Datei vollständig geschlossen? {@code null} = nicht feststellbar.
+     *
+     * <p>Gelesen wird nur der Schwanz der Datei, nicht ihr Inhalt – ein Beleg-Archiv kann hundert
+     * Megabyte haben.</p>
+     */
+    private Boolean zipLooksComplete(android.net.Uri uri) {
+        try (android.os.ParcelFileDescriptor pfd = getContentResolver().openFileDescriptor(uri, "r")) {
+            if (pfd == null) {
+                return null;
+            }
+            long size = pfd.getStatSize();
+            if (size <= 0) {
+                return Boolean.FALSE; // leer angelegt und nie beschrieben
+            }
+            int len = (int) Math.min(size, de.spahr.ausgaben.receipt.ZipCheck.TAIL_BYTES);
+            byte[] tail = new byte[len];
+            try (java.io.FileInputStream in =
+                         new java.io.FileInputStream(pfd.getFileDescriptor())) {
+                in.getChannel().position(size - len);
+                int gelesen = 0;
+                while (gelesen < len) {
+                    int n = in.read(tail, gelesen, len - gelesen);
+                    if (n < 0) {
+                        break;
+                    }
+                    gelesen += n;
+                }
+                if (gelesen < len) {
+                    return null; // unvollständig gelesen – lieber nichts behaupten
+                }
+            }
+            return de.spahr.ausgaben.receipt.ZipCheck.looksComplete(tail);
+        } catch (Exception e) {
+            return null; // kein Zugriff, kein Positionieren – im Zweifel nicht löschen
+        }
     }
 
     /**

@@ -107,6 +107,12 @@
     <string name="receipt_export_running_count">Belege packen (%1$d/%2$d)</string>
     <string name="receipt_export_running_fetch">Belege laden und packen …</string>
     <string name="receipt_export_running_fetch_count">Belege laden und packen (%1$d/%2$d)</string>
+    <string name="receipt_export_cancel_ask">Den laufenden Beleg-Export abbrechen? Die bis dahin gepackten Belege bleiben in der Datei.</string>
+    <string name="receipt_export_cancel">Abbrechen</string>
+    <string name="receipt_export_keep_running">Weitermachen</string>
+    <string name="receipt_export_cancelling">Wird abgebrochen …</string>
+    <string name="receipt_export_resume_ask">Der Beleg-Export nach „%1$s" (%2$s) wurde nicht fertig. Noch einmal versuchen? Die schon geholten Belege liegen auf dem Gerät und sind sofort dabei; geschrieben wird in dieselbe Datei.</string>
+    <string name="receipt_export_resume">Noch einmal</string>
     <string name="receipt_export_paused">Pausiert – App offen lassen</string>
     <string name="receipt_export_not_found">• %1$d liegen nicht auf dem Server</string>
     <string name="receipt_export_unreachable">• %1$d waren nicht erreichbar (Verbindung)</string>
