@@ -185,16 +185,17 @@ public class NextcloudUploader {
     }
 
     /**
-     * Benennt eine Datei im selben Ordner per WebDAV-MOVE um; ein vorhandenes Ziel wird ersetzt
+     * Verschiebt eine Datei per WebDAV-MOVE; ein vorhandenes Ziel wird ersetzt
      * ({@code Overwrite: T}). Der Server führt das in einem Zug aus – deshalb kann das Ziel dabei nie
-     * halb geschrieben zurückbleiben.
+     * halb geschrieben zurückbleiben. Quell- und Zielordner dürfen verschieden sein; bei gleichem
+     * Ordner ist es ein Umbenennen.
      */
-    public void move(String baseUrl, String user, String password, String folder,
-                     String fromName, String toName) throws IOException {
+    public void move(String baseUrl, String user, String password, String fromFolder,
+                     String fromName, String toFolder, String toName) throws IOException {
         Request request = new Request.Builder()
-                .url(buildUrl(baseUrl, user, folder, fromName))
+                .url(buildUrl(baseUrl, user, fromFolder, fromName))
                 .header("Authorization", Credentials.basic(user, password))
-                .header("Destination", buildUrl(baseUrl, user, folder, toName))
+                .header("Destination", buildUrl(baseUrl, user, toFolder, toName))
                 .header("Overwrite", "T")
                 .method("MOVE", null)
                 .build();
@@ -220,7 +221,11 @@ public class NextcloudUploader {
         }
     }
 
-    /** Listet die Dateinamen mit der angegebenen Endung (ohne Punkt, z. B. "csv" oder "kmy"). */
+    /**
+     * Listet die Dateinamen mit der angegebenen Endung (ohne Punkt, z. B. "csv" oder "kmy").
+     * {@code null} als Endung listet <b>alle</b> Dateien – für Namen ohne feste Endung wie die
+     * Sicherungen {@code <Datei>.bak-<Zeitstempel>}.
+     */
     public List<String> listFiles(String baseUrl, String user, String password, String folder,
                                   String ext) throws IOException {
         String url = buildFolderUrl(baseUrl, user, folder);
@@ -335,7 +340,8 @@ public class NextcloudUploader {
 
     /** Extrahiert aus der Multistatus-Antwort die Dateinamen mit der Endung {@code ext} (ohne Collections). */
     private List<String> parseNames(String xml, String ext) throws IOException {
-        String suffix = "." + ext.toLowerCase();
+        // null = nicht filtern; "" bleibt wie bisher ein Filter, der auf nichts paßt.
+        String suffix = ext == null ? null : "." + ext.toLowerCase();
         List<String> names = new ArrayList<>();
         try {
             XmlPullParser parser = Xml.newPullParser();
@@ -359,7 +365,7 @@ public class NextcloudUploader {
                 } else if (event == XmlPullParser.END_TAG && "response".equals(localName(name))) {
                     if (currentHref != null && !isCollection) {
                         String fileName = lastSegment(currentHref);
-                        if (fileName.toLowerCase().endsWith(suffix)) {
+                        if (suffix == null || fileName.toLowerCase().endsWith(suffix)) {
                             names.add(fileName);
                         }
                     }

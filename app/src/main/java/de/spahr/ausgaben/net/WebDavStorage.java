@@ -36,6 +36,12 @@ public class WebDavStorage implements RemoteStorage {
         return uploader.listFiles(baseUrl, user, password, folder, ext);
     }
 
+    /** {@code null} als Endung heißt im Uploader: nicht filtern. */
+    @Override
+    public List<String> listAllFiles(String folder) throws IOException {
+        return uploader.listFiles(baseUrl, user, password, folder, null);
+    }
+
     @Override
     public List<String> listFolders(String folder) throws IOException {
         return uploader.listFolders(baseUrl, user, password, folder);
@@ -53,7 +59,13 @@ public class WebDavStorage implements RemoteStorage {
 
     @Override
     public void move(String folder, String fromName, String toName) throws IOException {
-        uploader.move(baseUrl, user, password, folder, fromName, toName);
+        uploader.move(baseUrl, user, password, folder, fromName, folder, toName);
+    }
+
+    @Override
+    public void move(String fromFolder, String fromName, String toFolder, String toName)
+            throws IOException {
+        uploader.move(baseUrl, user, password, fromFolder, fromName, toFolder, toName);
     }
 
     /** Herunterladen mit Rückmeldung der gelesenen Bytes (Fortschrittsanzeige). */

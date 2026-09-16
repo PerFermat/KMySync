@@ -122,9 +122,14 @@ public class SmbStorage implements RemoteStorage {
      */
     @Override
     public void move(String folder, String fromName, String toName) throws IOException {
-        final String dir = joinPath(base, folder);
-        final String from = joinPath(dir, fromName);
-        final String to = joinPath(dir, toName);
+        move(folder, fromName, folder, toName);
+    }
+
+    @Override
+    public void move(String fromFolder, String fromName, String toFolder, String toName)
+            throws IOException {
+        final String from = joinPath(joinPath(base, fromFolder), fromName);
+        final String to = joinPath(joinPath(base, toFolder), toName);
         withShare(disk -> {
             // Zum Umbenennen wird DELETE auf der Quelle verlangt (SMB benennt „durch Löschen des
             // alten Namens" um); das Ziel darf ersetzt werden.
@@ -191,6 +196,12 @@ public class SmbStorage implements RemoteStorage {
         return withShare(disk -> collect(disk, joinPath(base, folder), ext).files);
     }
 
+    /** {@code null} als Endung heißt: nicht filtern – siehe {@link RemoteStorage#listAllFiles}. */
+    @Override
+    public List<String> listAllFiles(String folder) throws IOException {
+        return withShare(disk -> collect(disk, joinPath(base, folder), null).files);
+    }
+
     @Override
     public List<String> listFolders(String folder) throws IOException {
         return withShare(disk -> collect(disk, joinPath(base, folder), "").folders);
@@ -202,11 +213,14 @@ public class SmbStorage implements RemoteStorage {
         return withShare(disk -> collect(disk, joinPath(base, folder), ext));
     }
 
-    /** Ein Verzeichnis lesen und in Ordner/Dateien trennen; leere {@code ext} = keine Dateien. */
+    /**
+     * Ein Verzeichnis lesen und in Ordner/Dateien trennen; leere {@code ext} = keine Dateien,
+     * {@code null} = alle Dateien.
+     */
     private static Entries collect(DiskShare disk, String dir, String ext) {
         List<String> folders = new ArrayList<>();
         List<String> files = new ArrayList<>();
-        String suffix = ext.isEmpty() ? "" : "." + ext.toLowerCase();
+        String suffix = ext == null || ext.isEmpty() ? ext : "." + ext.toLowerCase();
         long dirFlag = FileAttributes.FILE_ATTRIBUTE_DIRECTORY.getValue();
         for (FileIdBothDirectoryInformation info : disk.list(dir)) {
             String name = info.getFileName();
@@ -215,7 +229,7 @@ public class SmbStorage implements RemoteStorage {
             }
             if ((info.getFileAttributes() & dirFlag) != 0) {
                 folders.add(name);
-            } else if (!suffix.isEmpty() && name.toLowerCase().endsWith(suffix)) {
+            } else if (suffix == null || (!suffix.isEmpty() && name.toLowerCase().endsWith(suffix))) {
                 files.add(name);
             }
         }

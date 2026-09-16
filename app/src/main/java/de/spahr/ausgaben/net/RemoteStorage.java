@@ -39,6 +39,18 @@ public interface RemoteStorage {
     /** Dateinamen im Ordner mit der Endung {@code ext} (ohne Punkt, z. B. "csv" oder "kmy"). */
     List<String> listFiles(String folder, String ext) throws IOException;
 
+    /**
+     * Alle Dateinamen im Ordner, ohne Rücksicht auf die Endung.
+     *
+     * <p>Gebraucht für die Sicherungen neben der KMyMoney-Datei: Die heißen
+     * {@code <Datei>.bak-<Zeitstempel>}, tragen also keine feste Endung, nach der
+     * {@link #listFiles} filtern könnte. Standard ist die leere Liste – ein Backend, das nicht
+     * auflisten kann, verhindert damit nur das Aufräumen, nichts weiter.</p>
+     */
+    default List<String> listAllFiles(String folder) throws IOException {
+        return java.util.Collections.emptyList();
+    }
+
     /** Unterordner-Namen im Ordner (für den Datei-Browser); leere Liste, wenn nicht unterstützt. */
     default List<String> listFolders(String folder) throws IOException {
         return java.util.Collections.emptyList();
@@ -89,7 +101,19 @@ public interface RemoteStorage {
      * bleibt das alte Risiko bestehen, deshalb implementieren es WebDAV und SMB beide.</p>
      */
     default void move(String folder, String fromName, String toName) throws IOException {
-        throw new IOException("Umbenennen wird von diesem Server nicht unterstützt");
+        move(folder, fromName, folder, toName);
+    }
+
+    /**
+     * Wie {@link #move(String, String, String)}, aber über Ordnergrenzen hinweg – gebraucht für den
+     * Papierkorb der Belege, der neben den Jahresordnern liegt.
+     *
+     * <p>Standard: nicht unterstützt. WebDAV und SMB können es beide, und beide bauen den Zielpfad
+     * ohnehin vollständig auf; der Ordnerwechsel kostet dort nichts extra.</p>
+     */
+    default void move(String fromFolder, String fromName, String toFolder, String toName)
+            throws IOException {
+        throw new IOException("Verschieben wird von diesem Server nicht unterstützt");
     }
 
     String downloadText(String folder, String fileName) throws IOException;
