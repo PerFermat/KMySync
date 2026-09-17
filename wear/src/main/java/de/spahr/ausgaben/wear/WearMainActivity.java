@@ -25,10 +25,20 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 /**
- * Einziger Screen der Wear-App. Zustand A: Typ wählen (Einnahme/Umbuchung/Ausgabe) – danach hört die App
- * über die {@link SpeechRecognizer}-API automatisch zu (kein manuelles Bestätigen). Zustand B: erkannten
- * Text zeigen mit „Abbrechen (n)"; wird 10 s lang nicht abgebrochen, wird die Buchung ohne weitere Aktion
- * verarbeitet (übertragen).
+ * Einziger Screen der Wear-App, in vier Flächen (siehe {@code showOnly}):
+ *
+ * <ul>
+ *   <li><b>Typ wählen</b> – Einnahme/Umbuchung/Ausgabe; danach hört die App über die
+ *       {@link SpeechRecognizer}-API automatisch zu (kein manuelles Bestätigen).</li>
+ *   <li><b>Zuhören</b> – „Moment…"/„Sprich jetzt", mit dem Weg in den Zahlenblock.</li>
+ *   <li><b>Zahlenblock</b> – stille Eingabe nur des Betrags.</li>
+ *   <li><b>Bestätigen</b> – für <i>beide</i> Wege dieselbe Fläche: Betrag, Empfänger und
+ *       „Abbrechen (n)". Wird 10 s lang nichts geändert, wird gebucht.</li>
+ * </ul>
+ *
+ * <p>Auf der Bestätigungsfläche steht ein gesprochener Empfänger vorn und bleibt, wenn man nichts
+ * tut; dahinter stehen die Empfänger im 100-m-Umkreis, zwischen denen der graue Knopf durchschaltet.
+ * Wurde nur ein Betrag gesagt oder getippt, ist die Runde dieselbe.</p>
  *
  * <p>Der Eintrag wird sofort lokal gespeichert (nichts geht verloren), aber erst nach Ablauf der 10 s
  * gesendet (über {@link PendingEntry#readyAt}). „Abbrechen" entfernt ihn vorher wieder.</p>
@@ -58,7 +68,6 @@ public class WearMainActivity extends WearLocalizedActivity {
     };
     private TextView confirmType;
     private TextView confirmText;
-    private Button btnCancel;
     private View btnNumberPad;
     private View numberView;
     private TextView numberDisplay;
@@ -74,6 +83,10 @@ public class WearMainActivity extends WearLocalizedActivity {
     private TextView payeeName;
     /** Betrag der laufenden Bestätigung – der Text wird bei jedem Empfängerwechsel neu gebaut. */
     private String pendingAmount = "";
+    /** Gesprochener Empfänger dieser Bestätigung; steht als Vorgabe vorn (leer beim Zahlenblock). */
+    private String spokenPayee = "";
+    /** Der gesprochene Satz im Wortlaut – er geht unverändert hinaus, solange die Vorgabe steht. */
+    private String spokenText = "";
     /** Empfänger im 100-m-Umkreis, der nächstgelegene zuerst; leer = keiner in der Nähe. */
     private final java.util.List<String> payeeCandidates = new java.util.ArrayList<>();
     /** Gewählter Empfänger; die Stelle hinter dem letzten steht für „ohne Empfänger". */
@@ -147,12 +160,10 @@ public class WearMainActivity extends WearLocalizedActivity {
         balanceView = findViewById(R.id.balanceView);
         confirmType = findViewById(R.id.confirmType);
         confirmText = findViewById(R.id.confirmText);
-        btnCancel = findViewById(R.id.btnCancel);
 
         findViewById(R.id.btnIncome).setOnClickListener(v -> chooseType(WearPaths.TYPE_INCOME));
         findViewById(R.id.btnTransfer).setOnClickListener(v -> chooseType(WearPaths.TYPE_TRANSFER));
         findViewById(R.id.btnExpense).setOnClickListener(v -> chooseType(WearPaths.TYPE_EXPENSE));
-        btnCancel.setOnClickListener(v -> cancelConfirm());
 
         // Grauer Wechsel-Knopf: Konto/Ort durchschalten (Auto-Rücksprung nach dem Timeout).
         btnCycle = findViewById(R.id.btnCycle);
@@ -464,7 +475,6 @@ public class WearMainActivity extends WearLocalizedActivity {
         showOnly(confirmView);
         confirmType.setText(typeLabel(pendingType));
         confirmType.setTextColor(typeColor(pendingType));
-        btnCancel.setVisibility(View.GONE);
         btnNumberPad.setVisibility(View.VISIBLE); // stille Zifferneingabe anbieten
         keepScreenOn(true);
     }
@@ -556,15 +566,40 @@ public class WearMainActivity extends WearLocalizedActivity {
         numberDisplay.setText(amountInput.length() == 0 ? "0" : amountInput.toString());
     }
 
-    /** Empfänger im 100-m-Umkreis neu bestimmen (aus der vom Handy übertragenen Liste). */
+    /**
+     * Die Auswahl neu aufbauen: der gesprochene Empfänger zuerst (er bleibt, wenn man nichts tut),
+     * dahinter die im 100-m-Umkreis aus der vom Handy übertragenen Liste.
+     *
+     * <p>Läuft auch während des Countdowns noch einmal, falls der Standort erst dann eintrifft.
+     * Deshalb wird die bereits getroffene Wahl über den Namen gemerkt und wiederhergestellt – sonst
+     * spränge sie dem Nutzer unter den Fingern weg.</p>
+     */
     private void refreshPayees() {
+        String gewaehlt = payeeCandidates.isEmpty() ? null : chosenPayee();
         payeeCandidates.clear();
         payeePick = 0;
+        if (!spokenPayee.isEmpty()) {
+            payeeCandidates.add(spokenPayee);
+        }
         String coords = location.currentCoords();
         double[] ll = parseCoords(coords);
         if (ll != null) {
-            payeeCandidates.addAll(
-                    PayeeStore.nearby(this, ll[0], ll[1], BalanceStore.selectedAccount(this)));
+            for (String name : PayeeStore.nearby(this, ll[0], ll[1],
+                    BalanceStore.selectedAccount(this))) {
+                // Den gesprochenen nicht doppelt führen, auch wenn er zufällig in der Nähe liegt.
+                if (!name.equalsIgnoreCase(spokenPayee)) {
+                    payeeCandidates.add(name);
+                }
+            }
+        }
+        // Eine schon getroffene Wahl überlebt den Neuaufbau.
+        if (gewaehlt != null) {
+            for (int i = 0; i < payeeCandidates.size(); i++) {
+                if (payeeCandidates.get(i).equalsIgnoreCase(gewaehlt)) {
+                    payeePick = i;
+                    break;
+                }
+            }
         }
         // Bleibt die Zeile leer, sind drei Dinge möglich: kein Fix, keine übertragene Liste, oder
         // wirklich keiner in der Nähe. Ohne diese Zeile ist das am Handgelenk nicht zu unterscheiden.
@@ -603,7 +638,7 @@ public class WearMainActivity extends WearLocalizedActivity {
         payeePick = (payeePick + 1) % (payeeCandidates.size() + 1);
         updatePayeeRow();
         if (confirmEntryId != null) {
-            store.updateText(confirmEntryId, withPayee(pendingAmount));
+            store.updateText(confirmEntryId, buchungstext());
             startCancelCountdown(btnCancelNumber);
         }
     }
@@ -643,23 +678,29 @@ public class WearMainActivity extends WearLocalizedActivity {
         if (val <= 0) {
             return;
         }
-        showNumberConfirm(amt);
+        spokenText = "";
+        showConfirm(amt, "");
     }
 
     /**
-     * Zweite Seite: Betrag, Empfänger und der 10-Sekunden-Widerruf – derselbe Ablauf wie nach der
-     * Spracherfassung. Der Eintrag wird schon hier abgelegt (mit zurückgehaltenem {@code readyAt}),
-     * damit ein Absturz in den zehn Sekunden den getippten Betrag nicht verschluckt; „Abbrechen"
-     * nimmt ihn wieder heraus.
+     * Die eine Bestätigungsseite für beide Wege: Betrag, Empfänger und der 10-Sekunden-Widerruf.
+     *
+     * <p>Der Eintrag wird schon hier abgelegt (mit zurückgehaltenem {@code readyAt}), damit ein
+     * Absturz in den zehn Sekunden die Eingabe nicht verschluckt; „Abbrechen" nimmt ihn wieder
+     * heraus.</p>
+     *
+     * @param amt    angezeigter Betrag (bzw. der ganze Satz, wenn kein Betrag zu erkennen war)
+     * @param spoken gesprochener Empfänger; steht als Vorgabe vorn, leer beim Zahlenblock
      */
-    private void showNumberConfirm(String amt) {
+    private void showConfirm(String amt, String spoken) {
         numberEntryActive = false;
         pendingAmount = amt;
+        spokenPayee = spoken == null ? "" : spoken.trim();
         refreshPayees();
 
         long now = System.currentTimeMillis();
         confirmEntryId = UUID.randomUUID().toString();
-        store.add(new PendingEntry(confirmEntryId, withPayee(amt), pendingType, "",
+        store.add(new PendingEntry(confirmEntryId, buchungstext(), pendingType, "",
                 BalanceStore.selectedAccount(this), BalanceStore.selectedPlace(this),
                 now, now + CANCEL_WINDOW_MS + LOCATION_WAIT_MS));
         requestTileUpdate();
@@ -678,14 +719,22 @@ public class WearMainActivity extends WearLocalizedActivity {
      * <p>Der Name steht <b>vorn</b> und die Währung hinten, und das ist kein Geschmack: Der Auswerter
      * nimmt bevorzugt die Zahl vor einem Währungswort und sonst die letzte Zahl im Satz. Bei
      * „12,50 Aral 24" wäre die letzte Zahl die 24 aus dem Namen – der Betrag wäre falsch.</p>
+     *
+     * <p>Steht die Wahl noch auf dem <b>gesprochenen</b> Empfänger, geht der Satz unverändert
+     * hinaus. So kann die eigene Aufteilung der Uhr ({@link WearSpoken}) höchstens die Anzeige
+     * verfehlen, nie die Buchung.</p>
      */
-    private String withPayee(String amt) {
+    private String buchungstext() {
         String payee = chosenPayee();
+        if (!spokenText.isEmpty() && payee.equals(spokenPayee)) {
+            return spokenText;
+        }
         if (payee.isEmpty()) {
-            return amt;
+            return pendingAmount;
         }
         String currency = PayeeStore.currency(this);
-        return currency.isEmpty() ? payee + " " + amt : payee + " " + amt + " " + currency;
+        return currency.isEmpty() ? payee + " " + pendingAmount
+                : payee + " " + pendingAmount + " " + currency;
     }
 
     /** Löst den Standort auf (Warten auf frischen Fix / Rückfall) und sendet den Eintrag danach. */
@@ -706,22 +755,19 @@ public class WearMainActivity extends WearLocalizedActivity {
         });
     }
 
-    /** Erkannter Text → sofort lokal speichern (mit 10-s-Sperre), Bestätigung mit Countdown zeigen. */
+    /**
+     * Erkannter Text → dieselbe Bestätigungsseite wie nach dem Zahlenblock.
+     *
+     * <p>Der gesprochene Empfänger steht dabei vorn und bleibt, wenn man nichts tut; die Empfänger
+     * im Umkreis stehen dahinter und lassen sich durchschalten. Wurde nur ein Betrag gesagt, ist die
+     * Runde dieselbe wie im Zahlenblock.</p>
+     */
     private void onRecognized(String text) {
-        long now = System.currentTimeMillis();
-        confirmEntryId = UUID.randomUUID().toString();
-        // Ohne Koordinaten ablegen; readyAt zurückhalten, bis nach dem 10-s-Fenster der Standort
-        // aufgelöst ist (siehe finalizeConfirm). „Abbrechen" entfernt den Eintrag vorher wieder.
-        store.add(new PendingEntry(confirmEntryId, text, pendingType, "",
-                BalanceStore.selectedAccount(this), BalanceStore.selectedPlace(this),
-                now, now + CANCEL_WINDOW_MS + LOCATION_WAIT_MS));
-        requestTileUpdate();
-
-        confirmText.setText(text);
-        btnCancel.setVisibility(View.VISIBLE);
-        btnNumberPad.setVisibility(View.GONE);
-
-        startCancelCountdown(btnCancel);
+        WearSpoken.Result geteilt = WearSpoken.parse(text);
+        spokenText = text;
+        // Ohne erkannten Betrag bleibt der Satz als Ganzes stehen – lieber unaufgeteilt anzeigen als
+        // falsch aufgeteilt. Das Handy wertet ihn ohnehin selbst aus.
+        showConfirm(geteilt.amount.isEmpty() ? text : geteilt.amount, geteilt.payee);
     }
 
     /**

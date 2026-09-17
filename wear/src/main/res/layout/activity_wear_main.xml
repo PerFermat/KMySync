@@ -145,13 +145,6 @@
                 android:textColor="@android:color/white"
                 android:textSize="16sp" />
 
-            <Button
-                android:id="@+id/btnCancel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="@string/wear_cancel" />
-
             <!-- Nur im „Sprich jetzt"-Zustand: stille Zifferneingabe öffnen. -->
             <ImageButton
                 android:id="@+id/btnNumberPad"
