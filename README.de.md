@@ -108,6 +108,9 @@ stehen im **[Benutzerhandbuch](docs/Handbuch-KMySync-de.pdf)**.
   gebucht wird auf dem Handy. Offline erfaßtes wird nachgereicht, ohne Verlust und ohne Dopplung.
 - **Sicherheit & Sicherung** – optionale biometrische Sperre, GPS standardmäßig aus, verschlüsselte
   Zugangsdaten; Sicherung von Daten und Einstellungen in eine (auf Wunsch verschlüsselte) Datei.
+  Androids eigene Sicherung bleibt dabei außen vor: Buchungen, Belege und Zugangsdaten verlassen das
+  Gerät nur dorthin, wohin der Nutzer sie selbst schickt. Beim Gerätewechsel ist deshalb die
+  App-eigene Sicherung der Weg.
 - **Darstellung & Sprache** – helles und dunkles Design, app-weite Schriftgröße, Deutsch, Englisch und
   Spanisch eingebaut, weitere Sprachen per Übersetzungsdatei.
 

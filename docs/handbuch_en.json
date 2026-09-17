@@ -2149,6 +2149,11 @@
       "text": "On <b>«Restore backup»</b> the app first asks for the backup password if needed, and then <b>what</b> should come back: <b>data only</b>, <b>settings only</b> or <b>both</b>. That way a broken configuration can be repaired without touching the recorded bookings. The app restarts afterwards. Receipt photos are not part of the backup – once uploaded they live on the server."
     },
     {
+      "type": "p",
+      "id": "b-0216b",
+      "text": "<b>When switching devices</b> this backup is the only way. Android does <b>not</b> include this app’s data in its own backup – neither in the cloud nor when transferring to a new device. That is deliberate: bookings, receipts and the server access should leave this device only for where you send them yourself. So create a backup <i>before</i> the switch and restore it on the new device."
+    },
+    {
       "type": "h1",
       "id": "b-0219",
       "text": "20. CSV format (export)"

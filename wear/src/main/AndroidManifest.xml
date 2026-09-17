@@ -19,8 +19,15 @@
         </intent>
     </queries>
 
+    <!--
+        Keine Systemsicherung – wie in der Phone-App, und hier erst recht: Die Uhr hält nur
+        Zwischenstände offline erfasster Buchungen, die ohnehin ans Handy wandern. Gesichert wird
+        über «Sicherung erstellen» in der Phone-App.
+    -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"

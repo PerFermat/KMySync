@@ -106,7 +106,9 @@ This list names the main features only. The exact behaviour, every detail and sc
 - **Wear OS** — speak an expense right from your wrist, offline too; the watch only captures the text,
   the phone creates the booking. Anything recorded offline is sent on later, without loss or duplication.
 - **Security & backup** — optional biometric lock, GPS off by default, encrypted credentials; data and
-  settings can be backed up into a file that may be encrypted.
+  settings can be backed up into a file that may be encrypted. Android's own backup is kept out of it:
+  bookings, receipts and credentials leave the device only for where you send them yourself. When
+  switching devices, the app's own backup is therefore the way.
 - **Appearance & language** — light and dark theme, app-wide font size, English, German and Spanish
   built in, further languages via a translation file.
 

@@ -126,8 +126,11 @@ public class SettingsStore {
      * <p>Der Rückfall ist gewollt — ein defekter Keystore soll die App nicht unbrauchbar machen —, aber
      * er darf nicht unbemerkt bleiben: Betroffen ist das Server-Passwort. Die Masken, die es abfragen,
      * sagen es dem Nutzer (siehe {@code settings_secret_fallback}).</p>
+     *
+     * <p>Paketsichtbar statt privat, damit die Tests im selben Paket ihn lesen und vor jedem Fall
+     * zurücksetzen können — er ist statisch und überlebt sonst von einem Test zum nächsten.</p>
      */
-    private static volatile boolean fallbackInUse;
+    static volatile boolean fallbackInUse;
 
     /** Ob das Server-Passwort gerade unverschlüsselt abgelegt wird – siehe {@link #fallbackInUse}. */
     public static boolean isSecretStorageUnencrypted(Context context) {
@@ -152,24 +155,64 @@ public class SettingsStore {
         }
     }
 
+    /** Öffnet die verschlüsselte Ablage – die eine Stelle, an der es schiefgehen kann. */
+    interface SecretPrefsOpener {
+        SharedPreferences open(Context app) throws Exception;
+    }
+
+    private static SharedPreferences openEncrypted(Context app) throws Exception {
+        MasterKey masterKey = new MasterKey.Builder(app)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build();
+        return EncryptedSharedPreferences.create(
+                app,
+                SECRET_PREFS,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM);
+    }
+
     private static SharedPreferences createSecretPrefs(Context app) {
+        return createSecretPrefs(app, SettingsStore::openEncrypted);
+    }
+
+    /**
+     * Zwei Fehlschläge sehen gleich aus, meinen aber Verschiedenes.
+     *
+     * <p><b>Die Datei passt nicht zum Schlüssel.</b> So sieht es aus, wenn eine gesicherte Prefs-Datei
+     * auf ein Gerät gelangt, dessen Keystore den zugehörigen Schlüssel nicht kennt – der wird nie
+     * mitgesichert. Der Schlüsselspeicher ist dabei völlig in Ordnung. Würden wir hier gleich
+     * zurückfallen, bliebe es dabei: Niemand räumt die unbrauchbare Datei je weg, also scheitert auch
+     * jeder spätere Start, und das Server-Passwort läge von da an dauerhaft unverschlüsselt. Deshalb
+     * einmal verwerfen und neu anlegen. Das kostet den Nutzer das Passwort – verloren war es ohnehin,
+     * denn entschlüsseln konnte es niemand mehr –, aber die Verschlüsselung bleibt.
+     *
+     * <p><b>Der Keystore ist defekt.</b> Dann scheitert auch der zweite Versuch, und es greift der
+     * unverschlüsselte Rückfall: lieber ungeschützt als eine App, die sich nicht mehr öffnen lässt.
+     * Nicht stillschweigend – siehe {@link #fallbackInUse}.
+     *
+     * <p>Seit Version 2.1 sichert Android die Dateien dieser App nicht mehr mit
+     * ({@code allowBackup="false"}), der erste Fall sollte also seltener werden. Verlassen wollen wir
+     * uns darauf nicht: Auch ein abgebrochenes Schreiben hinterlässt eine Datei, die nicht mehr aufgeht.
+     *
+     * @param opener nur für Tests einspeisbar; im Betrieb stets {@link #openEncrypted}
+     */
+    static SharedPreferences createSecretPrefs(Context app, SecretPrefsOpener opener) {
         try {
-            MasterKey masterKey = new MasterKey.Builder(app)
-                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                    .build();
-            return EncryptedSharedPreferences.create(
-                    app,
-                    SECRET_PREFS,
-                    masterKey,
-                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM);
-        } catch (Exception e) {
-            // Lieber unverschlüsselt als Absturz (z. B. bei defektem Keystore) – aber nicht
-            // stillschweigend: Wer sein Server-Passwort hier ablegt, soll wissen, dass es diesmal
-            // ungeschützt liegt. Der Merker wird beim nächsten Blick in die Einstellungen gemeldet.
-            android.util.Log.w("SettingsStore", "Keystore nicht verfügbar – Passwort liegt unverschlüsselt", e);
-            fallbackInUse = true;
-            return app.getSharedPreferences(SECRET_PREFS + "_fallback", Context.MODE_PRIVATE);
+            return opener.open(app);
+        } catch (Exception passtNicht) {
+            android.util.Log.w("SettingsStore",
+                    "Verschlüsselte Ablage nicht lesbar – wird einmal verworfen und neu angelegt",
+                    passtNicht);
+            app.deleteSharedPreferences(SECRET_PREFS);
+            try {
+                return opener.open(app);
+            } catch (Exception keystoreDefekt) {
+                android.util.Log.w("SettingsStore",
+                        "Keystore nicht verfügbar – Passwort liegt unverschlüsselt", keystoreDefekt);
+                fallbackInUse = true;
+                return app.getSharedPreferences(SECRET_PREFS + "_fallback", Context.MODE_PRIVATE);
+            }
         }
     }
 

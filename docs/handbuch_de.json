@@ -2154,6 +2154,11 @@
       "text": "Beim <b>«Sicherung einspielen»</b> fragt die App zuerst – falls nötig – das Sicherungspasswort ab und dann, <b>was</b> zurückkommen soll: <b>nur Daten</b>, <b>nur Einstellungen</b> oder <b>beides</b>. So lässt sich z. B. eine kaputte Konfiguration reparieren, ohne die erfassten Buchungen anzufassen. Danach startet die App neu. Belegfotos sind nicht Teil der Sicherung – sie liegen nach dem Hochladen auf dem Server."
     },
     {
+      "type": "p",
+      "id": "b-0216b",
+      "text": "<b>Beim Gerätewechsel</b> ist diese Sicherung der einzige Weg. Android nimmt die Daten dieser App <b>nicht</b> in seine eigene Sicherung auf – weder in die Cloud noch beim Übertragen auf ein neues Gerät. Das ist Absicht: Buchungen, Belege und der Serverzugang sollen dieses Gerät nur dorthin verlassen, wohin Sie sie selbst schicken. Legen Sie also <i>vor</i> dem Wechsel eine Sicherung an und spielen Sie sie auf dem neuen Gerät ein."
+    },
+    {
       "type": "h1",
       "id": "b-0219",
       "text": "20. CSV-Format (Export)"
