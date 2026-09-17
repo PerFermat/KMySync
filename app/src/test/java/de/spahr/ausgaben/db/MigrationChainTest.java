@@ -25,6 +25,10 @@ import java.util.TreeMap;
  *
  * <p>Reflexion statt Aufzählung: Eine von Hand gepflegte Liste hätte genau denselben Fehler wie
  * {@code addMigrations} – man vergisst, sie nachzuziehen.</p>
+ *
+ * <p>Die andere Hälfte prüft {@link SchemaMigrationTest}: nicht, <i>dass</i> eine Migration da ist,
+ * sondern <i>was</i> sie hinterlässt. Beide zusammen decken die Gefahr ab; wer nur an eine denkt,
+ * lässt die halbe Tür offen.</p>
  */
 public class MigrationChainTest {
 

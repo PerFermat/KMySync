@@ -20,6 +20,17 @@ android {
         targetSdk 34
         versionCode 15
         versionName "2.1"
+
+        // Room schreibt das erzeugte Schema als JSON hierher, eine Datei je Datenbankversion. Die
+        // Dateien gehören ins Repo: SchemaMigrationTest baut daraus den alten Zustand nach und lässt
+        // Room die Migrationen dagegen prüfen. Ohne sie fiele ein falscher Spaltentyp erst auf dem
+        // Gerät des Nutzers auf – als Absturz beim Öffnen, denn fallbackToDestructiveMigration gibt
+        // es bewusst nicht.
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments += ["room.schemaLocation": "$projectDir/schemas".toString()]
+            }
+        }
     }
 
     signingConfigs {
@@ -85,6 +96,15 @@ android {
             // Gigabyte-Archiv entpackt (bricht bei 256 MB ab, aber ByteArrayOutputStream
             // verdoppelt beim Wachsen kurzzeitig auf mehr).
             it.maxHeapSize = '3072m'
+
+            // SchemaMigrationTest liest die Room-Schemata zur Laufzeit von der Platte. Ohne diese
+            // Zeile kennt Gradle sie nicht als Eingabe: Ändert sich nur eine JSON-Datei, gilt die
+            // Aufgabe als aktuell und der Test läuft gar nicht erst. Beim Ausprobieren genau so
+            // erlebt – ein verfälschtes Schema blieb unbemerkt, bis --rerun-tasks dazukam.
+            it.inputs.dir("$projectDir/schemas")
+                    .withPropertyName('roomSchemas')
+                    .withPathSensitivity(PathSensitivity.RELATIVE)
+                    .optional()
         }
     }
 }

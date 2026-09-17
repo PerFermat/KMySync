@@ -17,7 +17,7 @@ import de.spahr.ausgaben.settings.ProfileManager;
         AnalysisExtra.class, SecurityTxValueOverride.class, KmyPendingDelete.class, SecurityPrice.class,
         ScheduledAdvance.class, AccountGroup.class, AccountGroupMember.class, AccountKindOrder.class,
         Tag.class, SecurityTxSplit.class},
-        version = 51, exportSchema = false)
+        version = 51, exportSchema = true)
 public abstract class AppDatabase extends RoomDatabase {
 
     /** v1 → v2: Notiz-Spalte ergänzen (bestehende Buchungen bleiben erhalten). */
