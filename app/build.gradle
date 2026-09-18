@@ -12,12 +12,15 @@ if (keystorePropsFile.exists()) {
 
 android {
     namespace 'de.spahr.ausgaben'
-    compileSdk 34
+    compileSdk libs.versions.compileSdk.get().toInteger()
 
     defaultConfig {
         applicationId "de.spahr.ausgaben"
         minSdk 26
-        targetSdk 34
+        targetSdk libs.versions.targetSdk.get().toInteger()
+        // versionCode und versionName bleiben absichtlich Literale: F-Droids checkupdates sucht sie
+        // hier per regulärem Ausdruck. Im Versionskatalog fände es sie nicht – und das fiele erst
+        // beim nächsten Versionsabgleich auf, nicht beim Bauen.
         versionCode 15
         versionName "2.1"
 
@@ -57,7 +60,7 @@ android {
     // Zwei Distributionen: „full" (GitHub) mit Wear-Anbindung über Google Play Services; „foss" (F-Droid)
     // ohne jegliches GMS. Die GMS-Klassen liegen nur im src/full-Sourceset (+ full-Manifest), die Dependency
     // ist fullImplementation. „foss" bekommt einen No-op-Stub für LanguageSync.
-    flavorDimensions "dist"
+    flavorDimensions += "dist"
     productFlavors {
         full { dimension "dist" }
         foss { dimension "dist" }
@@ -109,38 +112,42 @@ android {
     }
 }
 
+// Die Fassungen stehen in gradle/libs.versions.toml. Die Begründungen stehen weiterhin hier, an der
+// Zeile, um die es geht – im Katalog stünden sie neben einer Zahl statt neben ihrem Zweck.
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.7.0'
-    implementation 'com.google.android.material:material:1.12.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    implementation libs.appcompat
+    implementation libs.material
+    implementation libs.constraintlayout
+    implementation libs.recyclerview
     // Blättern zwischen den Belegseiten im eigenen Betrachter.
-    implementation 'androidx.viewpager2:viewpager2:1.1.0'
-    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
-    implementation 'androidx.documentfile:documentfile:1.0.1'
+    implementation libs.viewpager2
+    implementation libs.swiperefreshlayout
+    implementation libs.documentfile
 
-    implementation 'androidx.room:room-runtime:2.6.1'
-    annotationProcessor 'androidx.room:room-compiler:2.6.1'
+    implementation libs.room.runtime
+    annotationProcessor libs.room.compiler
 
-    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation libs.okhttp
 
     // SMB/Samba-Client (SMB2/3). BouncyCastle liefert die auf Android fehlende AES-CMAC-Signierung;
     // slf4j-nop unterdrückt die Logging-Warnung von smbj (kein Binding auf Android nötig).
-    implementation 'com.hierynomus:smbj:0.13.0'
-    implementation 'org.slf4j:slf4j-nop:2.0.9'
+    implementation libs.smbj
+    implementation libs.slf4j.nop
 
     // BouncyCastle für SMB (AES-CMAC) und PDF (verschlüsselte Dokumente). Alle drei Module müssen
-    // dieselbe Fassung haben – gemischte BouncyCastle-Versionen brechen zur Laufzeit.
-    implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
-    implementation 'org.bouncycastle:bcpkix-jdk18on:1.78.1'
-    implementation 'org.bouncycastle:bcutil-jdk18on:1.78.1'
+    // dieselbe Fassung haben – gemischte BouncyCastle-Versionen brechen zur Laufzeit. Deshalb hängen
+    // sie im Katalog an einem gemeinsamen version.ref: Ein Anheben kann gar nicht mehr nur zwei der
+    // drei treffen.
+    implementation libs.bouncycastle.prov
+    implementation libs.bouncycastle.pkix
+    implementation libs.bouncycastle.util
 
     // Karten-Auswahl für Alias-Standort (OpenStreetMap, kein API-Key nötig).
-    implementation 'org.osmdroid:osmdroid-android:6.1.18'
+    implementation libs.osmdroid
 
     // PDF-Textebene lesen (Depotabrechnungen). Apache 2.0, rein lokal – Android selbst kann nur rendern
     // (PdfRenderer liefert Bilder), nicht an den Text.
-    implementation('com.tom-roush:pdfbox-android:2.0.27.0') {
+    implementation(libs.pdfbox) {
         // Zieht BouncyCastle 1.72 in der jdk15to18-Ausgabe nach; die App führt bereits 1.78.1 (jdk18on)
         // mit denselben Klassennamen – beides zusammen scheitert schon beim Bauen an Dubletten.
         exclude group: 'org.bouncycastle'
@@ -149,16 +156,16 @@ dependencies {
     // Aus dem Quellcode gebaut (Submodul third_party/MPAndroidChart, Tag v3.1.0) statt über
     // JitPack, das F-Droid nicht zulässt (siehe mpandroidchart/build.gradle).
     implementation project(':mpandroidchart')
-    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
-    implementation 'androidx.biometric:biometric:1.1.0'
+    implementation libs.security.crypto
+    implementation libs.biometric
 
     // Nur im „full"-Flavor: Wear Data Layer (Google Play Services, proprietär). Der „foss"-Flavor (F-Droid)
     // enthält kein GMS – siehe src/foss/.../wear/LanguageSync.java (No-op) und das fehlende full-Manifest.
-    fullImplementation 'com.google.android.gms:play-services-wearable:18.2.0'
+    fullImplementation libs.play.services.wearable
 
-    testImplementation 'junit:junit:4.13.2'
+    testImplementation libs.junit
     // Nur für Tests: KmyDocument/KmyImporter/KmyExporter brauchen android.util.Xml, TextUtils und einen
     // Context. Robolectric stellt die auf der JVM bereit; im APK landet davon nichts.
-    testImplementation 'org.robolectric:robolectric:4.13'
-    testImplementation 'androidx.test:core:1.6.1'
+    testImplementation libs.robolectric
+    testImplementation libs.androidx.test.core
 }

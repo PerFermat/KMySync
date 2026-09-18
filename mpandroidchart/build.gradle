@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace 'com.github.mikephil.charting'
-    compileSdk 34
+    compileSdk libs.versions.compileSdk.get().toInteger()
 
     defaultConfig {
         minSdk 21
@@ -27,5 +27,5 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.annotation:annotation:1.7.1'
+    implementation libs.annotation
 }

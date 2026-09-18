@@ -12,13 +12,14 @@ if (keystorePropsFile.exists()) {
 
 android {
     namespace 'de.spahr.ausgaben.wear'
-    compileSdk 34
+    compileSdk libs.versions.compileSdk.get().toInteger()
 
     defaultConfig {
         // Gleiche applicationId wie die Phone-App – Voraussetzung für die Wear Data Layer API.
         applicationId "de.spahr.ausgaben"
         minSdk 30
-        targetSdk 34
+        targetSdk libs.versions.targetSdk.get().toInteger()
+        // Literal wie in app/build.gradle – siehe die Begründung dort (F-Droids checkupdates).
         versionCode 15
         versionName "2.1"
     }
@@ -54,18 +55,18 @@ android {
 // Stubs), damit keine doppelten Kotlin-Klassen entstehen.
 configurations.all {
     resolutionStrategy {
-        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22'
-        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
+        force libs.kotlin.stdlib.jdk7
+        force libs.kotlin.stdlib.jdk8
     }
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.7.0'
-    implementation 'androidx.wear:wear:1.3.0'
-    implementation 'com.google.android.gms:play-services-wearable:18.2.0'
-    implementation 'androidx.wear.tiles:tiles:1.1.0'
-    implementation 'androidx.concurrent:concurrent-futures:1.1.0'
+    implementation libs.appcompat
+    implementation libs.wear
+    implementation libs.play.services.wearable
+    implementation libs.tiles
+    implementation libs.concurrent.futures
     // Für die reinen Regeln der Uhr (Lesen der Empfängerliste, Rangfolge im Umkreis): Die laufen
     // ohne Android und lassen sich deshalb hier prüfen statt nur am Handgelenk.
-    testImplementation 'junit:junit:4.13.2'
+    testImplementation libs.junit
 }
