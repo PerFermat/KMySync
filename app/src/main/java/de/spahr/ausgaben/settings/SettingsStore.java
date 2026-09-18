@@ -4,17 +4,33 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import androidx.appcompat.app.AppCompatDelegate;
-import androidx.security.crypto.EncryptedSharedPreferences;
-import androidx.security.crypto.MasterKey;
 
 /**
- * Persistiert die App-Einstellungen. Das Nextcloud-Passwort liegt in
- * {@link EncryptedSharedPreferences} (verschlüsselt); alle übrigen Felder in normalen Prefs.
+ * Persistiert die App-Einstellungen. Das Server-Passwort liegt verschlüsselt im {@link SecretStore};
+ * alle übrigen Felder in normalen Prefs.
  */
 public class SettingsStore {
 
     private static final String PREFS = "ausgaben_settings";
-    private static final String SECRET_PREFS = "ausgaben_secret";
+
+    /**
+     * Die Datei, die die Selbstheilung verwirft. Das ist die des {@link SecretStore} – <b>nicht</b>
+     * die alte {@code ausgaben_secret} von bis 2.0: Die räumt {@code SecretMigration} weg, sobald sie
+     * übernommen wurde, und würde hier fälschlich das letzte gelöscht, was das Passwort noch enthält.
+     */
+    private static final String SECRET_PREFS = SecretStore.FILE;
+
+    /**
+     * Die unverschlüsselte Ersatzdatei – und hier steht der Name <b>ausgeschrieben</b>, statt ihn wie
+     * bisher aus {@link #SECRET_PREFS} abzuleiten.
+     *
+     * <p>Der Grund ist ein Fehler, den erst {@code SecretPrefsRecoveryTest} sichtbar gemacht hat: Mit
+     * der Umstellung auf {@link SecretStore} wanderte {@code SECRET_PREFS} auf einen neuen
+     * Dateinamen, und die abgeleitete Ersatzdatei wäre stillschweigend mitgewandert. Wer auf 2.0 mit
+     * defektem Keystore lief, hat sein Server-Passwort aber genau in <i>dieser</i> Datei liegen — es
+     * wäre beim Update unauffindbar geworden. Der Name bleibt deshalb, wo er ist.</p>
+     */
+    private static final String SECRET_FALLBACK_PREFS = "ausgaben_secret_fallback";
 
     private static final String KEY_URL = "nextcloud_url";
     private static final String KEY_USER = "nextcloud_user";
@@ -161,15 +177,7 @@ public class SettingsStore {
     }
 
     private static SharedPreferences openEncrypted(Context app) throws Exception {
-        MasterKey masterKey = new MasterKey.Builder(app)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build();
-        return EncryptedSharedPreferences.create(
-                app,
-                SECRET_PREFS,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM);
+        return SecretStore.open(app);
     }
 
     private static SharedPreferences createSecretPrefs(Context app) {
@@ -211,7 +219,7 @@ public class SettingsStore {
                 android.util.Log.w("SettingsStore",
                         "Keystore nicht verfügbar – Passwort liegt unverschlüsselt", keystoreDefekt);
                 fallbackInUse = true;
-                return app.getSharedPreferences(SECRET_PREFS + "_fallback", Context.MODE_PRIVATE);
+                return app.getSharedPreferences(SECRET_FALLBACK_PREFS, Context.MODE_PRIVATE);
             }
         }
     }

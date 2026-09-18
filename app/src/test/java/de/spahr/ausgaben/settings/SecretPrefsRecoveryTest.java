@@ -86,16 +86,24 @@ public class SecretPrefsRecoveryTest {
         assertFalse("Passwort darf nicht unverschlüsselt landen", SettingsStore.fallbackInUse);
     }
 
-    /** Die alte Datei muss dabei wirklich weg sein, sonst scheitert der nächste Start erneut. */
+    /**
+     * Die unbrauchbare Datei muss dabei wirklich weg sein, sonst scheitert der nächste Start erneut.
+     *
+     * <p>Hier stand bis 2.0 {@code "ausgaben_secret"}. Seit das Passwort im {@link SecretStore} liegt,
+     * ist es dessen Datei, die verworfen wird — {@code ausgaben_secret} räumt die einmalige Übernahme
+     * weg, und sie hier zu löschen hieße, das letzte wegzuwerfen, was das Passwort noch enthält.
+     * Deshalb steht der Name nicht mehr ausgeschrieben da, sondern kommt aus derselben Quelle wie im
+     * Code.</p>
+     */
     @Test
     public void passtNichtZumSchluessel_alteDateiIstDanachLeer() {
-        context.getSharedPreferences("ausgaben_secret", Context.MODE_PRIVATE)
+        context.getSharedPreferences(SecretStore.FILE, Context.MODE_PRIVATE)
                 .edit().putString("rest", "aus einer Sicherung").commit();
 
         SettingsStore.createSecretPrefs(context, new Opener(2));
 
         SharedPreferences danach =
-                context.getSharedPreferences("ausgaben_secret", Context.MODE_PRIVATE);
+                context.getSharedPreferences(SecretStore.FILE, Context.MODE_PRIVATE);
         assertTrue("die unbrauchbare Datei muss verworfen sein", danach.getAll().isEmpty());
     }
 

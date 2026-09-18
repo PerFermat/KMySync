@@ -135,6 +135,24 @@ passiert ehrenamtlich. Erst nach dem Merge baut und veröffentlicht F-Droid.
 **Gute Nachricht:** Nur diese erste Einreichung geht von Hand. `UpdateCheckMode: Tags` plus
 `AutoUpdateMode: Version` holen jede spätere Version automatisch vom Tag – kein weiterer MR.
 
+## Fällig in 2.2: `androidx.security` entfernen
+
+Die Bibliothek `androidx.security:security-crypto` ist abgekündigt und steckt auf
+`1.1.0-alpha06`. Das Server-Passwort liegt seit 2.1 in `SecretStore` (AES-256/GCM mit einem Schlüssel
+aus dem Android-Keystore). Die alte Bibliothek ist **nur noch ein Lesepfad**, damit das Passwort
+bestehender Nutzer beim Update nicht verlorengeht.
+
+Sobald 2.1 draußen und eine Weile im Feld ist, fällt beides weg. Drei Handgriffe:
+
+1. `app/src/main/java/de/spahr/ausgaben/settings/SecretMigration.java` löschen.
+2. Den einen Aufruf `SecretMigration.uebernehmenFallsNoetig(app, store)` in `SecretStore.open`
+   entfernen.
+3. `libs.security.crypto` aus `app/build.gradle` und den Eintrag `securityCrypto` aus
+   `gradle/libs.versions.toml` streichen.
+
+Danach darf `grep -rn "androidx.security" app/` nichts mehr finden. Wer sehr spät aktualisiert, gibt
+sein Server-Passwort dann einmal neu ein — das ist der Preis, und ab 2.2 ist er vertretbar.
+
 ## Regeln für dieses Projekt
 
 - **Vor jedem neuen Thema `git fetch`**, `git log HEAD..origin/main` ansehen und **nachfragen**, ob die
