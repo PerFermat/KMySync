@@ -156,23 +156,6 @@ public final class DateFormats {
     }
 
     /**
-     * Nur Tag und Monat, ohne Jahr – für das große Widget, wo eine Zeile drei Buchungen tragen muss
-     * und das Jahr bei allen dreien dasselbe ist.
-     *
-     * <p>Hier fragen wir Android nach dem ortsüblichen Muster, statt es aus {@link #pattern()} zu
-     * schneiden. Der Grund ist der deutsche Schlusspunkt: „03.02." gehört dorthin, „03/02/" wäre im
-     * Englischen falsch. Wo genau der Trenner wegfällt, weiß ICU besser als eine Regel, die wir uns
-     * hier ausdenken.</p>
-     */
-    public static String dayMonth(long millis) {
-        String muster = android.text.format.DateFormat.getBestDateTimePattern(locale, "ddMM");
-        if (muster == null || muster.isEmpty()) {
-            muster = "dd.MM.";
-        }
-        return new SimpleDateFormat(muster, locale).format(new Date(millis));
-    }
-
-    /**
      * Die Gegenrichtung zu {@link #date(long)} – aus <b>derselben</b> Quelle, damit ein Feld, das ein
      * Datum anzeigt, auch wieder lesen kann, was darin steht. Der Datumsfilter der Buchungsliste hängt
      * daran: Zeigte er englisch an und läse deutsch, wäre der Bereich falsch.

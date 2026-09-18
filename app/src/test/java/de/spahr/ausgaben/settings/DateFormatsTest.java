@@ -107,27 +107,6 @@ public class DateFormatsTest {
         assertEquals("MM/dd/yyyy", DateFormats.pattern());
     }
 
-    /**
-     * Tag und Monat ohne Jahr – fürs große Widget. Geprüft wird die Reihenfolge, nicht der Trenner:
-     * Ob Deutsch seinen Schlusspunkt behält, entscheidet ICU, und daran soll dieser Test nicht
-     * zerbrechen, wenn sich die Bibliothek einmal anders entscheidet. Dass im Englischen der Monat
-     * vorn steht, ist dagegen keine Geschmacksfrage.
-     */
-    @Test
-    public void tagUndMonatFolgenDerSprache() {
-        DateFormats.apply("de", null);
-        assertTrue("de: " + DateFormats.dayMonth(derDritteFebruar()),
-                DateFormats.dayMonth(derDritteFebruar()).startsWith("03"));
-
-        DateFormats.apply("en", Locale.US);
-        assertTrue("en-US: " + DateFormats.dayMonth(derDritteFebruar()),
-                DateFormats.dayMonth(derDritteFebruar()).startsWith("02"));
-
-        DateFormats.apply("en", Locale.UK);
-        assertTrue("en-GB: " + DateFormats.dayMonth(derDritteFebruar()),
-                DateFormats.dayMonth(derDritteFebruar()).startsWith("03"));
-    }
-
     /** Die Uhrzeit bleibt 24-stündig, sonst stünde im Englischen plötzlich „AM". */
     @Test
     public void uhrzeitBleibtVierundzwanzigStuendig() {

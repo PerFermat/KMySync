@@ -25,10 +25,13 @@ import de.spahr.ausgaben.db.Booking;
  * am fertig eingerichteten Widget auf dem Gerät. Ein Wächter über Datumsmuster kann so etwas nicht
  * finden, ein Test über die Reihenfolge schon.</p>
  *
+ * <p>Das Datum steht <b>vollständig</b> da, mit Jahr — wie in der Buchungsliste. Kurz stand hier nur
+ * Tag und Monat, um Platz zu sparen; bei älteren Buchungen ist das aber mehrdeutig, und gerade im
+ * Widget sieht man sie ohne weiteren Zusammenhang.</p>
+ *
  * <p>Ohne Robolectric, wie {@code BookingSubtitleTest}: {@link de.spahr.ausgaben.settings.DateFormats}
- * steht dann auf seinen Vorgabewerten (deutsch), und {@code getBestDateTimePattern} liefert als
- * Android-Stub {@code null}, womit der Rückfall {@code dd.MM.} greift. Beides ist vorhersagbar —
- * geprüft wird hier ohnehin die Reihenfolge, nicht die Schreibweise.</p>
+ * steht dann auf seinen Vorgabewerten, also deutsch. Das ist vorhersagbar und braucht keine
+ * Android-Laufzeit — geprüft wird hier ohnehin die Reihenfolge, nicht die Schreibweise.</p>
  */
 public class WidgetSubtitleTest {
 
@@ -52,19 +55,22 @@ public class WidgetSubtitleTest {
     public void datumStehtVorDerKategorie() {
         String zeile = WidgetLarge.sub(buchung("Versicherungen:Krankenzusatz"));
 
-        assertTrue(zeile, zeile.indexOf("24.03.") < zeile.indexOf("Versicherungen"));
-        assertTrue("die Zeile beginnt mit dem Datum", zeile.startsWith("24.03."));
+        assertTrue(zeile, zeile.indexOf("24.03.2026") < zeile.indexOf("Versicherungen"));
+        assertTrue("die Zeile beginnt mit dem Datum", zeile.startsWith("24.03.2026"));
     }
 
-    /** Ohne Kategorie bleibt nur das Datum – und kein einsamer Trenner davor oder dahinter. */
+    /**
+     * Ohne Kategorie bleibt nur das Datum – und kein einsamer Trenner davor oder dahinter. Das Jahr
+     * gehört dazu: Ohne es ist eine ältere Buchung im Widget nicht einzuordnen.
+     */
     @Test
-    public void ohneKategorieStehtNurDasDatum() {
-        assertEquals("24.03.", WidgetLarge.sub(buchung("")));
-        assertEquals("24.03.", WidgetLarge.sub(buchung(null)));
+    public void ohneKategorieStehtNurDasVollstaendigeDatum() {
+        assertEquals("24.03.2026", WidgetLarge.sub(buchung("")));
+        assertEquals("24.03.2026", WidgetLarge.sub(buchung(null)));
     }
 
     @Test
     public void mitKategorieStehenBeideMitTrenner() {
-        assertEquals("24.03. · Geschenke", WidgetLarge.sub(buchung("Geschenke")));
+        assertEquals("24.03.2026 · Geschenke", WidgetLarge.sub(buchung("Geschenke")));
     }
 }

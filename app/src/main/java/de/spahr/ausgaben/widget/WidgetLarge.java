@@ -24,7 +24,7 @@ import de.spahr.ausgaben.ui.MainActivity;
  * {@code "dd.MM."}. Zwei Fehler in einer Zeile: Das Muster war fest deutsch, und weil das Objekt
  * statisch ist, teilten sich zwei gleichzeitig auffrischende Widgets eines, das nicht fadensicher
  * ist — und aufgefrischt wird aus dem Hintergrundfaden in {@link AusgabenWidget}. Beides erledigt
- * {@link DateFormats#dayMonth(long)}: Es folgt der Sprache und baut sein Format je Aufruf neu.</p>
+ * {@link DateFormats#date(long)}: Es folgt der Sprache und baut sein Format je Aufruf neu.</p>
  */
 public class WidgetLarge extends AusgabenWidget {
 
@@ -96,10 +96,15 @@ public class WidgetLarge extends AusgabenWidget {
      * Der Wächter in {@code DateFormatsTest} konnte es nicht finden: Er sucht feste Datumsmuster,
      * nicht die Reihenfolge innerhalb einer Zeile. Deshalb gibt es jetzt {@code WidgetSubtitleTest} —
      * paketsichtbar statt privat ist der Preis dafür.</p>
+     *
+     * <p>Das Datum steht <b>vollständig</b> da, mit Jahr. Hier stand einmal nur Tag und Monat, um
+     * Platz zu sparen — aber ein Datum ohne Jahr ist bei älteren Buchungen mehrdeutig, und gerade im
+     * Widget sieht man sie ohne weiteren Zusammenhang. Den Platz kostet es die Kategorie, und die ist
+     * der entbehrlichere der beiden.</p>
      */
     static String sub(Booking b) {
         String cat = b.category == null ? "" : b.category;
-        String date = DateFormats.dayMonth(b.createdAt);
+        String date = DateFormats.date(b.createdAt);
         return cat.isEmpty() ? date : date + " · " + cat;
     }
 }
