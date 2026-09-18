@@ -472,7 +472,7 @@ public class SmbWizardController {
 
     private void post(Runnable r) {
         if (!activity.isFinishing()) {
-            activity.runOnUiThread(() -> {
+            Ui.post(activity, () -> {
                 if (!activity.isFinishing()) {
                     r.run();
                 }

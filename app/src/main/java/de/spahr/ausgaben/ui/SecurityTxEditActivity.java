@@ -566,7 +566,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                 // selbst noch einmal spürbar Zeit, und genau die soll nicht mehr zwischen dem Öffnen der
                 // Maske und der Einführung liegen – man will ja oft schon lostippen.
                 if (ohneVorlage(text)) {
-                    runOnUiThread(this::zeigeLernEinfuehrungFallsNoetig);
+                    post(this::zeigeLernEinfuehrungFallsNoetig);
                 }
                 readStatementDates();
             });
@@ -1951,7 +1951,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         // Vordergrund. Gelernt wird gleich mit; der Dialog kommt danach auf dem Bedienfaden.
         repository.executor().execute(() -> {
             final de.spahr.ausgaben.pdf.PdfText text = readStatementText();
-            runOnUiThread(() -> {
+            post(() -> {
                 // Wer inzwischen weggegangen ist, bekommt keinen Dialog mehr auf ein Fenster, das es
                 // nicht mehr gibt.
                 if (isFinishing() || isDestroyed()) {
@@ -2648,7 +2648,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             final java.io.File datei = statementFile(tag, jahr);
             final boolean offline = datei == null
                     && !de.spahr.ausgaben.net.Net.isOnline(getApplicationContext());
-            runOnUiThread(() -> {
+            post(() -> {
                 if (isFinishing() || isDestroyed()) {
                     return;
                 }
@@ -2723,7 +2723,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         repository.executor().execute(() -> {
             final java.util.List<de.spahr.ausgaben.statement.StatementScan.DateCandidate> found =
                     readStatementDates();
-            runOnUiThread(() -> {
+            post(() -> {
                 dateLayout.setError(null);
                 // Wer inzwischen weggegangen ist, bekommt keinen Dialog mehr.
                 if (isFinishing() || isDestroyed()) {
@@ -2851,7 +2851,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             // Nutzer das Stift-Symbol antippt – siehe die Weiche unten und buildAnchorChoiceDialog.
             final de.spahr.ausgaben.statement.AnchorRule alt = kandidaten.isEmpty() ? null
                     : (matchedTemplate(text) == null ? null : matchedTemplate(text).rule(lernfeld));
-            runOnUiThread(() -> {
+            post(() -> {
                 if (isFinishing() || isDestroyed() || kandidaten.isEmpty()) {
                     return;
                 }
@@ -2933,7 +2933,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             // Was für diese Zeile schon in der Vorlage steht — für „Nicht lernen" im Stift-Fenster.
             final de.spahr.ausgaben.statement.AnchorRule alt =
                     alteTeilregel(matchedTemplate(text), layout, kategorie);
-            runOnUiThread(() -> {
+            post(() -> {
                 if (isFinishing() || isDestroyed() || kandidaten.isEmpty()) {
                     return;
                 }

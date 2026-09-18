@@ -59,7 +59,7 @@ final class BudgetImportFlow {
                 // Kategorietyp (Einnahme/Ausgabe) aus der Datei übernehmen – verlässliche Budget-Einordnung.
                 repository.applyCategoryTypes(importer.categoryTypes());
                 List<Integer> years = importer.budgetYears();
-                activity.runOnUiThread(() -> {
+                Ui.post(activity, () -> {
                     progress.dismiss();
                     if (years.isEmpty()) {
                         Toast.makeText(activity, R.string.budget_import_none, Toast.LENGTH_LONG).show();
@@ -84,7 +84,7 @@ final class BudgetImportFlow {
                 // Grund mitgeben: import_failed trägt ein %1$s – ohne getString(...) stünde der
                 // Platzhalter wörtlich in der Meldung.
                 final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-                activity.runOnUiThread(() -> {
+                Ui.post(activity, () -> {
                     progress.dismiss();
                     Toast.makeText(activity, activity.getString(R.string.import_failed, msg),
                             Toast.LENGTH_LONG).show();

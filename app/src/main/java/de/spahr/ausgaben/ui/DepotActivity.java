@@ -535,11 +535,29 @@ public class DepotActivity extends LocalizedActivity {
         }
     }
 
+    /**
+     * Den Fortschrittsdialog schließen — auch wenn sein Fenster schon weg ist.
+     *
+     * <p>Der Weg aus dem Hintergrund ist seit {@link Ui#post} geprüft, aber das ist nicht der einzige:
+     * Geschlossen wird auch aus Lebenszyklus-Rückrufen, und dort ist die Maske definitionsgemäß gerade
+     * am Verschwinden. Ein {@code dismiss()} auf ein abgehängtes Fenster wirft
+     * {@code IllegalArgumentException: View not attached to window manager} — ein Absturz beim
+     * Aufräumen, also an der denkbar unpassendsten Stelle. Die Felder werden in jedem Fall geleert,
+     * auch wenn das Schließen schiefging; der Dialog ist dann ohnehin mit seinem Fenster fort.</p>
+     */
     private void dismissProgress() {
-        if (progressDialog != null) {
-            progressDialog.dismiss();
-            progressDialog = null;
-            progressTextView = null;
+        android.app.Dialog offen = progressDialog;
+        progressDialog = null;
+        progressTextView = null;
+        if (offen == null) {
+            return;
+        }
+        try {
+            offen.dismiss();
+        } catch (IllegalArgumentException fensterSchonFort) {
+            android.util.Log.w("DepotActivity",
+                    "Fortschrittsdialog ließ sich nicht mehr schließen – sein Fenster war schon fort",
+                    fensterSchonFort);
         }
     }
 
@@ -589,7 +607,7 @@ public class DepotActivity extends LocalizedActivity {
 
                     @Override
                     public void noMatchingAccount() {
-                        runOnUiThread(() -> {
+                        post(() -> {
                             importBanner.finishNow();
                             Toast.makeText(DepotActivity.this, R.string.kmy_account_not_found,
                                     Toast.LENGTH_LONG).show();
@@ -598,7 +616,7 @@ public class DepotActivity extends LocalizedActivity {
 
                     @Override
                     public void failed(Exception e) {
-                        runOnUiThread(() -> {
+                        post(() -> {
                             importBanner.finishNow();
                             String msg = e.getMessage() == null ? e.toString() : e.getMessage();
                             Toast.makeText(DepotActivity.this, getString(R.string.import_failed, msg),
@@ -655,10 +673,10 @@ public class DepotActivity extends LocalizedActivity {
                         importBanner.phase(label, budget.from(lesen), budget.to(lesen)));
                 repository.replaceDepotImport(depotName, data.securities, data.transactions, data.prices,
                         importBanner.phase(label, budget.from(schreiben), budget.to(schreiben)),
-                        () -> runOnUiThread(this::completeImport));
+                        () -> post(this::completeImport));
             } catch (Exception e) {
                 final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-                runOnUiThread(() -> {
+                post(() -> {
                     importBanner.finishNow();
                     // Mit Grund – „import_failed" enthält einen Platzhalter.
                     Toast.makeText(this, getString(R.string.import_failed, msg),

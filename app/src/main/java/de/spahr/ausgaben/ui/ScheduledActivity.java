@@ -208,7 +208,7 @@ public class ScheduledActivity extends LocalizedActivity {
                     importBanner.finish();
                 });
             } catch (Exception e) {
-                runOnUiThread(() -> {
+                post(() -> {
                     importBanner.finishNow();
                     String msg = e.getMessage() == null ? e.toString() : e.getMessage();
                     Toast.makeText(this, msg, Toast.LENGTH_LONG).show();

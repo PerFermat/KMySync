@@ -500,10 +500,10 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
                 try (OutputStream out = getContentResolver().openOutputStream(uri)) {
                     out.write(file);
                 }
-                runOnUiThread(() -> Toast.makeText(this, R.string.backup_done, Toast.LENGTH_LONG).show());
+                post(() -> Toast.makeText(this, R.string.backup_done, Toast.LENGTH_LONG).show());
             } catch (Exception e) {
                 String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-                runOnUiThread(() -> Toast.makeText(this,
+                post(() -> Toast.makeText(this,
                         getString(R.string.backup_failed, msg), Toast.LENGTH_LONG).show());
             }
         }).start();

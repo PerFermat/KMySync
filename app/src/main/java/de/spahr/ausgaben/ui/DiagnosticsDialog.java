@@ -71,7 +71,7 @@ final class DiagnosticsDialog {
                 ok = Diagnostics.firstFailure(steps) == null;
                 report = Diagnostics.report(reportTitle, steps);
             }
-            activity.runOnUiThread(() -> {
+            Ui.post(activity, () -> {
                 if (!activity.isFinishing()) {
                     if (ok) {
                         showSuccess(activity, title, report);

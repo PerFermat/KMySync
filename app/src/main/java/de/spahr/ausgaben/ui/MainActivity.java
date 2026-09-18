@@ -1506,7 +1506,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
             if (isFinishing() || isDestroyed()) {
                 return; // niemand mehr da, dem man etwas melden könnte – die Datei steht trotzdem
             }
-            runOnUiThread(() -> {
+            post(() -> {
                 receiptExportCancel = null;
                 showExportBannerCancel(false);
                 importBanner.finish();
@@ -2242,7 +2242,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                 // Stichwortliste der Datei übernehmen – nur was dort steht, ist in der App wählbar.
                 // (Wie beim Aktualisieren/Export; sonst fehlten die Stichwörter nach dem Neuimport.)
                 repository.replaceTags(importer.tagNames());
-                runOnUiThread(() -> {
+                post(() -> {
                     dismissProgress();
                     List<String> accounts = importer.accountNames();
                     List<String> depots = importer.depotNames();
@@ -2327,7 +2327,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         new Thread(() -> {
             try {
                 if (accountTargets.isEmpty()) {
-                    runOnUiThread(() -> importDepotsThenFinish(importer, budget, depotTargets));
+                    post(() -> importDepotsThenFinish(importer, budget, depotTargets));
                     return;
                 }
                 // Ein Lesedurchlauf für ALLE Konten (vorher: einer je Konto über die ganze Datei).
@@ -2347,7 +2347,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                 }
                 budget.resize(de.spahr.ausgaben.export.KmyAccountImport.BOOKINGS_WRITE,
                         written * de.spahr.ausgaben.export.ImportBudget.BOOKING_WRITE);
-                runOnUiThread(() -> repository.replaceImportAccounts(map,
+                post(() -> repository.replaceImportAccounts(map,
                         importBanner.phase(getString(R.string.import_stage_saving),
                                 budget.from(de.spahr.ausgaben.export.KmyAccountImport.BOOKINGS_WRITE),
                                 budget.to(de.spahr.ausgaben.export.KmyAccountImport.BOOKINGS_WRITE)),
@@ -2428,7 +2428,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                         importBanner.phase(label, budget.from(lesen), budget.to(lesen)));
                 final de.spahr.ausgaben.util.ProgressListener writeListener =
                         importBanner.phase(label, budget.from(schreiben), budget.to(schreiben));
-                runOnUiThread(() -> repository.replaceDepotImport(depotName, data.securities,
+                post(() -> repository.replaceDepotImport(depotName, data.securities,
                         data.transactions, data.prices, writeListener, this::completeImport));
             } catch (Exception e) {
                 postImportError(e);
@@ -2450,7 +2450,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
 
                     @Override
                     public void noMatchingAccount() {
-                        runOnUiThread(() -> {
+                        post(() -> {
                             importBanner.finishNow();
                             Toast.makeText(MainActivity.this, R.string.kmy_account_not_found,
                                     Toast.LENGTH_LONG).show();
@@ -2479,7 +2479,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     }
     private void postImportError(Exception e) {
         final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-        runOnUiThread(() -> {
+        post(() -> {
             dismissProgress();
             importBanner.finishNow();
             Toast.makeText(this, getString(R.string.import_failed, msg), Toast.LENGTH_LONG).show();
@@ -2529,11 +2529,24 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         }
     }
 
+    /**
+     * Den Fortschrittsdialog schließen — auch wenn sein Fenster schon weg ist. Die Begründung steht
+     * wortgleich bei {@code DepotActivity.dismissProgress()}; das sind die beiden einzigen Masken der
+     * App mit einem eigenen Fortschrittsdialog.
+     */
     private void dismissProgress() {
-        if (progressDialog != null) {
-            progressDialog.dismiss();
-            progressDialog = null;
-            progressTextView = null;
+        android.app.Dialog offen = progressDialog;
+        progressDialog = null;
+        progressTextView = null;
+        if (offen == null) {
+            return;
+        }
+        try {
+            offen.dismiss();
+        } catch (IllegalArgumentException fensterSchonFort) {
+            android.util.Log.w("MainActivity",
+                    "Fortschrittsdialog ließ sich nicht mehr schließen – sein Fenster war schon fort",
+                    fensterSchonFort);
         }
     }
 
@@ -2548,7 +2561,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                 List<String> files = entries.files;
                 java.util.Collections.sort(folders, String.CASE_INSENSITIVE_ORDER);
                 java.util.Collections.sort(files, String.CASE_INSENSITIVE_ORDER);
-                runOnUiThread(() -> {
+                post(() -> {
                     if (folder.isEmpty() && folders.isEmpty() && files.isEmpty()) {
                         Toast.makeText(this, R.string.no_files, Toast.LENGTH_LONG).show();
                     } else {
@@ -2557,7 +2570,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                 });
             } catch (Exception e) {
                 final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-                runOnUiThread(() -> Toast.makeText(this,
+                post(() -> Toast.makeText(this,
                         getString(R.string.import_failed, msg), Toast.LENGTH_LONG).show());
             }
         }).start();
@@ -2633,7 +2646,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
             CsvImporter importer = new CsvImporter(this);
             List<Booking> bookings = importer.parse(content);
             String account = importer.getParsedAccount();
-            runOnUiThread(() -> {
+            post(() -> {
                 if (isFinishing() || isDestroyed()) {
                     return;
                 }
@@ -2655,7 +2668,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
      */
     private void importFehlgeschlagen(Exception e) {
         final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-        runOnUiThread(() -> {
+        post(() -> {
             if (isFinishing() || isDestroyed()) {
                 return;
             }

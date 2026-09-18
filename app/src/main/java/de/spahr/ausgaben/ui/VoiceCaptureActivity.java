@@ -92,7 +92,7 @@ public class VoiceCaptureActivity extends LocalizedActivity {
             Repository repository = new Repository(getApplicationContext());
             boolean created = repository.createVoiceBookingBlocking(
                     spoken, targetAccount, targetPlace, type, coords);
-            runOnUiThread(() -> {
+            post(() -> {
                 Toast.makeText(this, created ? R.string.booking_saved : R.string.voice_not_understood,
                         Toast.LENGTH_LONG).show();
                 if (created) {

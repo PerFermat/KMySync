@@ -191,7 +191,12 @@ public class PlacesStore {
             acc.put("d", defaultPlace == null ? "" : defaultPlace.trim());
             root.put(account.trim(), acc);
             prefs.edit().putString(accountsKey(), root.toString()).apply();
-        } catch (Exception ignored) {
+        } catch (Exception schreibenGescheitert) {
+            // Scheitert das Schreiben, ist die gerade bearbeitete Ortsliste des Kontos verloren – die
+            // Maske hat aber bereits zugeklappt, als sei alles gespeichert. Ein Widerspruch, den der
+            // Nutzer allein nicht auflösen kann; hier steht wenigstens, woran es lag.
+            android.util.Log.w("PlacesStore",
+                    "Ortsliste des Kontos konnte nicht gespeichert werden", schreibenGescheitert);
         }
     }
 }

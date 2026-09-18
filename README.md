@@ -138,8 +138,15 @@ reporting or ad library.
 `backup`, `i18n`, `notify`, `widget`, `wear` and `ui`.
 
 **Storage.** [Room](https://developer.android.com/training/data-storage/room) on SQLite, database
-version 44 with an unbroken chain of migrations — an update keeps your data, a fresh install is never
-required. Amounts are `long` cents throughout, never floating point.
+version 51 with an unbroken chain of migrations — an update keeps your data, a fresh install is never
+required. The schema is checked in under `app/schemas/`, and a test replays the whole chain against
+Room's own validator. Amounts are `long` cents throughout, never floating point.
+
+**Background work.** Database access goes through the `Repository` executor; network, file and import
+work runs beside it in its own threads on purpose, so that a hanging server cannot block every other
+query. In both cases the way back to the UI thread leads through a **single** place — `Ui.post` or
+`LocalizedActivity.post` — which first checks whether the screen still exists. A test prevents raw
+`runOnUiThread` from creeping back in.
 
 **KMyMoney.** The `.kmy` file is gzipped XML and is read **and written** directly — splits, transfers,
 portfolio and schedules included. Writing happens into the existing tree (same transaction ids in the

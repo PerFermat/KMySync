@@ -262,7 +262,13 @@ public class StatementTemplates {
             root.put(isin.trim().toUpperCase(java.util.Locale.ROOT),
                     depot + SEP + kmyId + SEP + (name == null ? "" : name));
             prefs.edit().putString(keyIsins(), root.toString()).apply();
-        } catch (Exception ignored) {
+        } catch (Exception bestandUnlesbar) {
+            // Die Zuordnung ISIN → Wertpapier ist das, was die App beim nächsten Beleg das Nachfragen
+            // erspart. Ging das Merken schief, fragt sie eben wieder — schlimm ist nur, wenn niemand
+            // erfährt, warum sie sich nichts merkt.
+            android.util.Log.w("StatementTemplates",
+                    "ISIN-Zuordnung konnte nicht gemerkt werden – der Bestand ist unlesbar",
+                    bestandUnlesbar);
         }
     }
 
@@ -290,8 +296,13 @@ public class StatementTemplates {
                     out.add(new Entry(o == null ? "" : o.optString("d", ""), t));
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception bestandUnlesbar) {
             // Unlesbarer Bestand: lieber ohne Vorlagen weiterarbeiten als die App daran scheitern lassen.
+            // Das ist aber der teuerste stille Verlust der App – hier hängen alle gelernten
+            // Erkennungsregeln. Wer sie plötzlich vermißt, findet ohne diese Zeile keinen Anhalt.
+            android.util.Log.w("StatementTemplates",
+                    "gespeicherte Erkennungsregeln sind unlesbar – es wird ohne Vorlagen weitergearbeitet",
+                    bestandUnlesbar);
         }
         return out;
     }
@@ -303,7 +314,10 @@ public class StatementTemplates {
             if (o != null) {
                 try {
                     o.put("d", e.depot);
-                } catch (Exception ignored) {
+                } catch (Exception kannNichtEintreten) {
+                    // JSONObject.put wirft nur bei einem null-Schlüssel oder einem NaN-Wert; hier steht
+                    // ein fester Name und eine Zeichenkette. Der Block ist Pflicht des Compilers,
+                    // nicht ein verschluckter Fehler.
                 }
                 arr.put(o);
             }

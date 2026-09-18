@@ -100,7 +100,7 @@ public class ReceiptEditActivity extends LocalizedActivity {
         final File src = source;
         new Thread(() -> {
             Bitmap bmp = ReceiptEdit.decode(src, PREVIEW_MAX_EDGE);
-            runOnUiThread(() -> {
+            post(() -> {
                 if (isFinishing()) {
                     return;
                 }
@@ -144,7 +144,7 @@ public class ReceiptEditActivity extends LocalizedActivity {
                 ok = false;
             }
             final boolean done = ok;
-            runOnUiThread(() -> {
+            post(() -> {
                 if (done) {
                     setResult(RESULT_OK);
                     finish();

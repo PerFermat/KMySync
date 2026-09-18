@@ -324,7 +324,7 @@ final class SyncFieldsController {
      * Fenster, das es nicht mehr gibt, beendet die App.
      */
     private void imVordergrund(Runnable r) {
-        activity.runOnUiThread(() -> {
+        Ui.post(activity, () -> {
             if (activity.isFinishing() || activity.isDestroyed()) {
                 return;
             }

@@ -2012,7 +2012,7 @@ public class BookingEditActivity extends LocalizedActivity {
                 file = loaded.file;
                 offline = loaded.offline;
             }
-            runOnUiThread(() -> {
+            post(() -> {
                 if (willWait) {
                     receiptBanner.finishNow();
                 }
@@ -2205,7 +2205,7 @@ public class BookingEditActivity extends LocalizedActivity {
                 cleanup.delete();
             }
             final boolean fok = ok;
-            runOnUiThread(() -> {
+            post(() -> {
                 if (fok) {
                     Page page = new Page(null, tmp);
                     receiptPages.add(page);
@@ -2241,7 +2241,7 @@ public class BookingEditActivity extends LocalizedActivity {
                 ok = false;
             }
             final boolean fok = ok;
-            runOnUiThread(() -> {
+            post(() -> {
                 if (fok) {
                     receiptPages.add(new Page(null, tmp));
                     updateNoteTagRows();
@@ -2285,7 +2285,7 @@ public class BookingEditActivity extends LocalizedActivity {
         receiptPages.add(new Page(pdfTag != null ? NoteReceipt.pageName(tagName, 1, ext) : tagName, null));
         new Thread(() -> {
             final java.util.List<String> found = ReceiptPages.find(this, tagName, year, ext);
-            runOnUiThread(() -> {
+            post(() -> {
                 // Nichts gefunden (Datei weg oder offline) → die Vorbelegung mit dem Tag-Namen bleibt stehen.
                 if (isFinishing() || found.isEmpty() || found.equals(savedNames())) {
                     return;
@@ -2407,7 +2407,7 @@ public class BookingEditActivity extends LocalizedActivity {
             // Altbelege haben kein Original auf dem Server – dann dient der Beleg selbst als Vorlage.
             final java.io.File original =
                     local == null ? null : ReceiptSync.ensureLocal(this, originalName, year);
-            runOnUiThread(() -> {
+            post(() -> {
                 receiptBanner.finishNow();
                 if (local == null || !local.exists()) {
                     // Ohne Verbindung nur ein Hinweis; online, aber unauffindbar → Entfernen anbieten.

@@ -34,7 +34,14 @@ public final class Currencies {
                         map.put(a.name, a.currency.trim());
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (Exception kontenNichtLesbar) {
+                // Der folgenreichste der stillen Fehler: Bleibt die Tabelle leer, hängt die App an
+                // *jeden* Betrag der App die Standardwährung – auch an die eines Fremdwährungskontos.
+                // Falsche Währungszeichen an richtigen Zahlen sieht man nicht sofort, und wer es sieht,
+                // sucht den Fehler beim Konto statt bei einer gescheiterten Abfrage.
+                android.util.Log.w("Currencies",
+                        "Konto-Währungen nicht lesbar – alle Beträge zeigen die Standardwährung",
+                        kontenNichtLesbar);
             }
             byAccount = map;
             defaultCurrency = def;

@@ -140,8 +140,16 @@ Analyse-, Absturz- oder Werbe-Bibliothek.
 `location`, `security`, `settings`, `backup`, `i18n`, `notify`, `widget`, `wear` und `ui`.
 
 **Datenhaltung.** [Room](https://developer.android.com/training/data-storage/room) über SQLite,
-Datenbankfassung 44 mit lückenloser Migrationskette – ein Update behält den Bestand, ein
-Neuinstallieren ist nie nötig. Beträge liegen durchgehend als `long` in Cent, nie als Fließkommazahl.
+Datenbankfassung 51 mit lückenloser Migrationskette – ein Update behält den Bestand, ein
+Neuinstallieren ist nie nötig. Das Schema liegt unter `app/schemas/` im Quelltext, und ein Test spielt
+die gesamte Kette gegen Rooms eigene Prüfung durch. Beträge liegen durchgehend als `long` in Cent, nie
+als Fließkommazahl.
+
+**Hintergrundarbeit.** Datenbankzugriffe laufen über den Executor von `Repository`; Netz-, Datei- und
+Importarbeit bewusst daneben in eigenen Fäden, damit ein hängender Server nicht jede Abfrage der App
+mitblockiert. Der Rückweg auf den Bedienfaden führt in beiden Fällen über **eine** Stelle – `Ui.post`
+bzw. `LocalizedActivity.post` –, die vorher prüft, ob es die Maske überhaupt noch gibt. Ein Test
+verhindert, dass irgendwo wieder roh `runOnUiThread` geschrieben wird.
 
 **KMyMoney.** Die `.kmy`-Datei ist gzip-gepacktes XML und wird direkt gelesen **und geschrieben** –
 samt Splits, Umbuchungen, Depot und geplanten Buchungen. Geschrieben wird in den vorhandenen Baum

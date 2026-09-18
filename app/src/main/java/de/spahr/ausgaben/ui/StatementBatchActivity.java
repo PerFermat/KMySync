@@ -448,7 +448,7 @@ public class StatementBatchActivity extends LocalizedActivity {
                 bookings.add(booking);
             }
             final int count = txs.size();
-            runOnUiThread(() -> repository.saveManualSecurityTxBatch(txs, bookings,
+            post(() -> repository.saveManualSecurityTxBatch(txs, bookings,
                     () -> belegeAblegenUndSchliessen(liste, belege, count),
                     () -> {
                         // Die Transaktion ist zurückgerollt und keine Datei bewegt: die vorläufigen

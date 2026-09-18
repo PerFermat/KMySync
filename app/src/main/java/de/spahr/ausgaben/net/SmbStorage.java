@@ -179,14 +179,28 @@ public class SmbStorage implements RemoteStorage {
         });
     }
 
-    /** Änderungszeit + Größe der Datei; "" wenn nicht ermittelbar (dann kein Schutz). */
+    /**
+     * Änderungszeit + Größe der Datei; {@code ""} wenn nicht ermittelbar (dann kein Schutz).
+     *
+     * <p>Das „dann kein Schutz" ist der Grund für den Log-Eintrag: {@link #uploadBytes} vergleicht
+     * diesen Wert mit dem beim Herunterladen gemerkten und bricht bei Abweichung ab. Kommt hier ein
+     * leerer Wert, fällt der Vergleich in Zeile 168 <b>stillschweigend weg</b> — und die App
+     * überschreibt eine Datei, die KMyMoney zwischenzeitlich geändert haben kann. Wer hinterher
+     * fragt, wo seine Änderungen geblieben sind, findet ohne diese Zeile keinen Anhalt.</p>
+     *
+     * <p>Harmlos ist derselbe Weg beim ersten Hochladen, wo es die Datei schlicht noch nicht gibt.
+     * Die beiden Fälle lassen sich hier nicht unterscheiden, deshalb nennt die Meldung beide.</p>
+     */
     private String versionOf(DiskShare disk, String path) {
         try {
             com.hierynomus.msfscc.fileinformation.FileAllInformation info = disk.getFileInformation(path);
             long changed = info.getBasicInformation().getChangeTime().toEpochMillis();
             long size = info.getStandardInformation().getEndOfFile();
             return changed + ":" + size;
-        } catch (Exception e) {
+        } catch (Exception keinStand) {
+            android.util.Log.w("SmbStorage",
+                    "Stand von " + path + " nicht lesbar – entweder gibt es die Datei noch nicht,"
+                            + " oder das Überschreiben läuft ohne Änderungsschutz", keinStand);
             return "";
         }
     }

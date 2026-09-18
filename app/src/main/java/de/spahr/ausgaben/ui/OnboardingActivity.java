@@ -599,7 +599,7 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
                 byte[] raw = RemoteStorage.from(settings).downloadBytes(RemotePath.folderOf(path), RemotePath.fileOf(path));
                 KmyImporter importer = new KmyImporter(
                         new KmyDocument(raw, getApplicationContext()), getApplicationContext());
-                runOnUiThread(() -> {
+                post(() -> {
                     hideImportStatus();
                     List<String> accounts = importer.accountNames();
                     List<String> depots = importer.depotNames();
@@ -657,7 +657,7 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
         new Thread(() -> {
             try {
                 if (accountTargets.isEmpty()) {
-                    runOnUiThread(() -> importDepotsThenFinish(importer, depotTargets, importedCount));
+                    post(() -> importDepotsThenFinish(importer, depotTargets, importedCount));
                     return;
                 }
                 java.util.LinkedHashMap<String, List<Booking>> map =
@@ -667,7 +667,7 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
                 }
                 repository.applyAccountTypes(importer.accountTypes());
                 repository.applyCategoryTypes(importer.categoryTypes());
-                runOnUiThread(() -> repository.replaceImportAccounts(map, null,
+                post(() -> repository.replaceImportAccounts(map, null,
                         res -> importDepotsThenFinish(importer, depotTargets, importedCount)));
             } catch (Exception e) {
                 postImportError(e);
@@ -729,7 +729,7 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
                 List<String> files = storage.listFiles(folder, "csv");
                 java.util.Collections.sort(folders, String.CASE_INSENSITIVE_ORDER);
                 java.util.Collections.sort(files, String.CASE_INSENSITIVE_ORDER);
-                runOnUiThread(() -> {
+                post(() -> {
                     if (folder.isEmpty() && folders.isEmpty() && files.isEmpty()) {
                         Toast.makeText(this, R.string.no_files, Toast.LENGTH_LONG).show();
                     } else {
@@ -738,7 +738,7 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
                 });
             } catch (Exception e) {
                 final String msg = syncFields.serverError(e);
-                runOnUiThread(() -> Toast.makeText(this,
+                post(() -> Toast.makeText(this,
                         getString(R.string.import_failed, msg), Toast.LENGTH_LONG).show());
             }
         }).start();
@@ -809,7 +809,7 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
             CsvImporter importer = new CsvImporter(this);
             List<Booking> bookings = importer.parse(content);
             String account = importer.getParsedAccount();
-            runOnUiThread(() -> repository.replaceImport(account, bookings, count -> finishImport(1)));
+            post(() -> repository.replaceImport(account, bookings, count -> finishImport(1)));
         } catch (Exception e) {
             postImportError(e);
         }
@@ -831,7 +831,7 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
 
     private void postImportError(Exception e) {
         final String msg = syncFields.serverError(e);
-        runOnUiThread(() -> {
+        post(() -> {
             hideImportStatus();
             Toast.makeText(this, getString(R.string.import_failed, msg), Toast.LENGTH_LONG).show();
         });

@@ -53,18 +53,18 @@ final class StatementImport {
             try {
                 text = PdfTextExtractor.read(activity, uri);
             } catch (Exception e) {
-                activity.runOnUiThread(() ->
+                Ui.post(activity, () ->
                         Toast.makeText(activity, R.string.statement_unreadable, Toast.LENGTH_LONG).show());
                 return;
             }
             if (!text.hasText()) {
                 // Eingescannt: ohne Texterkennung ist da nichts zu holen. Das gehört gesagt, nicht
                 // verschwiegen – sonst sucht der Nutzer den Fehler bei sich.
-                activity.runOnUiThread(() ->
+                Ui.post(activity, () ->
                         Toast.makeText(activity, R.string.statement_no_text, Toast.LENGTH_LONG).show());
                 return;
             }
-            activity.runOnUiThread(() -> resolve(activity, repository, text, uri));
+            Ui.post(activity, () -> resolve(activity, repository, text, uri));
         });
     }
 
@@ -248,7 +248,7 @@ final class StatementImport {
                               Uri source, String isin, String depot, String kmyId, String name) {
         repository.executor().execute(() -> {
             final Intent i = intentFor(activity, text, source, isin, depot, kmyId, name);
-            activity.runOnUiThread(() -> {
+            Ui.post(activity, () -> {
                 if (activity.isFinishing() || activity.isDestroyed()) {
                     return;
                 }
@@ -344,7 +344,7 @@ final class StatementImport {
             for (int i = 0; i < uris.size(); i++) {
                 drafts.add(read(activity, store, securities, uris.get(i), i));
             }
-            activity.runOnUiThread(() -> fillDefaults(activity, repository, drafts));
+            Ui.post(activity, () -> fillDefaults(activity, repository, drafts));
         }));
     }
 

@@ -89,6 +89,14 @@ public class LocalizedActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Etwas auf dem Bedienfaden tun — aber nur, solange es diese Maske noch gibt. Der Rückweg für alles,
+     * was aus einem Hintergrundfaden zurückkommt; die Begründung steht bei {@link Ui#post}.
+     */
+    protected void post(Runnable r) {
+        Ui.post(this, r);
+    }
+
     /** Färbt Toolbar/Statusleiste/Buttons mit der aktuellen Profil-Akzentfarbe ein. */
     protected void applyAccentColor() {
         de.spahr.ausgaben.settings.AccentColor.apply(this);

@@ -1338,16 +1338,16 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
             try {
                 text = PdfTextExtractor.read(this, uri);
             } catch (Exception e) {
-                runOnUiThread(() ->
+                post(() ->
                         Toast.makeText(this, R.string.statement_unreadable, Toast.LENGTH_LONG).show());
                 return;
             }
             if (!text.hasText()) {
-                runOnUiThread(() ->
+                post(() ->
                         Toast.makeText(this, R.string.statement_no_text, Toast.LENGTH_LONG).show());
                 return;
             }
-            runOnUiThread(() -> {
+            post(() -> {
                 testUri = uri;
                 testText = text;
                 testButtons.setVisibility(View.VISIBLE);

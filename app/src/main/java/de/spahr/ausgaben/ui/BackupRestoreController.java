@@ -67,17 +67,12 @@ final class BackupRestoreController {
      * Etwas auf dem Bedienfaden tun — aber nur, solange es die Maske noch gibt.
      *
      * <p>Jeder Schritt dieser Kette kommt aus dem Hintergrund zurück, und dazwischen kann der Nutzer
-     * weggegangen oder das Gerät gedreht worden sein. Ein Dialog auf ein Fenster, das nicht mehr da ist,
-     * beendet die App mit einer {@code BadTokenException}. In den beiden Masken stand diese Prüfung
-     * nirgends; hier steht sie an einer Stelle für alle.</p>
+     * weggegangen oder das Gerät gedreht worden sein. Der Name bleibt, weil er an dieser Kette gut
+     * liest; die Prüfung selbst steht inzwischen in {@link Ui#post} — dort gilt sie für die ganze App
+     * und nicht mehr nur für diesen Regler.</p>
      */
     private void imVordergrund(Runnable r) {
-        activity.runOnUiThread(() -> {
-            if (activity.isFinishing() || activity.isDestroyed()) {
-                return;
-            }
-            r.run();
-        });
+        Ui.post(activity, r);
     }
 
     private void askBackupPassword(byte[] data) {

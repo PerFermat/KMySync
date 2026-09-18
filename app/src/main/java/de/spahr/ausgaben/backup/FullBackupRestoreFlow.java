@@ -19,6 +19,7 @@ import java.util.List;
 import de.spahr.ausgaben.R;
 import de.spahr.ausgaben.ui.AppDialog;
 import de.spahr.ausgaben.ui.MainActivity;
+import de.spahr.ausgaben.ui.Ui;
 
 /**
  * Komplettsicherung (alle Profile) wiederherstellen: Datei wählen → ggf. Passwort abfragen → Umfang
@@ -63,7 +64,7 @@ public final class FullBackupRestoreFlow {
             try {
                 byte[] data = readBytes(uri);
                 if (BackupCrypto.isEncrypted(data)) {
-                    activity.runOnUiThread(() -> askBackupPassword(data));
+                    Ui.post(activity, () -> askBackupPassword(data));
                     return;
                 }
                 openRestore(data);
@@ -126,7 +127,7 @@ public final class FullBackupRestoreFlow {
                         } catch (javax.crypto.BadPaddingException e) {
                             // Nur hier steht das Passwort tatsächlich in Frage – siehe
                             // BackupRestoreController, dieselbe Unterscheidung.
-                            activity.runOnUiThread(() -> Toast.makeText(activity,
+                            Ui.post(activity, () -> Toast.makeText(activity,
                                     R.string.restore_password_wrong, Toast.LENGTH_LONG).show());
                             return;
                         } catch (Exception e) {
@@ -147,7 +148,7 @@ public final class FullBackupRestoreFlow {
     private void openRestore(byte[] zip) throws Exception {
         final BackupArchive.Content content = BackupArchive.read(zip);
         if (!content.hasData() && !content.hasSettings()) {
-            activity.runOnUiThread(() ->
+            Ui.post(activity, () ->
                     Toast.makeText(activity, R.string.restore_invalid, Toast.LENGTH_LONG).show());
             return;
         }
@@ -155,11 +156,11 @@ public final class FullBackupRestoreFlow {
         // gehört dort auch wieder eingespielt, nicht hier, wo eine Komplettsicherung alle Profile ersetzt.
         // Das Wort „Profil" in der Meldung ist dabei kein Zufall: dort steht der passende Knopf.
         if (!content.isAllProfiles()) {
-            activity.runOnUiThread(() -> Toast.makeText(activity,
+            Ui.post(activity, () -> Toast.makeText(activity,
                     R.string.restore_wrong_scope_use_profile, Toast.LENGTH_LONG).show());
             return;
         }
-        activity.runOnUiThread(() -> chooseRestoreScope(content));
+        Ui.post(activity, () -> chooseRestoreScope(content));
     }
 
     /** „Daten", „Einstellungen" oder „Beides" – nur was die Sicherung auch enthält. */
@@ -204,7 +205,7 @@ public final class FullBackupRestoreFlow {
                 if (scope == 1 || scope == 2) {
                     BackupStore.restoreAllSettings(activity, content);
                 }
-                activity.runOnUiThread(() -> {
+                Ui.post(activity, () -> {
                     Toast.makeText(activity, R.string.restore_done, Toast.LENGTH_LONG).show();
                     Intent i = new Intent(activity, MainActivity.class);
                     i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -218,7 +219,7 @@ public final class FullBackupRestoreFlow {
 
     private void postRestoreError(Exception e) {
         String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-        activity.runOnUiThread(() -> Toast.makeText(activity,
+        Ui.post(activity, () -> Toast.makeText(activity,
                 activity.getString(R.string.restore_failed, msg), Toast.LENGTH_LONG).show());
     }
 
