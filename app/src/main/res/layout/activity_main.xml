@@ -14,6 +14,11 @@
             android:layout_height="match_parent"
             android:orientation="vertical">
 
+            <!-- Titel und Untertitel stellt die Toolbar hier nicht mehr selbst dar, sondern das
+                 Kind-Layout darunter. Der Grund ist die Reihenfolge: Eine Toolbar ordnet ihre Kinder
+                 grundsätzlich HINTER Titel und Untertitel ein – eine Lupe links vom Kontonamen wäre
+                 damit nicht zu haben. Aufbau wie in nav_header.xml, das dasselbe für die
+                 Kontenschublade tut. -->
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
@@ -21,10 +26,69 @@
                 android:background="@color/green_primary"
                 android:theme="@style/ThemeOverlay.Ausgaben.Toolbar"
                 app:contentInsetStartWithNavigation="0dp"
-                app:subtitleTextColor="@color/toolbar_subtitle"
-                app:title="@string/app_name"
-                app:titleMarginStart="0dp"
-                app:titleTextColor="@color/white" />
+                app:titleMarginStart="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:id="@+id/bookingSearchIcon"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:padding="10dp"
+                        android:src="@drawable/ic_search"
+                        android:contentDescription="@string/bookings_search_hint"
+                        app:tint="@color/white"
+                        android:background="?attr/selectableItemBackgroundBorderless" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/toolbarTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/white"
+                            android:textSize="20sp"
+                            android:maxLines="1"
+                            android:ellipsize="end" />
+
+                        <!-- Tritt während der Suche an die Stelle des Kontonamens. Der Untertitel
+                             darunter bleibt stehen: Er zählt beim Tippen die Treffer mit. -->
+                        <EditText
+                            android:id="@+id/bookingSearch"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@null"
+                            android:hint="@string/bookings_search_hint"
+                            android:textColor="@color/white"
+                            android:textColorHint="#B2FFFFFF"
+                            android:textSize="20sp"
+                            android:inputType="text"
+                            android:imeOptions="actionSearch"
+                            android:maxLines="1"
+                            android:visibility="gone"
+                            android:autofillHints="" />
+
+                        <TextView
+                            android:id="@+id/toolbarSubtitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/toolbar_subtitle"
+                            android:textSize="13sp"
+                            android:maxLines="1"
+                            android:ellipsize="end"
+                            android:visibility="gone" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.appbar.MaterialToolbar>
 
             <LinearLayout
                 android:id="@+id/saldoHeader"

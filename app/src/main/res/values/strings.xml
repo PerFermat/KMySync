@@ -352,6 +352,8 @@
     <string name="font_size_large">Large</string>
     <string name="font_size_xlarge">Very large</string>
     <string name="filter_search_hint">Search (payee, note, category)</string>
+    <!-- Kurz genug für die Titelzeile; das lange filter_search_hint gehört in den Dialog. -->
+    <string name="bookings_search_hint">Search bookings</string>
     <string name="shortcut_new_expense_short">New booking</string>
     <string name="shortcut_new_expense_long">Record a new booking</string>
     <string name="action_categories">Categories</string>

@@ -346,6 +346,7 @@
     <string name="font_size_large">Grande</string>
     <string name="font_size_xlarge">Muy grande</string>
     <string name="filter_search_hint">Buscar (beneficiario, nota, categoría)</string>
+    <string name="bookings_search_hint">Buscar apuntes</string>
     <string name="shortcut_new_expense_short">Nuevo apunte</string>
     <string name="shortcut_new_expense_long">Registrar un nuevo apunte</string>
     <string name="action_categories">Categorías</string>

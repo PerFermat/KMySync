@@ -1319,13 +1319,23 @@
     },
     {
       "type": "h2",
+      "id": "b-0092s",
+      "text": "Schnellsuche (Lupe)"
+    },
+    {
+      "type": "p",
+      "id": "b-0092t",
+      "text": "<b>Schnell suchen (Lupe links vom Kontonamen):</b> Ein Tipp darauf, und der Kontoname macht einem Suchfeld Platz. Was Sie tippen, engt die Liste sofort ein – gesucht wird in <b>Empfänger, Notiz und Kategorie</b> zugleich, mitten im Wort und ohne Rücksicht auf Groß- und Kleinschreibung. Die <b>Lupe auf der Tastatur</b> klappt das Feld wieder ein; der Kontoname steht dann zurück an seinem Platz, die <b>Suche bleibt aber aktiv</b>. Daran erinnert die Lupe, die nun durchgestrichen ist – ein Tipp darauf hebt die Suche auf."
+    },
+    {
+      "type": "h2",
       "id": "b-0093a",
       "text": "Der Filter (Trichter ▽)"
     },
     {
       "type": "p",
       "id": "b-0093b",
-      "text": "Der Trichter in der Titelleiste grenzt die Liste ein. Ganz oben steht ein <b>Suchfeld</b>, das <b>Empfänger, Notiz und Kategorie</b> zugleich durchsucht – mitten im Wort und ohne Rücksicht auf Groß- und Kleinschreibung. So finden Sie eine Buchung auch über ihre Notiz. Darunter folgen Kategorie (als Baum), <b>Stichwort</b>, Betrag und <b>Datum von–bis</b>. Die <b>Lupe auf der Tastatur</b> übernimmt den Filter sofort – der Knopf «Übernehmen» steht am Ende dieses langen Dialogs und damit unter der Tastatur. Wer statt dessen noch Betrag oder Zeitraum einstellen will, schiebt einfach weiter: dabei geht die Tastatur von selbst weg."
+      "text": "Der Trichter in der Titelleiste grenzt die Liste ein. Ganz oben steht ein <b>Suchfeld</b>, das <b>Empfänger, Notiz und Kategorie</b> zugleich durchsucht – mitten im Wort und ohne Rücksicht auf Groß- und Kleinschreibung. So finden Sie eine Buchung auch über ihre Notiz. Darunter folgen Kategorie (als Baum), <b>Stichwort</b>, Betrag und <b>Datum von–bis</b>. Die <b>Lupe auf der Tastatur</b> übernimmt den Filter sofort – der Knopf «Übernehmen» steht am Ende dieses langen Dialogs und damit unter der Tastatur. Wer statt dessen noch Betrag oder Zeitraum einstellen will, schiebt einfach weiter: dabei geht die Tastatur von selbst weg. Die Schnellsuche oben und dieser Filter gelten <b>zusammen</b>: Wer hier etwas einstellt und dann oben tippt, sucht innerhalb des bereits Gefilterten weiter. «Zurücksetzen» räumt beides."
     },
     {
       "type": "p",

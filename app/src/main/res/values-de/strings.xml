@@ -347,6 +347,7 @@
     <string name="font_size_large">Groß</string>
     <string name="font_size_xlarge">Sehr groß</string>
     <string name="filter_search_hint">Suche (Empfänger, Notiz, Kategorie)</string>
+    <string name="bookings_search_hint">Buchungen suchen</string>
     <string name="shortcut_new_expense_short">Neue Buchung</string>
     <string name="shortcut_new_expense_long">Neue Buchung erfassen</string>
     <string name="action_categories">Kategorien</string>

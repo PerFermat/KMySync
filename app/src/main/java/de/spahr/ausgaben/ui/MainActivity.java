@@ -65,6 +65,18 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     private static final String STATE_NUMBER_AMOUNT = "s_numberAmount";
     private static final String STATE_NUMBER_PICK = "s_numberPick";
     private static final String STATE_NUMBER_TAPPED = "s_numberTapped";
+    private static final String STATE_SEARCH_QUERY = "s_searchQuery";
+    private static final String STATE_SEARCH_OPEN = "s_searchOpen";
+
+    @Override
+    protected void onDestroy() {
+        // Ein entprellter Filterlauf, der nach dem Ende der Maske feuert, arbeitet auf Ansichten, die
+        // es nicht mehr gibt. Ui.post fängt das nicht: Der Handler gehört der Suchleiste, nicht ihr.
+        if (searchBar != null) {
+            searchBar.detach();
+        }
+        super.onDestroy();
+    }
 
     @Override
     protected void onSaveInstanceState(android.os.Bundle out) {
@@ -72,6 +84,10 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         out.putString(STATE_NUMBER_AMOUNT, numberEntryAmount);
         out.putInt(STATE_NUMBER_PICK, numberEntryPick);
         out.putBoolean(STATE_NUMBER_TAPPED, numberEntryTapped);
+        // Die Kontenschublade rettet ihre Suche nicht – dort ist der Begriff zwei Wörter. Hier hat man
+        // womöglich gerade eine Buchung von 2019 eingekreist; die Drehung dürfte das nicht wegwerfen.
+        out.putString(STATE_SEARCH_QUERY, searchQuery);
+        out.putBoolean(STATE_SEARCH_OPEN, searchBar != null && searchBar.istOffen());
     }
 
     /**
@@ -132,6 +148,15 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                 }
             };
 
+    /**
+     * Kontoname und „Filter aktiv (n)" – eigene Ansichten statt der Beschriftung der ActionBar, damit
+     * links davon die Lupe Platz hat (siehe {@code activity_main.xml}).
+     */
+    private android.widget.TextView toolbarTitle;
+    private android.widget.TextView toolbarSubtitle;
+    /** Die Live-Suche in der Titelzeile; sie hält den Suchtext und schaltet Name/Feld um. */
+    private BookingSearchBar searchBar;
+
     private List<Booking> allBookings = new ArrayList<>();
     private java.util.Map<Long, List<BookingSplit>> splitsByBooking = new java.util.HashMap<>();
     private java.util.Map<String, Long> placeBalances = new java.util.LinkedHashMap<>();
@@ -141,6 +166,14 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     private long filteredSum = 0;
     private final List<SaldoView> saldoViews = new ArrayList<>();
     private int saldoIndex = 0;
+
+    /**
+     * Der Suchtext aus der <b>Live-Suche in der Titelzeile</b> – bewusst neben {@link #filterPayee}
+     * und nicht an seiner Stelle: Beide gelten zusammen, damit man innerhalb eines gesetzten Filters
+     * weitersuchen kann. Gehalten wird er hier und nicht nur im Feld, weil das Feld eingeklappt wird,
+     * ohne daß die Suche endet.
+     */
+    private String searchQuery = "";
 
     private String filterPayee = "";
     private String filterCategory = "";
@@ -268,6 +301,37 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         com.google.android.material.appbar.MaterialToolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         // Kein Logo mehr in der Toolbar; das kMyMoney-Logo sitzt im Kopf der Konten-Schublade.
+        // Titel und Untertitel stellt das Kind-Layout der Toolbar dar, nicht die ActionBar selbst –
+        // nur so kann die Lupe links vom Kontonamen stehen (siehe activity_main.xml). Ohne das
+        // stünde hier zusätzlich der App-Name aus dem Manifest.
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+        }
+        toolbarTitle = findViewById(R.id.toolbarTitle);
+        toolbarSubtitle = findViewById(R.id.toolbarSubtitle);
+        // Bei offenem Suchfeld schließt Zurück erst das Feld, statt die Maske zu verlassen. Der
+        // Rückruf schaltet ihn scharf — auch dann, wenn nicht die Zurück-Taste, sondern die Lupe oder
+        // die Tastatur das Feld geschlossen hat.
+        final androidx.activity.OnBackPressedCallback zurueckSchliesstSuche =
+                new androidx.activity.OnBackPressedCallback(false) {
+                    @Override
+                    public void handleOnBackPressed() {
+                        searchBar.collapse();
+                    }
+                };
+        getOnBackPressedDispatcher().addCallback(this, zurueckSchliesstSuche);
+
+        searchBar = new BookingSearchBar(findViewById(R.id.bookingSearchIcon), toolbarTitle,
+                findViewById(R.id.bookingSearch),
+                () -> {
+                    searchQuery = searchBar.query();
+                    applyFilter();
+                },
+                zurueckSchliesstSuche::setEnabled);
+        if (savedInstanceState != null) {
+            searchQuery = savedInstanceState.getString(STATE_SEARCH_QUERY, "");
+            searchBar.restore(searchQuery, savedInstanceState.getBoolean(STATE_SEARCH_OPEN, false));
+        }
 
         repository = new Repository(this);
         settings = new SettingsStore(this);
@@ -1023,10 +1087,10 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
 
     /** Aktualisiert Toolbar-Titel und markiert den gewählten Schubladen-Eintrag. */
     private void updateAccountUi() {
-        if (getSupportActionBar() != null) {
+        if (toolbarTitle != null) {
             // Ohne Kontowahl steht dort die gewählte Kontengruppe – bzw. „Alle Konten".
             String all = selectedGroupLabel.isEmpty() ? getString(R.string.account_all) : selectedGroupLabel;
-            getSupportActionBar().setTitle(selectedAccount.isEmpty() ? all : selectedAccount);
+            toolbarTitle.setText(selectedAccount.isEmpty() ? all : selectedAccount);
         }
         accountAdapter.setSelected(selectedAccount);
     }
@@ -1071,9 +1135,11 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         showEmptyHint(filtered.size());
 
         boolean active = isFilterActive();
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setSubtitle(active
-                    ? getString(R.string.filter_active, filtered.size()) : null);
+        if (toolbarSubtitle != null) {
+            // Bleibt während der Suche stehen und zählt beim Tippen die Treffer mit – das ist der
+            // Grund, warum das Suchfeld nur den Kontonamen ersetzt und nicht die ganze Zeile.
+            toolbarSubtitle.setText(active ? getString(R.string.filter_active, filtered.size()) : "");
+            toolbarSubtitle.setVisibility(active ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -1159,9 +1225,14 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         if (!inCurrentScope(b)) {
             return false;
         }
-        // Suchfeld: Empfänger, Notiz oder Kategorie (gemeinsame Logik mit der Auswertung).
+        // Zwei Suchtexte, beide über dieselbe Logik (Empfänger, Notiz oder Kategorie) – und beide
+        // müssen zutreffen. Wer im Trichter „Netto" gesetzt hat und oben „Benzin" tippt, sucht
+        // innerhalb der Netto-Buchungen weiter: Das Angezeigte ist die Grundlage der nächsten Suche.
         if (!de.spahr.ausgaben.db.BookingSearch.matches(b, filterPayee)) {
-            return false;
+            return false;   // aus dem Trichter
+        }
+        if (!de.spahr.ausgaben.db.BookingSearch.matches(b, searchQuery)) {
+            return false;   // aus der Live-Suche in der Titelzeile
         }
         if (!filterCategory.isEmpty() && !categoryMatchesBooking(b)) {
             return false;
@@ -1232,7 +1303,10 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     }
 
     private boolean isFilterActive() {
-        return !filterPayee.isEmpty() || !filterCategory.isEmpty() || !filterTag.isEmpty()
+        // Die Live-Suche zählt mit: Sonst verschwiege der Untertitel, daß die Liste eingeengt ist –
+        // und das gerade dann, wenn das Feld eingeklappt ist und man es nicht mehr sieht.
+        return !searchQuery.isEmpty()
+                || !filterPayee.isEmpty() || !filterCategory.isEmpty() || !filterTag.isEmpty()
                 || filterAmountFrom != null || filterAmountTo != null
                 || filterDateFrom != null || filterDateTo != null
                 || filterRadiusM > 0;
@@ -1968,6 +2042,12 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
      * Kriterium an einer der beiden Stellen vergessen.
      */
     private void resetFilter() {
+        // Auch die Live-Suche: Ein „Zurücksetzen", nach dem die Liste eingeengt bleibt, hätte gelogen.
+        // Still, weil gleich unten ohnehin applyFilter() läuft.
+        searchQuery = "";
+        if (searchBar != null) {
+            searchBar.clearSilently();
+        }
         filterPayee = "";
         filterCategory = "";
         filterTag = "";

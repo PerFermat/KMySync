@@ -1314,13 +1314,23 @@
     },
     {
       "type": "h2",
+      "id": "b-0092s",
+      "text": "Quick search (magnifier)"
+    },
+    {
+      "type": "p",
+      "id": "b-0092t",
+      "text": "<b>Quick search (magnifier left of the account name):</b> One tap and the account name makes room for a search field. What you type narrows the list right away – it searches <b>payee, note and category</b> at once, anywhere in the word and regardless of case. The <b>magnifier on the keyboard</b> folds the field away again; the account name returns to its place, but the <b>search stays in effect</b>. The magnifier, now crossed out, is the reminder – one tap on it lifts the search."
+    },
+    {
+      "type": "h2",
       "id": "b-0093a",
       "text": "The filter (funnel ▽)"
     },
     {
       "type": "p",
       "id": "b-0093b",
-      "text": "The funnel in the title bar narrows the list. At the top sits a <b>search field</b> that searches <b>payee, note and category</b> at once – anywhere in the word and regardless of case. That way you can find a booking by its note as well. Below it follow category (as a tree), <b>tag</b>, amount and <b>date from–to</b>. The <b>magnifier on the keyboard</b> applies the filter right away – the «Apply» button sits at the end of this long dialog and thus below the keyboard. If you would rather set an amount or a period as well, just keep scrolling: the keyboard steps aside on its own."
+      "text": "The funnel in the title bar narrows the list. At the top sits a <b>search field</b> that searches <b>payee, note and category</b> at once – anywhere in the word and regardless of case. That way you can find a booking by its note as well. Below it follow category (as a tree), <b>tag</b>, amount and <b>date from–to</b>. The <b>magnifier on the keyboard</b> applies the filter right away – the «Apply» button sits at the end of this long dialog and thus below the keyboard. If you would rather set an amount or a period as well, just keep scrolling: the keyboard steps aside on its own. The quick search above and this filter apply <b>together</b>: set something here, then type up top, and you keep searching within what is already filtered. «Reset» clears both."
     },
     {
       "type": "p",
