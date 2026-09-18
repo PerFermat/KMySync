@@ -1,1 +1,5 @@
-The payee is optional now, as in KMyMoney. Where it is missing the lists show the category. Exporting receipts can be paused, resumed and cancelled; deleted receipts go to the trash. On the watch you pick the payee from the places nearby. In the booking list and the widget the date sits at the front again, and a pencil leads into editing. Dates and times follow the language you set. Spanish is complete. Android no longer backs up this app; use "Create backup" instead.
+The payee is optional now, just as in KMyMoney. Leave the field empty and the booking list, the widget and the reports show the category instead. If the amount is split they show "Split transaction"; if the category is missing too, "*** UNASSIGNED ***" - the same text KMyMoney uses.
+
+Smaller things: receipt export can be paused, dates follow the app language, Spanish is complete.
+
+Android no longer backs up this app's data; when switching devices, use "Create backup".

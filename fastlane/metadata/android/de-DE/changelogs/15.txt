@@ -1,1 +1,5 @@
-Der Empfänger ist jetzt freiwillig - wie in KMyMoney. Fehlt er, zeigen die Listen die Kategorie. Der Beleg-Export lässt sich anhalten, fortsetzen und abbrechen; gelöschte Belege wandern in den Papierkorb. Auf der Uhr wählen Sie den Empfänger aus Orten im Umkreis. In Buchungsliste und Widget steht das Datum vorn, ein Stift führt ins Bearbeiten. Datum und Uhrzeit folgen der eingestellten Sprache. Spanisch ist vollständig. Android sichert diese App nicht mehr mit; nutzen Sie "Sicherung erstellen".
+Der Empfänger ist jetzt freiwillig - wie in KMyMoney. Bleibt das Feld leer, steht in Buchungsliste, Widget und Auswertungen die Kategorie an seiner Stelle. Ist der Betrag aufgeteilt, steht dort "Split-Buchung"; fehlt auch die Kategorie, "*** NICHT ZUGEWIESEN ***" - derselbe Text wie in KMyMoney.
+
+Kleineres: anhaltbarer Beleg-Export, Datum in der Sprache der App, vollständiges Spanisch.
+
+Android sichert die Daten dieser App nicht mehr mit; beim Gerätewechsel hilft "Sicherung erstellen".
