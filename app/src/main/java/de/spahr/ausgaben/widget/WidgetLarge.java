@@ -81,9 +81,25 @@ public class WidgetLarge extends AusgabenWidget {
         return b.payee.isEmpty() ? "—" : b.payee;
     }
 
-    private static String sub(Booking b) {
+    /**
+     * Die graue Zeile unter dem Empfänger: <b>Datum zuerst</b>, dann die Kategorie.
+     *
+     * <p>Hier stand die Kategorie vorn und das Datum hinten — genau die Reihenfolge, die in der
+     * Buchungsliste schon einmal umgedreht wurde, und aus demselben Grund: Die Zeile ist
+     * {@code maxLines="1"} mit {@code ellipsize="end"}, sie wird also <em>hinten</em> abgeschnitten.
+     * KMyMoney-Kategorien sind hierarchisch und entsprechend lang («Versicherungen:Krankenzusatz»);
+     * bei größerer Schrift oder schmalerem Widget verschwand damit ausgerechnet das Datum, das man
+     * in jeder Zeile braucht. Abgeschnitten werden darf die Kategorie — vom Datum muss der Anfang
+     * stehen bleiben.</p>
+     *
+     * <p>Beim Umbau der Buchungsliste ({@code BookingAdapter.subtitle}) wurde das Widget übersehen.
+     * Der Wächter in {@code DateFormatsTest} konnte es nicht finden: Er sucht feste Datumsmuster,
+     * nicht die Reihenfolge innerhalb einer Zeile. Deshalb gibt es jetzt {@code WidgetSubtitleTest} —
+     * paketsichtbar statt privat ist der Preis dafür.</p>
+     */
+    static String sub(Booking b) {
         String cat = b.category == null ? "" : b.category;
         String date = DateFormats.dayMonth(b.createdAt);
-        return cat.isEmpty() ? date : cat + " · " + date;
+        return cat.isEmpty() ? date : date + " · " + cat;
     }
 }
