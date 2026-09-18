@@ -107,6 +107,27 @@ public class DateFormatsTest {
         assertEquals("MM/dd/yyyy", DateFormats.pattern());
     }
 
+    /**
+     * Tag und Monat ohne Jahr – fürs große Widget. Geprüft wird die Reihenfolge, nicht der Trenner:
+     * Ob Deutsch seinen Schlusspunkt behält, entscheidet ICU, und daran soll dieser Test nicht
+     * zerbrechen, wenn sich die Bibliothek einmal anders entscheidet. Dass im Englischen der Monat
+     * vorn steht, ist dagegen keine Geschmacksfrage.
+     */
+    @Test
+    public void tagUndMonatFolgenDerSprache() {
+        DateFormats.apply("de", null);
+        assertTrue("de: " + DateFormats.dayMonth(derDritteFebruar()),
+                DateFormats.dayMonth(derDritteFebruar()).startsWith("03"));
+
+        DateFormats.apply("en", Locale.US);
+        assertTrue("en-US: " + DateFormats.dayMonth(derDritteFebruar()),
+                DateFormats.dayMonth(derDritteFebruar()).startsWith("02"));
+
+        DateFormats.apply("en", Locale.UK);
+        assertTrue("en-GB: " + DateFormats.dayMonth(derDritteFebruar()),
+                DateFormats.dayMonth(derDritteFebruar()).startsWith("03"));
+    }
+
     /** Die Uhrzeit bleibt 24-stündig, sonst stünde im Englischen plötzlich „AM". */
     @Test
     public void uhrzeitBleibtVierundzwanzigStuendig() {
@@ -148,32 +169,50 @@ public class DateFormatsTest {
      * {@code ScheduledChartActivity} mit {@code dd.MM.yy}. Wer nur nach {@code dd.MM.yyyy} sucht,
      * übersieht sie.</p>
      *
-     * <p>Gesucht wird nur im {@code ui}-Paket und nur nach Mustern mit Tagesangabe.
-     * Monatsüberschriften ({@code MMMM yyyy}) fallen schon deshalb heraus. Ausgenommen sind
-     * Zeitstempel für Dateinamen: {@code yyyyMMdd-HHmmss} enthält zwar „dd", soll aber sortierbar
-     * sein und nicht hübsch – daran erkennt man sie, dass zwischen den Feldern kein Trennzeichen
-     * steht.</p>
+     * <p>Durchsucht wird das <b>ganze</b> Paket, nicht nur {@code ui}. Anfangs war es nur {@code ui},
+     * und genau dort lag die Lücke: {@code WidgetLarge} hielt ein {@code static SimpleDateFormat} mit
+     * {@code "dd.MM."} — fest deutsch, und weil es statisch ist, teilen sich zwei gleichzeitig
+     * auffrischende Widgets ein Objekt, das nicht fadensicher ist. Der Wächter hätte es gefunden,
+     * wenn er dort hingesehen hätte.</p>
      *
-     * <p>Nicht durchsucht werden {@code export} und {@code util}: Dort ist das feste Muster Absicht –
-     * das CSV-Format ist im Handbuch als deutsch festgeschrieben, und in {@code TextValues} steht
-     * {@code dd.MM.yyyy} in einer Kandidatenliste zum Deuten eingelesener Texte. Die Begründung steht
-     * ausführlich im Javadoc von {@link DateFormats}.</p>
+     * <p>Ausgenommen wird jetzt <b>ausdrücklich</b> statt über den Suchpfad — eine Liste, die man
+     * liest, statt einer Auslassung, die man übersieht:</p>
+     *
+     * <ul>
+     *   <li>Die Pakete {@code export} und {@code util}: Das CSV-Format ist im Handbuch als deutsch
+     *       festgeschrieben, und in {@code TextValues} steht {@code dd.MM.yyyy} in einer
+     *       <i>Kandidatenliste</i> zum Deuten eingelesener Texte — das Gegenteil eines Fehlers.</li>
+     *   <li>Maschinenformate: {@code yyyyMMdd-HHmmss} für sortierbare Dateinamen und das ISO-Datum
+     *       {@code yyyy-MM-dd}, in dem KMyMoney seine Dateien schreibt. Beide enthalten „dd", sollen
+     *       aber gerade <b>nicht</b> der Anzeigesprache folgen: Sie gehören der Datei, nicht dem
+     *       Leser.</li>
+     * </ul>
+     *
+     * <p>Kommentare fallen vorher heraus — sonst schlüge der Wächter am Javadoc von
+     * {@link DateFormats} an, das die alte Schreibweise erklärt.</p>
      */
     @Test
     public void keineNeueMaskeFormatiertDasDatumSelbst() throws IOException {
-        Path ui = Paths.get("src/main/java/de/spahr/ausgaben/ui");
-        assertTrue("Pfad " + ui.toAbsolutePath() + " nicht gefunden", Files.isDirectory(ui));
+        Path wurzel = Paths.get("src/main/java/de/spahr/ausgaben");
+        assertTrue("Pfad " + wurzel.toAbsolutePath() + " nicht gefunden", Files.isDirectory(wurzel));
 
         List<String> treffer = new ArrayList<>();
-        try (Stream<Path> dateien = Files.walk(ui)) {
+        try (Stream<Path> dateien = Files.walk(wurzel)) {
             for (Path f : (Iterable<Path>) dateien.filter(p -> p.toString().endsWith(".java"))::iterator) {
+                String pfad = f.toString().replace('\\', '/');
+                if (pfad.contains("/export/") || pfad.contains("/util/")) {
+                    continue;
+                }
                 String quelle = new String(Files.readAllBytes(f), StandardCharsets.UTF_8);
+                String code = quelle.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\n]*", "");
                 java.util.regex.Matcher m = java.util.regex.Pattern
                         .compile("SimpleDateFormat\\(\\s*\"([^\"]*)\"")
-                        .matcher(quelle);
+                        .matcher(code);
                 while (m.find()) {
                     String muster = m.group(1);
-                    if (muster.contains("dd") && !muster.contains("yyyyMMdd")) {
+                    if (muster.contains("dd")
+                            && !muster.contains("yyyyMMdd")
+                            && !muster.contains("yyyy-MM-dd")) {
                         treffer.add(f.getFileName() + ": \"" + muster + "\"");
                     }
                 }

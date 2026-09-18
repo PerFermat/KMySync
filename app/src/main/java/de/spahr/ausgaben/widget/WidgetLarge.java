@@ -10,20 +10,23 @@ import android.widget.RemoteViews;
 
 import androidx.core.content.ContextCompat;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-
 import de.spahr.ausgaben.R;
 import de.spahr.ausgaben.db.Booking;
 import de.spahr.ausgaben.settings.Currencies;
+import de.spahr.ausgaben.settings.DateFormats;
 import de.spahr.ausgaben.settings.MoneyFormat;
 import de.spahr.ausgaben.ui.MainActivity;
 
-/** Großes Widget (4×4): Saldo-Kopf mit Aktualisieren, die letzten Buchungen und eine Aktionsleiste. */
+/**
+ * Großes Widget (4×4): Saldo-Kopf mit Aktualisieren, die letzten Buchungen und eine Aktionsleiste.
+ *
+ * <p>Hier stand einmal ein {@code private static final SimpleDateFormat DATE} mit festem
+ * {@code "dd.MM."}. Zwei Fehler in einer Zeile: Das Muster war fest deutsch, und weil das Objekt
+ * statisch ist, teilten sich zwei gleichzeitig auffrischende Widgets eines, das nicht fadensicher
+ * ist — und aufgefrischt wird aus dem Hintergrundfaden in {@link AusgabenWidget}. Beides erledigt
+ * {@link DateFormats#dayMonth(long)}: Es folgt der Sprache und baut sein Format je Aufruf neu.</p>
+ */
 public class WidgetLarge extends AusgabenWidget {
-
-    private static final SimpleDateFormat DATE = new SimpleDateFormat("dd.MM.", Locale.GERMANY);
 
     @Override
     protected int layoutId() {
@@ -80,7 +83,7 @@ public class WidgetLarge extends AusgabenWidget {
 
     private static String sub(Booking b) {
         String cat = b.category == null ? "" : b.category;
-        String date = DATE.format(new Date(b.createdAt));
+        String date = DateFormats.dayMonth(b.createdAt);
         return cat.isEmpty() ? date : cat + " · " + date;
     }
 }
