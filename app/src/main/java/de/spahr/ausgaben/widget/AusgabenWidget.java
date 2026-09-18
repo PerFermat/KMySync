@@ -17,6 +17,7 @@ import de.spahr.ausgaben.R;
 import de.spahr.ausgaben.db.AppDatabase;
 import de.spahr.ausgaben.db.Booking;
 import de.spahr.ausgaben.settings.Currencies;
+import de.spahr.ausgaben.settings.DateFormats;
 import de.spahr.ausgaben.settings.MoneyFormat;
 import de.spahr.ausgaben.settings.PlacesStore;
 import de.spahr.ausgaben.settings.SettingsStore;
@@ -105,6 +106,7 @@ public abstract class AusgabenWidget extends AppWidgetProvider {
          */
         static WidgetData load(Context app, String[] sel) {
             MoneyFormat.refresh(app);
+            DateFormats.refresh(app);
             WidgetData d = new WidgetData();
             try {
                 String account;

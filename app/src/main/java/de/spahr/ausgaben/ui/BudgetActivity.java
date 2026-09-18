@@ -34,6 +34,7 @@ import de.spahr.ausgaben.db.Repository;
 import de.spahr.ausgaben.settings.Currencies;
 import de.spahr.ausgaben.settings.MoneyFormat;
 import de.spahr.ausgaben.settings.SettingsStore;
+import de.spahr.ausgaben.settings.DateFormats;
 
 /**
  * Budgetplanung: je Kategorie Ist vs. Soll mit farbigem Fortschrittsbalken (grün = im Plan, rot = daneben);
@@ -722,8 +723,7 @@ public class BudgetActivity extends LocalizedActivity {
 
         TextView sub = new TextView(this);
         Locale locale = getResources().getConfiguration().getLocales().get(0);
-        sub.setText(b.account + " · " + new SimpleDateFormat("dd.MM.yyyy", locale)
-                .format(new java.util.Date(b.createdAt)));
+        sub.setText(b.account + " · " + DateFormats.date(b.createdAt));
         sub.setTextSize(12);
         sub.setTextColor(0xFF9E9E9E);
         text.addView(sub);

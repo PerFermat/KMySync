@@ -595,6 +595,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                 androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);
         de.spahr.ausgaben.settings.Currencies.refresh(this);
         de.spahr.ausgaben.settings.MoneyFormat.refresh(this);
+        de.spahr.ausgaben.settings.DateFormats.refresh(this);
         // Offene Belegfotos im Hintergrund ins Netzlaufwerk hochladen (No-op ohne offene/ohne Config).
         de.spahr.ausgaben.receipt.ReceiptSync.syncPending(this);
         // Belege gelöschter Buchungen entsorgen – nur einmal je App-Start, damit das „Rückgängig" nach

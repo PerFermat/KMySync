@@ -15,11 +15,8 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 import de.spahr.ausgaben.R;
 import de.spahr.ausgaben.db.Booking;
@@ -28,6 +25,7 @@ import de.spahr.ausgaben.db.SecurityTx;
 import de.spahr.ausgaben.settings.Currencies;
 import de.spahr.ausgaben.settings.MoneyFormat;
 import de.spahr.ausgaben.statement.StatementTemplate;
+import de.spahr.ausgaben.settings.DateFormats;
 
 /**
  * Die Durchsicht nach dem Einlesen mehrerer Abrechnungen: was die App aus jeder Datei herausgelesen hat,
@@ -46,7 +44,6 @@ public class StatementBatchActivity extends LocalizedActivity {
     /** Die eingelesenen Entwürfe (siehe {@link StatementImport#openAll}). */
     public static final String EXTRA_DRAFTS = "drafts";
 
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY);
 
     private Repository repository;
     private LinearLayout container;
@@ -199,7 +196,7 @@ public class StatementBatchActivity extends LocalizedActivity {
             append(b, actionLabel(d.action));
         }
         if (d.dateMillis > 0) {
-            append(b, dateFormat.format(new Date(d.dateMillis)));
+            append(b, DateFormats.date(d.dateMillis));
         }
         if (!d.isDividend()) {
             if (d.shares != null) {

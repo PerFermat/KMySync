@@ -15,14 +15,12 @@ import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,6 +39,7 @@ import de.spahr.ausgaben.statement.TemplateLearner;
 import de.spahr.ausgaben.util.CategorySplits;
 import de.spahr.ausgaben.util.SecurityAmounts;
 import de.spahr.ausgaben.util.SecurityAmounts.Field;
+import de.spahr.ausgaben.settings.DateFormats;
 
 /**
  * Erfassen und Ansehen einer Depot-Bewegung eines <b>bestehenden</b> Wertpapiers. Anlegbar sind nur Kauf,
@@ -105,7 +104,6 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     private static final String SELL = SecurityTx.SELL;
     private static final String DIVIDEND = SecurityTx.DIVIDEND;
 
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY);
     private final Calendar selectedDate = Calendar.getInstance();
 
     private Repository repository;
@@ -2393,7 +2391,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     private String valueText(StatementTemplate.Field field, double value) {
         switch (field) {
             case DATE:
-                return dateFormat.format(new Date((long) value));
+                return DateFormats.date((long) value);
             case SHARES:
                 return MoneyFormat.shares(value);
             case PRICE:
@@ -2750,7 +2748,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             if (label.endsWith(":")) {
                 label = label.substring(0, label.length() - 1).trim();
             }
-            labels[i] = label + ":  " + dateFormat.format(new Date(found.get(i).millis));
+            labels[i] = label + ":  " + DateFormats.date(found.get(i).millis);
         }
         labels[found.size()] = getString(R.string.statement_date_other);
         // Die Auswahl kommt als HostedDialog: Sie ist aus diesen Angaben jederzeit neu zu bauen, also
@@ -3359,7 +3357,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     /** Schreibt das gewählte Datum ins Feld – damit steht es fest. */
     private void updateDateField() {
         dateKnown = true;
-        editDate.setText(dateFormat.format(selectedDate.getTime()));
+        editDate.setText(DateFormats.date(selectedDate.getTimeInMillis()));
         dateLayout.setError(null);
     }
 

@@ -110,7 +110,9 @@ This list names the main features only. The exact behaviour, every detail and sc
   bookings, receipts and credentials leave the device only for where you send them yourself. When
   switching devices, the app's own backup is therefore the way.
 - **Appearance & language** — light and dark theme, app-wide font size, English, German and Spanish
-  built in, further languages via a translation file.
+  built in, further languages via a translation file. The date format follows the chosen language and,
+  where that matches the device language, its country (`en-US` → `MM/dd/yyyy`, `en-GB` → `dd/MM/yyyy`);
+  the CSV export is unaffected.
 
 ## CSV format (export)
 

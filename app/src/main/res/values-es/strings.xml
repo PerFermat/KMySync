@@ -104,6 +104,26 @@
     <string name="receipt_export_missing">%1$d no se pudieron obtener (no están en este dispositivo ni accesibles en el servidor).</string>
     <string name="receipt_export_empty">No se pudo obtener ni un solo justificante – faltan %1$d. No se creó ningún archivo.</string>
     <string name="receipt_export_failed">Error en la exportación: %1$s</string>
+    <string name="receipt_export_running_count">Empaquetando justificantes (%1$d/%2$d)</string>
+    <string name="receipt_export_running_fetch">Obteniendo y empaquetando justificantes…</string>
+    <string name="receipt_export_running_fetch_count">Obteniendo y empaquetando (%1$d/%2$d)</string>
+    <string name="receipt_export_paused">En pausa: mantenga la app abierta</string>
+    <string name="receipt_export_cancel">Cancelar exportación</string>
+    <string name="receipt_export_cancelling">Cancelando…</string>
+    <string name="receipt_export_cancel_ask">¿Cancelar la exportación de justificantes en curso? Los ya empaquetados se quedan en el archivo.</string>
+    <string name="receipt_export_keep_running">Continuar</string>
+    <string name="receipt_export_resume">Reintentar</string>
+    <string name="receipt_export_resume_ask">La exportación de justificantes a «%1$s» (%2$s) no terminó. ¿Reintentar? Los ya obtenidos están en el dispositivo y se incluyen enseguida; se escribe el mismo archivo.</string>
+    <string name="receipt_export_retry">Al ejecutar la exportación de nuevo se obtienen los que faltan: los ya obtenidos están ahora en el dispositivo y se incluyen enseguida.</string>
+    <string name="receipt_export_not_found">• %1$d no están en el servidor</string>
+    <string name="receipt_export_unreachable">• %1$d no se pudieron alcanzar (conexión)</string>
+    <string name="receipt_export_skipped">• %1$d no se obtuvieron, según lo indicado</string>
+    <string name="receipt_export_pending">• %1$d no se alcanzaron: la ejecución se detuvo tras esperar demasiado en segundo plano</string>
+    <string name="receipt_download_ask">%1$d justificantes están en el dispositivo, %2$d habría que obtenerlos primero del servidor.</string>
+    <string name="receipt_download_all">Exportar todos</string>
+    <string name="receipt_download_local_only">Solo los presentes (%1$d)</string>
+    <string name="receipt_download_metered">La conexión actual es de pago y esto costará dinero.</string>
+    <string name="receipt_download_takes_time">Obtenerlos lleva un rato: mantenga la app abierta. Si no, la ejecución se pausa y solo continúa cuando vuelva.</string>
     <string name="action_filter">Filtro</string>
     <string name="action_analysis">Análisis</string>
     <string name="action_balance">Saldos</string>
@@ -111,6 +131,15 @@
     <string name="action_scheduled">Transacciones programadas</string>
     <string name="action_switch_profile">Cambiar perfil</string>
     <string name="action_settings">Ajustes</string>
+    <string name="action_reports">Informes</string>
+    <string name="action_import_all">Importar todo</string>
+    <string name="action_edit_booking">Editar</string>
+
+    <!-- Listas vacías -->
+    <string name="empty_no_bookings">Todavía no hay apuntes.\nDeslice hacia abajo para cargarlos.</string>
+    <string name="empty_account">Aquí todavía no hay apuntes.</string>
+    <string name="empty_no_match">Ningún apunte coincide con el filtro.</string>
+    <string name="empty_reset_filter">Restablecer filtro</string>
 
     <!-- Perfiles -->
     <string name="profile_active_marker">%1$s (activo)</string>

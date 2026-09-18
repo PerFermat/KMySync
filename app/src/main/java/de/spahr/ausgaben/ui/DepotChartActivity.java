@@ -21,18 +21,17 @@ import com.google.android.material.slider.RangeSlider;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 
 import de.spahr.ausgaben.R;
 import de.spahr.ausgaben.db.Repository;
 import de.spahr.ausgaben.settings.CategoryColorStore;
 import de.spahr.ausgaben.settings.Currencies;
 import de.spahr.ausgaben.settings.MoneyFormat;
+import de.spahr.ausgaben.settings.DateFormats;
 
 /**
  * Kreisdiagramm der Wertpapiere eines Depots – im Design der Kategorien-Seite. Ein Umschalter oben wählt die
@@ -61,7 +60,6 @@ public class DepotChartActivity extends LocalizedActivity {
     private TextInputEditText dateFrom;
     private TextInputEditText dateTo;
 
-    private final SimpleDateFormat df = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
 
     private String depot = "";
     private int view = VIEW_VALUE;
@@ -233,8 +231,8 @@ public class DepotChartActivity extends LocalizedActivity {
     }
 
     private void updateDateFields() {
-        dateFrom.setText(df.format(fromMs));
-        dateTo.setText(df.format(toMsExcl - DAY_MS));   // inklusiver letzter Tag
+        dateFrom.setText(DateFormats.date(fromMs));
+        dateTo.setText(DateFormats.date(toMsExcl - DAY_MS));   // inklusiver letzter Tag
     }
 
     private long monthStart(int idx) {

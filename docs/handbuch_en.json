@@ -1838,6 +1838,11 @@
       ]
     },
     {
+      "type": "p",
+      "id": "b-0185b",
+      "text": "<b>Date format</b>: dates in the app follow the chosen language – «DD.MM.YYYY» in German, the customary notation in English and Spanish. If the chosen language matches the language of the device, its <i>country</i> counts as well: English is written «MM/DD/YYYY» in the USA but «DD/MM/YYYY» in the UK. There is no separate setting for this because the device already answers the question. The <b>CSV export is unaffected</b> and still writes «DD.MM.YYYY» – it follows the file, not the display."
+    },
+    {
       "type": "h2",
       "id": "b-0186",
       "text": "Connection to your server (SMB / WebDAV / Nextcloud)"

@@ -5,15 +5,16 @@ import android.widget.EditText;
 import com.google.android.material.slider.RangeSlider;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Locale;
+import de.spahr.ausgaben.settings.DateFormats;
 
 /**
  * Koppelt einen {@link RangeSlider} (in Monatsschritten) mit zwei Datums-Eingabefeldern. Der Slider rastet
  * monatsweise (Anzeige/Wert = Monatsanfang bzw. -ende); für ein taggenaues Datum tippt man es direkt ins
- * Feld (dd.MM.yyyy) – dieser exakte Wert wird dann verwendet. {@link #getFromMillis()}/{@link #getToMillis()}
+ * Feld – dieser exakte Wert wird dann verwendet. Anzeige und Eingabe laufen beide über
+ * {@link DateFormats}, also über dasselbe Muster: Zeigte das Feld englisch an und läse deutsch, wäre der
+ * Bereich still falsch. {@link #getFromMillis()}/{@link #getToMillis()}
  * liefern den aktuellen Bereich (von = Tagesbeginn, bis = Tagesende).
  */
 final class MonthRange {
@@ -21,7 +22,6 @@ final class MonthRange {
     private final RangeSlider slider;
     private final EditText fromField;
     private final EditText toField;
-    private final SimpleDateFormat df = new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY);
     private final int baseMonth;
     private long fromMillis;
     private long toMillis;
@@ -106,8 +106,8 @@ final class MonthRange {
     }
 
     private void updateFields() {
-        fromField.setText(df.format(new Date(fromMillis)));
-        toField.setText(df.format(new Date(toMillis)));
+        fromField.setText(DateFormats.date(fromMillis));
+        toField.setText(DateFormats.date(toMillis));
     }
 
     private Long parse(String s) {
@@ -115,7 +115,7 @@ final class MonthRange {
             return null;
         }
         try {
-            Date d = df.parse(s);
+            Date d = DateFormats.parse(s);
             return d == null ? null : d.getTime();
         } catch (ParseException e) {
             return null;

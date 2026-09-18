@@ -17,9 +17,7 @@ import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
@@ -34,6 +32,7 @@ import de.spahr.ausgaben.settings.StatementTemplates;
 import de.spahr.ausgaben.statement.AnchorRule;
 import de.spahr.ausgaben.statement.StatementTemplate;
 import de.spahr.ausgaben.statement.StatementTemplate.Field;
+import de.spahr.ausgaben.settings.DateFormats;
 
 /**
  * Die gelernten Erkennungsregeln von Hand nachbessern.
@@ -125,7 +124,6 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
         return new Field[]{Field.DATE, Field.NET, Field.SHARES, Field.PRICE, Field.FEE};
     }
 
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY);
 
     private Repository repository;
     private StatementTemplates store;
@@ -835,7 +833,7 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
                         : de.spahr.ausgaben.statement.StatementScan.dates(testText)) {
                     labels.add(c.label);
                     rules.add(c.rule);
-                    shown.add(beschreibung(c.label, dateFormat.format(new Date(c.millis)), c.rule));
+                    shown.add(beschreibung(c.label, DateFormats.date(c.millis), c.rule));
                 }
             } else {
                 for (de.spahr.ausgaben.statement.StatementScan.ValueCandidate c
@@ -1449,7 +1447,7 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
     private String valueOf(Field field, AnchorRule rule, PdfText text) {
         if (field == Field.DATE) {
             long millis = rule.readDate(text);
-            return millis > 0 ? dateFormat.format(new Date(millis)) : null;
+            return millis > 0 ? DateFormats.date(millis) : null;
         }
         Double raw = rule.read(text);
         return raw == null ? null : formatValue(field, raw);

@@ -92,6 +92,21 @@ public class SecurityTxRotationTest {
         return ((TextInputEditText) a.findViewById(id)).getText().toString();
     }
 
+    /**
+     * Der 17. August 2026 in der Schreibweise der eingestellten Sprache.
+     *
+     * <p>Hier stand einmal die Zeichenkette „17.08.2026". Seit das Datumsformat der Sprache folgt
+     * ({@code DateFormats}), hing der Test damit an der Gerätesprache – unter Robolectric ist die
+     * Englisch, und er fiel prompt um. Geprüft werden soll aber der <b>Tag</b>, der die Drehung
+     * übersteht, nicht die Schreibweise.</p>
+     */
+    private static String derSiebzehnteAugust() {
+        java.util.Calendar c = java.util.Calendar.getInstance();
+        c.clear();
+        c.set(2026, java.util.Calendar.AUGUST, 17);
+        return de.spahr.ausgaben.settings.DateFormats.date(c.getTimeInMillis());
+    }
+
     @Test
     public void dasGewaehlteDatumUeberstehtDieDrehung() throws Exception {
         ActivityController<SecurityTxEditActivity> controller =
@@ -99,12 +114,12 @@ public class SecurityTxRotationTest {
         SecurityTxEditActivity vorher = controller.get();
         ((MaterialButtonToggleGroup) vorher.findViewById(R.id.toggleAction)).check(R.id.btnBuy);
         waehleDatum(vorher, 2026, 7, 17);
-        assertEquals("17.08.2026", text(vorher, R.id.editDate));
+        assertEquals(derSiebzehnteAugust(), text(vorher, R.id.editDate));
 
         controller.recreate();
         SecurityTxEditActivity nachher = controller.get();
 
-        assertEquals("das Feld zeigt es weiterhin", "17.08.2026", text(nachher, R.id.editDate));
+        assertEquals("das Feld zeigt es weiterhin", derSiebzehnteAugust(), text(nachher, R.id.editDate));
 
         nachher.findViewById(R.id.btnSave).performClick();
         String meldung = ShadowToast.getTextOfLatestToast();

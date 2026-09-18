@@ -21,7 +21,6 @@ import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -43,6 +42,7 @@ import de.spahr.ausgaben.receipt.ReceiptSync;
 import de.spahr.ausgaben.receipt.Receipts;
 import de.spahr.ausgaben.settings.PlacesStore;
 import de.spahr.ausgaben.settings.SettingsStore;
+import de.spahr.ausgaben.settings.DateFormats;
 
 /**
  * Vereinheitlichter Editor für Neueingabe und Bearbeitung.
@@ -288,7 +288,6 @@ public class BookingEditActivity extends LocalizedActivity {
     /** Verwaltet die dynamische Kategorie-/Teilbetrag-Liste (Splitbuchung). */
     private SplitRowController splitCtl;
 
-    private final SimpleDateFormat dateDisplay = new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY);
     private final Calendar selectedDate = Calendar.getInstance();
 
     @Override
@@ -1528,7 +1527,7 @@ public class BookingEditActivity extends LocalizedActivity {
     // ---- Datum ----
 
     private void updateDateField() {
-        editDate.setText(dateDisplay.format(selectedDate.getTime()));
+        editDate.setText(DateFormats.date(selectedDate.getTimeInMillis()));
         btnToday.setVisibility(isToday(selectedDate) ? View.GONE : View.VISIBLE);
     }
 
@@ -1559,7 +1558,7 @@ public class BookingEditActivity extends LocalizedActivity {
             proceed.run();
             return;
         }
-        String dateStr = dateDisplay.format(selectedDate.getTime());
+        String dateStr = DateFormats.date(selectedDate.getTimeInMillis());
         new AppDialog(this)
                 .setTitle(R.string.date_confirm_title)
                 .setMessage(getString(R.string.date_confirm_message, dateStr))

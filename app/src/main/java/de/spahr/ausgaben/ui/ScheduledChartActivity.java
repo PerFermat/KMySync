@@ -42,6 +42,7 @@ import de.spahr.ausgaben.db.ScheduleProjection;
 import de.spahr.ausgaben.db.ScheduledTransaction;
 import de.spahr.ausgaben.settings.Currencies;
 import de.spahr.ausgaben.settings.MoneyFormat;
+import de.spahr.ausgaben.settings.DateFormats;
 
 /**
  * Grafik der geplanten Buchungen – wie die Auswertung der echten Buchungen (grüne/rote Balken je Zeit-Bucket
@@ -464,7 +465,7 @@ public class ScheduledChartActivity extends LocalizedActivity {
         c.setTimeInMillis(periodStartMs);
         switch (granularity) {
             case DAY:
-                return new SimpleDateFormat("dd.MM.yy", Locale.GERMANY).format(new Date(periodStartMs));
+                return DateFormats.shortDate(periodStartMs);
             case WEEK:
                 return String.format(Locale.GERMANY, "%02d/%02d",
                         c.get(Calendar.WEEK_OF_YEAR), c.get(Calendar.YEAR) % 100);

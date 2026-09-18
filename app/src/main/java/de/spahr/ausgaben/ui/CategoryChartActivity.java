@@ -44,6 +44,7 @@ import de.spahr.ausgaben.db.ScheduledTransaction;
 import de.spahr.ausgaben.settings.CategoryColorStore;
 import de.spahr.ausgaben.settings.Currencies;
 import de.spahr.ausgaben.settings.MoneyFormat;
+import de.spahr.ausgaben.settings.DateFormats;
 
 /**
  * „Wofür geht mein Geld?" – die <b>Ausgaben je Kategorie</b> für einen Zeitraum als Kreisdiagramm plus
@@ -580,8 +581,7 @@ public class CategoryChartActivity extends LocalizedActivity {
 
         TextView sub = new TextView(this);
         java.util.Locale locale = getResources().getConfiguration().getLocales().get(0);
-        sub.setText(st.account + " · " + new java.text.SimpleDateFormat("dd.MM.yyyy", locale)
-                .format(new java.util.Date(dateMs)) + " " + getString(R.string.category_planned_suffix));
+        sub.setText(st.account + " · " + DateFormats.date(dateMs) + " " + getString(R.string.category_planned_suffix));
         sub.setTextSize(12);
         sub.setTextColor(0xFF9E9E9E);
         text.addView(sub);
@@ -612,8 +612,7 @@ public class CategoryChartActivity extends LocalizedActivity {
 
         TextView sub = new TextView(this);
         java.util.Locale locale = getResources().getConfiguration().getLocales().get(0);
-        sub.setText(b.account + " · " + new java.text.SimpleDateFormat("dd.MM.yyyy", locale)
-                .format(new java.util.Date(b.createdAt)));
+        sub.setText(b.account + " · " + DateFormats.date(b.createdAt));
         sub.setTextSize(12);
         sub.setTextColor(0xFF9E9E9E);
         text.addView(sub);

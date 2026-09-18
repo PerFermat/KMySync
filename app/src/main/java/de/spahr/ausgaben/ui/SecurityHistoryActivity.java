@@ -19,9 +19,6 @@ import com.google.android.material.slider.RangeSlider;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 
 import de.spahr.ausgaben.R;
 import de.spahr.ausgaben.db.Repository;
@@ -29,6 +26,7 @@ import de.spahr.ausgaben.db.SecurityTx;
 import de.spahr.ausgaben.settings.AmountExpression;
 import de.spahr.ausgaben.settings.Currencies;
 import de.spahr.ausgaben.settings.MoneyFormat;
+import de.spahr.ausgaben.settings.DateFormats;
 
 /**
  * Vollbild-Historie eines Wertpapiers: im grünen Kopf der Wertpapiername, in der Saldenzeile per Klick
@@ -42,7 +40,6 @@ public class SecurityHistoryActivity extends LocalizedActivity {
     public static final String EXTRA_NAME = "name";
     public static final String EXTRA_SECURITY_VALUE = "securityValue";
 
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY);
 
     private String depot;
     private String kmyId;
@@ -251,7 +248,7 @@ public class SecurityHistoryActivity extends LocalizedActivity {
         action.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
 
         TextView sub = new TextView(this);
-        String subLine = dateFormat.format(new Date(tx.date));
+        String subLine = DateFormats.date(tx.date);
         if (tx.shares != 0) {
             subLine += "  ·  " + shares(tx.shares) + " " + getString(R.string.depot_shares_unit);
         }

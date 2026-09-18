@@ -1843,6 +1843,11 @@
       ]
     },
     {
+      "type": "p",
+      "id": "b-0185b",
+      "text": "<b>Datumsformat</b>: Datumsangaben in der App folgen der gewählten Sprache – auf Deutsch «TT.MM.JJJJ», auf Englisch und Spanisch die dort übliche Schreibweise. Stimmt die gewählte Sprache mit der Sprache des Geräts überein, zählt zusätzlich dessen <i>Land</i>: Englisch schreibt sich in den USA «MM/TT/JJJJ», in Großbritannien dagegen «TT/MM/JJJJ». Eine eigene Einstellung gibt es dafür nicht, weil das Gerät die Frage bereits beantwortet. Der <b>CSV-Export bleibt davon unberührt</b> und schreibt weiterhin «TT.MM.JJJJ» – er richtet sich nach der Datei, nicht nach der Anzeige."
+    },
+    {
       "type": "h2",
       "id": "b-0186",
       "text": "Verbindung zu Ihrem Server (SMB / WebDAV / Nextcloud)"

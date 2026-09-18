@@ -42,6 +42,7 @@ import de.spahr.ausgaben.db.Booking;
 import de.spahr.ausgaben.db.PlaceEntry;
 import de.spahr.ausgaben.db.Repository;
 import de.spahr.ausgaben.settings.PlacesStore;
+import de.spahr.ausgaben.settings.DateFormats;
 
 public class AnalysisActivity extends LocalizedActivity {
 
@@ -700,7 +701,7 @@ public class AnalysisActivity extends LocalizedActivity {
         c.setTimeInMillis(periodStartMs);
         switch (granularity) {
             case DAY:
-                return new SimpleDateFormat("dd.MM.yy", Locale.GERMANY).format(new Date(periodStartMs));
+                return DateFormats.shortDate(periodStartMs);
             case WEEK:
                 return String.format(Locale.GERMANY, "%02d/%02d",
                         c.get(Calendar.WEEK_OF_YEAR), c.get(Calendar.YEAR) % 100);

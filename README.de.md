@@ -112,7 +112,9 @@ stehen im **[Benutzerhandbuch](docs/Handbuch-KMySync-de.pdf)**.
   Gerät nur dorthin, wohin der Nutzer sie selbst schickt. Beim Gerätewechsel ist deshalb die
   App-eigene Sicherung der Weg.
 - **Darstellung & Sprache** – helles und dunkles Design, app-weite Schriftgröße, Deutsch, Englisch und
-  Spanisch eingebaut, weitere Sprachen per Übersetzungsdatei.
+  Spanisch eingebaut, weitere Sprachen per Übersetzungsdatei. Das Datumsformat folgt der gewählten
+  Sprache und, wenn diese zur Gerätesprache passt, dessen Land (`en-US` → `MM/dd/yyyy`, `en-GB` →
+  `dd/MM/yyyy`); der CSV-Export bleibt davon unberührt.
 
 ## CSV-Format (Export)
 

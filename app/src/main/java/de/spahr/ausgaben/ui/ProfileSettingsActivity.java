@@ -578,6 +578,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         settings.setAliasPromptEnabled(switchAliasPrompt.isChecked());
         de.spahr.ausgaben.settings.Currencies.refresh(this);
         de.spahr.ausgaben.settings.MoneyFormat.refresh(this);
+        de.spahr.ausgaben.settings.DateFormats.refresh(this);
         // Das Standardkonto bestimmt den Saldo, den die Uhr anzeigt – sonst zeigte sie bis zum
         // nächsten Sync noch das alte (full: echte Sync, foss: No-op-Stub).
         de.spahr.ausgaben.wear.BalanceSync.publish(this);

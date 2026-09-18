@@ -8,18 +8,16 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import de.spahr.ausgaben.R;
 import de.spahr.ausgaben.db.Booking;
 import de.spahr.ausgaben.db.BookingSplit;
+import de.spahr.ausgaben.settings.DateFormats;
 
 public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.VH> {
 
@@ -35,10 +33,6 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.VH> {
     private Map<Long, List<BookingSplit>> splitsByBooking = new HashMap<>();
     /** Angezeigter (vorzeichenbehafteter) Betrag je Buchung – überschreibt den Gesamtbetrag (Kategorie-Filter). */
     private Map<Long, Long> amountOverride = new HashMap<>();
-    private static final SimpleDateFormat DAY =
-            new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY);
-    private static final SimpleDateFormat DAY_TIME =
-            new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.GERMANY);
     /** Zeigt die Liste nur ein einziges Konto? Dann ist sein Name in jeder Zeile überflüssig. */
     private boolean singleAccount;
     private Listener listener;
@@ -94,9 +88,8 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.VH> {
      * 00:00, dort wäre sie eine Scheingenauigkeit.
      */
     static String subtitle(long createdAt, String account, boolean singleAccount) {
-        Date when = new Date(createdAt);
         String date = singleAccount && hasTime(createdAt)
-                ? DAY_TIME.format(when) : DAY.format(when);
+                ? DateFormats.dateTime(createdAt) : DateFormats.date(createdAt);
         if (singleAccount || account == null || account.isEmpty()) {
             return date;
         }

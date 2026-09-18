@@ -16,17 +16,15 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 import de.spahr.ausgaben.R;
 import de.spahr.ausgaben.db.PlaceEntry;
 import de.spahr.ausgaben.db.Repository;
 import de.spahr.ausgaben.settings.Currencies;
 import de.spahr.ausgaben.settings.PlacesStore;
+import de.spahr.ausgaben.settings.DateFormats;
 
 /**
  * Zeigt die Bewegungen (place_entry) eines Ortes eines Kontos als editierbares Journal: Klick auf eine
@@ -38,7 +36,6 @@ public class PlaceHistoryActivity extends LocalizedActivity {
     public static final String EXTRA_PLACE = "place";
     public static final String EXTRA_ACCOUNT = "account";
 
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY);
 
     private Repository repository;
     private LinearLayout container;
@@ -123,7 +120,7 @@ public class PlaceHistoryActivity extends LocalizedActivity {
 
         TextView left = new TextView(this);
         String desc = e.note == null || e.note.trim().isEmpty() ? typeLabel(e.type) : e.note.trim();
-        left.setText(dateFormat.format(new Date(e.createdAt)) + "  ·  " + desc);
+        left.setText(DateFormats.date(e.createdAt) + "  ·  " + desc);
         left.setLayoutParams(new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
@@ -157,12 +154,12 @@ public class PlaceHistoryActivity extends LocalizedActivity {
             amountField.setText(formatSigned(existing.amountCents));
             noteField.setText(existing.note);
         }
-        dateField.setText(dateFormat.format(cal.getTime()));
+        dateField.setText(DateFormats.date(cal.getTimeInMillis()));
         dateField.setOnClickListener(v -> new DatePickerDialog(this, (dp, y, m, d) -> {
             cal.set(Calendar.YEAR, y);
             cal.set(Calendar.MONTH, m);
             cal.set(Calendar.DAY_OF_MONTH, d);
-            dateField.setText(dateFormat.format(cal.getTime()));
+            dateField.setText(DateFormats.date(cal.getTimeInMillis()));
         }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show());
         // Das Kalendersymbol liegt über dem Feld und würde den Tipper sonst schlucken.
         ((TextInputLayout) view.findViewById(R.id.movementDateLayout))
