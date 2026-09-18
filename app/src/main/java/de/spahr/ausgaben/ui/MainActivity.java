@@ -1882,7 +1882,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
             });
         }
 
-        new AppDialog(this)
+        androidx.appcompat.app.AlertDialog dialog = new AppDialog(this)
                 .setTitle(R.string.filter_title)
                 .setView(view)
                 .setPositiveButton(R.string.filter_apply, (d, w) -> {
@@ -1950,6 +1950,16 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                 })
                 .setNeutralButton(R.string.filter_reset, (d, w) -> resetFilter())
                 .show();
+
+        // Der Dialog ist lang – Suche, Kategorie, Stichwort, Betrag, Datum, Umkreis – und „Übernehmen"
+        // sitzt an seinem Ende. Tippt man ins Suchfeld ganz oben, fährt die Tastatur hoch und verdeckt
+        // ihn: Für den häufigsten Fall überhaupt, „ich suche einen Namen", waren erst zwei zusätzliche
+        // Handgriffe nötig. Zwei Auswege, je nach Absicht:
+        //   die Lupe auf der Tastatur übernimmt sofort,
+        Keyboard.onCommitAction(fPayee, () ->
+                dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).performClick());
+        //   und wer weiterschiebt, will unten etwas einstellen – dann geht sie nur weg.
+        Keyboard.hideOnScroll((android.widget.ScrollView) view);
     }
 
     /**

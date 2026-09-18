@@ -11,7 +11,12 @@
         android:paddingHorizontal="24dp"
         android:paddingTop="8dp">
 
-        <!-- Sucht in Empfänger, Notiz und Kategorie als reine Freitextsuche (kein Auswahlfeld). -->
+        <!-- Sucht in Empfänger, Notiz und Kategorie als reine Freitextsuche (kein Auswahlfeld).
+
+             Die Lupe auf der Tastatur übernimmt den Filter unmittelbar (siehe Keyboard.onCommitAction):
+             „Übernehmen" sitzt am Ende dieses langen Dialogs und damit unter der Tastatur, die beim
+             Antippen dieses Feldes hochfährt. maxLines="1" gehört dazu – ohne das bliebe die
+             Eingabetaste ein Zeilenumbruch und imeOptions wirkungslos. -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -26,6 +31,8 @@
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
                 android:textSize="18sp"
+                android:maxLines="1"
+                android:imeOptions="actionSearch"
                 android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 

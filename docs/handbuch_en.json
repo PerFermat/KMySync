@@ -1320,7 +1320,7 @@
     {
       "type": "p",
       "id": "b-0093b",
-      "text": "The funnel in the title bar narrows the list. At the top sits a <b>search field</b> that searches <b>payee, note and category</b> at once – anywhere in the word and regardless of case. That way you can find a booking by its note as well. Below it follow category (as a tree), <b>tag</b>, amount and <b>date from–to</b>."
+      "text": "The funnel in the title bar narrows the list. At the top sits a <b>search field</b> that searches <b>payee, note and category</b> at once – anywhere in the word and regardless of case. That way you can find a booking by its note as well. Below it follow category (as a tree), <b>tag</b>, amount and <b>date from–to</b>. The <b>magnifier on the keyboard</b> applies the filter right away – the «Apply» button sits at the end of this long dialog and thus below the keyboard. If you would rather set an amount or a period as well, just keep scrolling: the keyboard steps aside on its own."
     },
     {
       "type": "p",
