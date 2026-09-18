@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Listet die Freigaben eines SMB-Servers auf. SMB2 selbst kennt dafür keinen Aufruf; benutzt wird der
@@ -165,7 +166,7 @@ public final class SmbShares {
     private static String hex(byte[] data) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < Math.min(data.length, 32); i++) {
-            sb.append(String.format("%02x", data[i]));
+            sb.append(String.format(Locale.ROOT, "%02x", data[i]));
         }
         return sb + " (" + data.length + " Byte)";
     }

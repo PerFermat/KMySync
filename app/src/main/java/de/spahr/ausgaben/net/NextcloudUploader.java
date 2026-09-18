@@ -11,6 +11,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import okhttp3.Credentials;
 import okhttp3.MediaType;
@@ -341,7 +342,7 @@ public class NextcloudUploader {
     /** Extrahiert aus der Multistatus-Antwort die Dateinamen mit der Endung {@code ext} (ohne Collections). */
     private List<String> parseNames(String xml, String ext) throws IOException {
         // null = nicht filtern; "" bleibt wie bisher ein Filter, der auf nichts paßt.
-        String suffix = ext == null ? null : "." + ext.toLowerCase();
+        String suffix = ext == null ? null : "." + ext.toLowerCase(Locale.ROOT);
         List<String> names = new ArrayList<>();
         try {
             XmlPullParser parser = Xml.newPullParser();
@@ -365,7 +366,7 @@ public class NextcloudUploader {
                 } else if (event == XmlPullParser.END_TAG && "response".equals(localName(name))) {
                     if (currentHref != null && !isCollection) {
                         String fileName = lastSegment(currentHref);
-                        if (suffix == null || fileName.toLowerCase().endsWith(suffix)) {
+                        if (suffix == null || fileName.toLowerCase(Locale.ROOT).endsWith(suffix)) {
                             names.add(fileName);
                         }
                     }
@@ -447,12 +448,22 @@ public class NextcloudUploader {
         return r;
     }
 
+    /**
+     * Der örtliche Teil eines XML-Namens, kleingeschrieben — mit <b>festem</b> Locale, und das ist
+     * hier keine Formsache.
+     *
+     * <p>Einer der Namen, mit denen das Ergebnis verglichen wird, heißt {@code collection}. Im
+     * Türkischen wird aus dem großen {@code I} ein punktloses {@code ı}: Meldet ein Server seine
+     * Ordner als {@code <D:COLLECTION/>}, ergäbe ein {@code toLowerCase()} ohne Locale dort
+     * {@code collectıon}, der Vergleich schlüge fehl — und die Ordner erschienen in der Dateiauswahl
+     * als <b>Dateien</b>. Auf dem eigenen Gerät fällt so etwas nie auf.</p>
+     */
     private String localName(String qName) {
         if (qName == null) {
             return "";
         }
         int i = qName.indexOf(':');
-        return (i >= 0 ? qName.substring(i + 1) : qName).toLowerCase();
+        return (i >= 0 ? qName.substring(i + 1) : qName).toLowerCase(Locale.ROOT);
     }
 
     private String lastSegment(String href) {
@@ -527,7 +538,7 @@ public class NextcloudUploader {
                     || c == '-' || c == '_' || c == '.' || c == '~') {
                 out.append((char) c);
             } else {
-                out.append('%').append(String.format("%02X", c));
+                out.append('%').append(String.format(Locale.ROOT, "%02X", c));
             }
         }
         return out.toString();

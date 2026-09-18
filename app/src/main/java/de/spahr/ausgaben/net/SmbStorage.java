@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 
 import de.spahr.ausgaben.settings.SettingsStore;
 
@@ -234,7 +235,7 @@ public class SmbStorage implements RemoteStorage {
     private static Entries collect(DiskShare disk, String dir, String ext) {
         List<String> folders = new ArrayList<>();
         List<String> files = new ArrayList<>();
-        String suffix = ext == null || ext.isEmpty() ? ext : "." + ext.toLowerCase();
+        String suffix = ext == null || ext.isEmpty() ? ext : "." + ext.toLowerCase(Locale.ROOT);
         long dirFlag = FileAttributes.FILE_ATTRIBUTE_DIRECTORY.getValue();
         for (FileIdBothDirectoryInformation info : disk.list(dir)) {
             String name = info.getFileName();
@@ -243,7 +244,7 @@ public class SmbStorage implements RemoteStorage {
             }
             if ((info.getFileAttributes() & dirFlag) != 0) {
                 folders.add(name);
-            } else if (suffix == null || (!suffix.isEmpty() && name.toLowerCase().endsWith(suffix))) {
+            } else if (suffix == null || (!suffix.isEmpty() && name.toLowerCase(Locale.ROOT).endsWith(suffix))) {
                 files.add(name);
             }
         }

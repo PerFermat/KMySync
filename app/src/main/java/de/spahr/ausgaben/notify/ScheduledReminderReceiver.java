@@ -53,8 +53,15 @@ public class ScheduledReminderReceiver extends BroadcastReceiver {
         }).start();
     }
 
-    /** Anzahl der Termine, die heute fällig sind (alle Planungen über {@link ScheduleProjection} aufgefaltet). */
-    private int countDueToday(Context app) {
+    /**
+     * Anzahl der Termine, die heute fällig sind (alle Planungen über {@link ScheduleProjection}
+     * aufgefaltet).
+     *
+     * <p>Paketsichtbar statt privat, damit {@code ScheduledReminderTest} das Tagesfenster prüfen kann.
+     * Über {@link #onReceive} ginge das nur mit einem echten Wecker und einem
+     * Benachrichtigungsdienst — geprüft werden soll aber das Fenster, nicht der Weg dorthin.</p>
+     */
+    int countDueToday(Context app) {
         Calendar c = Calendar.getInstance();
         c.set(Calendar.HOUR_OF_DAY, 0);
         c.set(Calendar.MINUTE, 0);
