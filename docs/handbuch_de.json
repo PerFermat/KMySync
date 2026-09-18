@@ -717,12 +717,17 @@
       "id": "b-0054",
       "items": [
         "<b>Typ-Umschalter</b>: <font color='#b00020'>Ausgabe</font> · <b>Umbuchung</b> · <font color='#2e7d32'>Einnahme</font>. Bestimmt die Art der Buchung.",
-        "<b>Betrag</b>, <b>Geldempfänger</b>, <b>Konto</b> (Auswahl aus vorhandenen Konten).",
+        "<b>Betrag</b>, <b>Geldempfänger</b> (freiwillig), <b>Konto</b> (Auswahl aus vorhandenen Konten).",
         "<b>Datum</b>: mit heute vorbelegt; der Knopf <b>«Heute»</b> setzt schnell das aktuelle Datum.",
         "<b>Notiz</b>: freier Text. Bei eingeschaltetem Standort steht hier automatisch «GPS: lat, lon».",
         "<b>Ort</b> (nur bei in der App angelegten Ausgaben/Einnahmen): welchem Bargeld-Ort die Buchung zugerechnet wird.",
         "<b>«exportiert»-Schalter</b>: markiert, ob die Buchung schon exportiert wurde."
       ]
+    },
+    {
+      "type": "p",
+      "id": "b-0054a",
+      "text": "<b>Der Geldempfänger darf leer bleiben</b> – wie in KMyMoney, wo er nie Pflicht war. Fehlt er, zeigen Buchungsliste, Widget, Budget und die Kategorie-Auswertung an seiner Stelle die <b>Kategorie</b>. Ist der Betrag auf mehrere Kategorien aufgeteilt, steht dort <b>«Split-Buchung»</b>, denn sonst wäre nur die größte der Kategorien zu sehen und von der Aufteilung nichts. Fehlt auch die Kategorie, steht dort <b>«*** NICHT ZUGEWIESEN ***»</b> – derselbe Text, den KMyMoney in diesem Fall anzeigt. Er ist dort wie hier <b>reine Anzeige</b> und keine Kategorie, die es wirklich gäbe."
     },
     {
       "type": "h2",

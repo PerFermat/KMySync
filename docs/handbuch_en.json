@@ -717,12 +717,17 @@
       "id": "b-0054",
       "items": [
         "<b>Type switch</b>: <font color='#b00020'>Expense</font> · <b>Transfer</b> · <font color='#2e7d32'>Income</font>. Sets the kind of booking.",
-        "<b>Amount</b>, <b>payee</b>, <b>account</b> (chosen from existing accounts).",
+        "<b>Amount</b>, <b>payee</b> (optional), <b>account</b> (chosen from existing accounts).",
         "<b>Date</b>: pre-filled with today; the <b>«Today»</b> button quickly sets the current date.",
         "<b>Note</b>: free text. With location enabled it automatically contains «GPS: lat, lon».",
         "<b>Place</b> (only for expenses/income created in the app): which cash place the booking is credited to.",
         "<b>«Exported» toggle</b>: marks whether the booking has already been exported."
       ]
+    },
+    {
+      "type": "p",
+      "id": "b-0054a",
+      "text": "<b>The payee may be left blank</b> – as in KMyMoney, where it was never mandatory. Where it is missing, the booking list, the widget, the budget and the category breakdown show the <b>category</b> in its place. If the amount is split across several categories, they show <b>«Split transaction»</b> instead, because otherwise only the largest of the categories would be visible and nothing of the split. If the category is missing too, they show <b>«*** UNASSIGNED ***»</b> – the same text KMyMoney uses in this case. There as here it is <b>display only</b>, not a category that actually exists."
     },
     {
       "type": "h2",

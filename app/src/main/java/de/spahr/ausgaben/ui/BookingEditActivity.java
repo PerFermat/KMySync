@@ -2860,11 +2860,11 @@ public class BookingEditActivity extends LocalizedActivity {
             Toast.makeText(this, R.string.error_amount, Toast.LENGTH_SHORT).show();
             return null;
         }
+        // Der Empfänger darf leer bleiben – wie in KMyMoney, wo er nie Pflicht war. Hier stand bis 2.0
+        // eine Abweisung mit R.string.error_payee; sie war die einzige Stelle der App, die einen leeren
+        // Empfänger nicht vertrug (die Umbuchung nebenan ließ ihn seit jeher frei, der Import schreibt
+        // ihn durch). Was in den Listen anstelle des Namens steht, entscheidet BookingLabel.title(…).
         String payee = textOf(editPayee).trim();
-        if (payee.isEmpty()) {
-            Toast.makeText(this, R.string.error_payee, Toast.LENGTH_SHORT).show();
-            return null;
-        }
         String account = textOf(editAccount).trim();
         if (!isKnownAccount(account)) {
             Toast.makeText(this, R.string.error_account, Toast.LENGTH_SHORT).show();

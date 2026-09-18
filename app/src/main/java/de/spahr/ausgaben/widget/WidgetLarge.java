@@ -15,6 +15,7 @@ import de.spahr.ausgaben.db.Booking;
 import de.spahr.ausgaben.settings.Currencies;
 import de.spahr.ausgaben.settings.DateFormats;
 import de.spahr.ausgaben.settings.MoneyFormat;
+import de.spahr.ausgaben.ui.BookingLabel;
 import de.spahr.ausgaben.ui.MainActivity;
 
 /**
@@ -48,7 +49,7 @@ public class WidgetLarge extends AusgabenWidget {
             if (d.recent != null && idx < d.recent.size()) {
                 Booking b = d.recent.get(idx);
                 v.setViewVisibility(rows[idx], View.VISIBLE);
-                v.setTextViewText(payees[idx], label(ctx, b));
+                v.setTextViewText(payees[idx], BookingLabel.title(ctx, b, d.splitIds.contains(b.id)));
                 v.setTextViewText(subs[idx], sub(b));
                 long signed = b.isIncome ? b.amountCents : -b.amountCents;
                 v.setTextViewText(amounts[idx], MoneyFormat.display(signed, Currencies.forAccount(b.account)));
@@ -69,16 +70,6 @@ public class WidgetLarge extends AusgabenWidget {
         i.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
         return PendingIntent.getBroadcast(ctx, 20, i,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-    }
-
-    private static String label(Context ctx, Booking b) {
-        if (b.isTransfer) {
-            String name = !b.payee.isEmpty() ? b.payee
-                    : (b.transferAccount == null || b.transferAccount.isEmpty()
-                        ? ctx.getString(R.string.type_transfer) : b.transferAccount);
-            return (b.isIncome ? "← " : "→ ") + name;
-        }
-        return b.payee.isEmpty() ? "—" : b.payee;
     }
 
     /**

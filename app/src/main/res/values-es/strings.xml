@@ -67,6 +67,8 @@
     <string name="split_categories">Categorías</string>
     <string name="split_remove">−</string>
     <string name="split_marker">Split</string>
+    <string name="label_split_booking">Dividir asiento</string>
+    <string name="label_unassigned">*** SIN ASIGNAR ***</string>
     <string name="split_partial_hint">Importe parcial</string>
     <string name="error_transfer_accounts">Elige dos cuentas diferentes (origen/destino)</string>
     <string name="error_split_sum">La suma de los importes parciales debe ser igual al total</string>
@@ -75,7 +77,7 @@
     <string name="amount_calc_help">p. ej. 10+20*3 o 30-5 – se permiten + - *</string>
     <string name="calc_ok">Aceptar</string>
     <string name="calc_delete">Borrar</string>
-    <string name="payee_hint">Beneficiario</string>
+    <string name="payee_hint">Beneficiario (opcional)</string>
     <string name="account_hint">Cuenta</string>
     <string name="note_hint">Nota (opcional)</string>
     <string name="category_hint">Categoría (opcional)</string>
@@ -695,7 +697,6 @@
     <!-- Mensajes -->
     <string name="error_amount">Introduce un importe válido > 0</string>
     <string name="error_amount_calc">Cálculo no válido – se permiten números, un separador decimal por número, + - y *</string>
-    <string name="error_payee">Introduce un beneficiario</string>
     <string name="error_account">Introduce una cuenta</string>
     <string name="booking_saved">Apunte guardado</string>
     <string name="export_none">No hay nuevos apuntes para exportar</string>

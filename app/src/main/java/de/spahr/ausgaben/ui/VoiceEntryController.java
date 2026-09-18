@@ -81,9 +81,18 @@ class VoiceEntryController {
         VoiceInput.Result parsed = VoiceInput.parse(spoken, settings.getCurrency());
         final long amount = parsed.amountCents == null ? -1 : parsed.amountCents;
         if (parsed.payee.isEmpty()) {
-            // Reiner Betrag ohne Standort ist am Handy nicht auflösbar → bei GPS aus abweisen.
-            if (amount <= 0 || !settings.isGpsEnabled()) {
+            // Ohne Betrag bleibt gar nichts übrig – dann wurde wirklich nichts verstanden.
+            if (amount <= 0) {
                 Toast.makeText(activity, R.string.voice_not_understood, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (!settings.isGpsEnabled()) {
+                // Hier stand bis 2.0 ebenfalls eine Abweisung: Ohne Standort gab es nichts aufzulösen,
+                // und eine Buchung ohne Empfänger ließ sich nicht speichern. Der reine Betrag war damit
+                // eine Sackgasse – auch aus dem Zifferndialog heraus, der genau hier hereinkommt, ging
+                // die eingetippte Summe still verloren. Seit der Empfänger freiwillig ist, ist sie eine
+                // vollständige Buchung: Editor auf, Betrag drin, Empfänger leer.
+                openVoiceEditor(NO_PAYEE, amount, "");
                 return;
             }
             // Nur Betrag → per Standort auflösen (kein Treffer → Editor nur mit Betrag).

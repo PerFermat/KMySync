@@ -476,11 +476,32 @@ public class Repository {
     }
 
     /**
+     * Legt den Empfänger als Auswahlwert an – <b>außer er ist leer</b>. Die einzige Tür zur
+     * Empfängerliste; {@code PayeeGuardTest} hält sie einzeln.
+     *
+     * <p>Seit der Empfänger freiwillig ist, kommt ein leerer regelmäßig hier an. Eine namenlose Zeile
+     * in der Tabelle wäre kein Schönheitsfehler: {@link PayeeDao#getAllNames()} sortiert
+     * {@code ORDER BY name}, sie stünde also <b>ganz oben</b> in jeder Empfängerauswahl – eine leere
+     * erste Zeile, die niemand als Eintrag erkennt – und ginge beim nächsten Export als eigener
+     * Empfänger mit in die .kmy-Datei.</p>
+     *
+     * <p>Vorher stand {@code payeeDao.insertIfAbsent(new Payee(…))} an elf Stellen, fünf davon mit
+     * eigener Leerprüfung davor. Die sechs ohne waren nicht falsch – sie verließen sich darauf, daß
+     * die Eingabemaske einen leeren Empfänger abweist. Genau diese Sperre ist gefallen.</p>
+     */
+    private void rememberPayee(String name) {
+        String p = name == null ? "" : name.trim();
+        if (!p.isEmpty()) {
+            payeeDao.insertIfAbsent(new Payee(p));
+        }
+    }
+
+    /**
      * Speichert eine Buchung und legt Konto/Empfänger bei Bedarf als Auswahlwert an.
      */
     public void saveBooking(final Booking booking, final Runnable onDone) {
         executor.execute(() -> {
-            payeeDao.insertIfAbsent(new Payee(booking.payee));
+            rememberPayee(booking.payee);
             accountDao.insertIfAbsent(new Account(booking.account));
             bookingDao.insert(booking);
             if (onDone != null) {
@@ -492,7 +513,7 @@ public class Repository {
     /** Aktualisiert eine Buchung und ergänzt geänderte Konto-/Empfängerwerte. */
     public void updateBooking(final Booking booking, final Runnable onDone) {
         executor.execute(() -> {
-            payeeDao.insertIfAbsent(new Payee(booking.payee));
+            rememberPayee(booking.payee);
             accountDao.insertIfAbsent(new Account(booking.account));
             bookingDao.update(booking);
             if (onDone != null) {
@@ -526,7 +547,7 @@ public class Repository {
                                    final Runnable onDone) {
         executor.execute(() -> {
             applyEditStatus(booking);
-            payeeDao.insertIfAbsent(new Payee(booking.payee));
+            rememberPayee(booking.payee);
             accountDao.insertIfAbsent(new Account(booking.account));
             bookingDao.update(booking);
             bookingDao.deleteSplits(booking.id);
@@ -567,7 +588,7 @@ public class Repository {
         booking.place = isRealPlace(place) ? place.trim() : "";
         booking.placeManaged = true;
         executor.execute(() -> {
-            payeeDao.insertIfAbsent(new Payee(booking.payee));
+            rememberPayee(booking.payee);
             accountDao.insertIfAbsent(new Account(booking.account));
             long id = bookingDao.insert(booking);
             if (parts != null) {
@@ -659,9 +680,7 @@ public class Repository {
                 existing.payee = payee == null ? "" : payee.trim();
                 EditStatus.apply(bookingDao.getById(existing.id), existing, kmy);
                 bookingDao.deleteSplits(existing.id);
-                if (!existing.payee.isEmpty()) {
-                    payeeDao.insertIfAbsent(new Payee(existing.payee));
-                }
+                rememberPayee(existing.payee);
                 accountDao.insertIfAbsent(new Account(existing.account));
                 accountDao.insertIfAbsent(new Account(existing.transferAccount));
                 bookingDao.update(existing);
@@ -689,9 +708,7 @@ public class Repository {
         String memo = note == null ? "" : note;
         String tagList = tags == null ? "" : tags;
         String p = payee == null ? "" : payee.trim();
-        if (!p.isEmpty()) {
-            payeeDao.insertIfAbsent(new Payee(p));
-        }
+        rememberPayee(p);
         boolean fromManaged = isRealPlace(fromPlace);
         boolean toManaged = isRealPlace(toPlace);
         String fromP = fromManaged ? fromPlace.trim() : "";
@@ -1119,9 +1136,7 @@ public class Repository {
                 : new de.spahr.ausgaben.settings.PlacesStore(appContext).getDefaultPlace(b.account);
         b.place = isRealPlace(resolvedPlace) ? resolvedPlace.trim() : "";
         b.placeManaged = true;
-        if (!b.payee.trim().isEmpty()) {
-            payeeDao.insertIfAbsent(new Payee(b.payee));
-        }
+        rememberPayee(b.payee);
         if (!b.account.trim().isEmpty()) {
             accountDao.insertIfAbsent(new Account(b.account));
         }
@@ -1275,9 +1290,7 @@ public class Repository {
 
     /** Fügt eine importierte Buchung samt ihren Kategorie-Teilen ein (läuft auf dem Executor-Thread). */
     private void insertImported(Booking b) {
-        if (!b.payee.trim().isEmpty()) {
-            payeeDao.insertIfAbsent(new Payee(b.payee));
-        }
+        rememberPayee(b.payee);
         accountDao.insertIfAbsent(new Account(b.account));
         long id = bookingDao.insert(b);
         if (b.parts != null) {
@@ -1900,7 +1913,7 @@ public class Repository {
         booking.place = isRealPlace(place) ? place.trim() : "";
         booking.placeManaged = true;
         executor.execute(() -> {
-            payeeDao.insertIfAbsent(new Payee(booking.payee));
+            rememberPayee(booking.payee);
             accountDao.insertIfAbsent(new Account(booking.account));
             bookingDao.insert(booking);
             insertBookingMovement(booking);
@@ -2042,9 +2055,7 @@ public class Repository {
                     if (!b.account.isEmpty()) {
                         accountDao.insertIfAbsent(new Account(b.account));
                     }
-                    if (!b.payee.isEmpty()) {
-                        payeeDao.insertIfAbsent(new Payee(b.payee));
-                    }
+                    rememberPayee(b.payee);
                     bookingDao.insert(b);
                 }
             }
@@ -2094,7 +2105,7 @@ public class Repository {
             booking.place = np;
             booking.placeManaged = true;
             EditStatus.apply(old, booking, isKmyMode());
-            payeeDao.insertIfAbsent(new Payee(booking.payee));
+            rememberPayee(booking.payee);
             accountDao.insertIfAbsent(new Account(booking.account));
             bookingDao.update(booking);
             bookingDao.deleteSplits(booking.id);

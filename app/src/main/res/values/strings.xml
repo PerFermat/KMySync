@@ -67,6 +67,12 @@
     <string name="split_categories">Categories</string>
     <string name="split_remove">−</string>
     <string name="split_marker">Split</string>
+    <!-- Ersatz für den Empfänger, wenn keiner erfasst wurde: Wortlaut und Übersetzung stammen
+         wörtlich aus KMyMoneys eigenem Katalog (po/*/kmymoney.po), damit hier dasselbe steht wie
+         dort. „Split transaction" im Kontext „category replacement", nicht der gleichlautende
+         Menüpunkt zum Aufteilen. -->
+    <string name="label_split_booking">Split transaction</string>
+    <string name="label_unassigned">*** UNASSIGNED ***</string>
     <string name="split_partial_hint">Partial amount</string>
     <string name="error_transfer_accounts">Please choose two different accounts (from/to)</string>
     <string name="error_split_sum">Sum of the partial amounts must equal the total</string>
@@ -75,7 +81,7 @@
     <string name="amount_calc_help">e.g. 10+20*3 or 30-5 – allowed are + - *</string>
     <string name="calc_ok">OK</string>
     <string name="calc_delete">Delete</string>
-    <string name="payee_hint">Payee</string>
+    <string name="payee_hint">Payee (optional)</string>
     <string name="account_hint">Account</string>
     <string name="note_hint">Note (optional)</string>
     <string name="category_hint">Category (optional)</string>
@@ -697,7 +703,6 @@
     <!-- Messages -->
     <string name="error_amount">Please enter a valid amount > 0</string>
     <string name="error_amount_calc">Invalid calculation – allowed are numbers, one decimal mark per number, + - and *</string>
-    <string name="error_payee">Please enter a payee</string>
     <string name="error_account">Please enter an account</string>
     <string name="booking_saved">Booking saved</string>
     <string name="export_none">No new bookings to export</string>

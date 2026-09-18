@@ -493,7 +493,9 @@ public class CategoryChartActivity extends LocalizedActivity {
                             b, splitsByBooking, category, isMain, signed, null, Boolean.FALSE);
                     boolean partial = CategoryBookingFilter.isPartial(
                             b, splitsByBooking, category, isMain, null, Boolean.FALSE);
-                    rows.add(new DrilldownRow(b.createdAt, false, bookingRow(b, display, partial)));
+                    List<BookingSplit> parts = splitsByBooking.get(b.id);
+                    rows.add(new DrilldownRow(b.createdAt, false, bookingRow(b, display, partial,
+                            parts != null && parts.size() >= 2)));
                 }
             }
             if (includePlanned) {
@@ -597,7 +599,7 @@ public class CategoryChartActivity extends LocalizedActivity {
     }
 
     /** Buchungszeile im Drilldown: Empfänger (fett) · Konto/Datum (grau) · Betrag (farbig, ggf. „Anteil"). */
-    private View bookingRow(Booking b, long displayCents, boolean partial) {
+    private View bookingRow(Booking b, long displayCents, boolean partial, boolean istSplit) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
@@ -607,7 +609,9 @@ public class CategoryChartActivity extends LocalizedActivity {
         text.setOrientation(LinearLayout.VERTICAL);
 
         TextView payee = new TextView(this);
-        payee.setText(b.payee.isEmpty() ? b.category : b.payee);
+        // Ohne Empfänger die Kategorie – oder „Split-Buchung", denn b.category trägt dann nur den
+        // größten Teil und die Aufteilung wäre nicht zu sehen. Rangfolge: BookingLabel.
+        payee.setText(BookingLabel.title(this, b, istSplit));
         text.addView(payee);
 
         TextView sub = new TextView(this);

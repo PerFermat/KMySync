@@ -96,6 +96,22 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.VH> {
         return date + " · " + account;
     }
 
+    /**
+     * Gehört „Split" hinten an die Unterzeile?
+     *
+     * <p>Die Markierung entfällt genau dann, wenn oben schon „Split-Buchung" steht – sonst stünde das
+     * Wort zweimal in derselben Reihe. Das ist der Fall, in dem {@link BookingLabel} auf seiner dritten
+     * Stufe landet: keine Umbuchung und kein Empfänger. Eine Umbuchung zeigt oben ihr Gegenkonto, dort
+     * wird die Markierung weiterhin gebraucht.</p>
+     *
+     * <p>Herausgezogen, damit die Regel prüfbar ist: Im Binden steckend wäre sie nur am fertigen Bild
+     * zu sehen, und die doppelte Nennung fällt dort erst auf, wenn man eine Splitbuchung ohne
+     * Empfänger vor sich hat.</p>
+     */
+    static boolean zeigeSplitMarker(Booking b, boolean istSplit) {
+        return istSplit && (b.isTransfer || !b.payee.isEmpty());
+    }
+
     /** Steckt in dem Zeitstempel eine echte Uhrzeit? Sekunden zählen dabei nicht mit. */
     private static boolean hasTime(long createdAt) {
         // Ohne Datum in der .kmy-Datei fällt der Import auf 0 zurück – daraus wäre je nach Zeitzone
@@ -119,20 +135,14 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.VH> {
     @Override
     public void onBindViewHolder(@NonNull VH h, int position) {
         Booking b = items.get(position);
-        if (b.isTransfer) {
-            // Umbuchung: Richtung + Zahlungsempfänger als Titel (→ Ausgang, ← Eingang).
-            // Ohne Empfänger auf das Gegenkonto zurückfallen.
-            String label = !b.payee.isEmpty() ? b.payee
-                    : (b.transferAccount == null || b.transferAccount.isEmpty()
-                        ? h.payee.getContext().getString(R.string.type_transfer) : b.transferAccount);
-            h.payee.setText((b.isIncome ? "← " : "→ ") + label);
-        } else {
-            h.payee.setText(b.payee.isEmpty() ? "—" : b.payee);
-        }
+        List<BookingSplit> parts = splitsByBooking.get(b.id);
+        boolean istSplit = parts != null && parts.size() >= 2;
+        // Umbuchung, Empfänger, „Split-Buchung", Kategorie, „*** NICHT ZUGEWIESEN ***" – die Rangfolge
+        // steht in BookingLabel, damit Liste, Widget, Budget und Kategorie-Aufriß dieselbe zeigen.
+        h.payee.setText(BookingLabel.title(h.payee.getContext(), b, istSplit));
         // Datum und Konto in einer kompakten Zeile: „TT.MM.JJJJ · Konto".
         String line = subtitle(b.createdAt, b.account, singleAccount);
-        List<BookingSplit> parts = splitsByBooking.get(b.id);
-        if (parts != null && parts.size() >= 2) {
+        if (zeigeSplitMarker(b, istSplit)) {
             line = line + "  ·  " + h.account.getContext().getString(R.string.split_marker);
         }
         h.account.setText(line);

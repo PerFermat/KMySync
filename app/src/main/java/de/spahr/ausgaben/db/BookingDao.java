@@ -326,6 +326,18 @@ public interface BookingDao {
     @Query("SELECT * FROM booking_split ORDER BY id ASC")
     List<BookingSplit> getAllSplits();
 
+    /**
+     * Welche dieser Buchungen sind Splitbuchungen? Nur die Kennungen, nicht die Teile selbst.
+     *
+     * <p>Für das Widget: Es zeigt drei Zeilen und braucht davon allein die Ja/Nein-Antwort, um bei
+     * fehlendem Empfänger „Split-Buchung" statt der Kategorie zu schreiben. Die Masken halten ohnehin
+     * ihre {@code splitsByBooking}-Karte; das Widget läuft in einem fremden Prozeß und lädt nur
+     * {@link #getRecent(int)}. Eine Abfrage für alle drei Zeilen statt dreier einzelner.</p>
+     */
+    @Query("SELECT booking_id FROM booking_split WHERE booking_id IN (:ids) "
+            + "GROUP BY booking_id HAVING COUNT(*) >= 2")
+    List<Long> splitBookingIds(List<Long> ids);
+
     @Query("DELETE FROM booking_split WHERE booking_id = :bookingId")
     void deleteSplits(long bookingId);
 

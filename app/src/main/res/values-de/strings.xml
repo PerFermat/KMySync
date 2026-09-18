@@ -67,6 +67,8 @@
     <string name="split_categories">Kategorien</string>
     <string name="split_remove">−</string>
     <string name="split_marker">Split</string>
+    <string name="label_split_booking">Split-Buchung</string>
+    <string name="label_unassigned">*** NICHT ZUGEWIESEN ***</string>
     <string name="split_partial_hint">Teilbetrag</string>
     <string name="error_transfer_accounts">Bitte zwei verschiedene Konten (Von/Nach) wählen</string>
     <string name="error_split_sum">Summe der Teilbeträge muss dem Gesamtbetrag entsprechen</string>
@@ -75,7 +77,7 @@
     <string name="amount_calc_help">z. B. 10+20*3 oder 30-5 – erlaubt sind + - *</string>
     <string name="calc_ok">OK</string>
     <string name="calc_delete">Löschen</string>
-    <string name="payee_hint">Geldempfänger</string>
+    <string name="payee_hint">Geldempfänger (optional)</string>
     <string name="account_hint">Konto</string>
     <string name="note_hint">Notiz (optional)</string>
     <string name="category_hint">Kategorie (optional)</string>
@@ -696,7 +698,6 @@
     <!-- Meldungen -->
     <string name="error_amount">Bitte einen gültigen Betrag > 0 eingeben</string>
     <string name="error_amount_calc">Ungültige Rechnung – erlaubt sind Zahlen, ein Dezimalzeichen je Zahl, + - und *</string>
-    <string name="error_payee">Bitte einen Empfänger eingeben</string>
     <string name="error_account">Bitte ein Konto eingeben</string>
     <string name="booking_saved">Buchung gespeichert</string>
     <string name="export_none">Keine neuen Buchungen zum Exportieren</string>

@@ -93,4 +93,46 @@ public class BookingSubtitleTest {
         assertFalse(BookingAdapter.onlyOneAccount(null));
         assertFalse(BookingAdapter.onlyOneAccount(Collections.emptyList()));
     }
+
+    // ---- Die Split-Markierung am Ende der Unterzeile ----
+
+    private static Booking split(String payee) {
+        Booking b = new Booking();
+        b.payee = payee;
+        return b;
+    }
+
+    /** Der gewohnte Fall: Oben steht der Empfänger, die Aufteilung muß die Unterzeile verraten. */
+    @Test
+    public void mitEmpfaengerBleibtDieMarkierung() {
+        assertTrue(BookingAdapter.zeigeSplitMarker(split("Edeka"), true));
+    }
+
+    /**
+     * Ohne Empfänger sagt {@code BookingLabel} oben bereits „Split-Buchung" – dann stünde das Wort
+     * zweimal in derselben Reihe. Genau dieser Fall entsteht erst, seit der Empfänger leer bleiben darf.
+     */
+    @Test
+    public void ohneEmpfaengerVerschwindetSie() {
+        assertFalse(BookingAdapter.zeigeSplitMarker(split(""), true));
+    }
+
+    /**
+     * Eine Umbuchung zeigt oben ihr Gegenkonto, nie „Split-Buchung" – dort wird die Markierung auch
+     * ohne Empfänger gebraucht. Diese Stelle hatte ich beim ersten Anlauf übersehen.
+     */
+    @Test
+    public void dieUmbuchungBehaeltSieAuchOhneEmpfaenger() {
+        Booking b = split("");
+        b.isTransfer = true;
+        b.transferAccount = "Sparkonto";
+        assertTrue(BookingAdapter.zeigeSplitMarker(b, true));
+    }
+
+    /** Ohne Aufteilung gibt es nichts zu markieren – egal, was oben steht. */
+    @Test
+    public void ohneAufteilungKeineMarkierung() {
+        assertFalse(BookingAdapter.zeigeSplitMarker(split("Edeka"), false));
+        assertFalse(BookingAdapter.zeigeSplitMarker(split(""), false));
+    }
 }

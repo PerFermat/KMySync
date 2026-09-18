@@ -99,6 +99,8 @@ public abstract class AusgabenWidget extends AppWidgetProvider {
         String balance = "";
         boolean negative = false;
         List<Booking> recent = new ArrayList<>();
+        /** Kennungen der Buchungen aus {@link #recent}, die Splitbuchungen sind – siehe {@code BookingLabel}. */
+        java.util.Set<Long> splitIds = new java.util.HashSet<>();
 
         /**
          * @param sel gewähltes {@code [account, place]} (Typ-Widget); {@code null} = Standardkonto/-ort.
@@ -136,6 +138,17 @@ public abstract class AusgabenWidget extends AppWidgetProvider {
                     d.balance = app.getString(R.string.widget_balance_empty);
                 }
                 d.recent = AppDatabase.getInstance(app).bookingDao().getRecent(3);
+                // Nur nötig, wenn überhaupt eine Zeile ohne Empfänger dabei ist – sonst steht dort
+                // ohnehin der Name und die Frage nach der Aufteilung stellt sich nicht.
+                List<Long> ids = new ArrayList<>();
+                for (Booking b : d.recent) {
+                    if (b.payee.isEmpty() && !b.isTransfer) {
+                        ids.add(b.id);
+                    }
+                }
+                if (!ids.isEmpty()) {
+                    d.splitIds.addAll(AppDatabase.getInstance(app).bookingDao().splitBookingIds(ids));
+                }
             } catch (Exception ignored) {
                 if (d.balance.isEmpty()) {
                     d.balance = app.getString(R.string.widget_balance_empty);
