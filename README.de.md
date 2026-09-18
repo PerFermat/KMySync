@@ -176,6 +176,15 @@ bitte warten"* und lädt ihn im Hintergrund nach (`Net.isOnline` plus gedeckelte
 Verbindung unauffindbar, bietet die App an, den verwaisten Verweis zu entfernen, und setzt die Buchung
 dabei auf „bearbeitet".
 
+**Server-Passwort.** Es liegt in einer app-privaten Datei, jeder Wert als `Base64(IV ‖ Chiffrat)` mit
+AES-256/GCM; der Schlüssel entsteht im Android-Keystore und verlässt ihn nie (`SecretStore`). Kommt
+der Keystore nicht zustande, fällt die App hörbar zurück statt still zu scheitern – die betroffene
+Maske sagt es.
+
+**Größe.** Der Release-Build läuft durch R8 mit `shrinkResources`; das foss-APK ist dadurch rund
+6,5 statt 13,3 MB. Die Keep-Regeln in `app/proguard-rules.pro` sind einzeln begründet, und jede
+stammt aus einem echten Fehlschlag, nicht aus Vorsicht.
+
 **Varianten.** Google Play Services stecken ausschließlich im `full`-Flavor unter `app/src/full/`; der
 `foss`-Flavor enthält davon keine einzige Zeile. Handy- und Uhren-App brauchen dieselbe
 `applicationId` **und** dieselbe Signatur, sonst findet der Data Layer sie nicht.
@@ -184,8 +193,7 @@ dabei auf „bearbeitet".
 (WebDAV), [smbj](https://github.com/hierynomus/smbj) mit BouncyCastle (SMB2/3),
 [MPAndroidChart](https://github.com/PhilJay/MPAndroidChart) – als Quellcode-Submodul, weil F-Droid
 JitPack nicht zuläßt –, [osmdroid](https://github.com/osmdroid/osmdroid) (Karten-Auswahl ohne
-API-Schlüssel), [androidx.security](https://developer.android.com/jetpack/androidx/releases/security)
-(verschlüsselte Prefs),
+API-Schlüssel),
 [androidx.biometric](https://developer.android.com/jetpack/androidx/releases/biometric) sowie
 [play-services-wearable](https://developer.android.com/training/wearables/data/data-layer) und
 [androidx.wear.tiles](https://developer.android.com/training/wearables/tiles) – die letzten beiden nur

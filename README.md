@@ -169,6 +169,15 @@ is not on the phone shows *"Loading – please wait"* and fetches it in the back
 a bounded retry in `ReceiptSync.ensureLocalWaiting`); an error appears only when offline. If it stays
 unreachable while online, the app offers to drop the orphaned reference, marking the booking as edited.
 
+**Server password.** It lives in an app-private file, each value as `Base64(IV ‖ ciphertext)` with
+AES-256/GCM; the key is created in the Android keystore and never leaves it (`SecretStore`). If the
+keystore is unavailable the app falls back audibly rather than failing silently — the affected screen
+says so.
+
+**Size.** The release build goes through R8 with `shrinkResources`, which puts the foss APK at about
+6.5 MB instead of 13.3. Every keep rule in `app/proguard-rules.pro` is justified individually, and
+each one came from an actual failure rather than from caution.
+
 **Flavors.** Google Play Services exist solely in the `full` flavor under `app/src/full/`; the `foss`
 flavor contains not a line of it. Phone and watch app need the same `applicationId` **and** the same
 signature, or the Data Layer will not pair them.
@@ -177,7 +186,6 @@ signature, or the Data Layer will not pair them.
 (WebDAV), [smbj](https://github.com/hierynomus/smbj) with BouncyCastle (SMB2/3),
 [MPAndroidChart](https://github.com/PhilJay/MPAndroidChart) — as a source submodule, since F-Droid does
 not allow JitPack —, [osmdroid](https://github.com/osmdroid/osmdroid) (map picker, no API key),
-[androidx.security](https://developer.android.com/jetpack/androidx/releases/security) (encrypted prefs),
 [androidx.biometric](https://developer.android.com/jetpack/androidx/releases/biometric), plus
 [play-services-wearable](https://developer.android.com/training/wearables/data/data-layer) and
 [androidx.wear.tiles](https://developer.android.com/training/wearables/tiles) — the last two only in

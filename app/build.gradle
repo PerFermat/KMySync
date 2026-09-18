@@ -49,7 +49,13 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            // R8 wirft ungenutzten Code und ungenutzte Ressourcen weg. Der Gewinn liegt fast
+            // vollständig bei BouncyCastle: Die App braucht daraus AES-CMAC für SMB und die
+            // Entschlüsselung von PDFs, mitgeliefert wird unter anderem Post-Quanten-Krypto, die
+            // nie angefasst wird. Die nötigen Keep-Regeln stehen in proguard-rules.pro, das
+            // Gegenstück für Ressourcen in res/raw/keep.xml.
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             if (keystorePropsFile.exists()) {
                 signingConfig signingConfigs.release

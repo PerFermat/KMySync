@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Das Gegenstück zur R$string-Regel in proguard-rules.pro, auf der Ressourcenseite.
+
+  shrinkResources entfernt Ressourcen, auf die es keine Referenz findet. LocaleManager.seed()
+  erreicht die Texte aber über R.string.class.getFields() – eine Referenz, die kein Werkzeug sehen
+  kann. Ohne diese Zeile fielen genau die Texte weg, die nur über die Übersetzungstabelle benutzt
+  werden, und die Lücke fiele erst auf dem Gerät auf.
+
+  Absichtlich auf @string beschränkt: Bilder, Layouts und Farben werden alle normal referenziert und
+  dürfen weiterhin aussortiert werden – dort liegt ja ein Teil des Gewinns.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@string/*"
+    tools:shrinkMode="safe" />
