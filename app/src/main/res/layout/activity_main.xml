@@ -28,44 +28,57 @@
                 app:contentInsetStartWithNavigation="0dp"
                 app:titleMarginStart="0dp">
 
+                <!-- Ein Layout, nicht zwei: Solange die Lupe neben dem ganzen Block stand, brauchte es
+                     eine waagerechte Klammer darum. Seit sie in der Titelzeile sitzt, hätte die nur
+                     noch ein Kind – Lint meldet sie zu Recht als überflüssig. -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:orientation="horizontal"
+                    android:orientation="vertical"
                     android:gravity="center_vertical">
 
-                    <ImageView
-                        android:id="@+id/bookingSearchIcon"
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
-                        android:padding="10dp"
-                        android:src="@drawable/ic_search"
-                        android:contentDescription="@string/bookings_search_hint"
-                        app:tint="@color/white"
-                        android:background="?attr/selectableItemBackgroundBorderless" />
-
+                    <!-- Die Lupe gehört in diese Zeile, nicht neben den ganzen Block: Sie zeigt an,
+                         daß am Kontonamen etwas zu suchen ist, und sitzt dadurch von selbst auf
+                         seiner Höhe statt mittig zwischen Name und Untertitel. -->
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="4dp"
-                        android:orientation="vertical">
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <!-- Nur ein Zeichen, kein Knopf – deshalb klein und ohne Tipp-Welle.
+                             Getroffen wird der Kontoname daneben, der dasselbe auslöst. Antippbar
+                             bleibt sie trotzdem: Steht das Suchfeld offen, gibt es keinen
+                             Kontonamen, und sie ist die einzige Stelle, die die Suche wieder
+                             wegräumt. -->
+                        <ImageView
+                            android:id="@+id/bookingSearchIcon"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_marginEnd="6dp"
+                            android:src="@drawable/ic_search"
+                            android:contentDescription="@string/bookings_search_hint"
+                            app:tint="@color/white" />
 
                         <TextView
                             android:id="@+id/toolbarTitle"
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:paddingVertical="4dp"
                             android:textColor="@color/white"
                             android:textSize="20sp"
                             android:maxLines="1"
-                            android:ellipsize="end" />
+                            android:ellipsize="end"
+                            android:background="?attr/selectableItemBackground" />
 
-                        <!-- Tritt während der Suche an die Stelle des Kontonamens. Der Untertitel
-                             darunter bleibt stehen: Er zählt beim Tippen die Treffer mit. -->
+                        <!-- Tritt während der Suche an die Stelle des Kontonamens – in derselben
+                             Zeile, damit die Lupe (dann mit X) daneben stehen bleibt. -->
                         <EditText
                             android:id="@+id/bookingSearch"
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_weight="1"
                             android:background="@null"
                             android:hint="@string/bookings_search_hint"
                             android:textColor="@color/white"
@@ -76,17 +89,20 @@
                             android:maxLines="1"
                             android:visibility="gone"
                             android:autofillHints="" />
-
-                        <TextView
-                            android:id="@+id/toolbarSubtitle"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/toolbar_subtitle"
-                            android:textSize="13sp"
-                            android:maxLines="1"
-                            android:ellipsize="end"
-                            android:visibility="gone" />
                     </LinearLayout>
+
+                    <!-- Um Lupenbreite plus Abstand eingerückt, damit die Trefferzahl unter dem
+                         Namen beginnt und nicht unter dem Symbol. -->
+                    <TextView
+                        android:id="@+id/toolbarSubtitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="26dp"
+                        android:textColor="@color/toolbar_subtitle"
+                        android:textSize="13sp"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:visibility="gone" />
                 </LinearLayout>
             </com.google.android.material.appbar.MaterialToolbar>
 

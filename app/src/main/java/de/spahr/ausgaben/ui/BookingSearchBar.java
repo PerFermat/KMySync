@@ -73,13 +73,19 @@ final class BookingSearchBar {
         this.onQueryChanged = onQueryChanged;
         this.onOpenChanged = onOpenChanged;
 
-        icon.setOnClickListener(v -> {
+        // Derselbe Listener an beiden Stellen, nicht zwei mit ähnlichem Inhalt: Der Kontoname ist das
+        // eigentliche Ziel – breit und kaum zu verfehlen –, die Lupe daneben nur das Zeichen dafür,
+        // daß es hier etwas zu suchen gibt. Sie bleibt antippbar, weil bei offenem Suchfeld kein
+        // Kontoname dasteht und sie dann die einzige Stelle ist, die die Suche wegräumt.
+        View.OnClickListener suchen = v -> {
             if (istAktiv()) {
                 clear();
             } else {
                 open();
             }
-        });
+        };
+        icon.setOnClickListener(suchen);
+        title.setOnClickListener(suchen);
         field.addTextChangedListener(new SimpleWatcher(() -> {
             ruhe.removeCallbacksAndMessages(null);
             ruhe.postDelayed(this::melden, RUHE_MS);

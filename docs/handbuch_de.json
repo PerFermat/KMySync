@@ -1320,12 +1320,12 @@
     {
       "type": "h2",
       "id": "b-0092s",
-      "text": "Schnellsuche (Lupe)"
+      "text": "Schnellsuche (Kontoname antippen)"
     },
     {
       "type": "p",
       "id": "b-0092t",
-      "text": "<b>Schnell suchen (Lupe links vom Kontonamen):</b> Ein Tipp darauf, und der Kontoname macht einem Suchfeld Platz. Was Sie tippen, engt die Liste sofort ein – gesucht wird in <b>Empfänger, Notiz und Kategorie</b> zugleich, mitten im Wort und ohne Rücksicht auf Groß- und Kleinschreibung. Die <b>Lupe auf der Tastatur</b> klappt das Feld wieder ein; der Kontoname steht dann zurück an seinem Platz, die <b>Suche bleibt aber aktiv</b>. Daran erinnert die Lupe, die nun durchgestrichen ist – ein Tipp darauf hebt die Suche auf."
+      "text": "<b>Schnell suchen:</b> Tippen Sie oben auf den <b>Kontonamen</b> – er macht dann einem Suchfeld Platz. Die kleine Lupe davor ist nur das Zeichen dafür, daß es hier etwas zu suchen gibt; treffen müssen Sie sie nicht, der ganze Name gilt. Was Sie tippen, engt die Liste sofort ein – gesucht wird in <b>Empfänger, Notiz und Kategorie</b> zugleich, mitten im Wort und ohne Rücksicht auf Groß- und Kleinschreibung. Die <b>Lupe auf der Tastatur</b> klappt das Feld wieder ein; der Kontoname steht dann zurück an seinem Platz, die <b>Suche bleibt aber aktiv</b>. Daran erinnert die Lupe, die nun durchgestrichen ist – ein Tipp auf den Namen (oder auf die Lupe) hebt die Suche auf."
     },
     {
       "type": "h2",

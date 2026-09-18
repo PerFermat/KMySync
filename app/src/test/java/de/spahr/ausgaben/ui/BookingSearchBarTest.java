@@ -70,6 +70,39 @@ public class BookingSearchBarTest {
         assertEquals("die Maske erfährt es", java.util.Arrays.asList(true), offenMeldungen);
     }
 
+    /**
+     * <b>Der Kontoname ist das eigentliche Ziel.</b> Er ist breit und kaum zu verfehlen; die Lupe
+     * daneben ist nur 20 dp groß und soll gar nicht getroffen werden müssen — sie zeigt an, daß es
+     * hier etwas zu suchen gibt.
+     *
+     * <p>Diese Verdrahtung ist eine einzige Zeile und würde beim nächsten Umbau lautlos verlorengehen:
+     * Sichtbar wäre das nur daran, daß ein Tipp auf den Namen nichts tut, und wer das nicht weiß,
+     * tippt eben wieder auf die Lupe.</p>
+     */
+    @Test
+    public void auchDerKontonameOeffnetDieSuche() {
+        title.performClick();
+
+        assertEquals("Feld sichtbar", View.VISIBLE, field.getVisibility());
+        assertEquals("Kontoname weg", View.GONE, title.getVisibility());
+    }
+
+    /** Und er räumt sie auch wieder weg — dieselbe Bedeutung wie die Lupe, nicht eine zweite. */
+    @Test
+    public void derKontonameRaeumtDieSuche() {
+        title.performClick();
+        field.setText("Netto");
+        ruheAbwarten();
+        field.onEditorAction(EditorInfo.IME_ACTION_SEARCH);
+        meldungen.clear();
+
+        title.performClick();
+
+        assertEquals("nichts mehr gesucht", "", bar.query());
+        assertFalse(bar.istAktiv());
+        assertEquals("ohne Wartezeit gemeldet", java.util.Arrays.asList(""), meldungen);
+    }
+
     /** Getippt wird laufend, gefiltert erst, wenn die Eingabe ruht. */
     @Test
     public void erstNachDerRuheWirdGefiltert() {
