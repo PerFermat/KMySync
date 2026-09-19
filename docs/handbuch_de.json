@@ -1330,7 +1330,7 @@
     {
       "type": "p",
       "id": "b-0092u",
-      "text": "<b>Alles wieder zeigen:</b> Sobald etwas gefiltert ist, steht unter dem Kontonamen die Zeile «Filter aktiv (23)» mit einem <b>✕</b> davor. Ein Tipp darauf räumt <b>beides zusammen</b> – die Schnellsuche und alles, was im Trichter eingestellt ist. Danach ist die Zeile verschwunden und die Liste wieder vollständig."
+      "text": "<b>Alles wieder zeigen:</b> Sobald etwas gefiltert ist, steht unter dem Kontonamen die Zeile «Filter aktiv (23)» mit einem <b>✕</b> davor. Es räumt in <b>zwei Schritten</b>: Der erste Tipp nimmt die Schnellsuche weg – die Zeile bleibt stehen und zeigt nun, was der Trichter allein übrig läßt. Der zweite Tipp räumt auch den, danach ist die Zeile verschwunden und die Liste wieder vollständig. So verlieren Sie beim Beenden einer Suche nicht den Zeitraum oder Betragsbereich, den Sie sich vorher eingestellt haben. Ist nur eines von beidem aktiv, genügt selbstverständlich ein Tipp."
     },
     {
       "type": "h2",

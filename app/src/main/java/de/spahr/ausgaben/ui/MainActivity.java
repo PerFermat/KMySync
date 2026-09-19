@@ -312,9 +312,22 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         toolbarTitle = findViewById(R.id.toolbarTitle);
         toolbarSubtitle = findViewById(R.id.toolbarSubtitle);
         toolbarSubtitleRow = findViewById(R.id.toolbarSubtitleRow);
-        // Das X vor „Filter aktiv (n)" räumt genau das, was die Zeile meldet: Live-Suche und
-        // Trichter gemeinsam. Danach ist die Zeile selbst fort.
-        findViewById(R.id.filterClear).setOnClickListener(v -> resetFilter());
+        // Das X vor „Filter aktiv (n)" räumt in zwei Stufen, weil zwei Dinge dahinterstecken können.
+        // Erst die Schnellsuche – die ist die flüchtige von beiden, meist eben erst getippt und
+        // schneller wieder weg als das, was man im Trichter eingestellt hat. Die Zeile bleibt dann
+        // stehen und zeigt den Stand des Trichters allein; das X daran ist der zweite Schritt.
+        //
+        // Alles auf einmal zu räumen wäre der kürzere Weg und der ärgerlichere: Wer nach einem Namen
+        // gesucht hat und wieder heraus will, verlöre dabei den Zeitraum oder den Betragsbereich mit,
+        // den er sich vorher zurechtgelegt hat.
+        findViewById(R.id.filterClear).setOnClickListener(v -> {
+            if (!searchQuery.isEmpty()) {
+                // clear() meldet selbst; der Rückruf setzt searchQuery und filtert neu.
+                searchBar.clear();
+            } else {
+                resetFilter();
+            }
+        });
         // Bei offenem Suchfeld schließt Zurück erst das Feld, statt die Maske zu verlassen. Der
         // Rückruf schaltet ihn scharf — auch dann, wenn nicht die Zurück-Taste, sondern die Lupe oder
         // die Tastatur das Feld geschlossen hat.

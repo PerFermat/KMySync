@@ -121,6 +121,37 @@ public class BookingSearchBarTest {
         assertEquals("Suchtext bleibt, die Liste also eingeengt", "Netto", bar.query());
     }
 
+    /**
+     * Woran das X vor „Filter aktiv (n)" hängt: Es räumt in zwei Stufen, und die erste ist diese
+     * hier — die Schnellsuche weg, der Trichter bleibt. Gemeldet wird <b>sofort</b> und nicht
+     * entprellt, denn hier wartet niemand auf weitere Tasten.
+     *
+     * <p>Diese Methode war nach dem Wegfall der Lupe eine Weile ohne Aufrufer und ohne Test. Jetzt
+     * trägt sie den einzigen sichtbaren Weg, eine laufende Suche wieder loszuwerden.</p>
+     */
+    @Test
+    public void clearRaeumtDieSucheUndMeldetSofort() {
+        title.performClick();
+        field.setText("Netto");
+        ruheAbwarten();
+        field.onEditorAction(EditorInfo.IME_ACTION_SEARCH);
+        meldungen.clear();
+
+        bar.clear();
+
+        assertEquals("nichts mehr gesucht", "", bar.query());
+        assertEquals("ohne Wartezeit gemeldet", java.util.Arrays.asList(""), meldungen);
+    }
+
+    /** Ohne Suchtext gibt es nichts zu melden – sonst filterte die Maske grundlos neu. */
+    @Test
+    public void clearOhneSuchtextMeldetNicht() {
+        bar.clear();
+        ruheAbwarten();
+
+        assertTrue(meldungen.isEmpty());
+    }
+
     /** „Zurücksetzen" im Trichter räumt mit – aber ohne eigene Meldung, es filtert selbst neu. */
     @Test
     public void stillesLoeschenMeldetNicht() {

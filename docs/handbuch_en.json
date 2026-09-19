@@ -1325,7 +1325,7 @@
     {
       "type": "p",
       "id": "b-0092u",
-      "text": "<b>Show everything again:</b> As soon as something is filtered, the line «Filter active (23)» appears below the account name, with an <b>✕</b> in front of it. One tap clears <b>both at once</b> – the quick search and everything set in the funnel. The line then disappears and the list is complete again."
+      "text": "<b>Show everything again:</b> As soon as something is filtered, the line «Filter active (23)» appears below the account name, with an <b>✕</b> in front of it. It clears in <b>two steps</b>: the first tap removes the quick search – the line stays and now shows what the funnel alone leaves. The second tap clears that too; the line then disappears and the list is complete again. That way, ending a search does not cost you the period or amount range you set up beforehand. If only one of the two is active, a single tap is of course enough."
     },
     {
       "type": "h2",
