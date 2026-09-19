@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -14,11 +15,10 @@
             android:layout_height="match_parent"
             android:orientation="vertical">
 
-            <!-- Titel und Untertitel stellt die Toolbar hier nicht mehr selbst dar, sondern das
-                 Kind-Layout darunter. Der Grund ist die Reihenfolge: Eine Toolbar ordnet ihre Kinder
-                 grundsätzlich HINTER Titel und Untertitel ein – eine Lupe links vom Kontonamen wäre
-                 damit nicht zu haben. Aufbau wie in nav_header.xml, das dasselbe für die
-                 Kontenschublade tut. -->
+            <!-- Titel und Untertitel stellt die Toolbar hier nicht selbst dar, sondern das
+                 Kind-Layout darunter: Nur so kann das Suchfeld an die Stelle des Kontonamens treten
+                 und die Trefferzeile darunter ihr eigenes X tragen. Aufbau wie in nav_header.xml,
+                 das dasselbe für die Kontenschublade tut. -->
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
@@ -28,81 +28,83 @@
                 app:contentInsetStartWithNavigation="0dp"
                 app:titleMarginStart="0dp">
 
-                <!-- Ein Layout, nicht zwei: Solange die Lupe neben dem ganzen Block stand, brauchte es
-                     eine waagerechte Klammer darum. Seit sie in der Titelzeile sitzt, hätte die nur
-                     noch ein Kind – Lint meldet sie zu Recht als überflüssig. -->
+                <!-- Drei Kinder übereinander: Kontoname, Suchfeld an seiner Stelle, Trefferzeile
+                     darunter. -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="vertical"
                     android:gravity="center_vertical">
 
-                    <!-- Die Lupe gehört in diese Zeile, nicht neben den ganzen Block: Sie zeigt an,
-                         daß am Kontonamen etwas zu suchen ist, und sitzt dadurch von selbst auf
-                         seiner Höhe statt mittig zwischen Name und Untertitel. -->
+                    <!-- Der Kontoname steht allein, ohne Symbol davor – wie vor der Schnellsuche.
+                         Ein Tipp darauf öffnet sie; zwei Anläufe mit einer Lupe an dieser Stelle
+                         haben gezeigt, daß ein Zeichen vor dem Namen ein Fremdkörper bleibt. -->
+                    <TextView
+                        android:id="@+id/toolbarTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingVertical="4dp"
+                        android:textColor="@color/white"
+                        android:textSize="20sp"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:background="?attr/selectableItemBackground" />
+
+                    <!-- Tritt während der Suche an die Stelle des Kontonamens. -->
+                    <EditText
+                        android:id="@+id/bookingSearch"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@null"
+                        android:hint="@string/bookings_search_hint"
+                        android:textColor="@color/white"
+                        android:textColorHint="#B2FFFFFF"
+                        android:textSize="20sp"
+                        android:inputType="text"
+                        android:imeOptions="actionSearch"
+                        android:maxLines="1"
+                        android:visibility="gone"
+                        android:autofillHints="" />
+
+                    <!-- Die Zeile meldet, daß etwas gefiltert ist – also räumt das X davor genau
+                         das weg: Live-Suche und Trichter gemeinsam. Danach ist die ganze Zeile fort.
+                         Sie erscheint und verschwindet als Ganzes, deshalb liegt die Sichtbarkeit
+                         hier und nicht am Text.
+
+                         Lint schlägt hier ein Compound-Drawable am TextView vor (UseCompoundDrawables)
+                         und liegt daneben: Ein solches Drawable ist kein eigenes Element, läßt sich
+                         also weder antippen noch beschriften. Man müßte den Tipp über die
+                         X-Koordinate eines Berührungs-Zuhörers erraten – und die Sprachausgabe fände
+                         das X gar nicht. -->
                     <LinearLayout
+                        android:id="@+id/toolbarSubtitleRow"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                        android:gravity="center_vertical"
+                        android:visibility="gone"
+                        tools:ignore="UseCompoundDrawables">
 
-                        <!-- Nur ein Zeichen, kein Knopf – deshalb klein und ohne Tipp-Welle.
-                             Getroffen wird der Kontoname daneben, der dasselbe auslöst. Antippbar
-                             bleibt sie trotzdem: Steht das Suchfeld offen, gibt es keinen
-                             Kontonamen, und sie ist die einzige Stelle, die die Suche wieder
-                             wegräumt. -->
                         <ImageView
-                            android:id="@+id/bookingSearchIcon"
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
+                            android:id="@+id/filterClear"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
                             android:layout_marginEnd="6dp"
-                            android:src="@drawable/ic_search"
-                            android:contentDescription="@string/bookings_search_hint"
-                            app:tint="@color/white" />
+                            android:src="@drawable/ic_close"
+                            android:contentDescription="@string/filter_reset"
+                            app:tint="@color/toolbar_subtitle"
+                            android:background="?attr/selectableItemBackgroundBorderless" />
 
                         <TextView
-                            android:id="@+id/toolbarTitle"
+                            android:id="@+id/toolbarSubtitle"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:paddingVertical="4dp"
-                            android:textColor="@color/white"
-                            android:textSize="20sp"
+                            android:textColor="@color/toolbar_subtitle"
+                            android:textSize="13sp"
                             android:maxLines="1"
-                            android:ellipsize="end"
-                            android:background="?attr/selectableItemBackground" />
-
-                        <!-- Tritt während der Suche an die Stelle des Kontonamens – in derselben
-                             Zeile, damit die Lupe (dann mit X) daneben stehen bleibt. -->
-                        <EditText
-                            android:id="@+id/bookingSearch"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:background="@null"
-                            android:hint="@string/bookings_search_hint"
-                            android:textColor="@color/white"
-                            android:textColorHint="#B2FFFFFF"
-                            android:textSize="20sp"
-                            android:inputType="text"
-                            android:imeOptions="actionSearch"
-                            android:maxLines="1"
-                            android:visibility="gone"
-                            android:autofillHints="" />
+                            android:ellipsize="end" />
                     </LinearLayout>
-
-                    <!-- Um Lupenbreite plus Abstand eingerückt, damit die Trefferzahl unter dem
-                         Namen beginnt und nicht unter dem Symbol. -->
-                    <TextView
-                        android:id="@+id/toolbarSubtitle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="26dp"
-                        android:textColor="@color/toolbar_subtitle"
-                        android:textSize="13sp"
-                        android:maxLines="1"
-                        android:ellipsize="end"
-                        android:visibility="gone" />
                 </LinearLayout>
             </com.google.android.material.appbar.MaterialToolbar>
 

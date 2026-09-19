@@ -154,6 +154,8 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
      */
     private android.widget.TextView toolbarTitle;
     private android.widget.TextView toolbarSubtitle;
+    /** Die ganze Zeile aus X und Trefferzahl – sie erscheint und verschwindet gemeinsam. */
+    private View toolbarSubtitleRow;
     /** Die Live-Suche in der Titelzeile; sie hält den Suchtext und schaltet Name/Feld um. */
     private BookingSearchBar searchBar;
 
@@ -309,6 +311,10 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         }
         toolbarTitle = findViewById(R.id.toolbarTitle);
         toolbarSubtitle = findViewById(R.id.toolbarSubtitle);
+        toolbarSubtitleRow = findViewById(R.id.toolbarSubtitleRow);
+        // Das X vor „Filter aktiv (n)" räumt genau das, was die Zeile meldet: Live-Suche und
+        // Trichter gemeinsam. Danach ist die Zeile selbst fort.
+        findViewById(R.id.filterClear).setOnClickListener(v -> resetFilter());
         // Bei offenem Suchfeld schließt Zurück erst das Feld, statt die Maske zu verlassen. Der
         // Rückruf schaltet ihn scharf — auch dann, wenn nicht die Zurück-Taste, sondern die Lupe oder
         // die Tastatur das Feld geschlossen hat.
@@ -321,7 +327,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                 };
         getOnBackPressedDispatcher().addCallback(this, zurueckSchliesstSuche);
 
-        searchBar = new BookingSearchBar(findViewById(R.id.bookingSearchIcon), toolbarTitle,
+        searchBar = new BookingSearchBar(toolbarTitle,
                 findViewById(R.id.bookingSearch),
                 () -> {
                     searchQuery = searchBar.query();
@@ -1135,11 +1141,13 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         showEmptyHint(filtered.size());
 
         boolean active = isFilterActive();
-        if (toolbarSubtitle != null) {
+        if (toolbarSubtitleRow != null) {
             // Bleibt während der Suche stehen und zählt beim Tippen die Treffer mit – das ist der
             // Grund, warum das Suchfeld nur den Kontonamen ersetzt und nicht die ganze Zeile.
+            // Geschaltet wird die Zeile samt X: Ein X ohne Zahl daneben wäre sinnlos, eine Zahl ohne
+            // X ein Filter, den man nur über den Trichter wieder los wird.
             toolbarSubtitle.setText(active ? getString(R.string.filter_active, filtered.size()) : "");
-            toolbarSubtitle.setVisibility(active ? View.VISIBLE : View.GONE);
+            toolbarSubtitleRow.setVisibility(active ? View.VISIBLE : View.GONE);
         }
     }
 

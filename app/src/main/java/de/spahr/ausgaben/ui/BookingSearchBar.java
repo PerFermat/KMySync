@@ -4,30 +4,32 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.TextView;
-
-import de.spahr.ausgaben.R;
 
 /**
  * Die Live-Suche in der Titelzeile der Buchungsliste.
  *
- * <p>Gebaut nach dem Vorbild der Kontenschublade ({@link AccountDrawerHeader}): Ein Tipp auf die Lupe,
- * und der Kontoname macht einem Suchfeld Platz. Was man tippt, engt die Liste sofort ein. Bis 2.1
- * führte der einzige Weg dorthin über den Trichter — einen Dialog mit sechs Blöcken und
- * „Übernehmen" ganz unten; für „wo war nochmal diese eine Buchung" waren das fünf Handgriffe.</p>
+ * <p>Ein Tipp auf den <b>Kontonamen</b>, und er macht einem Suchfeld Platz. Was man tippt, engt die
+ * Liste sofort ein. Bis 2.1 führte der einzige Weg dorthin über den Trichter — einen Dialog mit sechs
+ * Blöcken und „Übernehmen" ganz unten; für „wo war nochmal diese eine Buchung" waren das fünf
+ * Handgriffe.</p>
  *
- * <h2>Die vier Zustände</h2>
+ * <h2>Die drei Zustände</h2>
  *
  * <ul>
- *   <li><b>Lupe antippen</b> — Kontoname weg, Feld da, Tastatur auf.</li>
+ *   <li><b>Kontoname antippen</b> — Name weg, Feld da, Tastatur auf. Auch bei laufender Suche: Dann
+ *       steht der bisherige Suchtext noch darin und läßt sich nachbessern.</li>
  *   <li><b>Tippen</b> — nach kurzer Ruhe filtern (siehe unten).</li>
  *   <li><b>Lupe auf der Tastatur</b> — Feld zu, Kontoname zurück, <em>die Suche bleibt</em>. Der
  *       Suchtext ist ja das Ergebnis, nicht das Feld.</li>
- *   <li><b>Lupe im Band, während gesucht wird</b> — Suchtext löschen. Erkennbar am durchgestrichenen
- *       Symbol {@code ic_search_off}: Nach dem Einklappen gäbe es sonst keinen Hinweis mehr darauf,
- *       daß die Liste noch eingeengt ist, und keinen Weg zurück.</li>
  * </ul>
+ *
+ * <p><b>Weggeräumt wird hier nicht.</b> Das erledigt das X vor „Filter aktiv (n)" in der Zeile
+ * darunter, und zwar für Live-Suche und Trichter gemeinsam — die Zeile meldet beides, also nimmt das
+ * X davor auch beides weg. Hier stand einmal eine Lupe vor dem Kontonamen, die bei laufender Suche
+ * durchgestrichen war und nur die Live-Suche räumte; in zwei Anläufen (groß und knopfartig, dann
+ * klein und hochgestellt) blieb sie ein Fremdkörper in einer Zeile, in der sonst nur ein Name
+ * steht.</p>
  *
  * <h2>Warum entprellt wird</h2>
  *
@@ -50,7 +52,6 @@ final class BookingSearchBar {
     /** Wie lange die Eingabe ruhen muß, bevor gefiltert wird. */
     static final long RUHE_MS = 200L;
 
-    private final ImageView icon;
     private final TextView title;
     private final EditText field;
     private final Runnable onQueryChanged;
@@ -63,49 +64,29 @@ final class BookingSearchBar {
      * @param onOpenChanged  meldet Auf- und Zuklappen. Die Maske hängt daran ihre Zurück-Taste: Bei
      *                       offenem Feld soll sie es schließen statt die Maske zu verlassen, und der
      *                       Rückruf ist der einzige Weg, das <em>auch dann</em> mitzubekommen, wenn
-     *                       nicht die Maske, sondern die Lupe oder die Tastatur umgeschaltet hat.
+     *                       nicht die Maske, sondern der Kontoname oder die Tastatur umgeschaltet hat.
      */
-    BookingSearchBar(ImageView icon, TextView title, EditText field, Runnable onQueryChanged,
+    BookingSearchBar(TextView title, EditText field, Runnable onQueryChanged,
                      java.util.function.Consumer<Boolean> onOpenChanged) {
-        this.icon = icon;
         this.title = title;
         this.field = field;
         this.onQueryChanged = onQueryChanged;
         this.onOpenChanged = onOpenChanged;
 
-        // Derselbe Listener an beiden Stellen, nicht zwei mit ähnlichem Inhalt: Der Kontoname ist das
-        // eigentliche Ziel – breit und kaum zu verfehlen –, die Lupe daneben nur das Zeichen dafür,
-        // daß es hier etwas zu suchen gibt. Sie bleibt antippbar, weil bei offenem Suchfeld kein
-        // Kontoname dasteht und sie dann die einzige Stelle ist, die die Suche wegräumt.
-        View.OnClickListener suchen = v -> {
-            if (istAktiv()) {
-                clear();
-            } else {
-                open();
-            }
-        };
-        icon.setOnClickListener(suchen);
-        title.setOnClickListener(suchen);
+        // Immer öffnen, auch wenn schon gesucht wird: Dann kommt das Feld mit dem bisherigen Text
+        // zurück und läßt sich nachbessern. Räumen tut das X unten in der Trefferzeile.
+        title.setOnClickListener(v -> open());
         field.addTextChangedListener(new SimpleWatcher(() -> {
             ruhe.removeCallbacksAndMessages(null);
-            ruhe.postDelayed(this::melden, RUHE_MS);
+            ruhe.postDelayed(onQueryChanged, RUHE_MS);
         }));
         // Die Lupe auf der Tastatur beendet die Eingabe, nicht die Suche.
         Keyboard.onCommitAction(field, this::collapse);
-        updateIcon();
     }
 
     /** Der gültige Suchtext; leer, wenn nicht gesucht wird. */
     String query() {
         return field.getText() == null ? "" : field.getText().toString().trim();
-    }
-
-    /**
-     * Wirkt gerade eine Suche? Das Feld kann dabei eingeklappt sein — genau dafür gibt es das
-     * durchgestrichene Symbol.
-     */
-    boolean istAktiv() {
-        return field.getVisibility() == View.VISIBLE || !query().isEmpty();
     }
 
     /** Steht das Feld offen? Für die Zurück-Taste, die es zuerst schließen soll. */
@@ -118,7 +99,6 @@ final class BookingSearchBar {
         title.setVisibility(View.GONE);
         field.setVisibility(View.VISIBLE);
         Keyboard.show(field);
-        updateIcon();
         onOpenChanged.accept(true);
     }
 
@@ -131,7 +111,6 @@ final class BookingSearchBar {
         field.clearFocus();
         field.setVisibility(View.GONE);
         title.setVisibility(View.VISIBLE);
-        updateIcon();
         onOpenChanged.accept(false);
     }
 
@@ -141,7 +120,7 @@ final class BookingSearchBar {
         clearSilently();
         if (hatteText) {
             // Sofort, nicht entprellt: Hier wartet niemand auf weitere Tasten.
-            melden();
+            onQueryChanged.run();
         }
     }
 
@@ -175,9 +154,9 @@ final class BookingSearchBar {
         if (offen) {
             open();
         } else {
-            // Ausdrücklich einklappen statt nur das Symbol nachzuziehen: Die Methode soll einen Zustand
-            // herstellen, nicht einen annehmen. Beim Neuaufbau nach einer Drehung ist das Feld ohnehin
-            // zu – aber darauf soll sich niemand verlassen müssen, der sie später anderswo ruft.
+            // Ausdrücklich einklappen: Die Methode soll einen Zustand herstellen, nicht einen annehmen.
+            // Beim Neuaufbau nach einer Drehung ist das Feld ohnehin zu – aber darauf soll sich niemand
+            // verlassen müssen, der sie später anderswo ruft.
             collapse();
         }
     }
@@ -185,14 +164,5 @@ final class BookingSearchBar {
     /** Hängt an der Maske: beim Verlassen keine Nachzügler mehr auslösen. */
     void detach() {
         ruhe.removeCallbacksAndMessages(null);
-    }
-
-    private void melden() {
-        updateIcon();
-        onQueryChanged.run();
-    }
-
-    private void updateIcon() {
-        icon.setImageResource(istAktiv() ? R.drawable.ic_search_off : R.drawable.ic_search);
     }
 }

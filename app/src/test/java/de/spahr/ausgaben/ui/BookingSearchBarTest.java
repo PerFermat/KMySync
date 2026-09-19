@@ -8,7 +8,6 @@ import android.content.Context;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -36,7 +35,6 @@ import java.util.List;
 @Config(sdk = 34)
 public class BookingSearchBarTest {
 
-    private ImageView icon;
     private TextView title;
     private EditText field;
     private BookingSearchBar bar;
@@ -46,13 +44,12 @@ public class BookingSearchBarTest {
     @Before
     public void aufbauen() {
         Context ctx = ApplicationProvider.getApplicationContext();
-        icon = new ImageView(ctx);
         title = new TextView(ctx);
         field = new EditText(ctx);
         field.setVisibility(View.GONE);
         meldungen.clear();
         offenMeldungen.clear();
-        bar = new BookingSearchBar(icon, title, field,
+        bar = new BookingSearchBar(title, field,
                 () -> meldungen.add(bar.query()), offenMeldungen::add);
     }
 
@@ -62,8 +59,8 @@ public class BookingSearchBarTest {
     }
 
     @Test
-    public void dieLupeMachtDemFeldPlatz() {
-        icon.performClick();
+    public void derKontonameMachtDemFeldPlatz() {
+        title.performClick();
 
         assertEquals("Feld sichtbar", View.VISIBLE, field.getVisibility());
         assertEquals("Kontoname weg", View.GONE, title.getVisibility());
@@ -71,25 +68,15 @@ public class BookingSearchBarTest {
     }
 
     /**
-     * <b>Der Kontoname ist das eigentliche Ziel.</b> Er ist breit und kaum zu verfehlen; die Lupe
-     * daneben ist nur 20 dp groß und soll gar nicht getroffen werden müssen — sie zeigt an, daß es
-     * hier etwas zu suchen gibt.
+     * <b>Der Fall, der zählt.</b> Ist die Suche eingeklappt und man tippt den Kontonamen erneut an,
+     * kommt das Feld <em>mit dem bisherigen Suchtext</em> zurück — man bessert ihn nach, statt ihn
+     * neu zu schreiben. Ginge er dabei verloren, merkte man es erst, wenn man schon losgetippt hat.
      *
-     * <p>Diese Verdrahtung ist eine einzige Zeile und würde beim nächsten Umbau lautlos verlorengehen:
-     * Sichtbar wäre das nur daran, daß ein Tipp auf den Namen nichts tut, und wer das nicht weiß,
-     * tippt eben wieder auf die Lupe.</p>
+     * <p>Geräumt wird hier gar nichts mehr; das tut das X vor „Filter aktiv (n)" in der Zeile
+     * darunter, und zwar für Live-Suche und Trichter gemeinsam.</p>
      */
     @Test
-    public void auchDerKontonameOeffnetDieSuche() {
-        title.performClick();
-
-        assertEquals("Feld sichtbar", View.VISIBLE, field.getVisibility());
-        assertEquals("Kontoname weg", View.GONE, title.getVisibility());
-    }
-
-    /** Und er räumt sie auch wieder weg — dieselbe Bedeutung wie die Lupe, nicht eine zweite. */
-    @Test
-    public void derKontonameRaeumtDieSuche() {
+    public void derKontonameHoltDieSucheZurueck() {
         title.performClick();
         field.setText("Netto");
         ruheAbwarten();
@@ -98,15 +85,15 @@ public class BookingSearchBarTest {
 
         title.performClick();
 
-        assertEquals("nichts mehr gesucht", "", bar.query());
-        assertFalse(bar.istAktiv());
-        assertEquals("ohne Wartezeit gemeldet", java.util.Arrays.asList(""), meldungen);
+        assertEquals("Feld wieder offen", View.VISIBLE, field.getVisibility());
+        assertEquals("Suchtext steht noch drin", "Netto", bar.query());
+        assertTrue("und wurde nicht neu gemeldet", meldungen.isEmpty());
     }
 
     /** Getippt wird laufend, gefiltert erst, wenn die Eingabe ruht. */
     @Test
     public void erstNachDerRuheWirdGefiltert() {
-        icon.performClick();
+        title.performClick();
         field.setText("Net");
         assertTrue("noch nichts gemeldet", meldungen.isEmpty());
 
@@ -123,7 +110,7 @@ public class BookingSearchBarTest {
      */
     @Test
     public void dieTastaturLupeKlapptNurEin() {
-        icon.performClick();
+        title.performClick();
         field.setText("Netto");
         ruheAbwarten();
 
@@ -131,46 +118,13 @@ public class BookingSearchBarTest {
 
         assertEquals("Feld zu", View.GONE, field.getVisibility());
         assertEquals("Kontoname zurück", View.VISIBLE, title.getVisibility());
-        assertEquals("Suchtext bleibt", "Netto", bar.query());
-        assertTrue("die Suche wirkt weiter", bar.istAktiv());
-    }
-
-    /**
-     * Und weil sie weiterwirkt, muß man das sehen: Solange etwas gesucht wird, trägt die Lupe ihren
-     * Durchstrich — auch bei eingeklapptem Feld. Ohne dieses Zeichen gäbe es keinen Hinweis auf die
-     * Einschränkung und keinen Weg zurück.
-     */
-    @Test
-    public void dasSymbolZeigtDieLaufendeSuche() {
-        icon.performClick();
-        field.setText("Netto");
-        ruheAbwarten();
-        field.onEditorAction(EditorInfo.IME_ACTION_SEARCH);
-
-        assertTrue("eingeklappt, aber aktiv", bar.istAktiv());
-        assertFalse("Feld ist zu", bar.istOffen());
-    }
-
-    /** Ein Tipp auf die durchgestrichene Lupe räumt die Suche – und meldet das sofort, nicht entprellt. */
-    @Test
-    public void dieLupeLoeschtDieLaufendeSuche() {
-        icon.performClick();
-        field.setText("Netto");
-        ruheAbwarten();
-        field.onEditorAction(EditorInfo.IME_ACTION_SEARCH);
-        meldungen.clear();
-
-        icon.performClick();
-
-        assertEquals("nichts mehr gesucht", "", bar.query());
-        assertFalse(bar.istAktiv());
-        assertEquals("ohne Wartezeit gemeldet", java.util.Arrays.asList(""), meldungen);
+        assertEquals("Suchtext bleibt, die Liste also eingeengt", "Netto", bar.query());
     }
 
     /** „Zurücksetzen" im Trichter räumt mit – aber ohne eigene Meldung, es filtert selbst neu. */
     @Test
     public void stillesLoeschenMeldetNicht() {
-        icon.performClick();
+        title.performClick();
         field.setText("Netto");
         ruheAbwarten();
         meldungen.clear();
@@ -195,8 +149,8 @@ public class BookingSearchBarTest {
         assertTrue(meldungen.isEmpty());
 
         bar.restore("Netto", false);
-        assertTrue("eingeklappt, aber weiterhin aktiv", bar.istAktiv());
-        assertFalse(bar.istOffen());
+        assertFalse("eingeklappt", bar.istOffen());
+        assertEquals("aber weiterhin gesucht", "Netto", bar.query());
     }
 
     /**
@@ -205,7 +159,7 @@ public class BookingSearchBarTest {
      */
     @Test
     public void nachDetachKommtNichtsMehr() {
-        icon.performClick();
+        title.performClick();
         field.setText("Netto");
         bar.detach();
 

@@ -1320,7 +1320,12 @@
     {
       "type": "p",
       "id": "b-0092t",
-      "text": "<b>Quick search:</b> Tap the <b>account name</b> at the top – it makes room for a search field. The small magnifier in front of it is merely the sign that there is something to search here; you need not hit it, the whole name works. What you type narrows the list right away – it searches <b>payee, note and category</b> at once, anywhere in the word and regardless of case. The <b>magnifier on the keyboard</b> folds the field away again; the account name returns to its place, but the <b>search stays in effect</b>. The magnifier, now crossed out, is the reminder – a tap on the name (or on the magnifier) lifts the search."
+      "text": "<b>Quick search:</b> Tap the <b>account name</b> at the top – it makes room for a search field. What you type narrows the list right away; it searches <b>payee, note and category</b> at once, anywhere in the word and regardless of case. The <b>magnifier on the keyboard</b> folds the field away again: the account name returns to its place, but the <b>search stays in effect</b>. Another tap on the name brings it back for editing – your search word is still in it."
+    },
+    {
+      "type": "p",
+      "id": "b-0092u",
+      "text": "<b>Show everything again:</b> As soon as something is filtered, the line «Filter active (23)» appears below the account name, with an <b>✕</b> in front of it. One tap clears <b>both at once</b> – the quick search and everything set in the funnel. The line then disappears and the list is complete again."
     },
     {
       "type": "h2",

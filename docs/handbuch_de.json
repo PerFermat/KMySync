@@ -1325,7 +1325,12 @@
     {
       "type": "p",
       "id": "b-0092t",
-      "text": "<b>Schnell suchen:</b> Tippen Sie oben auf den <b>Kontonamen</b> – er macht dann einem Suchfeld Platz. Die kleine Lupe davor ist nur das Zeichen dafür, daß es hier etwas zu suchen gibt; treffen müssen Sie sie nicht, der ganze Name gilt. Was Sie tippen, engt die Liste sofort ein – gesucht wird in <b>Empfänger, Notiz und Kategorie</b> zugleich, mitten im Wort und ohne Rücksicht auf Groß- und Kleinschreibung. Die <b>Lupe auf der Tastatur</b> klappt das Feld wieder ein; der Kontoname steht dann zurück an seinem Platz, die <b>Suche bleibt aber aktiv</b>. Daran erinnert die Lupe, die nun durchgestrichen ist – ein Tipp auf den Namen (oder auf die Lupe) hebt die Suche auf."
+      "text": "<b>Schnell suchen:</b> Tippen Sie oben auf den <b>Kontonamen</b> – er macht dann einem Suchfeld Platz. Was Sie tippen, engt die Liste sofort ein; gesucht wird in <b>Empfänger, Notiz und Kategorie</b> zugleich, mitten im Wort und ohne Rücksicht auf Groß- und Kleinschreibung. Die <b>Lupe auf der Tastatur</b> klappt das Feld wieder ein: Der Kontoname steht zurück an seinem Platz, die <b>Suche bleibt aber aktiv</b>. Ein weiterer Tipp auf den Namen holt sie zum Nachbessern zurück – Ihr Suchwort steht dann noch darin."
+    },
+    {
+      "type": "p",
+      "id": "b-0092u",
+      "text": "<b>Alles wieder zeigen:</b> Sobald etwas gefiltert ist, steht unter dem Kontonamen die Zeile «Filter aktiv (23)» mit einem <b>✕</b> davor. Ein Tipp darauf räumt <b>beides zusammen</b> – die Schnellsuche und alles, was im Trichter eingestellt ist. Danach ist die Zeile verschwunden und die Liste wieder vollständig."
     },
     {
       "type": "h2",
