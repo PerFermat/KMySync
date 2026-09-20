@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.ui;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -386,12 +387,16 @@ public class BalanceActivity extends LocalizedActivity {
         return out;
     }
 
+    @SuppressLint("InflateParams")   // Dialoginhalt, siehe Begruendung an der inflate-Zeile
     private void showTransferDialog() {
         final List<String> accounts = accountsWithPlaces();
         if (accounts.isEmpty()) {
             Toast.makeText(this, R.string.no_accounts, Toast.LENGTH_LONG).show();
             return;
         }
+        // inflate(..., null, false) ist bei einem Dialog richtig: Die Ansicht geht an setView und hat zu
+        // diesem Zeitpunkt keine Eltern, von denen sie Layout-Vorgaben übernehmen könnte. Lint meldet das
+        // trotzdem als InflateParams.
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_transfer, null, false);
         MaterialAutoCompleteTextView accountField = view.findViewById(R.id.transferAccount);
         MaterialAutoCompleteTextView from = view.findViewById(R.id.transferFrom);
@@ -450,11 +455,15 @@ public class BalanceActivity extends LocalizedActivity {
 
     // ---- Kassensturz ----
 
+    @SuppressLint("InflateParams")   // Dialoginhalt, siehe Begruendung an der inflate-Zeile
     private void showReconcileDialog() {
         if (accountsOrder.isEmpty()) {
             Toast.makeText(this, R.string.no_accounts, Toast.LENGTH_LONG).show();
             return;
         }
+        // inflate(..., null, false) ist bei einem Dialog richtig: Die Ansicht geht an setView und hat zu
+        // diesem Zeitpunkt keine Eltern, von denen sie Layout-Vorgaben übernehmen könnte. Lint meldet das
+        // trotzdem als InflateParams.
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_reconcile, null, false);
         MaterialAutoCompleteTextView accountField = view.findViewById(R.id.reconcileAccount);
         MaterialAutoCompleteTextView place = view.findViewById(R.id.reconcilePlace);

@@ -109,10 +109,14 @@ public class AppDialog extends MaterialAlertDialogBuilder {
 
     @NonNull
     @Override
+    @SuppressLint("InflateParams")   // Dialoginhalt, siehe Begruendung an der inflate-Zeile
     public AlertDialog create() {
         int color = AccentColor.current(getContext());
         View band = null;
         if (title != null) {
+            // inflate(..., null, false) ist bei einem Dialog richtig: Die Ansicht geht an setView und hat zu
+            // diesem Zeitpunkt keine Eltern, von denen sie Layout-Vorgaben übernehmen könnte. Lint meldet das
+            // trotzdem als InflateParams.
             band = LayoutInflater.from(getContext()).inflate(R.layout.dialog_title, null, false);
             ((TextView) band.findViewById(R.id.dialogTitle)).setText(title);
             ((TextView) band.findViewById(R.id.dialogTitle)).setTextColor(AccentColor.contrastColor(color));

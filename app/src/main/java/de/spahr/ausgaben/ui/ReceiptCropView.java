@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.ui;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -32,6 +33,10 @@ public class ReceiptCropView extends View {
     private final Paint handlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Matrix imageToView = new Matrix();
     private final Matrix viewToImage = new Matrix();
+    // Beim Ziehen an einer Ecke laeuft onDraw fuer jedes Bild; die beiden Rechtecke wandern deshalb
+    // hierher statt jedesmal neu zu entstehen. Gesetzt werden sie gleich zu Beginn von onDraw.
+    private final RectF bildRect = new RectF();
+    private final RectF flaecheRect = new RectF();
     private final Path quadPath = new Path();
     private final float[] point = new float[2];
     private final float[] screen = new float[8];
@@ -127,10 +132,10 @@ public class ReceiptCropView extends View {
         if (bitmap == null || quad == null || getWidth() == 0 || getHeight() == 0) {
             return;
         }
-        imageToView.setRectToRect(
-                new RectF(0, 0, bitmap.getWidth(), bitmap.getHeight()),
-                new RectF(handleRadius, handleRadius, getWidth() - handleRadius, getHeight() - handleRadius),
-                Matrix.ScaleToFit.CENTER);
+        bildRect.set(0, 0, bitmap.getWidth(), bitmap.getHeight());
+        flaecheRect.set(handleRadius, handleRadius,
+                getWidth() - handleRadius, getHeight() - handleRadius);
+        imageToView.setRectToRect(bildRect, flaecheRect, Matrix.ScaleToFit.CENTER);
         imageToView.invert(viewToImage);
         canvas.drawBitmap(bitmap, imageToView, imagePaint);
 
@@ -155,6 +160,11 @@ public class ReceiptCropView extends View {
     }
 
     @Override
+    // Lint verlangt hier performClick (ClickableViewAccessibility). Es gibt nichts zu klicken: Diese
+    // Ansicht zieht Ecken, ein Tipp ohne Bewegung tut gar nichts. Ein performClick bei jedem Abheben
+    // des Fingers erfände ein Ereignis, das keine Bedeutung hat - und feuerte jeden Zuhörer mit, den
+    // später jemand anhängt, nach jedem Ziehen.
+    @SuppressLint("ClickableViewAccessibility")
     public boolean onTouchEvent(MotionEvent event) {
         if (bitmap == null || quad == null) {
             return false;

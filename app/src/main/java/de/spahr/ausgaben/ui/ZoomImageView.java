@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.ui;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -114,6 +115,9 @@ public class ZoomImageView extends View {
     }
 
     @Override
+    // Lint verlangt performClick (ClickableViewAccessibility). Tipp und Doppeltipp nimmt hier schon
+    // tapDetector entgegen; ein zusätzliches performClick wäre ein zweiter Klick auf dieselbe Geste.
+    @SuppressLint("ClickableViewAccessibility")
     public boolean onTouchEvent(MotionEvent event) {
         if (bitmap == null) {
             return false;

@@ -4,6 +4,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Shader;
 import android.util.AttributeSet;
@@ -22,6 +23,15 @@ public class ShimmerView extends View {
     private float phase = 0f;   // 0 = ganz links, 1 = ganz rechts
     private ValueAnimator animator;
 
+    /**
+     * Verlauf und Schiebematrix hängen an der Breite, nicht am Bild: Gebaut wird einmal je Größe, je
+     * Bild wird er nur verschoben. Vorher entstanden hier drei Objekte pro Bild – bei 60 Bildern in der
+     * Sekunde, über die ganze Dauer eines Imports.
+     */
+    private LinearGradient gradient;
+    private final Matrix shift = new Matrix();
+    private int gradientWidth;
+
     public ShimmerView(Context context) {
         super(context);
     }
@@ -33,6 +43,7 @@ public class ShimmerView extends View {
     public void setColors(int base, int highlight) {
         this.baseColor = base;
         this.highlightColor = highlight;
+        gradient = null;   // mit den Farben ist auch der gebaute Verlauf überholt
         invalidate();
     }
 
@@ -67,12 +78,17 @@ public class ShimmerView extends View {
         if (w == 0 || h == 0) {
             return;
         }
-        float cx = phase * w;                 // Mitte der hellen Stelle
-        float band = w * 0.6f;                // Breite des Übergangs
-        LinearGradient g = new LinearGradient(cx - band, 0, cx + band, 0,
-                new int[]{baseColor, highlightColor, baseColor},
-                new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP);
-        paint.setShader(g);
+        if (gradient == null || gradientWidth != w) {
+            float band = w * 0.6f;            // Breite des Übergangs
+            // Um den Nullpunkt gebaut, damit ihn die Matrix unten einfach an die richtige Stelle rückt.
+            gradient = new LinearGradient(-band, 0, band, 0,
+                    new int[]{baseColor, highlightColor, baseColor},
+                    new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP);
+            gradientWidth = w;
+            paint.setShader(gradient);
+        }
+        shift.setTranslate(phase * w, 0);     // Mitte der hellen Stelle
+        gradient.setLocalMatrix(shift);
         canvas.drawRect(0, 0, w, h, paint);
     }
 

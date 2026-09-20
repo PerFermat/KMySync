@@ -496,11 +496,11 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     }
 
     private void setupNumberFields() {
-        numberFields.put(Field.SHARES, findViewById(R.id.editShares));
-        numberFields.put(Field.PRICE, findViewById(R.id.editPrice));
-        numberFields.put(Field.GROSS, findViewById(R.id.editGross));
-        numberFields.put(Field.FEE, findViewById(R.id.editFee));
-        numberFields.put(Field.NET, findViewById(R.id.editNet));
+        numberFields.put(Field.SHARES, (TextInputEditText) findViewById(R.id.editShares));
+        numberFields.put(Field.PRICE, (TextInputEditText) findViewById(R.id.editPrice));
+        numberFields.put(Field.GROSS, (TextInputEditText) findViewById(R.id.editGross));
+        numberFields.put(Field.FEE, (TextInputEditText) findViewById(R.id.editFee));
+        numberFields.put(Field.NET, (TextInputEditText) findViewById(R.id.editNet));
         sharesLayout = findViewById(R.id.sharesLayout);
         // Wer den bemängelten Wert nachträgt, soll die Markierung sofort loswerden.
         markierungAufhebenBeimTippen(Field.GROSS, grossLayout);

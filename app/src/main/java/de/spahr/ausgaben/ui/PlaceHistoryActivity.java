@@ -144,7 +144,11 @@ public class PlaceHistoryActivity extends LocalizedActivity {
     }
 
     /** Dialog zum Anlegen ({@code existing == null}) oder Bearbeiten/Löschen einer Ort-Bewegung. */
+    @SuppressLint("InflateParams")   // Dialoginhalt, siehe Begruendung an der inflate-Zeile
     private void showMovementDialog(final PlaceEntry existing) {
+        // inflate(..., null, false) ist bei einem Dialog richtig: Die Ansicht geht an setView und hat zu
+        // diesem Zeitpunkt keine Eltern, von denen sie Layout-Vorgaben übernehmen könnte. Lint meldet das
+        // trotzdem als InflateParams.
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_place_movement, null, false);
         final TextInputEditText dateField = view.findViewById(R.id.movementDate);
         final TextInputEditText amountField = view.findViewById(R.id.movementAmount);
