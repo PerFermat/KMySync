@@ -2905,7 +2905,9 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     /** Auffälliger Ton fürs Stift-Symbol der Anker-Auswahl, dem Tages-/Nachtdesign entsprechend. */
     private int colorPrimary() {
         android.util.TypedValue tv = new android.util.TypedValue();
-        getTheme().resolveAttribute(com.google.android.material.R.attr.colorPrimary, tv, true);
+        // Aus androidx.appcompat, nicht aus Material: Material fuehrt colorPrimary seit 1.14 nicht
+        // mehr im eigenen R.attr. Das Attribut ist dasselbe, nur der Ort ein anderer.
+        getTheme().resolveAttribute(androidx.appcompat.R.attr.colorPrimary, tv, true);
         return getColor(tv.resourceId);
     }
 

@@ -13,28 +13,31 @@
 
 [versions]
 # --- Android-Gerüst (in allen drei Modulen gleich) ---
-compileSdk = "34"
+compileSdk = "36"
 targetSdk = "34"
 
 # --- Von :app und :wear gemeinsam geführt ---
-appcompat = "1.7.0"
+appcompat = "1.8.0"
 wearable = "18.2.0"
 junit = "4.13.2"
 
 # --- Alle drei Module MÜSSEN dieselbe Fassung tragen (siehe oben) ---
 bouncycastle = "1.79"
 
-# Was hier NICHT angehoben ist, hängt an compileSdk: recyclerview 1.4.0, swiperefreshlayout 1.2.0,
-# appcompat 1.8.0, material 1.14.0, room 2.8.5, wear 1.4.0, tiles 1.6.2 und play-services-wearable
-# 20.0.1 ziehen alle androidx.core 1.15/1.16 nach, und das verlangt compileSdk 35 bzw. 36. Solange
-# compileSdk auf 34 steht, bricht der Bau an checkAarMetadata. Lint meldet sie trotzdem als veraltet.
+# compileSdk steht auf 36, targetSdk bewusst weiter auf 34: Womit uebersetzt wird, aendert das
+# Laufzeitverhalten nicht - targetSdk schon (ab 35 erzwingt Android Edge-to-Edge). Der Sprung war
+# noetig, weil appcompat 1.8, material 1.14, recyclerview 1.4 und swiperefreshlayout 1.2 alle
+# androidx.core 1.15/1.16 nachziehen; darunter bricht der Bau an checkAarMetadata.
+#
+# Noch nicht angehoben, aus demselben Grund NICHT mehr gesperrt, sondern ungeprueft: room 2.8.5,
+# wear 1.4.0, tiles 1.6.2, play-services-wearable 20.0.1.
 
 # --- Nur :app ---
-material = "1.12.0"
+material = "1.14.0"
 constraintlayout = "2.2.2"
-recyclerview = "1.3.2"
+recyclerview = "1.4.0"
 viewpager2 = "1.1.0"
-swiperefreshlayout = "1.1.0"
+swiperefreshlayout = "1.2.0"
 documentfile = "1.1.0"
 exifinterface = "1.4.2"
 room = "2.6.1"
