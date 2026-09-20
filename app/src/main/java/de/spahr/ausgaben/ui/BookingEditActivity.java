@@ -2867,7 +2867,7 @@ public class BookingEditActivity extends LocalizedActivity {
         String payee = textOf(editPayee).trim();
         String account = textOf(editAccount).trim();
         if (!isKnownAccount(account)) {
-            Toast.makeText(this, R.string.error_account, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, kontoMeldung(account), Toast.LENGTH_SHORT).show();
             return null;
         }
         target.amountCents = cents;
@@ -2882,6 +2882,24 @@ public class BookingEditActivity extends LocalizedActivity {
 
        private boolean isKnownAccount(String account) {
         return account != null && knownAccountNames.contains(account.trim().toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * Warum das Feld abgewiesen wurde – drei Lagen, die bis 2.1 dieselbe Meldung bekamen.
+     *
+     * <p>Die mittlere war die falsche: Wer „Bargeld" eintippt, obwohl es dieses Konto nicht gibt, las
+     * „Bitte ein Konto eingeben" – eine Bitte um etwas, das schon dasteht. Die dritte Lage trifft jede
+     * frische Installation, in der beim Einrichten das Feld „Standardkonto" leer blieb: Dann gibt es
+     * überhaupt kein Konto, und keine Eingabe in dieses Feld kann je durchkommen. Dort hilft nur der
+     * Hinweis, wo Konten entstehen.</p>
+     */
+    private String kontoMeldung(String account) {
+        if (knownAccountNames.isEmpty()) {
+            return getString(R.string.error_account_none);
+        }
+        return account == null || account.isEmpty()
+                ? getString(R.string.error_account)
+                : getString(R.string.error_account_unknown, account);
     }
 
     private List<BookingSplit> toSplits(List<SplitRowController.Part> parts) {

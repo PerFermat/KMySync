@@ -729,6 +729,8 @@
     <string name="error_amount">Please enter a valid amount > 0</string>
     <string name="error_amount_calc">Invalid calculation – allowed are numbers, one decimal mark per number, + - and *</string>
     <string name="error_account">Please enter an account</string>
+    <string name="error_account_unknown">There is no account named \"%1$s\". Pick one from the list.</string>
+    <string name="error_account_none">No accounts yet. Create one first under \"Sort and manage accounts\".</string>
     <string name="booking_saved">Booking saved</string>
     <string name="export_none">No new bookings to export</string>
     <string name="export_no_bookings">No bookings available</string>

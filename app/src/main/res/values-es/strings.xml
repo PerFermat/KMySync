@@ -700,6 +700,8 @@
     <string name="error_amount">Introduce un importe válido > 0</string>
     <string name="error_amount_calc">Cálculo no válido – se permiten números, un separador decimal por número, + - y *</string>
     <string name="error_account">Introduce una cuenta</string>
+    <string name="error_account_unknown">No existe ninguna cuenta llamada \"%1$s\". Elige una de la lista.</string>
+    <string name="error_account_none">Todavía no hay cuentas. Crea una primero en \"Ordenar y gestionar cuentas\".</string>
     <string name="booking_saved">Apunte guardado</string>
     <string name="export_none">No hay nuevos apuntes para exportar</string>
     <string name="export_no_bookings">No hay apuntes disponibles</string>

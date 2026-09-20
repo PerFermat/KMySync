@@ -701,6 +701,8 @@
     <string name="error_amount">Bitte einen gültigen Betrag > 0 eingeben</string>
     <string name="error_amount_calc">Ungültige Rechnung – erlaubt sind Zahlen, ein Dezimalzeichen je Zahl, + - und *</string>
     <string name="error_account">Bitte ein Konto eingeben</string>
+    <string name="error_account_unknown">Ein Konto namens \"%1$s\" gibt es nicht. Bitte eines aus der Liste wählen.</string>
+    <string name="error_account_none">Noch keine Konten vorhanden. Bitte zuerst unter \"Konten sortieren und verwalten\" eines anlegen.</string>
     <string name="booking_saved">Buchung gespeichert</string>
     <string name="export_none">Keine neuen Buchungen zum Exportieren</string>
     <string name="export_no_bookings">Keine Buchungen vorhanden</string>
