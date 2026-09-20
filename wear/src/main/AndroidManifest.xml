@@ -74,6 +74,11 @@
             <intent-filter>
                 <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
             </intent-filter>
+            <!-- Ohne das zeigt die Auswahlliste der Uhr nur das App-Symbol; im Log steht dann
+                 «DefaultMetadataPreviewProvider: Service … has no metadata». -->
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@drawable/tile_preview" />
         </service>
 
     </application>

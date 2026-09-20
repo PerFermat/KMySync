@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Vorschaubild der Kachel für die Auswahlliste der Uhr (androidx.wear.tiles.PREVIEW).
+    Ohne dieses Bild zeigt Wear OS dort nur das App-Symbol; im Log steht dann
+    «DefaultMetadataPreviewProvider: Service … has no metadata».
+
+    Es ist eine Nachzeichnung, kein Bildschirmfoto — mit Absicht:
+
+    1. Die Kachel zeigt den aktuellen Saldo, den das Handy herüberschickt. Ein echtes Foto trüge
+       diese Zahl in eine Datei, die im APK mitgeliefert wird und mit nach F-Droid geht.
+    2. Ihre Überschrift ist übersetzbar (wear_title, dazu die hochgeladenen Sprachen). Ein Bild kann
+       das nicht mitmachen, ein Vektor kennt ohnehin keinen Text. Deshalb stehen hier nur die drei
+       Knöpfe, die sprachunabhängig sind.
+
+    Maße und Farben stammen aus ExpenseTileService.typeButton: 48dp Durchmesser, Radius 24dp,
+    Abstand 8dp, Grün 0xFF2E7D32 (Einnahme «+»), Gelb 0xFFF9A825 (Umbuchung «↔»), Rot 0xFFC62828
+    (Ausgabe «−»). Der Ansichtsbereich ist 456×456 wie der Schirm der Pixel Watch 3, also zwei
+    Einheiten je dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="456"
+    android:viewportHeight="456">
+
+    <!-- Runder, dunkler Grund wie der Schirm der Uhr. -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M0,228 A228,228 0 1 0 456,228 A228,228 0 1 0 0,228 z" />
+
+    <!-- Einnahme: grüner Knopf, Mitte (116,228). -->
+    <path
+        android:fillColor="#FF2E7D32"
+        android:pathData="M68,228 A48,48 0 1 0 164,228 A48,48 0 1 0 68,228 z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M94,224 h44 v8 h-44 z M112,206 h8 v44 h-8 z" />
+
+    <!-- Umbuchung: gelber Knopf, Mitte (228,228); Doppelpfeil. -->
+    <path
+        android:fillColor="#FFF9A825"
+        android:pathData="M180,228 A48,48 0 1 0 276,228 A48,48 0 1 0 180,228 z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M210,224 h36 v8 h-36 z M200,228 L214,218 L214,238 z M256,228 L242,218 L242,238 z" />
+
+    <!-- Ausgabe: roter Knopf, Mitte (340,228). -->
+    <path
+        android:fillColor="#FFC62828"
+        android:pathData="M292,228 A48,48 0 1 0 388,228 A48,48 0 1 0 292,228 z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M318,224 h44 v8 h-44 z" />
+</vector>
