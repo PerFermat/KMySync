@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Wear OS schneidet das Symbol rund zu. Dasselbe adaptive Symbol wie ic_launcher, nur unter dem
+    Namen, den der Launcher für runde Masken sucht: Ohne roundIcon greift auf manchen Ständen die
+    quadratische Fassung und der Rand wird sichtbar abgeschnitten.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>
