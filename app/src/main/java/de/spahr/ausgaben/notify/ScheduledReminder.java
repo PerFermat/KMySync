@@ -6,7 +6,6 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 
 import java.util.Calendar;
 
@@ -69,11 +68,13 @@ public final class ScheduledReminder {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
-    /** Legt den Benachrichtigungskanal an (ab Android 8 nötig; mehrfaches Anlegen ist harmlos). */
+    /**
+     * Legt den Benachrichtigungskanal an; mehrfaches Anlegen ist harmlos.
+     *
+     * <p>Kanäle gibt es ab Android 8, und darunter läuft die App nicht mehr ({@code minSdk 26} ist
+     * genau diese Fassung). Die Abfrage darauf stand bis 2.1 hier und konnte nie zutreffen.</p>
+     */
     static void ensureChannel(Context context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            return;
-        }
         NotificationManager nm = context.getSystemService(NotificationManager.class);
         if (nm == null) {
             return;

@@ -4,7 +4,6 @@
     <color name="green_dark">#0F3D14</color>
     <color name="green_accent">#43A047</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="black">#FF000000</color>
     <color name="expense_red">#C62828</color>
     <color name="income_green">#2E7D32</color>
     <!-- Umbuchung: kräftiges Gelb/Amber (auf hell und dunkel lesbar) -->

@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.settings;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 
@@ -547,6 +548,7 @@ public class SettingsStore {
     }
 
     /** Auslieferungszustand: alle Einstellungen inkl. gespeichertem Server-Passwort löschen. */
+    @SuppressLint("ApplySharedPref")   // Begruendung an SettingsActivity#finishReset
     public void clearAll() {
         prefs.edit().clear().commit();
         secret.edit().clear().commit();

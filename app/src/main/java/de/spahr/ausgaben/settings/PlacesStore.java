@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.settings;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 
@@ -172,6 +173,7 @@ public class PlacesStore {
     }
 
     /** Auslieferungszustand: alle Orte-Definitionen (je Konto) löschen. */
+    @SuppressLint("ApplySharedPref")   // Begruendung an SettingsActivity#finishReset
     public void clearAll() {
         prefs.edit().clear().commit();
     }

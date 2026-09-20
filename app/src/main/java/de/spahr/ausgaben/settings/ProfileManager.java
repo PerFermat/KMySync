@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.settings;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 
@@ -497,6 +498,7 @@ public class ProfileManager {
     }
 
     /** Werksreset: löscht alle Profile samt ihrer Datenbankdateien und die Profilliste selbst. */
+    @SuppressLint("ApplySharedPref")   // Begruendung an SettingsActivity#finishReset
     public void clearAll(Context context) {
         // Erst schließen, dann löschen: SQLite hält die Datei des aktiven Profils sonst noch offen, und
         // das spätere close() schreibt den WAL-Puffer zurück – die eben gelöschte Datenbank stünde je

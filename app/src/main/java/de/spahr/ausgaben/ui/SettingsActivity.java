@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.ui;
 
+import android.annotation.SuppressLint;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -407,12 +408,21 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
      * Server-Passwort), Orte-Definitionen, offene Belege samt Dateien und die Widget-Auswahl löschen, dann
      * die App neu starten, damit auch alle Zwischenspeicher (Währung, Zahlenformat, gewähltes Konto …)
      * frisch sind – die App steht danach wie nach der Installation da (Willkommen-Assistent).
+     *
+     * <p>Hier und in den gerufenen {@code clearAll()} steht überall {@code commit()}. Lint meldet das als
+     * {@code ApplySharedPref}, weil es den Bedienfaden aufhält — und das stimmt hier sogar, anders als
+     * beim Einspielen einer Sicherung. Es wiegt nur nichts: Es geht um eine Handvoll kleiner Dateien, ein
+     * einziges Mal, auf dem Weg in den Neustart, der gleich darunter steht. Dafür ist danach sicher
+     * nichts mehr da. Mit {@code apply()} liefe das Löschen gegen den Neustart, und wer gewinnt, hinge an
+     * der Laufzeit — ausgerechnet bei der Frage, ob ein gespeichertes Server-Passwort wirklich weg ist.</p>
      */
+    @SuppressLint("ApplySharedPref")   // Begruendung im Javadoc darueber
     private void finishReset() {
         settings.clearAll();
         new de.spahr.ausgaben.settings.ProfileManager(this).clearAll(this);
         new de.spahr.ausgaben.settings.PlacesStore(this).clearAll();
         de.spahr.ausgaben.receipt.Receipts.reset(this);
+        // commit() statt apply(): siehe oben.
         getSharedPreferences("widget_selection", MODE_PRIVATE).edit().clear().commit();
         Toast.makeText(this, R.string.reset_done, Toast.LENGTH_LONG).show();
         android.content.Intent launch =

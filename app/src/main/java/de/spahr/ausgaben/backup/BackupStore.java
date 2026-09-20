@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.backup;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
@@ -39,6 +40,15 @@ import de.spahr.ausgaben.settings.SettingsStore;
  * <p><b>Alle-Profile-Sicherung</b> ({@link #createAll}/{@link #restoreAllData}/
  * {@link #restoreAllSettings}): die ganze Installation – Profilliste, jede Profil-Datenbank und
  * alle Einstellungsdateien 1:1.</p>
+ *
+ * <h2>Warum beim Einspielen {@code commit()} steht und nicht {@code apply()}</h2>
+ *
+ * <p>Lint meldet die drei Stellen als {@code ApplySharedPref} und zielt dabei auf den Bedienfaden, den
+ * ein blockierender Schreibvorgang aufhielte. Der ist hier nicht beteiligt: Eingespielt wird in einem
+ * eigenen Faden ({@code BackupRestoreController.applyRestore}). Dafür zählt die Reihenfolge — unmittelbar
+ * danach startet die App neu ({@code postRestoreDone}), und die neuen Einstellungen sollen bis dahin auf
+ * der Platte stehen und nicht in einer Warteschlange. {@code commit()} sagt genau das; {@code apply()}
+ * ließe offen, wann es soweit ist.</p>
  *
  * <p>Eine Profil-Sicherung lässt sich zusätzlich gezielt aus einer Alle-Profile-Sicherung ziehen
  * ({@link #profilesInBackup}/{@link #restoreProfileFromAllBackup}): praktisch, wenn man aus einer
@@ -178,6 +188,7 @@ public final class BackupStore {
      * Nachtmodus, Schriftgröße, Kategoriefarben und App-Sperre unter einem Profil-Präfix – wo sie
      * niemand mehr liest, während die alten Werte unberührt daneben stehen blieben.</p>
      */
+    @SuppressLint("ApplySharedPref")   // Begruendung im Klassenkopf
     public static void restoreProfileSettings(Context context, BackupArchive.Content content)
             throws JSONException {
         Context app = context.getApplicationContext();
@@ -204,6 +215,7 @@ public final class BackupStore {
                 putTyped(editor, zielSchluessel(e.getKey(), v.getKey(), toPrefix, vorDenProfilen),
                         v.getValue());
             }
+            // Bewusst commit() statt apply() – siehe Klassenkopf.
             editor.commit();
         }
     }
@@ -276,6 +288,7 @@ public final class BackupStore {
      * aufrufen, muss es aber nicht sein – die Zieldateinamen der Datenbanken werden unabhängig von der
      * Profilliste berechnet (siehe {@link ProfileManager#dbFileNameFor}).
      */
+    @SuppressLint("ApplySharedPref")   // Begruendung im Klassenkopf
     public static void restoreAllSettings(Context context, BackupArchive.Content content) throws JSONException {
         Context app = context.getApplicationContext();
         for (Map.Entry<String, String> e : content.prefs.entrySet()) {
@@ -293,6 +306,7 @@ public final class BackupStore {
             for (Map.Entry<String, Object> v : PrefsCodec.fromJson(e.getValue()).entrySet()) {
                 putTyped(editor, v.getKey(), v.getValue());
             }
+            // Bewusst commit() statt apply() – siehe Klassenkopf.
             editor.commit();
         }
     }
@@ -338,6 +352,7 @@ public final class BackupStore {
      * spielt sie ins aktive Profil ein (umbenannt vom Quell- auf das Ziel-Präfix). Andere im Archiv
      * enthaltene Profile bleiben unbeachtet.
      */
+    @SuppressLint("ApplySharedPref")   // Begruendung im Klassenkopf
     public static void restoreProfileFromAllBackup(Context context, BackupArchive.Content content,
                                                     String sourceProfileId) throws IOException, JSONException {
         Context app = context.getApplicationContext();
@@ -361,6 +376,7 @@ public final class BackupStore {
                     putTyped(editor, toPrefix + e.getKey().substring(fromPrefix.length()), e.getValue());
                 }
             }
+            // Bewusst commit() statt apply() – siehe Klassenkopf.
             editor.commit();
         }
         String secretJson = content.prefs.get(BackupArchive.PREFS_SECRET);
