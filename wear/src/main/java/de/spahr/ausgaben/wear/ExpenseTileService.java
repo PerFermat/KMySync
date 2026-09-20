@@ -1,6 +1,6 @@
 package de.spahr.ausgaben.wear;
 
-import androidx.concurrent.futures.ResolvableFuture;
+import androidx.concurrent.futures.CallbackToFutureAdapter;
 import androidx.wear.tiles.ActionBuilders;
 import androidx.wear.tiles.ColorBuilders;
 import androidx.wear.tiles.DimensionBuilders;
@@ -42,46 +42,49 @@ public class ExpenseTileService extends TileService {
             BalanceStore.advance(this);
         }
         // Aktuellen Saldo aus dem lokalen Data-Layer-Cache lesen (billig, kein Netz), dann bauen.
-        ResolvableFuture<TileBuilders.Tile> future = ResolvableFuture.create();
-        Wearable.getDataClient(this).getDataItems().addOnCompleteListener(task -> {
-            if (task.isSuccessful() && task.getResult() != null) {
-                DataItemBuffer items = task.getResult();
-                try {
-                    for (DataItem item : items) {
-                        if (WearPaths.PATH_BALANCE.equals(item.getUri().getPath())) {
-                            com.google.android.gms.wearable.DataMap m =
-                                    DataMapItem.fromDataItem(item).getDataMap();
-                            BalanceStore.save(this, m.getString("text", ""));
-                            BalanceStore.saveList(this, m.getString("list", ""));
+        return CallbackToFutureAdapter.getFuture(completer -> {
+            Wearable.getDataClient(this).getDataItems().addOnCompleteListener(task -> {
+                if (task.isSuccessful() && task.getResult() != null) {
+                    DataItemBuffer items = task.getResult();
+                    try {
+                        for (DataItem item : items) {
+                            if (WearPaths.PATH_BALANCE.equals(item.getUri().getPath())) {
+                                com.google.android.gms.wearable.DataMap m =
+                                        DataMapItem.fromDataItem(item).getDataMap();
+                                BalanceStore.save(this, m.getString("text", ""));
+                                BalanceStore.saveList(this, m.getString("list", ""));
+                            }
                         }
+                    } catch (Exception ignored) {
+                    } finally {
+                        items.release();
                     }
-                } catch (Exception ignored) {
-                } finally {
-                    items.release();
                 }
-            }
-            // Innerhalb der Anzeige-Minute nach einem Wechsel-Knopf-Druck immer das gewählte Konto/Ort
-            // zeigen; sonst wie in der App den Übertragungs-Hinweis, falls Buchungen noch nicht raus sind.
-            if (BalanceStore.isRecentlySelected(this)) {
-                future.set(buildTile(BalanceStore.get(this)));
-                return;
-            }
-            java.util.List<PendingEntry> pending = new PendingStore(this).getPending();
-            if (pending.isEmpty()) {
-                future.set(buildTile(BalanceStore.get(this)));
-                return;
-            }
-            try {
-                Wearable.getNodeClient(this).getConnectedNodes().addOnCompleteListener(nodeTask -> {
-                    boolean phoneConnected = nodeTask.isSuccessful() && nodeTask.getResult() != null
-                            && !nodeTask.getResult().isEmpty();
-                    future.set(buildTile(pendingText(pending, phoneConnected)));
-                });
-            } catch (Exception e) {
-                future.set(buildTile(pendingText(pending, false)));
-            }
+                // Innerhalb der Anzeige-Minute nach einem Wechsel-Knopf-Druck immer das gewählte
+                // Konto/Ort zeigen; sonst wie in der App den Übertragungs-Hinweis, falls Buchungen
+                // noch nicht raus sind.
+                if (BalanceStore.isRecentlySelected(this)) {
+                    completer.set(buildTile(BalanceStore.get(this)));
+                    return;
+                }
+                java.util.List<PendingEntry> pending = new PendingStore(this).getPending();
+                if (pending.isEmpty()) {
+                    completer.set(buildTile(BalanceStore.get(this)));
+                    return;
+                }
+                try {
+                    Wearable.getNodeClient(this).getConnectedNodes().addOnCompleteListener(nodeTask -> {
+                        boolean phoneConnected = nodeTask.isSuccessful() && nodeTask.getResult() != null
+                                && !nodeTask.getResult().isEmpty();
+                        completer.set(buildTile(pendingText(pending, phoneConnected)));
+                    });
+                } catch (Exception e) {
+                    completer.set(buildTile(pendingText(pending, false)));
+                }
+            });
+            // Was der Adapter im Fehlerfall protokolliert – rein zur Fehlersuche.
+            return "onTileRequest";
         });
-        return future;
     }
 
     /**
@@ -278,9 +281,17 @@ public class ExpenseTileService extends TileService {
                 .build());
     }
 
+    /**
+     * Ein Future, das den Wert schon kennt.
+     *
+     * <p>Hier stand bis 2.1 {@code ResolvableFuture}. Das trägt {@code @RestrictTo(LIBRARY_GROUP_PREFIX)}
+     * und ist für androidx-interne Verwendung gedacht — Lint hat das neunmal angemahnt. Der öffentliche
+     * Weg aus demselben Artefakt ist {@link CallbackToFutureAdapter}; er tut dasselbe und ist zugesagt.</p>
+     */
     private static <T> ListenableFuture<T> immediate(T value) {
-        ResolvableFuture<T> future = ResolvableFuture.create();
-        future.set(value);
-        return future;
+        return CallbackToFutureAdapter.getFuture(completer -> {
+            completer.set(value);
+            return "immediate";
+        });
     }
 }
