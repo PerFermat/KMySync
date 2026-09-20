@@ -2,6 +2,8 @@ KMySync es un complemento móvil del software de finanzas de escritorio KMyMoney
 
 La app funciona completamente sin conexión y sin cuentas de proveedor: los datos se intercambian con KMyMoney a través de una carpeta que tú mismo proporcionas (WebDAV, Nextcloud o SMB/Samba). Sin anuncios, sin seguimiento.
 
+Una excepción a esto: el mapa opcional en el que eliges una ubicación carga sus teselas desde OpenStreetMap. Es la única pantalla que contacta con algo distinto de tu propio servidor, y solo se abre si tú la abres.
+
 Funciones:
 
 * Integración perfecta con KMyMoney mediante archivos .kmy o importación CSV
