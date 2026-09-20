@@ -2,8 +2,10 @@ package de.spahr.ausgaben.backup;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Build;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -422,11 +424,25 @@ public final class BackupStore {
         }
     }
 
-    private static int versionCode(Context app) {
+    /**
+     * Die eigene Fassungsnummer fürs Sicherungs-Manifest.
+     *
+     * <p>Die Verzweigung ist Pflicht, keine Vorsicht: {@code getLongVersionCode()} gibt es erst ab
+     * Android 9, und darunter wirft der Aufruf {@link NoSuchMethodError}. Das {@code catch} darunter
+     * fängt den nicht — ein {@code Error} ist keine {@code Exception} —, deshalb flog bis 2.1 auf
+     * Android 8.0/8.1 jede Sicherung an dieser Stelle. Geprüft in {@code BackupVersionCodeTest}.</p>
+     */
+    @SuppressWarnings("deprecation")
+    static int versionCode(Context app) {
         try {
-            return (int) app.getPackageManager()
-                    .getPackageInfo(app.getPackageName(), 0).getLongVersionCode();
+            PackageInfo info = app.getPackageManager().getPackageInfo(app.getPackageName(), 0);
+            // Der Rückgabewert wird ohnehin auf int gestutzt; beide Zweige liefern also dasselbe.
+            return Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                    ? (int) info.getLongVersionCode()
+                    : info.versionCode;
         } catch (Exception e) {
+            // Bleibt als Netz für NameNotFoundException. Die Zahl steht nur zur Information im
+            // Archiv, das Einspielen liest sie nicht – dafür darf keine Sicherung scheitern.
             return 0;
         }
     }
