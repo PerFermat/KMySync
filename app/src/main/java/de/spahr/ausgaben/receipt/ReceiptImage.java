@@ -4,8 +4,9 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
-import android.media.ExifInterface;
 import android.net.Uri;
+
+import androidx.exifinterface.media.ExifInterface;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -69,22 +70,38 @@ public final class ReceiptImage {
         return out;
     }
 
+    /**
+     * Die EXIF-Drehung des Bildes, oder {@code 0}, wenn keine zu lesen ist.
+     *
+     * <p>Bewußt {@code androidx.exifinterface}, nicht die eingebaute {@code android.media}-Fassung: Die
+     * liest nur JPEG und Raw. Ein Handy im Modus „Hohe Effizienz" nimmt aber HEIC auf, und die wählt man
+     * dann aus der Galerie aus. Die eingebaute Fassung liefert dafür nichts, das {@code catch} unten
+     * gäbe stumm {@code 0} zurück, und der Beleg läge quer in der Datei – ohne jede Meldung.</p>
+     */
     private static int rotationDegrees(Context ctx, Uri src) {
         try (InputStream in = open(ctx, src)) {
-            int o = new ExifInterface(in).getAttributeInt(
-                    ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-            switch (o) {
-                case ExifInterface.ORIENTATION_ROTATE_90:
-                    return 90;
-                case ExifInterface.ORIENTATION_ROTATE_180:
-                    return 180;
-                case ExifInterface.ORIENTATION_ROTATE_270:
-                    return 270;
-                default:
-                    return 0;
-            }
+            return rotationDegrees(in);
         } catch (Exception e) {
             return 0;
+        }
+    }
+
+    /**
+     * Der eigentliche Lesevorgang, getrennt vom Öffnen — so läßt er sich mit einem Bild im Speicher
+     * prüfen, ohne ContentResolver (siehe {@code ReceiptExifTest}).
+     */
+    static int rotationDegrees(InputStream in) throws IOException {
+        int o = new ExifInterface(in).getAttributeInt(
+                ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+        switch (o) {
+            case ExifInterface.ORIENTATION_ROTATE_90:
+                return 90;
+            case ExifInterface.ORIENTATION_ROTATE_180:
+                return 180;
+            case ExifInterface.ORIENTATION_ROTATE_270:
+                return 270;
+            default:
+                return 0;
         }
     }
 

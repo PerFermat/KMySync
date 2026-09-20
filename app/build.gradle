@@ -129,6 +129,9 @@ dependencies {
     implementation libs.viewpager2
     implementation libs.swiperefreshlayout
     implementation libs.documentfile
+    // Die eingebaute android.media.ExifInterface liest nur JPEG und Raw. Diese hier kann
+    // auch HEIC/HEIF, PNG und WebP – siehe ReceiptImage#rotationDegrees.
+    implementation libs.exifinterface
 
     implementation libs.room.runtime
     annotationProcessor libs.room.compiler
