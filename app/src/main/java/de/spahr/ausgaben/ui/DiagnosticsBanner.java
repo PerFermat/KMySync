@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.ui;
 
+import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
@@ -73,6 +74,7 @@ final class DiagnosticsBanner implements Diagnostics.Progress {
     }
 
     @Override
+    @SuppressLint("SetTextI18n")   // Daten mit Trennzeichen, kein Satz
     public void finished(Diagnostics.Step step) {
         handler.post(() -> {
             if (last != null) {

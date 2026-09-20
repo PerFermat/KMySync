@@ -134,7 +134,9 @@ public final class ImportBanner {
         if (p != shownPercent) {
             shownPercent = p;
             if (percent != null) {
-                percent.setText(p + " %");
+                // Über eine Ressource, nicht zusammengesetzt: Ob vor dem Prozentzeichen ein
+                // Abstand steht, ist Sache der Sprache.
+                percent.setText(percent.getContext().getString(R.string.percent_value, p));
             }
         }
         String l = label;

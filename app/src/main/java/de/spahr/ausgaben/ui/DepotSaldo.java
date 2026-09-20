@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.ui;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.widget.TextView;
 
@@ -45,6 +46,7 @@ final class DepotSaldo {
     }
 
     /** Setzt Label + Betrag + Farbe für die gegebene Ansicht. {@code valueLabel} = Text der Wert-Ansicht. */
+    @SuppressLint("SetTextI18n")   // Daten mit Trennzeichen, kein Satz
     static void apply(Context c, TextView label, TextView value, Repository.DepotMetrics m, int mode,
                       String valueLabel) {
         int neutral = primaryText(c);

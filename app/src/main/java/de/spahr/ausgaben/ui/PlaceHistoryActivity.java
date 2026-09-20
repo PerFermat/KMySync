@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.ui;
 
+import android.annotation.SuppressLint;
 import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -108,6 +109,7 @@ public class PlaceHistoryActivity extends LocalizedActivity {
         }
     }
 
+    @SuppressLint("SetTextI18n")   // Daten mit Trennzeichen, kein Satz
     private View buildRow(final PlaceEntry e, long running) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);

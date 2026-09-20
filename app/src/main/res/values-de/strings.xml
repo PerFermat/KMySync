@@ -57,8 +57,9 @@
     <string name="alias_gps_add">Koordinate hinzufügen</string>
     <string name="alias_band_section">Übliche Beträge</string>
     <string name="alias_band_range">%1$s bis %2$s (%3$d–%4$d %%)</string>
+    <string name="percent_value">%1$d %%</string>
     <string name="alias_band_too_few">Weniger als %1$d Buchungen – der Betrag unterscheidet diesen Empfänger noch nicht.</string>
-    <string name="nearby_payee_count">%1$d Empfänger in der Nähe</string>
+    <string name="nearby_payee_count">Empfänger in der Nähe: %1$d</string>
     <string name="nearby_payee_none">ohne Empfänger</string>
     <string name="map_pick_title">Position wählen</string>
     <string name="map_pick_confirm">Diese Position übernehmen</string>
@@ -102,9 +103,9 @@
     <string name="receipt_export_none">Keine Belege im aktuellen Filter</string>
     <string name="receipt_export_running">Belege packen …</string>
     <string name="receipt_export_title">Belege exportieren</string>
-    <string name="receipt_export_done">%1$d Beleg(e) gepackt.</string>
-    <string name="receipt_export_missing">%1$d waren nicht zu holen (weder auf diesem Gerät noch auf dem Server erreichbar).</string>
-    <string name="receipt_export_empty">Kein einziger Beleg war zu holen – %1$d fehlen. Es wurde keine Datei angelegt.</string>
+    <string name="receipt_export_done">Belege gepackt: %1$d</string>
+    <string name="receipt_export_missing">Nicht zu holen: %1$d (weder auf diesem Gerät noch auf dem Server erreichbar).</string>
+    <string name="receipt_export_empty">Kein einziger Beleg war zu holen – fehlend: %1$d. Es wurde keine Datei angelegt.</string>
     <string name="receipt_export_failed">Export fehlgeschlagen: %1$s</string>
     <string name="receipt_export_running_count">Belege packen (%1$d/%2$d)</string>
     <string name="receipt_export_running_fetch">Belege laden und packen …</string>
@@ -116,12 +117,12 @@
     <string name="receipt_export_resume_ask">Der Beleg-Export nach „%1$s" (%2$s) wurde nicht fertig. Noch einmal versuchen? Die schon geholten Belege liegen auf dem Gerät und sind sofort dabei; geschrieben wird in dieselbe Datei.</string>
     <string name="receipt_export_resume">Noch einmal</string>
     <string name="receipt_export_paused">Pausiert – App offen lassen</string>
-    <string name="receipt_export_not_found">• %1$d liegen nicht auf dem Server</string>
-    <string name="receipt_export_unreachable">• %1$d waren nicht erreichbar (Verbindung)</string>
-    <string name="receipt_export_pending">• %1$d kamen nicht mehr dran: der Lauf hat nach zu langer Pause im Hintergrund aufgehört</string>
+    <string name="receipt_export_not_found">• Nicht auf dem Server: %1$d</string>
+    <string name="receipt_export_unreachable">• Nicht erreichbar (Verbindung): %1$d</string>
+    <string name="receipt_export_pending">• Nicht mehr drangekommen: %1$d – der Lauf hat nach zu langer Pause im Hintergrund aufgehört</string>
     <string name="receipt_export_retry">Den Export noch einmal starten holt die fehlenden nach – die schon geholten Belege liegen dann auf dem Gerät und sind sofort dabei.</string>
-    <string name="receipt_export_skipped">• %1$d wurden auf deinen Wunsch nicht geladen</string>
-    <string name="receipt_download_ask">%1$d Belege liegen auf dem Gerät, %2$d müssten erst vom Server geladen werden.</string>
+    <string name="receipt_export_skipped">• Auf deinen Wunsch nicht geladen: %1$d</string>
+    <string name="receipt_download_ask">Auf dem Gerät: %1$d. Erst vom Server zu laden: %2$d.</string>
     <string name="receipt_download_takes_time">Das Laden dauert – lass die App dabei offen. Der Lauf pausiert sonst und macht erst weiter, wenn du zurückkommst.</string>
     <string name="receipt_download_metered">Die aktuelle Verbindung ist getaktet und kostet dabei Geld.</string>
     <string name="receipt_download_all">Alle exportieren</string>
@@ -216,7 +217,7 @@
     <string name="accounts_manage_title">Konten sortieren und verwalten</string>
     <string name="accounts_manage_drag">Zum Sortieren ziehen</string>
     <string name="accounts_manage_menu">Kontomenü</string>
-    <string name="accounts_manage_count">(%1$d Konten)</string>
+    <string name="accounts_manage_count">(Konten: %1$d)</string>
     <!-- Menüpunkte der Kontenverwaltung: ausgeschrieben, anders als die schmalen Dialog-Knöpfe. -->
     <string name="accounts_manage_close">Konto schließen</string>
     <string name="accounts_manage_reopen">Konto wiedereröffnen</string>
@@ -225,7 +226,7 @@
     <string name="add_account">Neues Konto hinzufügen</string>
     <string name="kmy_import_all_title">Alle Konten importieren?</string>
     <string name="kmy_import_all_message">Alle Konten, Depots und geplanten Buchungen werden aus der KMyMoney-Datei aktualisiert (bereits exportierte Buchungen werden ersetzt).</string>
-    <string name="kmy_import_done_multi">%1$d Buchung(en) in %2$d Konto/Konten importiert</string>
+    <string name="kmy_import_done_multi">Importiert – Buchungen: %1$d, Konten: %2$d</string>
     <string name="import_running_banner">Konto wird importiert…</string>
     <string name="import_stage_download">Datei wird geladen…</string>
     <string name="import_stage_account">Konto: %1$s</string>
@@ -365,7 +366,7 @@
     <string name="reminder_scheduled">Erinnerung an fällige Buchungen</string>
     <string name="reminder_channel">Fällige geplante Buchungen</string>
     <string name="reminder_title">Geplante Buchungen</string>
-    <string name="reminder_due">%d geplante Buchungen heute fällig</string>
+    <string name="reminder_due">Geplante Buchungen heute fällig: %d</string>
     <string name="reminder_no_permission">Ohne Benachrichtigungs-Berechtigung ist keine Erinnerung möglich.</string>
 
     <!-- App-Sperre (Biometrie) -->
@@ -412,10 +413,10 @@
     <string name="receipt_page_new">Seite %1$d (neu)</string>
     <string name="receipt_add_page">Seite hinzufügen</string>
     <string name="receipt_pages_loading">Weitere Seiten werden gesucht …</string>
-    <string name="receipt_pages_count">%1$d Seite(n)</string>
+    <string name="receipt_pages_count">Seiten: %1$d</string>
     <string name="receipt_pdf_label">Dokument %1$d</string>
     <string name="receipt_pdf_new">Dokument %1$d (neu)</string>
-    <string name="receipt_pdfs_count">%1$d Dokument(e)</string>
+    <string name="receipt_pdfs_count">Dokumente: %1$d</string>
     <string name="receipt_pdf_no_viewer">Keine App für PDF-Dokumente installiert</string>
     <string name="receipt_pdf_attached">Dokument ✓</string>
     <string name="tags_row">Stichwörter: %1$s</string>
@@ -499,11 +500,11 @@
     <string name="account_close_needs_zero">Schließen nur bei Saldo 0 möglich (aktuell %1$s).</string>
     <string name="account_closed_done">Konto „%1$s" geschlossen</string>
     <string name="account_reopened_done">Konto „%1$s" geöffnet</string>
-    <string name="delete_accounts_confirm_message">%1$d Konto/Konten und alle zugehörigen Buchungen werden endgültig gelöscht.</string>
-    <string name="delete_accounts_confirm_message_with_depots">%1$d Konto/Konten werden endgültig gelöscht, darunter %2$d Depot(s) mit allen Wertpapieren, Bewegungen und Kursen.</string>
-    <string name="accounts_deleted_done">%1$d Konto/Konten gelöscht</string>
-    <string name="accounts_closed_done">%1$d Konto/Konten geschlossen</string>
-    <string name="accounts_reopened_done">%1$d Konto/Konten geöffnet</string>
+    <string name="delete_accounts_confirm_message">Konten werden endgültig gelöscht: %1$d – samt allen zugehörigen Buchungen.</string>
+    <string name="delete_accounts_confirm_message_with_depots">Endgültig gelöscht – Konten: %1$d, darunter Depots: %2$d – mit allen Wertpapieren, Bewegungen und Kursen.</string>
+    <string name="accounts_deleted_done">Konten gelöscht: %1$d</string>
+    <string name="accounts_closed_done">Konten geschlossen: %1$d</string>
+    <string name="accounts_reopened_done">Konten wieder geöffnet: %1$d</string>
 
     <!-- Orte -->
     <string name="places_section">Orte (Bargeld-Bestände)</string>
@@ -518,7 +519,7 @@
     <string name="remove">Entfernen</string>
     <string name="password_saved_hint">•••••• (gespeichert)</string>
     <string name="settings_secret_fallback">Der Schlüsselspeicher dieses Geräts ist nicht verfügbar – das Server-Passwort liegt unverschlüsselt</string>
-    <string name="import_done">%1$d Buchung(en) importiert (Konto ersetzt)</string>
+    <string name="import_done">Buchungen importiert: %1$d (Konto ersetzt)</string>
     <string name="import_failed">Import fehlgeschlagen: %1$s</string>
     <string name="nextcloud_import_folder_hint">Import-Ordner (Nextcloud)</string>
     <string name="loading_files">Dateiliste wird geladen…</string>
@@ -539,7 +540,7 @@
     <string name="language_export">Vorlage exportieren</string>
     <string name="language_upload">Sprache hochladen</string>
     <string name="language_export_done">Vorlage gespeichert</string>
-    <string name="language_export_missing">%1$d von %2$d Texten fehlen noch in dieser Sprache. Trage sie in der Datei nach und lade sie wieder hoch.</string>
+    <string name="language_export_missing">In dieser Sprache fehlen noch Texte: %1$d von %2$d. Trage sie in der Datei nach und lade sie wieder hoch.</string>
     <string name="language_export_complete">Alle %1$d Texte liegen in dieser Sprache vor.</string>
     <string name="language_upload_done">Sprache „%1$s" geladen</string>
     <string name="language_upload_failed">Sprachdatei ungültig: %1$s</string>
@@ -677,7 +678,7 @@
     <string name="kmy_replace_title">Konto ersetzen?</string>
     <string name="kmy_replace_message">Die bereits exportierten Buchungen des Kontos „%1$s" werden durch den Import ersetzt.</string>
     <string name="kmy_import_replace">Ersetzen</string>
-    <string name="kmy_import_done">%1$d Buchung(en) für Konto „%2$s" importiert</string>
+    <string name="kmy_import_done">Buchungen importiert für Konto „%2$s“: %1$d</string>
     <string name="progress_loading">Lade Dateiliste…</string>
     <string name="progress_download">Lade KMyMoney-Datei…</string>
     <string name="progress_importing">Importiere…</string>
@@ -686,12 +687,12 @@
     <string name="kmy_progress_backup">Sichere Original…</string>
     <string name="kmy_progress_writing">Schreibe KMyMoney-Datei…</string>
     <string name="kmy_none_matched">Keine Buchung konnte zugeordnet werden.</string>
-    <string name="kmy_result_written">%1$d Buchung(en) in %2$s geschrieben</string>
+    <string name="kmy_result_written">Buchungen in %2$s geschrieben: %1$d</string>
     <string name="kmy_result_updated">, %1$d geändert</string>
-    <string name="kmy_edited_not_found">%1$d bearbeitete Buchung(en) waren in der Datei nicht zu finden und bleiben „bearbeitet".</string>
-    <string name="kmy_result_new_payees">, %1$d neue(r) Empfänger</string>
+    <string name="kmy_edited_not_found">Bearbeitete Buchungen, die in der Datei nicht zu finden waren: %1$d – sie bleiben „bearbeitet“.</string>
+    <string name="kmy_result_new_payees">, neue Empfänger: %1$d</string>
     <string name="kmy_result_deleted">, %1$d gelöscht</string>
-    <string name="kmy_result_scheduled">, %1$d geplante Buchung(en) weitergestellt</string>
+    <string name="kmy_result_scheduled">, geplante Buchungen weitergestellt: %1$d</string>
     <string name="kmy_result_backup">Sicherung: %1$s</string>
     <string name="kmy_conflict">Die .kmy wurde zwischenzeitlich geändert (vermutlich am Rechner). Es wurde nichts geschrieben – bitte die Konten neu importieren und dann erneut exportieren.</string>
     <string name="kmy_skipped">%1$d übersprungen: %2$s</string>
@@ -704,8 +705,8 @@
     <string name="export_none">Keine neuen Buchungen zum Exportieren</string>
     <string name="export_no_bookings">Keine Buchungen vorhanden</string>
     <string name="export_target_missing">Kein Zielordner gewählt</string>
-    <string name="export_result_uploaded">%1$d Buchung(en) in %2$d Datei(en) hochgeladen</string>
-    <string name="export_result_saved">%1$d Buchung(en) in %2$d Datei(en) lokal gespeichert</string>
+    <string name="export_result_uploaded">Hochgeladen – Buchungen: %1$d, Dateien: %2$d</string>
+    <string name="export_result_saved">Lokal gespeichert – Buchungen: %1$d, Dateien: %2$d</string>
     <string name="export_result_failed">Fehlgeschlagen – %1$s</string>
     <string name="export_running">Export läuft…</string>
     <string name="export_success">Exportiert &amp; auf Nextcloud hochgeladen</string>
@@ -749,7 +750,7 @@
     <string name="onboarding_import_accounts">Konten importieren</string>
     <string name="onboarding_importing">Import läuft…</string>
     <string name="onboarding_import_running">Bitte warten, bis der Import fertig ist.</string>
-    <string name="onboarding_import_done">%1$d Konto/Konten importiert</string>
+    <string name="onboarding_import_done">Konten importiert: %1$d</string>
     <string name="onboarding_note">Weitere Einstellungen kannst du jederzeit über das Menü vornehmen (im Aufklappmenü ganz unten).</string>
     <string name="onboarding_done">Fertig</string>
     <string name="security_tx_new_title">Neue Bewegung</string>
@@ -813,14 +814,14 @@
     <string name="statement_anchor_sum">Summe dieser Zeilen</string>
     <!-- Mehrere Abrechnungen auf einmal: die Erkennungsliste vor dem Buchen. -->
     <string name="statement_batch_title">Eingelesene Abrechnungen</string>
-    <string name="statement_batch_reading">%1$d Abrechnungen werden gelesen…</string>
+    <string name="statement_batch_reading">Abrechnungen werden gelesen: %1$d…</string>
     <string name="statement_batch_none">Keine der Dateien ließ sich lesen</string>
     <string name="statement_batch_apply">Zurück zur Liste</string>
     <string name="statement_batch_save">Alle speichern</string>
-    <string name="statement_batch_saved">%1$d Bewegungen gespeichert</string>
+    <string name="statement_batch_saved">Bewegungen gespeichert: %1$d</string>
     <string name="statement_batch_incomplete">Bitte zuerst die rot markierten Einträge berichtigen</string>
     <string name="statement_batch_save_failed">Speichern fehlgeschlagen – gebucht wurde nichts. Bitte noch einmal versuchen.</string>
-    <string name="statement_batch_receipt_failed">%1$d Abrechnungen konnten nicht als Beleg abgelegt werden</string>
+    <string name="statement_batch_receipt_failed">Abrechnungen, die nicht als Beleg abgelegt werden konnten: %1$d</string>
     <string name="statement_receipt_failed">Die Abrechnung konnte nicht als Beleg abgelegt werden</string>
     <string name="statement_batch_discard_title">Verwerfen?</string>
     <string name="statement_batch_discard_message">Keine der eingelesenen Abrechnungen wird gebucht.</string>
@@ -902,7 +903,7 @@
     <string name="statement_rules_import_title">Regeln einspielen?</string>
     <string name="statement_rules_import_message">In der Datei stehen: %1$s\n\nAlle Regeln dieses Depots werden dadurch ersetzt.</string>
     <string name="statement_rules_import_from">%1$s (aus Depot „%2$s“)</string>
-    <string name="statement_rules_import_done">%1$d Regeln eingespielt</string>
+    <string name="statement_rules_import_done">Regeln eingespielt: %1$d</string>
     <string name="statement_rules_import_unreadable">Die Datei ließ sich nicht lesen.</string>
     <string name="statement_rules_import_not_ours">Das ist keine Regeldatei dieser App.</string>
     <string name="statement_rules_import_too_new">Die Datei stammt aus einer neueren Fassung der App.</string>

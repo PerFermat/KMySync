@@ -57,8 +57,9 @@
     <string name="alias_gps_add">Añadir coordenada</string>
     <string name="alias_band_section">Importes habituales</string>
     <string name="alias_band_range">%1$s a %2$s (%3$d–%4$d %%)</string>
+    <string name="percent_value">%1$d %%</string>
     <string name="alias_band_too_few">Menos de %1$d apuntes – el importe aún no distingue a este beneficiario.</string>
-    <string name="nearby_payee_count">%1$d beneficiarios cercanos</string>
+    <string name="nearby_payee_count">Beneficiarios cerca: %1$d</string>
     <string name="nearby_payee_none">sin beneficiario</string>
     <string name="map_pick_title">Elegir ubicación</string>
     <string name="map_pick_confirm">Usar esta ubicación</string>
@@ -102,9 +103,9 @@
     <string name="receipt_export_none">No hay justificantes en el filtro actual</string>
     <string name="receipt_export_running">Empaquetando justificantes…</string>
     <string name="receipt_export_title">Exportar justificantes</string>
-    <string name="receipt_export_done">%1$d justificante(s) empaquetado(s).</string>
-    <string name="receipt_export_missing">%1$d no se pudieron obtener (no están en este dispositivo ni accesibles en el servidor).</string>
-    <string name="receipt_export_empty">No se pudo obtener ni un solo justificante – faltan %1$d. No se creó ningún archivo.</string>
+    <string name="receipt_export_done">Justificantes empaquetados: %1$d</string>
+    <string name="receipt_export_missing">Sin obtener: %1$d (no están en este dispositivo ni accesibles en el servidor).</string>
+    <string name="receipt_export_empty">No se pudo obtener ni un solo justificante – ausentes: %1$d. No se creó ningún archivo.</string>
     <string name="receipt_export_failed">Error en la exportación: %1$s</string>
     <string name="receipt_export_running_count">Empaquetando justificantes (%1$d/%2$d)</string>
     <string name="receipt_export_running_fetch">Obteniendo y empaquetando justificantes…</string>
@@ -117,11 +118,11 @@
     <string name="receipt_export_resume">Reintentar</string>
     <string name="receipt_export_resume_ask">La exportación de justificantes a «%1$s» (%2$s) no terminó. ¿Reintentar? Los ya obtenidos están en el dispositivo y se incluyen enseguida; se escribe el mismo archivo.</string>
     <string name="receipt_export_retry">Al ejecutar la exportación de nuevo se obtienen los que faltan: los ya obtenidos están ahora en el dispositivo y se incluyen enseguida.</string>
-    <string name="receipt_export_not_found">• %1$d no están en el servidor</string>
-    <string name="receipt_export_unreachable">• %1$d no se pudieron alcanzar (conexión)</string>
-    <string name="receipt_export_skipped">• %1$d no se obtuvieron, según lo indicado</string>
-    <string name="receipt_export_pending">• %1$d no se alcanzaron: la ejecución se detuvo tras esperar demasiado en segundo plano</string>
-    <string name="receipt_download_ask">%1$d justificantes están en el dispositivo, %2$d habría que obtenerlos primero del servidor.</string>
+    <string name="receipt_export_not_found">• Sin encontrar en el servidor: %1$d</string>
+    <string name="receipt_export_unreachable">• Sin conexión: %1$d</string>
+    <string name="receipt_export_skipped">• Sin obtener, según lo indicado: %1$d</string>
+    <string name="receipt_export_pending">• Sin alcanzar: %1$d – la ejecución se detuvo tras esperar demasiado en segundo plano</string>
+    <string name="receipt_download_ask">En el dispositivo: %1$d. Por obtener del servidor: %2$d.</string>
     <string name="receipt_download_all">Exportar todos</string>
     <string name="receipt_download_local_only">Solo los presentes (%1$d)</string>
     <string name="receipt_download_metered">La conexión actual es de pago y esto costará dinero.</string>
@@ -222,7 +223,7 @@
     <string name="accounts_manage_title">Ordenar y gestionar cuentas</string>
     <string name="accounts_manage_drag">Arrastra para reordenar</string>
     <string name="accounts_manage_menu">Menú de cuenta</string>
-    <string name="accounts_manage_count">(%1$d cuentas)</string>
+    <string name="accounts_manage_count">(cuentas: %1$d)</string>
     <string name="accounts_manage_close">Cerrar cuenta</string>
     <string name="accounts_manage_reopen">Reabrir cuenta</string>
     <string name="drawer_open">Abrir cuentas</string>
@@ -230,7 +231,7 @@
     <string name="add_account">Añadir nueva cuenta</string>
     <string name="kmy_import_all_title">¿Importar todas las cuentas?</string>
     <string name="kmy_import_all_message">Todas las cuentas, carteras y transacciones programadas se actualizan desde el archivo KMyMoney (los apuntes ya exportados se reemplazan).</string>
-    <string name="kmy_import_done_multi">Importados %1$d apunte(s) en %2$d cuenta(s)</string>
+    <string name="kmy_import_done_multi">Importado – apuntes: %1$d, cuentas: %2$d</string>
     <string name="import_running_banner">Importando cuenta…</string>
     <string name="import_stage_download">Cargando archivo…</string>
     <string name="import_stage_account">Cuenta: %1$s</string>
@@ -364,7 +365,7 @@
     <string name="reminder_scheduled">Recordarme transacciones vencidas</string>
     <string name="reminder_channel">Transacciones programadas vencidas</string>
     <string name="reminder_title">Transacciones programadas</string>
-    <string name="reminder_due">%d transacciones programadas vencen hoy</string>
+    <string name="reminder_due">Transacciones programadas que vencen hoy: %d</string>
     <string name="reminder_no_permission">Sin permiso de notificaciones no es posible recordar.</string>
 
     <!-- Bloqueo de app (biometría) -->
@@ -411,10 +412,10 @@
     <string name="receipt_page_new">Página %1$d (nueva)</string>
     <string name="receipt_add_page">Añadir página</string>
     <string name="receipt_pages_loading">Buscando más páginas…</string>
-    <string name="receipt_pages_count">%1$d página(s)</string>
+    <string name="receipt_pages_count">Páginas: %1$d</string>
     <string name="receipt_pdf_label">Documento %1$d</string>
     <string name="receipt_pdf_new">Documento %1$d (nuevo)</string>
-    <string name="receipt_pdfs_count">%1$d documento(s)</string>
+    <string name="receipt_pdfs_count">Documentos: %1$d</string>
     <string name="receipt_pdf_no_viewer">No hay app para documentos PDF instalada</string>
     <string name="receipt_pdf_attached">Documento ✓</string>
     <string name="tags_row">Etiquetas: %1$s</string>
@@ -498,11 +499,11 @@
     <string name="account_close_needs_zero">Solo es posible cerrar con saldo cero (actualmente %1$s).</string>
     <string name="account_closed_done">Cuenta \"%1$s\" cerrada</string>
     <string name="account_reopened_done">Cuenta \"%1$s\" reabierta</string>
-    <string name="delete_accounts_confirm_message">%1$d cuenta(s) y todos sus apuntes se eliminarán permanentemente.</string>
-    <string name="delete_accounts_confirm_message_with_depots">Se eliminarán permanentemente %1$d cuenta(s), incluyendo %2$d cartera(s) con todos los valores, transacciones y precios.</string>
-    <string name="accounts_deleted_done">%1$d cuenta(s) eliminada(s)</string>
-    <string name="accounts_closed_done">%1$d cuenta(s) cerrada(s)</string>
-    <string name="accounts_reopened_done">%1$d cuenta(s) reabierta(s)</string>
+    <string name="delete_accounts_confirm_message">Cuentas que se eliminarán permanentemente: %1$d – con todos sus apuntes.</string>
+    <string name="delete_accounts_confirm_message_with_depots">Se eliminarán permanentemente – cuentas: %1$d, incluidas carteras: %2$d – con todos los valores, transacciones y precios.</string>
+    <string name="accounts_deleted_done">Cuentas eliminadas: %1$d</string>
+    <string name="accounts_closed_done">Cuentas cerradas: %1$d</string>
+    <string name="accounts_reopened_done">Cuentas reabiertas: %1$d</string>
 
     <!-- Lugares -->
     <string name="places_section">Lugares (saldos de efectivo)</string>
@@ -517,7 +518,7 @@
     <string name="remove">Quitar</string>
     <string name="password_saved_hint">•••••• (guardada)</string>
     <string name="settings_secret_fallback">El almacén de claves de este dispositivo no está disponible – la contraseña del servidor se guarda sin cifrar</string>
-    <string name="import_done">Importado(s) %1$d apunte(s) (cuenta reemplazada)</string>
+    <string name="import_done">Apuntes importados: %1$d (cuenta reemplazada)</string>
     <string name="import_failed">Error en la importación: %1$s</string>
     <string name="nextcloud_import_folder_hint">Carpeta de importación (Nextcloud)</string>
     <string name="loading_files">Cargando lista de archivos…</string>
@@ -538,7 +539,7 @@
     <string name="language_export">Plantilla de exportación</string>
     <string name="language_upload">Subir idioma</string>
     <string name="language_export_done">Plantilla guardada</string>
-    <string name="language_export_missing">Todavía faltan %1$d de %2$d textos en este idioma. Complétalos en el archivo y vuelve a subirlo.</string>
+    <string name="language_export_missing">Textos que faltan en este idioma: %1$d de %2$d. Complétalos en el archivo y vuelve a subirlo.</string>
     <string name="language_export_complete">Los %1$d textos están todos disponibles en este idioma.</string>
     <string name="language_upload_done">Idioma \"%1$s\" cargado</string>
     <string name="language_upload_failed">Archivo de idioma no válido: %1$s</string>
@@ -675,7 +676,7 @@
     <string name="kmy_replace_title">¿Reemplazar cuenta?</string>
     <string name="kmy_replace_message">Los apuntes ya exportados de la cuenta \"%1$s\" se reemplazan con la importación.</string>
     <string name="kmy_import_replace">Reemplazar</string>
-    <string name="kmy_import_done">Importado(s) %1$d apunte(s) para la cuenta \"%2$s\"</string>
+    <string name="kmy_import_done">Apuntes importados para la cuenta \"%2$s\": %1$d</string>
     <string name="progress_loading">Cargando lista de archivos…</string>
     <string name="progress_download">Descargando archivo KMyMoney…</string>
     <string name="progress_importing">Importando…</string>
@@ -684,16 +685,16 @@
     <string name="kmy_progress_backup">Copiando original…</string>
     <string name="kmy_progress_writing">Escribiendo archivo KMyMoney…</string>
     <string name="kmy_none_matched">No se pudo emparejar ningún apunte.</string>
-    <string name="kmy_result_written">Escritos %1$d apunte(s) en %2$s</string>
-    <string name="kmy_result_updated">, %1$d modificados</string>
-    <string name="kmy_edited_not_found">%1$d apunte(s) editado(s) no se encontraron en el archivo y permanecen marcados como \"editados\".</string>
-    <string name="kmy_result_new_payees">, %1$d beneficiario(s) nuevo(s)</string>
-    <string name="kmy_result_deleted">, %1$d eliminado(s)</string>
-    <string name="kmy_result_scheduled">, %1$d programa(s) avanzado(s)</string>
+    <string name="kmy_result_written">Apuntes escritos en %2$s: %1$d</string>
+    <string name="kmy_result_updated">, con cambios: %1$d</string>
+    <string name="kmy_edited_not_found">Apuntes editados no encontrados en el archivo: %1$d – permanecen marcados como \"editados\".</string>
+    <string name="kmy_result_new_payees">, beneficiarios nuevos: %1$d</string>
+    <string name="kmy_result_deleted">, eliminados: %1$d</string>
+    <string name="kmy_result_scheduled">, programas avanzados: %1$d</string>
     <string name="kmy_result_backup">Copia de seguridad: %1$s</string>
     <string name="kmy_conflict">El .kmy fue modificado en el meantime (probablemente en el ordenador). No se escribió nada – reimporta las cuentas y exporta de nuevo.</string>
     <string name="kmy_move_failed">El archivo se transfirió por completo, pero no se pudo colocar en su sitio (%1$s). Tu archivo de KMyMoney está intacto; vuelve a transferirlo más tarde.</string>
-    <string name="kmy_skipped">%1$d omitido(s): %2$s</string>
+    <string name="kmy_skipped">Omisiones: %1$d — %2$s</string>
 
     <!-- Mensajes -->
     <string name="error_amount">Introduce un importe válido > 0</string>
@@ -703,8 +704,8 @@
     <string name="export_none">No hay nuevos apuntes para exportar</string>
     <string name="export_no_bookings">No hay apuntes disponibles</string>
     <string name="export_target_missing">No se seleccionó carpeta de destino</string>
-    <string name="export_result_uploaded">Subidos %1$d apunte(s) en %2$d archivo(s)</string>
-    <string name="export_result_saved">Guardados %1$d apunte(s) en %2$d archivo(s) localmente</string>
+    <string name="export_result_uploaded">Subido – apuntes: %1$d, archivos: %2$d</string>
+    <string name="export_result_saved">Guardado localmente – apuntes: %1$d, archivos: %2$d</string>
     <string name="export_result_failed">Falló – %1$s</string>
     <string name="export_running">Exportación en curso…</string>
     <string name="export_success">Exportado y subido a Nextcloud</string>
@@ -748,7 +749,7 @@
     <string name="onboarding_import_accounts">Importar cuentas</string>
     <string name="onboarding_importing">Importando…</string>
     <string name="onboarding_import_running">Espera a que termine la importación.</string>
-    <string name="onboarding_import_done">%1$d cuenta(s) importada(s)</string>
+    <string name="onboarding_import_done">Cuentas importadas: %1$d</string>
     <string name="onboarding_note">Puedes ajustar más opciones en cualquier momento desde el menú (parte inferior del menú).</string>
     <string name="onboarding_done">Listo</string>
     <string name="security_tx_new_title">Nuevo movimiento</string>
@@ -810,14 +811,14 @@
     <string name="statement_anchor_same_last">misma línea, último número</string>
     <string name="statement_anchor_sum">suma de estas líneas</string>
     <string name="statement_batch_title">Extractos leídos</string>
-    <string name="statement_batch_reading">Leyendo %1$d extractos…</string>
+    <string name="statement_batch_reading">Leyendo extractos: %1$d…</string>
     <string name="statement_batch_none">Ninguno de los archivos pudo ser leído</string>
     <string name="statement_batch_apply">Volver a la lista</string>
     <string name="statement_batch_save">Guardar todos</string>
-    <string name="statement_batch_saved">%1$d movimiento(s) guardado(s)</string>
+    <string name="statement_batch_saved">Movimientos guardados: %1$d</string>
     <string name="statement_batch_incomplete">Corrige primero las entradas marcadas en rojo</string>
     <string name="statement_batch_save_failed">Error al guardar – no se apuntó nada. Inténtalo de nuevo.</string>
-    <string name="statement_batch_receipt_failed">%1$d extractos no pudieron archivarse como justificantes</string>
+    <string name="statement_batch_receipt_failed">Extractos que no pudieron archivarse como justificantes: %1$d</string>
     <string name="statement_receipt_failed">El extracto no pudo archivarse como justificante</string>
     <string name="statement_batch_discard_title">¿Descartar?</string>
     <string name="statement_batch_discard_message">Ninguno de los extractos leídos se apuntará.</string>
@@ -896,7 +897,7 @@
     <string name="statement_rules_import_title">¿Importar reglas?</string>
     <string name="statement_rules_import_message">El archivo contiene: %1$s\n\nTodas las reglas de esta cartera serán reemplazadas por ellas.</string>
     <string name="statement_rules_import_from">%1$s (de la cartera «%2$s»)</string>
-    <string name="statement_rules_import_done">%1$d reglas importadas</string>
+    <string name="statement_rules_import_done">Reglas importadas: %1$d</string>
     <string name="statement_rules_import_unreadable">No se pudo leer el archivo.</string>
     <string name="statement_rules_import_not_ours">Este no es un archivo de reglas de esta aplicación.</string>
     <string name="statement_rules_import_too_new">El archivo procede de una versión más reciente de la aplicación.</string>

@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.ui;
 
+import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.GestureDetector;
@@ -710,6 +711,7 @@ public class BudgetActivity extends LocalizedActivity {
     }
 
     /** Buchungszeile im Drilldown: Empfänger (fett) · Konto/Datum (grau) · Betrag (farbig, ggf. „Anteil"). */
+    @SuppressLint("SetTextI18n")   // Daten mit Trennzeichen, kein Satz
     private View bookingRow(Booking b, long displayCents, boolean partial, boolean istSplit) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);

@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.ui;
 
+import android.annotation.SuppressLint;
 import de.spahr.ausgaben.net.RemotePath;
 import android.content.Intent;
 import android.net.Uri;
@@ -657,6 +658,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         refreshPlaces();
     }
 
+    @SuppressLint("SetTextI18n")   // Daten mit Trennzeichen, kein Satz
     private void refreshPlaces() {
         List<String> places = placesAccount.isEmpty()
                 ? new ArrayList<>() : placesStore.getPlaces(placesAccount);

@@ -1,4 +1,20 @@
-<resources>
+<!--
+  Warum hier keine <plurals> stehen, obwohl Lint sie vorschlaegt (PluralsCandidate)
+
+  Die App laesst Sprachen hochladen. Deren Texte liegen in der Datenbank und werden von
+  LocaleContextWrapper.TranslatedResources untergeschoben - die ueberschreibt getText(int) und
+  getString(int, ...), aber NICHT getQuantityString. Der Katalog selbst entsteht ueber
+  Reflexion auf R.string (LocaleManager), R.plurals kaeme dort nie an, und die Export-Vorlage
+  fuer Uebersetzer speist sich aus derselben Tabelle.
+
+  Ein <plurals> wuerde seinen Text also aus dem Uebersetzungssystem herausloesen: In jeder
+  hochgeladenen Sprache stuende dauerhaft Englisch, ohne dass der Schluessel in der Vorlage
+  ueberhaupt auftauchte. Deshalb sind die betroffenen Texte stattdessen so gefasst, dass sie
+  auch bei 1 stimmen - Substantiv voran, Zahl hinten ("Konten geloescht: 1").
+
+  Die wenigen verbliebenen Meldungen tragen ihre Begruendung einzeln.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">KMySync</string>
 
     <!-- Main screen -->
@@ -57,8 +73,10 @@
     <string name="alias_gps_add">Add coordinate</string>
     <string name="alias_band_section">Usual amounts</string>
     <string name="alias_band_range">%1$s to %2$s (%3$d–%4$d %%)</string>
-    <string name="alias_band_too_few">Fewer than %1$d bookings – amounts are not used to tell this payee apart yet.</string>
-    <string name="nearby_payee_count">%1$d payees nearby</string>
+    <string name="percent_value">%1$d %%</string>
+    <!-- Zahl ist PayeeAmounts.MIN_COUNT = 5, nie 1 -->
+    <string name="alias_band_too_few" tools:ignore="PluralsCandidate">Fewer than %1$d bookings – amounts are not used to tell this payee apart yet.</string>
+    <string name="nearby_payee_count">Payees nearby: %1$d</string>
     <string name="nearby_payee_none">no payee</string>
     <string name="map_pick_title">Pick location</string>
     <string name="map_pick_confirm">Use this location</string>
@@ -106,9 +124,9 @@
     <string name="receipt_export_none">No receipts in the current filter</string>
     <string name="receipt_export_running">Packing receipts…</string>
     <string name="receipt_export_title">Export receipts</string>
-    <string name="receipt_export_done">%1$d receipt(s) packed.</string>
-    <string name="receipt_export_missing">%1$d could not be fetched (not on this device and not reachable on the server).</string>
-    <string name="receipt_export_empty">Not a single receipt could be fetched — %1$d are missing. No file was created.</string>
+    <string name="receipt_export_done">Receipts packed: %1$d</string>
+    <string name="receipt_export_missing">Could not be fetched: %1$d (not on this device and not reachable on the server).</string>
+    <string name="receipt_export_empty">Not a single receipt could be fetched — missing: %1$d. No file was created.</string>
     <string name="receipt_export_failed">Export failed: %1$s</string>
     <string name="receipt_export_running_count">Packing receipts (%1$d/%2$d)</string>
     <string name="receipt_export_running_fetch">Fetching and packing receipts…</string>
@@ -120,12 +138,12 @@
     <string name="receipt_export_resume_ask">The receipt export to “%1$s” (%2$s) did not finish. Try again? Those already fetched are on the device and come along right away; the same file is written.</string>
     <string name="receipt_export_resume">Try again</string>
     <string name="receipt_export_paused">Paused — keep the app open</string>
-    <string name="receipt_export_not_found">• %1$d not on the server</string>
-    <string name="receipt_export_unreachable">• %1$d could not be reached (connection)</string>
-    <string name="receipt_export_pending">• %1$d were not reached: the run stopped after waiting too long in the background</string>
+    <string name="receipt_export_not_found">• Not on the server: %1$d</string>
+    <string name="receipt_export_unreachable">• Could not be reached (connection): %1$d</string>
+    <string name="receipt_export_pending">• Not reached: %1$d — the run stopped after waiting too long in the background</string>
     <string name="receipt_export_retry">Running the export again fetches the missing ones — those already fetched are now on the device and come along right away.</string>
-    <string name="receipt_export_skipped">• %1$d were not fetched, as you asked</string>
-    <string name="receipt_download_ask">%1$d receipts are on the device, %2$d would have to be fetched from the server first.</string>
+    <string name="receipt_export_skipped">• Not fetched, as you asked: %1$d</string>
+    <string name="receipt_download_ask">On the device: %1$d. To be fetched from the server first: %2$d.</string>
     <string name="receipt_download_takes_time">Fetching takes a while — keep the app open. Otherwise the run pauses and only continues once you come back.</string>
     <string name="receipt_download_metered">The current connection is metered and this will cost money.</string>
     <string name="receipt_download_all">Export all</string>
@@ -221,7 +239,7 @@
     <string name="accounts_manage_title">Sort and manage accounts</string>
     <string name="accounts_manage_drag">Drag to reorder</string>
     <string name="accounts_manage_menu">Account menu</string>
-    <string name="accounts_manage_count">(%1$d accounts)</string>
+    <string name="accounts_manage_count">(accounts: %1$d)</string>
     <!-- Menu entries in the account management view: spelled out, unlike the narrow dialog buttons. -->
     <string name="accounts_manage_close">Close account</string>
     <string name="accounts_manage_reopen">Reopen account</string>
@@ -230,7 +248,7 @@
     <string name="add_account">Add new account</string>
     <string name="kmy_import_all_title">Import all accounts?</string>
     <string name="kmy_import_all_message">All accounts, portfolios and scheduled transactions are updated from the KMyMoney file (already exported bookings are replaced).</string>
-    <string name="kmy_import_done_multi">Imported %1$d booking(s) into %2$d account(s)</string>
+    <string name="kmy_import_done_multi">Imported — bookings: %1$d, accounts: %2$d</string>
     <string name="import_running_banner">Importing account…</string>
     <string name="import_stage_download">Loading file…</string>
     <string name="import_stage_account">Account: %1$s</string>
@@ -371,7 +389,7 @@
     <string name="reminder_scheduled">Remind me of due transactions</string>
     <string name="reminder_channel">Due scheduled transactions</string>
     <string name="reminder_title">Scheduled transactions</string>
-    <string name="reminder_due">%d scheduled transactions due today</string>
+    <string name="reminder_due">Scheduled transactions due today: %d</string>
     <string name="reminder_no_permission">Without notification permission no reminder is possible.</string>
 
     <!-- App lock (biometrics) -->
@@ -418,10 +436,10 @@
     <string name="receipt_page_new">Page %1$d (new)</string>
     <string name="receipt_add_page">Add page</string>
     <string name="receipt_pages_loading">Looking for further pages…</string>
-    <string name="receipt_pages_count">%1$d page(s)</string>
+    <string name="receipt_pages_count">Pages: %1$d</string>
     <string name="receipt_pdf_label">Document %1$d</string>
     <string name="receipt_pdf_new">Document %1$d (new)</string>
-    <string name="receipt_pdfs_count">%1$d document(s)</string>
+    <string name="receipt_pdfs_count">Documents: %1$d</string>
     <string name="receipt_pdf_no_viewer">No app for PDF documents installed</string>
     <string name="receipt_pdf_attached">Document ✓</string>
     <string name="tags_row">Tags: %1$s</string>
@@ -473,7 +491,8 @@
     <string name="backup_password_hint">Backup password</string>
     <string name="backup_password_repeat">Repeat</string>
     <string name="backup_password_mismatch">The passwords do not match</string>
-    <string name="backup_password_too_short">Please use at least %1$d characters — or leave the field empty for an unencrypted backup</string>
+    <!-- Zahl ist BackupCrypto.MIN_PASSWORD_LENGTH = 8, nie 1 -->
+    <string name="backup_password_too_short" tools:ignore="PluralsCandidate">Please use at least %1$d characters — or leave the field empty for an unencrypted backup</string>
     <string name="backup_target_unwritable">The chosen file cannot be written</string>
     <string name="backup_source_unreadable">The chosen file cannot be read</string>
     <string name="restore_what_title">What should be restored?</string>
@@ -505,11 +524,11 @@
     <string name="account_close_needs_zero">Closing is only possible with a zero balance (currently %1$s).</string>
     <string name="account_closed_done">Account “%1$s” closed</string>
     <string name="account_reopened_done">Account “%1$s” reopened</string>
-    <string name="delete_accounts_confirm_message">%1$d account(s) and all their bookings will be permanently deleted.</string>
-    <string name="delete_accounts_confirm_message_with_depots">%1$d account(s) will be permanently deleted, including %2$d portfolio(s) with all securities, transactions and prices.</string>
-    <string name="accounts_deleted_done">%1$d account(s) deleted</string>
-    <string name="accounts_closed_done">%1$d account(s) closed</string>
-    <string name="accounts_reopened_done">%1$d account(s) reopened</string>
+    <string name="delete_accounts_confirm_message">Accounts to be permanently deleted: %1$d — including all their bookings.</string>
+    <string name="delete_accounts_confirm_message_with_depots">Accounts to be permanently deleted: %1$d, including portfolios: %2$d — with all securities, transactions and prices.</string>
+    <string name="accounts_deleted_done">Accounts deleted: %1$d</string>
+    <string name="accounts_closed_done">Accounts closed: %1$d</string>
+    <string name="accounts_reopened_done">Accounts reopened: %1$d</string>
 
     <!-- Places -->
     <string name="places_section">Places (cash balances)</string>
@@ -524,7 +543,7 @@
     <string name="remove">Remove</string>
     <string name="password_saved_hint">•••••• (saved)</string>
     <string name="settings_secret_fallback">The key store of this device is unavailable — the server password is stored unencrypted</string>
-    <string name="import_done">Imported %1$d booking(s) (account replaced)</string>
+    <string name="import_done">Bookings imported: %1$d (account replaced)</string>
     <string name="import_failed">Import failed: %1$s</string>
     <string name="nextcloud_import_folder_hint">Import folder (Nextcloud)</string>
     <string name="loading_files">Loading file list…</string>
@@ -545,8 +564,9 @@
     <string name="language_export">Export template</string>
     <string name="language_upload">Upload language</string>
     <string name="language_export_done">Template saved</string>
-    <string name="language_export_missing">%1$d of %2$d texts are still missing in this language. Fill them in and upload the file again.</string>
-    <string name="language_export_complete">All %1$d texts are present in this language.</string>
+    <string name="language_export_missing">Texts still missing in this language: %1$d of %2$d. Fill them in and upload the file again.</string>
+    <!-- Zahl ist die Gesamtzahl aller Texte (Hunderte), nie 1 -->
+    <string name="language_export_complete" tools:ignore="PluralsCandidate">All %1$d texts are present in this language.</string>
     <string name="language_upload_done">Language “%1$s” loaded</string>
     <string name="language_upload_failed">Invalid language file: %1$s</string>
     <string name="currency_hint">Currency indicator (default)</string>
@@ -683,7 +703,7 @@
     <string name="kmy_replace_title">Replace account?</string>
     <string name="kmy_replace_message">The already exported bookings of account “%1$s” are replaced by the import.</string>
     <string name="kmy_import_replace">Replace</string>
-    <string name="kmy_import_done">Imported %1$d booking(s) for account “%2$s”</string>
+    <string name="kmy_import_done">Bookings imported for account “%2$s”: %1$d</string>
     <string name="progress_loading">Loading file list…</string>
     <string name="progress_download">Downloading KMyMoney file…</string>
     <string name="progress_importing">Importing…</string>
@@ -692,15 +712,18 @@
     <string name="kmy_progress_backup">Backing up original…</string>
     <string name="kmy_progress_writing">Writing KMyMoney file…</string>
     <string name="kmy_none_matched">No booking could be matched.</string>
-    <string name="kmy_result_written">Wrote %1$d booking(s) to %2$s</string>
-    <string name="kmy_result_updated">, %1$d changed</string>
-    <string name="kmy_edited_not_found">%1$d edited booking(s) were not found in the file and stay marked “edited”.</string>
-    <string name="kmy_result_new_payees">, %1$d new payee(s)</string>
-    <string name="kmy_result_deleted">, %1$d deleted</string>
-    <string name="kmy_result_scheduled">, %1$d schedule(s) moved on</string>
+    <string name="kmy_result_written">Bookings written to %2$s: %1$d</string>
+    <!-- liest sich auch bei 1 richtig; nur das spanische Pendant war zu beugen -->
+    <string name="kmy_result_updated" tools:ignore="PluralsCandidate">, %1$d changed</string>
+    <string name="kmy_edited_not_found">Edited bookings not found in the file: %1$d — they stay marked “edited”.</string>
+    <string name="kmy_result_new_payees">, new payees: %1$d</string>
+    <!-- liest sich auch bei 1 richtig; nur das spanische Pendant war zu beugen -->
+    <string name="kmy_result_deleted" tools:ignore="PluralsCandidate">, %1$d deleted</string>
+    <string name="kmy_result_scheduled">, schedules moved on: %1$d</string>
     <string name="kmy_result_backup">Backup: %1$s</string>
     <string name="kmy_conflict">The .kmy was changed in the meantime (probably on the computer). Nothing was written – please re-import the accounts and export again.</string>
-    <string name="kmy_skipped">%1$d skipped: %2$s</string>
+    <!-- liest sich auch bei 1 richtig; nur das spanische Pendant war zu beugen -->
+    <string name="kmy_skipped" tools:ignore="PluralsCandidate">%1$d skipped: %2$s</string>
 
     <!-- Messages -->
     <string name="error_amount">Please enter a valid amount > 0</string>
@@ -710,8 +733,8 @@
     <string name="export_none">No new bookings to export</string>
     <string name="export_no_bookings">No bookings available</string>
     <string name="export_target_missing">No target folder selected</string>
-    <string name="export_result_uploaded">Uploaded %1$d booking(s) in %2$d file(s)</string>
-    <string name="export_result_saved">Saved %1$d booking(s) in %2$d file(s) locally</string>
+    <string name="export_result_uploaded">Uploaded — bookings: %1$d, files: %2$d</string>
+    <string name="export_result_saved">Saved locally — bookings: %1$d, files: %2$d</string>
     <string name="export_result_failed">Failed – %1$s</string>
     <string name="export_running">Export running…</string>
     <string name="export_success">Exported &amp; uploaded to Nextcloud</string>
@@ -755,7 +778,7 @@
     <string name="onboarding_import_accounts">Import accounts</string>
     <string name="onboarding_importing">Importing…</string>
     <string name="onboarding_import_running">Please wait until the import has finished.</string>
-    <string name="onboarding_import_done">%1$d account(s) imported</string>
+    <string name="onboarding_import_done">Accounts imported: %1$d</string>
     <string name="onboarding_note">You can adjust further settings anytime via the menu (bottom of the overflow menu).</string>
     <string name="onboarding_done">Done</string>
     <string name="security_tx_new_title">New movement</string>
@@ -819,14 +842,14 @@
     <string name="statement_anchor_sum">sum of these lines</string>
     <!-- Mehrere Abrechnungen auf einmal: die Erkennungsliste vor dem Buchen. -->
     <string name="statement_batch_title">Statements read</string>
-    <string name="statement_batch_reading">Reading %1$d statements…</string>
+    <string name="statement_batch_reading">Reading statements: %1$d…</string>
     <string name="statement_batch_none">None of the files could be read</string>
     <string name="statement_batch_apply">Back to the list</string>
     <string name="statement_batch_save">Save all</string>
-    <string name="statement_batch_saved">%1$d movements saved</string>
+    <string name="statement_batch_saved">Movements saved: %1$d</string>
     <string name="statement_batch_incomplete">Please correct the entries marked red first</string>
     <string name="statement_batch_save_failed">Saving failed — nothing was booked. Please try again.</string>
-    <string name="statement_batch_receipt_failed">%1$d statements could not be filed as receipts</string>
+    <string name="statement_batch_receipt_failed">Statements that could not be filed as receipts: %1$d</string>
     <string name="statement_receipt_failed">The statement could not be filed as a receipt</string>
     <string name="statement_batch_discard_title">Discard?</string>
     <string name="statement_batch_discard_message">None of the statements read will be booked.</string>
@@ -874,10 +897,12 @@
     <string name="statement_rules_same_line">on the same line</string>
     <string name="statement_rules_line_below">on one of the lines below</string>
     <string name="statement_rules_below_one">exactly 1 line below</string>
-    <string name="statement_rules_below_n">exactly %1$d lines below</string>
+    <!-- bei 1 greift statement_rules_below_one (StatementRulesActivity#lineDistanceText) -->
+    <string name="statement_rules_below_n" tools:ignore="PluralsCandidate">exactly %1$d lines below</string>
     <string name="statement_rules_line_above">on one of the lines above</string>
     <string name="statement_rules_above_one">exactly 1 line above</string>
-    <string name="statement_rules_above_n">exactly %1$d lines above</string>
+    <!-- bei 1 greift statement_rules_above_one (StatementRulesActivity#lineDistanceText) -->
+    <string name="statement_rules_above_n" tools:ignore="PluralsCandidate">exactly %1$d lines above</string>
     <string name="statement_rules_sum">Add up several lines</string>
     <string name="statement_rules_fixed_fee">Fixed fee per order</string>
     <string name="statement_rules_fixed_fee_category">Category of the fixed fee</string>
@@ -912,7 +937,7 @@
     <string name="statement_rules_import_title">Import rules?</string>
     <string name="statement_rules_import_message">The file holds: %1$s\n\nAll rules of this portfolio will be replaced by them.</string>
     <string name="statement_rules_import_from">%1$s (from portfolio “%2$s”)</string>
-    <string name="statement_rules_import_done">%1$d rules imported</string>
+    <string name="statement_rules_import_done">Rules imported: %1$d</string>
     <string name="statement_rules_import_unreadable">The file could not be read.</string>
     <string name="statement_rules_import_not_ours">This is not a rules file of this app.</string>
     <string name="statement_rules_import_too_new">The file comes from a newer version of the app.</string>

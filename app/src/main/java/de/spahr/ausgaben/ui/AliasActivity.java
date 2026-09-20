@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.ui;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.TypedValue;
@@ -50,6 +51,7 @@ public class AliasActivity extends LocalizedActivity {
         repository.getAllAliases(this::showAliases);
     }
 
+    @SuppressLint("SetTextI18n")   // Daten mit Trennzeichen, kein Satz
     private void showAliases(List<PayeeCorrection> aliases) {
         container.removeAllViews();
         boolean empty = aliases == null || aliases.isEmpty();

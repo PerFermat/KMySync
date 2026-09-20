@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.ui;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -567,6 +568,7 @@ public class CategoryChartActivity extends LocalizedActivity {
     }
 
     /** Geplante Zeile im Drilldown: komplett grau, Datum + „(geplant)"-Hinweis. */
+    @SuppressLint("SetTextI18n")   // Daten mit Trennzeichen, kein Satz
     private View plannedRow(ScheduledTransaction st, long dateMs, long cents) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -599,6 +601,7 @@ public class CategoryChartActivity extends LocalizedActivity {
     }
 
     /** Buchungszeile im Drilldown: Empfänger (fett) · Konto/Datum (grau) · Betrag (farbig, ggf. „Anteil"). */
+    @SuppressLint("SetTextI18n")   // Daten mit Trennzeichen, kein Satz
     private View bookingRow(Booking b, long displayCents, boolean partial, boolean istSplit) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);

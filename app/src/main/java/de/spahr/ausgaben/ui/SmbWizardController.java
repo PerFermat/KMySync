@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.ui;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.text.SpannableString;
 import android.text.Spanned;
@@ -294,6 +295,7 @@ public class SmbWizardController {
      * {@code DOMÄNE\} vorbelegt – in einer Windows-Domäne scheitert die Anmeldung sonst leicht, obwohl das
      * Passwort stimmt. Eine eigene Eingabe wird nie überschrieben.
      */
+    @SuppressLint("SetTextI18n")   // Daten mit Trennzeichen, kein Satz
     private void prefillDomain() {
         if (selectedWorkgroup.isEmpty() || !textOf(editUser).isEmpty()
                 || selectedWorkgroup.equalsIgnoreCase("WORKGROUP")) {
