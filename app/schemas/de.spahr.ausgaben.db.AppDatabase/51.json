@@ -47,8 +47,7 @@
           {
             "fieldPath": "categoryIsIncome",
             "columnName": "category_is_income",
-            "affinity": "INTEGER",
-            "notNull": false
+            "affinity": "INTEGER"
           },
           {
             "fieldPath": "note",
@@ -141,9 +140,7 @@
           "columnNames": [
             "id"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       },
       {
         "tableName": "booking_split",
@@ -176,8 +173,7 @@
           {
             "fieldPath": "categoryIsIncome",
             "columnName": "category_is_income",
-            "affinity": "INTEGER",
-            "notNull": false
+            "affinity": "INTEGER"
           }
         ],
         "primaryKey": {
@@ -185,9 +181,7 @@
           "columnNames": [
             "id"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       },
       {
         "tableName": "account",
@@ -246,8 +240,7 @@
             "orders": [],
             "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_account_name` ON `${TABLE_NAME}` (`name`)"
           }
-        ],
-        "foreignKeys": []
+        ]
       },
       {
         "tableName": "payee",
@@ -282,8 +275,7 @@
             "orders": [],
             "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_payee_name` ON `${TABLE_NAME}` (`name`)"
           }
-        ],
-        "foreignKeys": []
+        ]
       },
       {
         "tableName": "place_entry",
@@ -337,9 +329,7 @@
           "columnNames": [
             "id"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       },
       {
         "tableName": "payee_correction",
@@ -498,8 +488,7 @@
             "orders": [],
             "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_payee_correction_spoken_corrected` ON `${TABLE_NAME}` (`spoken`, `corrected`)"
           }
-        ],
-        "foreignKeys": []
+        ]
       },
       {
         "tableName": "translation",
@@ -530,9 +519,7 @@
             "lang",
             "key"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       },
       {
         "tableName": "language",
@@ -568,9 +555,7 @@
           "columnNames": [
             "code"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       },
       {
         "tableName": "security",
@@ -648,8 +633,7 @@
             "orders": [],
             "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_security_depot_kmy_id` ON `${TABLE_NAME}` (`depot`, `kmy_id`)"
           }
-        ],
-        "foreignKeys": []
+        ]
       },
       {
         "tableName": "security_tx",
@@ -768,8 +752,7 @@
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_security_tx_depot` ON `${TABLE_NAME}` (`depot`)"
           }
-        ],
-        "foreignKeys": []
+        ]
       },
       {
         "tableName": "budget",
@@ -837,8 +820,7 @@
             "orders": [],
             "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_budget_year_month_category_is_income` ON `${TABLE_NAME}` (`year`, `month`, `category`, `is_income`)"
           }
-        ],
-        "foreignKeys": []
+        ]
       },
       {
         "tableName": "category_type",
@@ -862,9 +844,7 @@
           "columnNames": [
             "category"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       },
       {
         "tableName": "scheduled_transaction",
@@ -967,9 +947,7 @@
           "columnNames": [
             "id"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       },
       {
         "tableName": "scheduled_split",
@@ -1005,9 +983,7 @@
           "columnNames": [
             "id"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       },
       {
         "tableName": "analysis_extra",
@@ -1055,9 +1031,7 @@
           "columnNames": [
             "id"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       },
       {
         "tableName": "security_tx_value_override",
@@ -1109,9 +1083,7 @@
             "action",
             "shares"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       },
       {
         "tableName": "kmy_pending_delete",
@@ -1153,9 +1125,7 @@
           "columnNames": [
             "id"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       },
       {
         "tableName": "security_price",
@@ -1210,8 +1180,7 @@
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_security_price_depot_security_kmy_id_date` ON `${TABLE_NAME}` (`depot`, `security_kmy_id`, `date`)"
           }
-        ],
-        "foreignKeys": []
+        ]
       },
       {
         "tableName": "scheduled_advance",
@@ -1270,8 +1239,7 @@
             "orders": [],
             "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_scheduled_advance_kmy_id` ON `${TABLE_NAME}` (`kmy_id`)"
           }
-        ],
-        "foreignKeys": []
+        ]
       },
       {
         "tableName": "account_group",
@@ -1324,8 +1292,7 @@
             "orders": [],
             "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_account_group_name` ON `${TABLE_NAME}` (`name`)"
           }
-        ],
-        "foreignKeys": []
+        ]
       },
       {
         "tableName": "account_group_member",
@@ -1409,9 +1376,7 @@
           "columnNames": [
             "kind"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       },
       {
         "tableName": "tag",
@@ -1446,8 +1411,7 @@
             "orders": [],
             "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_tag_name` ON `${TABLE_NAME}` (`name`)"
           }
-        ],
-        "foreignKeys": []
+        ]
       },
       {
         "tableName": "security_tx_split",
@@ -1512,11 +1476,9 @@
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_security_tx_split_tx_id` ON `${TABLE_NAME}` (`tx_id`)"
           }
-        ],
-        "foreignKeys": []
+        ]
       }
     ],
-    "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
       "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0d2b3a82a5485c3e4c7e8a049010427f')"

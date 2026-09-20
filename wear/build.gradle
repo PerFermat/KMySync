@@ -51,14 +51,12 @@ android {
     }
 }
 
-// androidx.wear.tiles:1.1.0 zieht altes kotlin-stdlib-jdk7/8:1.6.21; auf 1.8.22 anheben (dort leere
-// Stubs), damit keine doppelten Kotlin-Klassen entstehen.
-configurations.all {
-    resolutionStrategy {
-        force libs.kotlin.stdlib.jdk7
-        force libs.kotlin.stdlib.jdk8
-    }
-}
+// Hier stand bis 2.1 ein resolutionStrategy-force auf kotlin-stdlib-jdk7/8. Grund war
+// androidx.wear.tiles:1.1.0, das kotlin-stdlib-jdk7/8:1.6.21 mitbrachte - dort lagen noch echte
+// Klassen, die sich mit denen aus kotlin-stdlib 1.8+ doppelten. Seit tiles 1.6.2 kommen die beiden
+// Artefakte im Abhaengigkeitsbaum ueberhaupt nicht mehr vor (nachgesehen mit
+// ":wear:dependencies --configuration releaseRuntimeClasspath"), damit hatte der force nichts mehr
+// zu tun. Taucht das Problem je wieder auf, ist das hier die Stelle.
 
 dependencies {
     implementation libs.appcompat
