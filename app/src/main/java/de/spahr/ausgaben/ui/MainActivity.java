@@ -75,6 +75,11 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         if (searchBar != null) {
             searchBar.detach();
         }
+        // Ein laufender Beleg-Export liefe sonst bis zum letzten Beleg weiter, um dann an eine Maske
+        // zu melden, die es nicht mehr gibt. Was bis dahin gepackt wurde, bleibt in der Datei.
+        if (receiptExport != null) {
+            receiptExport.detach();
+        }
         super.onDestroy();
     }
 
@@ -274,16 +279,8 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     private ActivityResultLauncher<String[]> importLauncher;
     /** Speicherdialog für die ZIP-Datei mit den Belegen der gefilterten Buchungen. */
     private ActivityResultLauncher<String> receiptZipLauncher;
-    /** Was beim Antippen des Menüpunkts feststand – der Speicherdialog kommt ja erst danach. */
-    private java.util.List<de.spahr.ausgaben.receipt.ReceiptExportJobs.Job> receiptExportJobs;
-    /** Antwort auf die Rückfrage vor dem Speicherdialog: fehlende Belege nachladen? */
-    private boolean receiptExportDownload = true;
-    /** Wieviele der vorgemerkten Belege schon auf dem Gerät liegen – sie stehen in der Liste vorn. */
-    private int receiptExportLocal;
-    /** Der Dateiname, unter dem gespeichert wird – gemerkt für einen späteren zweiten Anlauf. */
-    private String receiptExportName = "";
-    /** Gesetzt, solange ein Beleg-Export läuft; darüber bricht das Banner ihn ab. */
-    private java.util.concurrent.atomic.AtomicBoolean receiptExportCancel;
+    /** Sammeln, fragen, packen, melden – siehe {@link ReceiptExportController}. */
+    private ReceiptExportController receiptExport;
     private ActivityResultLauncher<Intent> voiceLauncher;
     private VoiceEntryController voiceEntry;
     private ActivityResultLauncher<Intent> editLauncher;
@@ -539,9 +536,12 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                         } catch (Exception ignored) {
                             // kein dauerhaftes Recht – der Lauf selbst geht trotzdem
                         }
-                        writeReceiptZip(uri);
+                        receiptExport.onZipPicked(uri);
                     }
                 });
+        // Erst hier, nicht früher: Der Regler braucht den Datei-Wähler und das Band, und beide stehen
+        // erst jetzt. Vor dem Aufruf von offerResume() weiter unten muß er da sein.
+        receiptExport = new ReceiptExportController(this, repository, importBanner, receiptZipLauncher);
         // Buchungs-Editor: liefert nach dem Löschen die Daten für „Rückgängig" zurück – und aus der
         // Ansicht den Wunsch, dieselbe Buchung jetzt zu bearbeiten (Stift in der Toolbar).
         editLauncher = registerForActivityResult(
@@ -686,7 +686,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         de.spahr.ausgaben.receipt.ReceiptGc.runOncePerStart(this);
         // Kam der letzte Beleg-Export nie ans Ende? Dann einmal je App-Start anbieten, ihn zu
         // wiederholen – ebenfalls nur einmal, sonst stünde die Frage bei jeder Rückkehr aus dem Editor.
-        offerReceiptExportResume();
+        receiptExport.offerResume();
         boolean gps = settings.isGpsEnabled();
         // Ziffern-Button (stille Betrag-only-Erfassung) nur bei aktivem Standort anbieten.
         findViewById(R.id.fabNumber).setVisibility(gps ? View.VISIBLE : View.GONE);
@@ -1334,397 +1334,18 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     }
 
     // ---- Belege der gefilterten Buchungen ausgeben ----
+    // Der Ablauf steht in ReceiptExportController; hier bleibt nur die Auswahl, denn der
+    // Filter gehoert der Maske. Aufgerufen aus dem Menue, beim Start und aus dem Datei-Waehler.
 
-    /**
-     * Sammelt die Belege der gerade gefilterten Buchungen und öffnet den Speicherdialog. Hat keine der
-     * Buchungen einen Beleg, bleibt es bei einer kurzen Meldung – ein Dialog, an dessen Ende eine leere
-     * Datei stünde, hilft niemandem.
-     */
-    private void exportReceipts() {
-        java.util.List<Booking> filtered = new ArrayList<>();
+    /** Die gerade sichtbare Auswahl – dieselbe Kette wie in {@link #applyFilter()}. */
+    private java.util.List<Booking> gefilterteBuchungen() {
+        java.util.List<Booking> treffer = new ArrayList<>();
         for (Booking b : allBookings) {
             if (matchesFilter(b)) {
-                filtered.add(b);
+                treffer.add(b);
             }
         }
-        // Zweimal sammeln ist billig (reine Rechnung) und erspart eine Datenbankabfrage je Umbuchung:
-        // Erst steht fest, welche Buchungen überhaupt einen Beleg tragen, und nur die werden nachgeschlagen.
-        java.util.List<de.spahr.ausgaben.receipt.ReceiptExportJobs.Job> vorlaeufig =
-                de.spahr.ausgaben.receipt.ReceiptExportJobs.collect(filtered);
-        if (vorlaeufig.isEmpty()) {
-            Toast.makeText(this, R.string.receipt_export_none, Toast.LENGTH_LONG).show();
-            return;
-        }
-        java.util.Set<Long> mitBeleg = new java.util.HashSet<>();
-        for (de.spahr.ausgaben.receipt.ReceiptExportJobs.Job j : vorlaeufig) {
-            mitBeleg.add(j.bookingId);
-        }
-        java.util.List<Booking> kandidaten = new ArrayList<>();
-        for (Booking b : filtered) {
-            if (mitBeleg.contains(b.id)) {
-                kandidaten.add(b);
-            }
-        }
-        repository.securityInfoForBookings(kandidaten, info -> {
-            de.spahr.ausgaben.receipt.ReceiptExportPlan plan =
-                    de.spahr.ausgaben.receipt.ReceiptExportPlan.of(this,
-                            de.spahr.ausgaben.receipt.ReceiptExportJobs.collect(
-                                    filtered, uebersetzteBewegungsarten(info)));
-            // Gepackt wird in der Reihenfolge der Liste: erst die Belege, die schon hier liegen. Bricht
-            // das Nachladen später ab, stehen sie deshalb auf jeden Fall in der Datei.
-            receiptExportJobs = plan.ordered();
-            receiptExportLocal = plan.local.size();
-            if (!plan.needsDownload()) {
-                receiptExportDownload = true; // nichts zu holen – die Frage erübrigt sich
-                startReceiptZipPicker();
-                return;
-            }
-            askReceiptDownload(plan);
-        });
-    }
-
-    /**
-     * Vor dem Nachladen fragen. Nicht nur wegen der Kosten an einer getakteten Verbindung: Ein paar
-     * hundert Dateien vom Server zu holen dauert, und wer das vorher weiß, entscheidet anders, als wenn
-     * die App wortlos loslegt. Deshalb kommt die Frage auch im WLAN.
-     */
-    private void askReceiptDownload(de.spahr.ausgaben.receipt.ReceiptExportPlan plan) {
-        int da = plan.local.size();
-        int fehlt = plan.remote.size();
-        StringBuilder text = new StringBuilder()
-                .append(getString(R.string.receipt_download_ask, da, fehlt))
-                .append("\n\n")
-                .append(getString(R.string.receipt_download_takes_time));
-        if (de.spahr.ausgaben.net.Net.isMetered(this)) {
-            text.append("\n\n").append(getString(R.string.receipt_download_metered));
-        }
-        new AppDialog(this)
-                .setTitle(R.string.receipt_export_title)
-                .setMessage(text.toString())
-                .setPositiveButton(R.string.receipt_download_all, (d, w) -> {
-                    receiptExportDownload = true;
-                    startReceiptZipPicker();
-                })
-                .setNeutralButton(getString(R.string.receipt_download_local_only, da), (d, w) -> {
-                    receiptExportDownload = false;
-                    startReceiptZipPicker();
-                })
-                .setNegativeButton(R.string.cancel, null)
-                .show();
-    }
-
-    /**
-     * Bietet an, einen unterbrochenen oder unvollständig gebliebenen Beleg-Export zu wiederholen.
-     *
-     * <p>Ein zweiter Lauf ist billig: Alles, was der erste schon geholt hat, liegt jetzt auf dem Gerät
-     * und rauscht durch. Geschrieben wird in dieselbe Datei – ohne weitere Rückfrage, auch die
-     * Entscheidung über das Nachladen gilt von damals.</p>
-     */
-    private void offerReceiptExportResume() {
-        final de.spahr.ausgaben.receipt.ReceiptExportResume.Pending offen =
-                de.spahr.ausgaben.receipt.ReceiptExportResume.askOncePerStart(this);
-        if (offen == null) {
-            return;
-        }
-        String wann = java.text.DateFormat.getDateTimeInstance(
-                java.text.DateFormat.SHORT, java.text.DateFormat.SHORT).format(
-                        new java.util.Date(offen.startedAt));
-        new AppDialog(this)
-                .setTitle(R.string.receipt_export_title)
-                .setMessage(getString(R.string.receipt_export_resume_ask, offen.name, wann))
-                .setPositiveButton(R.string.receipt_export_resume, (d, w) -> resumeReceiptExport(offen))
-                .setNegativeButton(R.string.cancel, (d, w) -> {
-                    // Der Nutzer will die Datei nicht mehr. Unbrauchbar? Dann weg damit – lesbar?
-                    // Dann bleibt sie, sie enthält ja Belege.
-                    de.spahr.ausgaben.receipt.ReceiptExportResume.clear(this);
-                    removeIfBroken(android.net.Uri.parse(offen.uri));
-                })
-                .show();
-    }
-
-    /** Baut die Belegliste aus den gemerkten Buchungsnummern neu und schreibt dieselbe Datei. */
-    private void resumeReceiptExport(de.spahr.ausgaben.receipt.ReceiptExportResume.Pending offen) {
-        final android.net.Uri uri = android.net.Uri.parse(offen.uri);
-        repository.getBookingsByIds(offen.bookingIds, bookings -> {
-            if (bookings.isEmpty()) {
-                de.spahr.ausgaben.receipt.ReceiptExportResume.clear(this);
-                Toast.makeText(this, R.string.receipt_export_none, Toast.LENGTH_LONG).show();
-                return;
-            }
-            repository.securityInfoForBookings(bookings, info -> {
-                de.spahr.ausgaben.receipt.ReceiptExportPlan plan =
-                        de.spahr.ausgaben.receipt.ReceiptExportPlan.of(this,
-                                de.spahr.ausgaben.receipt.ReceiptExportJobs.collect(
-                                        bookings, uebersetzteBewegungsarten(info)));
-                receiptExportName = offen.name;
-                writeReceiptZip(uri, plan.ordered(), offen.allowDownload, plan.local.size(), true);
-            });
-        });
-    }
-
-    /** Speicherort wählen lassen; geschrieben wird erst in {@link #writeReceiptZip}. */
-    private void startReceiptZipPicker() {
-        receiptExportName = "belege-" + new java.text.SimpleDateFormat("yyyyMMdd-HHmmss",
-                java.util.Locale.US).format(new java.util.Date()) + ".zip";
-        receiptZipLauncher.launch(receiptExportName);
-    }
-
-    /**
-     * Macht das Fortschrittsbanner zum Abbruchknopf, solange ein Beleg-Export läuft. Ein Lauf über
-     * hunderte Belege dauert; ohne diesen Ausweg bliebe nur, die App abzuwürgen – und genau das
-     * hinterlässt die unbrauchbare Datei, um die es hier geht.
-     */
-    private void showExportBannerCancel(boolean laeuft) {
-        View banner = findViewById(R.id.importBanner);
-        if (banner == null) {
-            return;
-        }
-        banner.setClickable(laeuft);
-        banner.setOnClickListener(laeuft ? v -> askCancelReceiptExport() : null);
-    }
-
-    private void askCancelReceiptExport() {
-        final java.util.concurrent.atomic.AtomicBoolean flag = receiptExportCancel;
-        if (flag == null) {
-            return;
-        }
-        new AppDialog(this)
-                .setTitle(R.string.receipt_export_title)
-                .setMessage(R.string.receipt_export_cancel_ask)
-                .setPositiveButton(R.string.receipt_export_cancel, (d, w) -> {
-                    flag.set(true);
-                    importBanner.label(getString(R.string.receipt_export_cancelling));
-                })
-                .setNegativeButton(R.string.receipt_export_keep_running, null)
-                .show();
-    }
-
-    /**
-     * Die Bewegungsarten aus der Datenbank in die Sprache der App übersetzen – sie stehen später im
-     * Dateinamen des Belegs, und dort will man „Kauf" lesen, nicht „buy".
-     */
-    private java.util.Map<Long, String[]> uebersetzteBewegungsarten(
-            java.util.Map<Long, String[]> roh) {
-        java.util.Map<Long, String[]> out = new java.util.HashMap<>();
-        for (java.util.Map.Entry<Long, String[]> e : roh.entrySet()) {
-            String art = e.getValue()[0];
-            int text = de.spahr.ausgaben.db.SecurityTx.SELL.equals(art) ? R.string.action_sell
-                    : de.spahr.ausgaben.db.SecurityTx.DIVIDEND.equals(art) ? R.string.action_dividend
-                    : R.string.action_buy;
-            out.put(e.getKey(), new String[]{getString(text), e.getValue()[1]});
-        }
-        return out;
-    }
-
-    /** Packt die vorgemerkten Belege in die gewählte Datei; das Holen vom Server kann dauern. */
-    private void writeReceiptZip(android.net.Uri uri) {
-        writeReceiptZip(uri, receiptExportJobs, receiptExportDownload, receiptExportLocal, false);
-        receiptExportJobs = null;
-    }
-
-    /**
-     * Der eigentliche Lauf.
-     *
-     * @param wieder {@code true} beim Wiederaufnehmen: Die Datei wird dann gekürzt und von vorn
-     *               beschrieben, statt eine frisch angelegte zu füllen.
-     */
-    private void writeReceiptZip(android.net.Uri uri,
-                                 java.util.List<de.spahr.ausgaben.receipt.ReceiptExportJobs.Job> jobs,
-                                 final boolean download, int lokalCount, boolean wieder) {
-        // Bis hierher liegen die Belege schon auf dem Gerät – ab da wird geholt (die Liste ist
-        // vorsortiert, siehe ReceiptExportPlan.ordered).
-        final int lokal = download ? lokalCount : jobs == null ? 0 : jobs.size();
-        if (jobs == null || jobs.isEmpty()) {
-            return;
-        }
-        // Ab jetzt gilt der Lauf als begonnen. Stirbt der Prozess mittendrin, findet die App den
-        // Merker beim nächsten Start und bietet an, ihn zu wiederholen.
-        if (!wieder) {
-            java.util.List<Long> ids = new ArrayList<>(jobs.size());
-            for (de.spahr.ausgaben.receipt.ReceiptExportJobs.Job j : jobs) {
-                ids.add(j.bookingId);
-            }
-            de.spahr.ausgaben.receipt.ReceiptExportResume.start(this, uri.toString(),
-                    receiptExportName, download, ids);
-        }
-        final java.util.concurrent.atomic.AtomicBoolean abbruch =
-                new java.util.concurrent.atomic.AtomicBoolean();
-        receiptExportCancel = abbruch;
-        final String pausedLabel = getString(R.string.receipt_export_paused);
-        importBanner.start(getString(lokal > 0
-                ? R.string.receipt_export_running
-                : R.string.receipt_export_running_fetch));
-        // Der Text zählt mit: Bei 238 Belegen sagt ein Prozentwert allein zu wenig darüber, wie weit
-        // der Lauf ist und wie lange er noch braucht. Und er sagt, woran es gerade liegt, wenn es
-        // langsam vorangeht – Packen dauert Millisekunden, Holen dauert.
-        final String[] zaehlend = {getString(R.string.receipt_export_running)};
-        final de.spahr.ausgaben.util.ProgressListener progress = (done, total) -> {
-            boolean holt = done >= lokal && total > lokal;
-            zaehlend[0] = getString(holt
-                    ? R.string.receipt_export_running_fetch_count
-                    : R.string.receipt_export_running_count, done, total);
-            importBanner.set(zaehlend[0],
-                    de.spahr.ausgaben.export.ImportPhase.map(done, total, 0, 100));
-        };
-        // Der Lauf schläft, solange die App im Hintergrund ist – das Banner sagt, warum nichts vorangeht.
-        // Danach steht wieder der Zählstand da, bei dem er stehengeblieben ist.
-        final de.spahr.ausgaben.receipt.ReceiptZip.PauseListener pause =
-                p -> importBanner.label(p ? pausedLabel : zaehlend[0]);
-        // Das Banner ist jetzt der Abbruchknopf.
-        showExportBannerCancel(true);
-        final java.util.List<de.spahr.ausgaben.receipt.ReceiptExportJobs.Job> auftraege = jobs;
-        new Thread(() -> {
-            de.spahr.ausgaben.receipt.ReceiptZip.Result result = null;
-            String error = null;
-            // „wt" kürzt eine vorhandene Datei auf null – beim Wiederaufnehmen darf hinter dem neuen
-            // Archiv nichts vom alten stehenbleiben.
-            try (java.io.OutputStream out = getContentResolver().openOutputStream(uri, "wt")) {
-                if (out == null) {
-                    throw new java.io.IOException("kein Schreibzugriff");
-                }
-                result = de.spahr.ausgaben.receipt.ReceiptZip.write(this, out, auftraege, progress,
-                        pause, download, abbruch::get);
-            } catch (Exception e) {
-                error = String.valueOf(e.getMessage());
-            }
-            final de.spahr.ausgaben.receipt.ReceiptZip.Result done = result;
-            final String failed = error;
-            // Offen bleibt der Merker nur, wenn ein zweiter Lauf etwas bringt. Nach einem Abbruch
-            // gehört er ebenfalls weg – der Nutzer hat gerade gesagt, dass er aufhören will.
-            de.spahr.ausgaben.receipt.ReceiptExportResume.finished(this,
-                    done != null && done.worthRetrying() && !done.cancelled);
-            if (done != null && done.cancelled) {
-                // Regulär geschlossen heißt in aller Regel: lesbar. Prüfen und nur wegwerfen, was
-                // wirklich niemand mehr öffnen kann.
-                removeIfBroken(uri);
-            }
-            if (isFinishing() || isDestroyed()) {
-                return; // niemand mehr da, dem man etwas melden könnte – die Datei steht trotzdem
-            }
-            post(() -> {
-                receiptExportCancel = null;
-                showExportBannerCancel(false);
-                importBanner.finish();
-                if (failed != null) {
-                    Toast.makeText(this, getString(R.string.receipt_export_failed, failed),
-                            Toast.LENGTH_LONG).show();
-                    return;
-                }
-                reportReceiptZip(uri, done);
-            });
-        }).start();
-    }
-
-    /** Meldet das Ergebnis; ist nichts hineingekommen, verschwindet die eben angelegte Datei wieder. */
-    private void reportReceiptZip(android.net.Uri uri, de.spahr.ausgaben.receipt.ReceiptZip.Result r) {
-        if (r.written == 0) {
-            try {
-                android.provider.DocumentsContract.deleteDocument(getContentResolver(), uri);
-            } catch (Exception ignored) {
-                // Manche Anbieter lassen das nicht zu – dann bleibt es bei der Meldung.
-            }
-            new AppDialog(this)
-                    .setTitle(R.string.receipt_export_title)
-                    .setMessage(getString(R.string.receipt_export_empty, r.missing())
-                            + gruende(r))
-                    .setPositiveButton(android.R.string.ok, null)
-                    .show();
-            return;
-        }
-        String text = getString(R.string.receipt_export_done, r.written);
-        if (r.missing() > 0) {
-            text += "\n\n" + getString(R.string.receipt_export_missing, r.missing()) + gruende(r);
-        }
-        new AppDialog(this)
-                .setTitle(R.string.receipt_export_title)
-                .setMessage(text)
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
-    }
-
-    /**
-     * Wirft die Datei weg, wenn sie <b>sicher</b> unbrauchbar ist – sonst bleibt sie liegen.
-     *
-     * <p>Eine abgebrochene Datei ist lesbar und enthält, was bis dahin gepackt wurde; die ist etwas
-     * wert. Nur wo der Prozess mitten im Schreiben starb, fehlt das Dateiende und kein Packprogramm
-     * kommt mehr hinein. Lässt sich das nicht feststellen, wird nicht gelöscht: Eine kaputte Datei,
-     * die herumsteht, ist der kleinere Schaden als eine gelöschte, die in Ordnung war.</p>
-     */
-    private void removeIfBroken(android.net.Uri uri) {
-        Boolean heil = zipLooksComplete(uri);
-        if (heil == null || heil) {
-            return;
-        }
-        try {
-            android.provider.DocumentsContract.deleteDocument(getContentResolver(), uri);
-        } catch (Exception ignored) {
-            // Manche Anbieter lassen das nicht zu – dann bleibt die Datei eben liegen.
-        }
-    }
-
-    /**
-     * Ist die ZIP-Datei vollständig geschlossen? {@code null} = nicht feststellbar.
-     *
-     * <p>Gelesen wird nur der Schwanz der Datei, nicht ihr Inhalt – ein Beleg-Archiv kann hundert
-     * Megabyte haben.</p>
-     */
-    private Boolean zipLooksComplete(android.net.Uri uri) {
-        try (android.os.ParcelFileDescriptor pfd = getContentResolver().openFileDescriptor(uri, "r")) {
-            if (pfd == null) {
-                return null;
-            }
-            long size = pfd.getStatSize();
-            if (size <= 0) {
-                return Boolean.FALSE; // leer angelegt und nie beschrieben
-            }
-            int len = (int) Math.min(size, de.spahr.ausgaben.receipt.ZipCheck.TAIL_BYTES);
-            byte[] tail = new byte[len];
-            try (java.io.FileInputStream in =
-                         new java.io.FileInputStream(pfd.getFileDescriptor())) {
-                in.getChannel().position(size - len);
-                int gelesen = 0;
-                while (gelesen < len) {
-                    int n = in.read(tail, gelesen, len - gelesen);
-                    if (n < 0) {
-                        break;
-                    }
-                    gelesen += n;
-                }
-                if (gelesen < len) {
-                    return null; // unvollständig gelesen – lieber nichts behaupten
-                }
-            }
-            return de.spahr.ausgaben.receipt.ZipCheck.looksComplete(tail);
-        } catch (Exception e) {
-            return null; // kein Zugriff, kein Positionieren – im Zweifel nicht löschen
-        }
-    }
-
-    /**
-     * Die Gründe hinter der Zahl der fehlenden Belege – je Grund eine Zeile, und nur die, die
-     * zutreffen. „Nicht gefunden" und „keine Verbindung" verlangen ganz verschiedene Schritte, deshalb
-     * standen sie nie zu Recht in derselben Zahl.
-     */
-    private String gruende(de.spahr.ausgaben.receipt.ReceiptZip.Result r) {
-        StringBuilder sb = new StringBuilder();
-        if (r.notFound > 0) {
-            sb.append("\n").append(getString(R.string.receipt_export_not_found, r.notFound));
-        }
-        if (r.unreachable > 0) {
-            sb.append("\n").append(getString(R.string.receipt_export_unreachable, r.unreachable));
-        }
-        if (r.pending > 0) {
-            sb.append("\n").append(getString(R.string.receipt_export_pending, r.pending));
-        }
-        if (r.skipped > 0) {
-            sb.append("\n").append(getString(R.string.receipt_export_skipped, r.skipped));
-        }
-        // Nur wo ein zweiter Anlauf etwas bringt: Was der Server nicht hat, holt auch die zehnte
-        // Wiederholung nicht.
-        if (r.unreachable + r.pending + r.skipped > 0) {
-            sb.append("\n\n").append(getString(R.string.receipt_export_retry));
-        }
-        return sb.toString();
+        return treffer;
     }
 
     // ---- Saldo-Leiste (Durchschalten) ----
@@ -2209,7 +1830,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
             onImportRequested("", true);
             return true;
         } else if (id == R.id.action_export_receipts) {
-            exportReceipts();
+            receiptExport.start(gefilterteBuchungen());
             return true;
         } else if (id == R.id.action_filter) {
             showFilterDialog();

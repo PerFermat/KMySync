@@ -130,6 +130,22 @@ public final class ImportBanner {
         return active > 0;
     }
 
+    /**
+     * Macht das Band antippbar, oder nimmt das wieder zurück ({@code null}).
+     *
+     * <p>Der Beleg-Export hängt hier seine Abbruchfrage ein: Ein Lauf über hunderte Belege dauert, und
+     * ohne diesen Ausweg bliebe nur, die App abzuwürgen. Daß das Band die Ansicht selbst setzt und
+     * nicht der Aufrufer über {@code findViewById}, hat einen Grund — wer das Band benutzt, soll die
+     * Kennungen im Layout der Maske nicht kennen müssen.</p>
+     */
+    public void setClickAction(Runnable action) {
+        if (banner == null) {
+            return;
+        }
+        banner.setClickable(action != null);
+        banner.setOnClickListener(action == null ? null : v -> action.run());
+    }
+
     private void draw(int p) {
         if (p != shownPercent) {
             shownPercent = p;
