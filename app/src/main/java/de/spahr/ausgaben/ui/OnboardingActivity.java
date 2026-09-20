@@ -247,14 +247,21 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
         });
 
         ((MaterialButton) findViewById(R.id.btnRestoreProfile)).setOnClickListener(v -> confirmRestore());
-    }
 
-    @Override
-    public void onBackPressed() {
-        if (blockIfImporting()) {
-            return;
-        }
-        abortIfNewProfile();
+        // Nicht onBackPressed überschreiben: Das ist seit API 33 überholt, und mit
+        // android:enableOnBackInvokedCallback würde der Import-Schutz still übersprungen — die Maske
+        // schlösse mitten in einem laufenden Konten-Import, was die App zum Absturz bringt. Dieselbe
+        // Begründung wie in ProfileSettingsActivity, die denselben Schutz trägt; hier blieb bis 2.1 die
+        // alte Überschreibung stehen.
+        getOnBackPressedDispatcher().addCallback(this,
+                new androidx.activity.OnBackPressedCallback(true) {
+                    @Override
+                    public void handleOnBackPressed() {
+                        if (!blockIfImporting()) {
+                            abortIfNewProfile();
+                        }
+                    }
+                });
     }
 
     /**

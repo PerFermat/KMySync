@@ -3060,7 +3060,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                 .setView(view)
                 .setPositiveButton(R.string.statement_anchor_learn, (d, w) -> {
                     input.setTag(R.id.splitEntschiedenFuer, SplitRowController.parseCents(textOf(input)));
-                    int gewaehlt = gruppe.getCheckedRadioButtonId() - 1;
+                    int gewaehlt = gewaehlterIndex(gruppe);
                     if (gewaehlt < 0 || gewaehlt >= kandidaten.size()) {
                         // „Die App entscheiden lassen": der Lerner sucht beim Speichern selbst
                         // (siehe learnParts).
@@ -3197,6 +3197,22 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         return cents == null ? null : cents / 100.0;
     }
 
+    /**
+     * Welcher Knopf der Auswahl gerade steht, als Index in die Kandidatenliste — {@code -1}, wenn
+     * keiner steht.
+     *
+     * <p>Die Knöpfe entstehen zur Laufzeit und bekommen künstliche Kennungen {@code 1..n}: Eine
+     * {@link android.widget.RadioGroup} deutet die {@code 0} als „nichts gewählt", also kann der Index
+     * dort nicht unverschoben stehen. Bis 2.1 wurde der Rückweg als {@code getCheckedRadioButtonId() - 1}
+     * gerechnet. Das lief richtig, band aber die Auswertung an die Kennungen aus der Schleife — wer dort
+     * den Zähler anfaßte, brach sie still. Über die Kindposition gefragt, steht dieselbe Antwort ohne
+     * diese Kopplung da, und sie ist genau das, was gemeint ist.</p>
+     */
+    static int gewaehlterIndex(android.widget.RadioGroup gruppe) {
+        // findViewById gibt bei NO_ID (-1, also „nichts gewählt") null, indexOfChild dafür -1.
+        return gruppe.indexOfChild(gruppe.findViewById(gruppe.getCheckedRadioButtonId()));
+    }
+
     /** Die Auswahl — als {@link HostedDialog}, damit sie eine Drehung übersteht. */
     private void showAnchorChoice(Field field,
                                   java.util.List<de.spahr.ausgaben.statement.AnchorRule> kandidaten) {
@@ -3258,7 +3274,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                 .setView(view)
                 .setPositiveButton(R.string.statement_anchor_learn, (d, w) -> {
                     TextInputLayout layout = layoutFor(field);
-                    int gewaehlt = gruppe.getCheckedRadioButtonId() - 1;
+                    int gewaehlt = gewaehlterIndex(gruppe);
                     if (gewaehlt < 0 || gewaehlt >= rules.size()) {
                         // „Die App entscheiden lassen": der vorgeschlagene Anker wird verworfen, der
                         // Lerner sucht beim Speichern selbst (der berücksichtigt dann auch, was die

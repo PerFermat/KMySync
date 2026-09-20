@@ -1,5 +1,6 @@
 package de.spahr.ausgaben.ui;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
@@ -146,6 +147,20 @@ public class AppDialog extends MaterialAlertDialogBuilder {
         }
     }
 
+    /**
+     * Sucht im Dialogfenster die Tastenzeile und verbietet ihr das Stapeln.
+     *
+     * <p>{@link ButtonBarLayout} ist in {@code androidx.appcompat} mit {@code @RestrictTo} versehen,
+     * Lint meldet das als {@code RestrictedApi}. Einen unterstützten Weg gibt es nicht: Ob gestapelt
+     * wird, entscheidet allein {@code setAllowStacking}, und weder {@code AlertDialog} noch
+     * {@code MaterialAlertDialogBuilder} reichen das nach außen.</p>
+     *
+     * <p>Das Risiko ist tragbar, weil der Fehlerfall <b>laut</b> ist: Verschwindet die Klasse aus der
+     * Bibliothek, bricht der Bau. Sie still zu umgehen — etwa über den Klassennamen statt über den Typ —
+     * wäre das Gegenteil: Die Zeile stapelte wieder, und niemand merkte es. Findet {@code unstack}
+     * nichts, bleibt es bei Materials Verhalten.</p>
+     */
+    @SuppressLint("RestrictedApi")
     private static void unstack(View view) {
         if (view instanceof ButtonBarLayout) {
             ((ButtonBarLayout) view).setAllowStacking(false);
