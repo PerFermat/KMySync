@@ -20,6 +20,25 @@ import de.spahr.ausgaben.net.Diagnostics.Step;
  */
 public class DiagnosticsTest {
 
+    /**
+     * Die Behauptungen unten sind auf Deutsch – also muss die Sprache feststehen. Ohne das hinge das
+     * Ergebnis an der Spracheinstellung des Rechners, auf dem die Tests laufen: {@code Diagnostics.t}
+     * fragt zuerst die App-Sprache und fällt, wenn keine gesetzt ist (im Test immer), auf die des
+     * Systems zurück.
+     */
+    private java.util.Locale vorher;
+
+    @org.junit.Before
+    public void aufDeutsch() {
+        vorher = java.util.Locale.getDefault();
+        java.util.Locale.setDefault(java.util.Locale.GERMANY);
+    }
+
+    @org.junit.After
+    public void zurueck() {
+        java.util.Locale.setDefault(vorher);
+    }
+
     private static Step step(String label, boolean ok, String detail, long ms) {
         return new Step(label, ok, detail, ms);
     }

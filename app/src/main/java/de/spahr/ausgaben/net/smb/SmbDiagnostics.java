@@ -9,6 +9,8 @@ import com.hierynomus.smbj.share.DiskShare;
 import java.util.EnumSet;
 import java.util.List;
 
+import static de.spahr.ausgaben.net.Diagnostics.t;
+
 import de.spahr.ausgaben.net.Diagnostics;
 import de.spahr.ausgaben.net.Diagnostics.Log;
 import de.spahr.ausgaben.net.Diagnostics.Step;
@@ -62,20 +64,23 @@ public final class SmbDiagnostics {
         String share = parts[1];
         String base = parts[2];
         int port = parts[3].isEmpty() ? 0 : Integer.parseInt(parts[3]);
-        String who = "Benutzer " + (user == null || user.trim().isEmpty()
-                ? "leer (Gast/anonym)" : "gesetzt");
+        String who = t("Benutzer ", "user ") + (user == null || user.trim().isEmpty()
+                ? t("leer (Gast/anonym)", "empty (guest/anonymous)") : t("gesetzt", "set"));
         if (host.isEmpty() || share.isEmpty()) {
             // Ohne Host oder Freigabe gibt es nichts zu prüfen – das ist die ganze Auskunft.
-            log.note("Adresse", false, (host.isEmpty() ? "kein Host" : host)
-                    + ", " + (share.isEmpty() ? "keine Freigabe" : "Freigabe „" + share + "\"")
-                    + " – erwartet wird smb://Host/Freigabe");
+            log.note(t("Adresse", "Address"), false,
+                    (host.isEmpty() ? t("kein Host", "no host") : host)
+                    + ", " + (share.isEmpty() ? t("keine Freigabe", "no share")
+                            : t("Freigabe „" + share + "\"", "share \"" + share + "\""))
+                    + t(" – erwartet wird smb://Host/Freigabe", " – expected is smb://host/share"));
             return log.steps();
         }
-        log.note("Adresse " + host + ":" + (port > 0 ? port : 445)
-                + ", Freigabe „" + share + "\"" + (base.isEmpty() ? "" : ", Basis „" + base + "\"")
+        log.note(t("Adresse ", "Address ") + host + ":" + (port > 0 ? port : 445)
+                + t(", Freigabe „" + share + "\"", ", share \"" + share + "\"")
+                + (base.isEmpty() ? "" : t(", Basis „" + base + "\"", ", base \"" + base + "\""))
                 + ", " + who, true, "");
 
-        log.begin("Verbinden");
+        log.begin(t("Verbinden", "Connect"));
         SmbSessions.Link link;
         try {
             link = SmbSessions.open(host, port, false);
@@ -86,16 +91,19 @@ public final class SmbDiagnostics {
         try {
             StringBuilder how = new StringBuilder();
             if (link.usedPort != port) {
-                how.append("über Port ").append(link.usedPort > 0 ? link.usedPort : 445)
-                        .append(" statt ").append(port);
+                how.append(t("über Port ", "via port "))
+                        .append(link.usedPort > 0 ? link.usedPort : 445)
+                        .append(t(" statt ", " instead of ")).append(port);
             }
             if (link.plainFallback) {
-                how.append(how.length() > 0 ? ", " : "").append("erst ohne Verschlüsselungs-/DFS-Zusage");
+                how.append(how.length() > 0 ? ", " : "")
+                        .append(t("erst ohne Verschlüsselungs-/DFS-Zusage",
+                                "first without encryption/DFS capability"));
             }
             log.ok(how.toString());
-            log.note("Aushandeln", true, negotiated(link));
+            log.note(t("Aushandeln", "Negotiate"), true, negotiated(link));
 
-            log.begin("Anmelden");
+            log.begin(t("Anmelden", "Sign in"));
             Session session;
             try {
                 session = SmbSessions.authenticate(link.connection, user, password);
@@ -103,19 +111,22 @@ public final class SmbDiagnostics {
                 log.fail(reason(e));
                 return log.steps();
             }
-            log.ok((session.isGuest() ? "als Gast" : "als Benutzer") + ", " + encryption(session));
+            log.ok((session.isGuest() ? t("als Gast", "as guest") : t("als Benutzer", "as user"))
+                    + ", " + encryption(session));
 
-            log.begin("Freigaben lesen (IPC$)");
+            log.begin(t("Freigaben lesen (IPC$)", "List shares (IPC$)"));
             try {
                 List<String> shares = SmbShares.listOn(session, host);
-                log.ok(shares.size() + " gefunden"
-                        + (shares.contains(share) ? "" : ", „" + share + "\" ist nicht darunter"));
+                log.ok(shares.size() + t(" gefunden", " found")
+                        + (shares.contains(share) ? ""
+                                : t(", „" + share + "\" ist nicht darunter",
+                                    ", \"" + share + "\" is not among them")));
             } catch (Exception e) {
                 // Kein Abbruch: manche Server verbieten nur die Auskunft, nicht den Zugriff.
                 log.fail(reason(e));
             }
 
-            log.begin("Freigabe „" + share + "\" öffnen");
+            log.begin(t("Freigabe „" + share + "\" öffnen", "Open share \"" + share + "\""));
             DiskShare disk;
             try {
                 disk = (DiskShare) session.connectShare(share);
@@ -126,20 +137,22 @@ public final class SmbDiagnostics {
             try {
                 log.ok("");
                 String dir = join(base, folder);
-                log.begin("Ordner „" + (dir.isEmpty() ? "\\" : dir) + "\" lesen");
+                String angezeigt = dir.isEmpty() ? "\\" : dir;
+                log.begin(t("Ordner „" + angezeigt + "\" lesen",
+                        "Read folder \"" + angezeigt + "\""));
                 try {
                     int count = 0;
                     for (Object ignored : disk.list(dir)) {
                         count++;
                     }
-                    log.ok(count + " Einträge");
+                    log.ok(count + t(" Einträge", " entries"));
                 } catch (Exception e) {
                     log.fail(reason(e));
                     return log.steps();
                 }
                 writeRenameCleanup(disk, dir, log);
                 if (!file.isEmpty()) {
-                    log.begin("Datei „" + file + "\" prüfen");
+                    log.begin(t("Datei „" + file + "\" prüfen", "Check file \"" + file + "\""));
                     boolean exists;
                     try {
                         exists = disk.fileExists(join(dir, file));
@@ -148,10 +161,10 @@ public final class SmbDiagnostics {
                         return log.steps();
                     }
                     if (exists) {
-                        log.ok("vorhanden");
+                        log.ok(t("vorhanden", "present"));
                         fileWritableStep(disk, join(dir, file), file, log);
                     } else {
-                        log.fail("nicht gefunden");
+                        log.fail(t("nicht gefunden", "not found"));
                     }
                 }
             } finally {
@@ -187,18 +200,19 @@ public final class SmbDiagnostics {
         String from = join(dir, Diagnostics.probeName(stamp));
         String to = join(dir, Diagnostics.renamedProbeName(stamp));
 
-        log.begin("Schreiben im Ordner");
+        log.begin(t("Schreiben im Ordner", "Write in the folder"));
         try {
             disk.openFile(from, EnumSet.of(AccessMask.GENERIC_WRITE),
                     null, SMB2ShareAccess.ALL,
                     SMB2CreateDisposition.FILE_OVERWRITE_IF, null).close();
         } catch (Exception e) {
-            log.fail(reason(e) + " – die App braucht ein beschreibbares Verzeichnis");
+            log.fail(reason(e) + t(" – die App braucht ein beschreibbares Verzeichnis",
+                    " – the app needs a writable directory"));
             return;
         }
         log.ok("");
 
-        log.begin("Umbenennen im Ordner");
+        log.begin(t("Umbenennen im Ordner", "Rename in the folder"));
         String liegengeblieben = from;
         try {
             try (com.hierynomus.smbj.share.File f = disk.openFile(from,
@@ -209,15 +223,16 @@ public final class SmbDiagnostics {
             liegengeblieben = to;
             log.ok("");
         } catch (Exception e) {
-            log.fail(reason(e) + " – " + Diagnostics.UMBENENNEN_NOETIG);
+            log.fail(reason(e) + " – " + Diagnostics.umbenennenNoetig());
         }
 
-        log.begin("Aufräumen im Ordner");
+        log.begin(t("Aufräumen im Ordner", "Clean up in the folder"));
         try {
             disk.rm(liegengeblieben);
             log.ok("");
         } catch (Exception e) {
-            log.fail(reason(e) + " – bitte " + liegengeblieben + " von Hand löschen");
+            log.fail(reason(e) + t(" – bitte " + liegengeblieben + " von Hand löschen",
+                    " – please delete " + liegengeblieben + " by hand"));
         }
     }
 
@@ -227,14 +242,15 @@ public final class SmbDiagnostics {
      * <b>geöffnet</b> und sofort wieder geschlossen – ihr Inhalt bleibt unberührt.
      */
     private static void fileWritableStep(DiskShare disk, String path, String name, Log log) {
-        log.begin("Datei „" + name + "\" beschreibbar");
+        log.begin(t("Datei „" + name + "\" beschreibbar", "File \"" + name + "\" writable"));
         try {
             disk.openFile(path, EnumSet.of(AccessMask.GENERIC_WRITE),
                     null, SMB2ShareAccess.ALL,
                     SMB2CreateDisposition.FILE_OPEN, null).close();
             log.ok("");
         } catch (Exception e) {
-            log.fail(reason(e) + " – Rückschreiben wäre nicht möglich");
+            log.fail(reason(e) + t(" – Rückschreiben wäre nicht möglich",
+                    " – writing back would not be possible"));
         }
     }
 
@@ -243,29 +259,37 @@ public final class SmbDiagnostics {
         try {
             com.hierynomus.smbj.connection.ConnectionContext ctx = link.connection.getConnectionContext();
             return link.connection.getNegotiatedProtocol().getDialect()
-                    + ", Signierung " + (ctx.isServerRequiresSigning() ? "verlangt" : "optional")
-                    + ", Verschlüsselung " + (ctx.supportsEncryption()
-                            ? "möglich (" + ctx.getCipherId() + ")" : "nicht ausgehandelt");
+                    + t(", Signierung ", ", signing ")
+                    + (ctx.isServerRequiresSigning()
+                            ? t("verlangt", "required") : t("optional", "optional"))
+                    + t(", Verschlüsselung ", ", encryption ")
+                    + (ctx.supportsEncryption()
+                            ? t("möglich (" + ctx.getCipherId() + ")",
+                                "possible (" + ctx.getCipherId() + ")")
+                            : t("nicht ausgehandelt", "not negotiated"));
         } catch (Exception e) {
-            return "unbekannt";
+            return t("unbekannt", "unknown");
         }
     }
 
     /** Ob der Server für diese Sitzung Verschlüsselung <b>verlangt</b> (nur dann verschlüsselt smbj). */
     private static String encryption(Session session) {
         try {
-            return session.shouldEncryptData() ? "verschlüsselt" : "unverschlüsselt";
+            return session.shouldEncryptData()
+                    ? t("verschlüsselt", "encrypted") : t("unverschlüsselt", "unencrypted");
         } catch (Exception e) {
-            return "Verschlüsselungsstatus unbekannt";
+            return t("Verschlüsselungsstatus unbekannt", "encryption status unknown");
         }
     }
 
     /** Die Kopfzeile des Berichts – sie sagt dem Empfänger, worum es überhaupt geht. */
-    public static final String TITLE = "SMB-Diagnose (KMySync)";
+    public static String title() {
+        return t("SMB-Diagnose (KMySync)", "SMB diagnostics (KMySync)");
+    }
 
     /** Kompletter Bericht als Text – genau das, was der Nutzer kopiert und schickt. */
     public static String report(List<Step> steps) {
-        return Diagnostics.report(TITLE, steps);
+        return Diagnostics.report(title(), steps);
     }
 
     /** Erster Fehlerschritt oder {@code null}, wenn alles geklappt hat. */

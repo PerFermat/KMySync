@@ -12,6 +12,25 @@ import org.junit.Test;
 public class SmbDiagnosticsTest {
 
     /**
+     * Die Behauptungen unten sind auf Deutsch – also muss die Sprache feststehen. Ohne das hinge das
+     * Ergebnis an der Spracheinstellung des Rechners, auf dem die Tests laufen: {@code Diagnostics.t}
+     * fragt zuerst die App-Sprache und fällt, wenn keine gesetzt ist (im Test immer), auf die des
+     * Systems zurück.
+     */
+    private java.util.Locale vorher;
+
+    @org.junit.Before
+    public void aufDeutsch() {
+        vorher = java.util.Locale.getDefault();
+        java.util.Locale.setDefault(java.util.Locale.GERMANY);
+    }
+
+    @org.junit.After
+    public void zurueck() {
+        java.util.Locale.setDefault(vorher);
+    }
+
+    /**
      * Ein echter Lauf gegen eine tote Adresse: Der Bericht nennt die Adresse und den gescheiterten
      * Schritt, aber niemals das Passwort – und den Benutzernamen nur als „gesetzt".
      */

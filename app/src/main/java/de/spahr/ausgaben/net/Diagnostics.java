@@ -1,7 +1,11 @@
 package de.spahr.ausgaben.net;
 
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.os.LocaleListCompat;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Die gemeinsame Form eines Diagnose-Berichts – für SMB ({@code SmbDiagnostics}) und für
@@ -13,6 +17,37 @@ import java.util.List;
  * <b>nie</b> das Passwort und den Benutzernamen nur als „gesetzt"/„leer".</p>
  */
 public final class Diagnostics {
+
+    /**
+     * Ein Text des Berichts, deutsch und englisch nebeneinander.
+     *
+     * <p><b>Warum nicht {@code strings.xml}?</b> Zwei Gründe. Erstens sind sämtliche Einstiege beider
+     * Diagnosen {@code static} und bekommen keinen {@code Context}; für Ressourcen müsste einer durch
+     * beide Klassen samt aller privaten Helfer gefädelt werden. Zweitens speist sich die
+     * Exportvorlage für freiwillige Übersetzer per Reflexion aus {@code R.string} (siehe
+     * {@code LocaleManager}) – die gut hundert technischen Bruchstücke von hier würden sie fluten,
+     * ohne dass ihre Übersetzung jemandem nützte. Der Bericht ist ein Werkzeug für die Fehlersuche
+     * zwischen Nutzer und Entwickler, kein Teil der Oberfläche.</p>
+     *
+     * <p>Spanisch gibt es hier deshalb nicht: Wer die App nicht auf Deutsch führt, bekommt Englisch.</p>
+     */
+    public static String t(String deutsch, String englisch) {
+        return deutsch() ? deutsch : englisch;
+    }
+
+    /**
+     * Läuft die Oberfläche auf Deutsch?
+     *
+     * <p>Gefragt wird die App-Sprache, nicht die des Geräts: Die App setzt ihre eigene über
+     * {@link AppCompatDelegate#setApplicationLocales} ({@code AusgabenApp.onCreate}), und wer sie auf
+     * Englisch stellt, soll den Bericht auch auf Englisch bekommen. Die Abfrage ist statisch und
+     * braucht darum keinen Context. Ist noch nichts gesetzt – im Test etwa –, entscheidet das Gerät.</p>
+     */
+    public static boolean deutsch() {
+        LocaleListCompat gesetzt = AppCompatDelegate.getApplicationLocales();
+        Locale wirksam = gesetzt.isEmpty() ? Locale.getDefault() : gesetzt.get(0);
+        return wirksam != null && "de".equals(wirksam.getLanguage());
+    }
 
     /** Ein Schritt der Kette: Beschriftung, Ergebnis, Dauer und im Fehlerfall der rohe Grund. */
     public static final class Step {
@@ -63,11 +98,16 @@ public final class Diagnostics {
      * Warum ausgerechnet das Umbenennen dazugehört – die Erklärung, die vorher in einem eigenen
      * Rechte-Dialog stand und jetzt dort steht, wo sie gebraucht wird: an der gescheiterten Zeile.
      */
-    public static final String UMBENENNEN_NOETIG =
-            "beim Übertragen schreibt die App die KMyMoney-Datei erst vollständig unter einem"
-                    + " Zwischennamen und läßt sie dann einhängen – nur so kann ein Abbruch die Datei"
-                    + " nicht halb überschreiben. Der Ordner braucht dafür schreiben, umbenennen und"
-                    + " löschen; ohne Umbenennen ist ein Export nicht möglich";
+    public static String umbenennenNoetig() {
+        return t("beim Übertragen schreibt die App die KMyMoney-Datei erst vollständig unter einem"
+                        + " Zwischennamen und läßt sie dann einhängen – nur so kann ein Abbruch die"
+                        + " Datei nicht halb überschreiben. Der Ordner braucht dafür schreiben,"
+                        + " umbenennen und löschen; ohne Umbenennen ist ein Export nicht möglich",
+                "when transferring, the app first writes the KMyMoney file in full under a temporary"
+                        + " name and then has it moved into place – only that way can an interrupted"
+                        + " transfer not leave the file half overwritten. The folder therefore needs"
+                        + " write, rename and delete; without rename an export is impossible");
+    }
 
     /**
      * Empfänger des Fortschritts, während die Kette läuft.

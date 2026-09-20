@@ -14,6 +14,8 @@ import java.util.regex.Pattern;
 
 import javax.net.ssl.SSLException;
 
+import static de.spahr.ausgaben.net.Diagnostics.t;
+
 import de.spahr.ausgaben.net.Diagnostics.Log;
 import de.spahr.ausgaben.net.Diagnostics.Step;
 import okhttp3.Credentials;
@@ -39,15 +41,25 @@ import okhttp3.ResponseBody;
  *
  * <p>Der Bericht enthält <b>nie</b> das Passwort. Schema, Host, Port und Pfadaufbau stehen im
  * Klartext – ohne sie kann niemand aus der Ferne helfen –, der Benutzername dagegen nur als
- * {@code <Benutzer>} bzw. „gesetzt"/„leer".</p>
+ * {@code <user>} bzw. „gesetzt"/„leer".</p>
+ *
+ * <p>Die Texte stehen deutsch und englisch nebeneinander in {@link Diagnostics#t}; warum nicht in
+ * {@code strings.xml}, steht dort.</p>
  */
 public final class WebDavDiagnostics {
 
-    /** Platzhalter, der im Bericht überall dort steht, wo der Benutzername stünde. */
-    static final String USER_MASK = "<Benutzer>";
+    /**
+     * Platzhalter, der im Bericht überall dort steht, wo der Benutzername stünde.
+     *
+     * <p>Bewusst in beiden Sprachen dasselbe Zeichen: Er steht mitten in einer URL, wo ein deutsches
+     * Wort nur verwirrte – und wer den Bericht bekommt, soll ihn in beiden Fällen wiedererkennen.</p>
+     */
+    static final String USER_MASK = "<user>";
 
-    private static final String UMBENENNEN_NOETIG =
-            "der Server erlaubt kein MOVE – " + Diagnostics.UMBENENNEN_NOETIG;
+    private static String umbenennenNoetig() {
+        return t("der Server erlaubt kein MOVE – ", "the server does not allow MOVE – ")
+                + Diagnostics.umbenennenNoetig();
+    }
 
     private static final MediaType XML = MediaType.parse("application/xml; charset=utf-8");
     private static final MediaType OCTET = MediaType.parse("application/octet-stream");
@@ -103,13 +115,16 @@ public final class WebDavDiagnostics {
         Log log = new Log(progress);
         NextcloudUploader urls = new NextcloudUploader(nextcloudLayout);
         String base = baseUrl == null ? "" : baseUrl.trim();
-        String who = "Benutzer " + (user == null || user.trim().isEmpty() ? "leer" : "gesetzt");
+        String who = t("Benutzer ", "user ") + (user == null || user.trim().isEmpty()
+                ? t("leer", "empty") : t("gesetzt", "set"));
 
         HttpUrl parsed = base.isEmpty() ? null : HttpUrl.parse(base);
         if (parsed == null) {
             // Ohne brauchbare Adresse gibt es nichts zu prüfen – das ist die ganze Auskunft.
-            log.note("Adresse", false, (base.isEmpty() ? "keine Adresse" : mask(base, user))
-                    + " – erwartet wird https://server" + (nextcloudLayout ? "" : "/pfad/zur/dav-wurzel"));
+            log.note(t("Adresse", "Address"), false,
+                    (base.isEmpty() ? t("keine Adresse", "no address") : mask(base, user))
+                    + t(" – erwartet wird https://server", " – expected is https://server")
+                    + (nextcloudLayout ? "" : t("/pfad/zur/dav-wurzel", "/path/to/dav-root")));
             return log.steps();
         }
 
@@ -119,22 +134,25 @@ public final class WebDavDiagnostics {
         if (!"https".equals(parsed.scheme())) {
             // Kein Abbruch: manch ein Heimserver läuft bewusst ohne TLS. Gesagt gehört es trotzdem,
             // denn bei http geht das Passwort im Klartext über die Leitung.
-            wie.append(" – Achtung: ohne https geht das Passwort im Klartext über die Leitung");
+            wie.append(t(" – Achtung: ohne https geht das Passwort im Klartext über die Leitung",
+                    " – careful: without https the password travels in the clear"));
         }
         if (nextcloudLayout && base.contains("/remote.php")) {
             // Der häufigste Zuschnittfehler: der Pfad steht dann zweimal in der URL.
-            wie.append(" – die Basis-URL enthält bereits „/remote.php\"; bei Servertyp Nextcloud gehört"
-                    + " dort nur https://server hin, den Rest hängt die App an");
+            wie.append(t(" – die Basis-URL enthält bereits „/remote.php\"; bei Servertyp Nextcloud"
+                            + " gehört dort nur https://server hin, den Rest hängt die App an",
+                    " – the base URL already contains \"/remote.php\"; with server type Nextcloud only"
+                            + " https://server belongs there, the app appends the rest"));
             adresseOk = false;
         }
-        log.note("Adresse", adresseOk, wie.toString());
+        log.note(t("Adresse", "Address"), adresseOk, wie.toString());
         if (!adresseOk) {
             return log.steps();
         }
 
         // 2./3. Erreichbarkeit und Umleitung: bewusst ohne Anmeldung, damit ein 401 hier nicht mit
         // einem Netzproblem verwechselt wird. OPTIONS verrät zudem, ob dort überhaupt WebDAV spricht.
-        log.begin("Erreichbarkeit");
+        log.begin(t("Erreichbarkeit", "Reachability"));
         Response options;
         try {
             options = CLIENT.newCall(new Request.Builder().url(root + "/")
@@ -146,26 +164,32 @@ public final class WebDavDiagnostics {
         try {
             StringBuilder was = new StringBuilder("HTTP ").append(options.code());
             String dav = options.header("DAV");
-            was.append(dav == null || dav.isEmpty() ? ", kein DAV-Kopfzeilenfeld – dort antwortet"
-                    + " etwas, das kein WebDAV spricht" : ", DAV: " + dav);
+            was.append(dav == null || dav.isEmpty()
+                    ? t(", kein DAV-Kopfzeilenfeld – dort antwortet etwas, das kein WebDAV spricht",
+                        ", no DAV header – whatever answers there does not speak WebDAV")
+                    : ", DAV: " + dav);
             String allow = options.header("Allow");
             if (allow != null && !allow.isEmpty()) {
-                was.append(", erlaubt: ").append(allow.toUpperCase(Locale.US).contains("MOVE")
-                        ? "MOVE dabei" : "MOVE nicht dabei");
+                was.append(t(", erlaubt: ", ", allowed: "))
+                        .append(allow.toUpperCase(Locale.US).contains("MOVE")
+                                ? t("MOVE dabei", "MOVE included")
+                                : t("MOVE nicht dabei", "MOVE missing"));
             }
             log.ok(was.toString());
             Response first = options.priorResponse();
             if (first != null) {
-                log.note("Umleitung", true, mask(first.request().url().toString(), user)
+                log.note(t("Umleitung", "Redirect"), true,
+                        mask(first.request().url().toString(), user)
                         + " → " + mask(options.request().url().toString(), user)
-                        + " – besser gleich die Zieladresse eintragen");
+                        + t(" – besser gleich die Zieladresse eintragen",
+                            " – better to enter the target address right away"));
             }
         } finally {
             options.close();
         }
 
         // 4. Anmelden: PROPFIND Depth 0 auf die Wurzel. Erst hier zählt das Passwort.
-        log.begin("Anmelden");
+        log.begin(t("Anmelden", "Sign in"));
         try {
             propfind(root + "/", user, password, "0",
                     "<d:prop><d:resourcetype/></d:prop>");
@@ -177,15 +201,17 @@ public final class WebDavDiagnostics {
 
         // 5. Zielordner lesen.
         String folderUrl = urls.buildFolderUrl(base, user == null ? "" : user, folder);
-        String ordner = folder == null || folder.trim().isEmpty() ? "die Wurzel" : "„" + folder + "\"";
-        log.begin("Ordner " + ordner + " lesen");
+        String ordner = folder == null || folder.trim().isEmpty()
+                ? t("die Wurzel", "the root") : "„" + folder + "\"";
+        log.begin(t("Ordner " + ordner + " lesen", "Read folder " + ordner));
         try {
             String xml = propfind(folderUrl, user, password, "1",
                     "<d:prop><d:resourcetype/></d:prop>");
-            log.ok(eintraege(xml) + " Einträge");
+            log.ok(eintraege(xml) + t(" Einträge", " entries"));
         } catch (Exception e) {
-            log.fail(grundMitDeutung(e,
-                    code(e) == 404 ? "diesen Ordner gibt es dort nicht" : ordnerDeutung(code(e))));
+            log.fail(grundMitDeutung(e, code(e) == 404
+                    ? t("diesen Ordner gibt es dort nicht", "that folder does not exist there")
+                    : ordnerDeutung(code(e))));
             return log.steps();
         }
 
@@ -213,16 +239,17 @@ public final class WebDavDiagnostics {
         String from = urls.buildUrl(base, u, folder, fromName);
         String to = urls.buildUrl(base, u, folder, toName);
 
-        log.begin("Schreiben im Ordner");
+        log.begin(t("Schreiben im Ordner", "Write in the folder"));
         try {
             send(new Request.Builder().url(from).put(RequestBody.create(PROBE, OCTET)), user, password);
         } catch (Exception e) {
-            log.fail(grundMitDeutung(e, "die App braucht ein beschreibbares Verzeichnis"));
+            log.fail(grundMitDeutung(e, t("die App braucht ein beschreibbares Verzeichnis",
+                    "the app needs a writable directory")));
             return;
         }
         log.ok("");
 
-        log.begin("Umbenennen im Ordner");
+        log.begin(t("Umbenennen im Ordner", "Rename in the folder"));
         String liegengeblieben = fromName;
         String weg = from;
         try {
@@ -234,15 +261,16 @@ public final class WebDavDiagnostics {
             weg = to;
             log.ok("");
         } catch (Exception e) {
-            log.fail(grundMitDeutung(e, UMBENENNEN_NOETIG));
+            log.fail(grundMitDeutung(e, umbenennenNoetig()));
         }
 
-        log.begin("Aufräumen im Ordner");
+        log.begin(t("Aufräumen im Ordner", "Clean up in the folder"));
         try {
             send(new Request.Builder().url(weg).delete(), user, password);
             log.ok("");
         } catch (Exception e) {
-            log.fail(grundMitDeutung(e, "bitte " + liegengeblieben + " von Hand löschen"));
+            log.fail(grundMitDeutung(e, t("bitte " + liegengeblieben + " von Hand löschen",
+                    "please delete " + liegengeblieben + " by hand")));
         }
     }
 
@@ -255,21 +283,27 @@ public final class WebDavDiagnostics {
     private static void dateiUndVersion(NextcloudUploader urls, String base, String user,
                                         String password, String folder, String file, Log log) {
         String url = urls.buildUrl(base, user == null ? "" : user, folder, file);
-        log.begin("Datei „" + file + "\" prüfen");
+        log.begin(t("Datei „" + file + "\" prüfen", "Check file \"" + file + "\""));
         String xml;
         try {
             xml = propfind(url, user, password, "0",
                     "<d:prop><d:getetag/><d:getcontentlength/></d:prop>");
         } catch (Exception e) {
-            log.fail(grundMitDeutung(e, code(e) == 404 ? "diese Datei gibt es dort nicht" : ""));
+            log.fail(grundMitDeutung(e, code(e) == 404
+                    ? t("diese Datei gibt es dort nicht", "that file does not exist there") : ""));
             return;
         }
         String size = tag(xml, "getcontentlength");
-        log.ok(size.isEmpty() ? "vorhanden" : "vorhanden, " + size + " Bytes");
+        log.ok(size.isEmpty() ? t("vorhanden", "present")
+                : t("vorhanden, " + size + " Bytes", "present, " + size + " bytes"));
         String etag = tag(xml, "getetag");
-        log.note("Versionskennung (ETag)", !etag.isEmpty(),
-                etag.isEmpty() ? "der Server liefert keine – dann erkennt die App beim Rückschreiben"
-                        + " nicht, ob jemand anders die Datei zwischenzeitlich geändert hat" : "vorhanden");
+        log.note(t("Versionskennung (ETag)", "Version marker (ETag)"), !etag.isEmpty(),
+                etag.isEmpty()
+                        ? t("der Server liefert keine – dann erkennt die App beim Rückschreiben nicht,"
+                                + " ob jemand anders die Datei zwischenzeitlich geändert hat",
+                            "the server supplies none – then the app cannot tell on write-back whether"
+                                + " somebody else changed the file in the meantime")
+                        : t("vorhanden", "present"));
     }
 
     // ---- HTTP ----
@@ -313,23 +347,36 @@ public final class WebDavDiagnostics {
     static String anmeldeDeutung(int code, boolean nextcloudLayout) {
         switch (code) {
             case 401:
-                return "Benutzername oder Passwort stimmen nicht – ist die Zwei-Faktor-Anmeldung"
-                        + " eingeschaltet, braucht es hier ein App-Passwort statt des Kontopassworts";
+                return t("Benutzername oder Passwort stimmen nicht – ist die Zwei-Faktor-Anmeldung"
+                                + " eingeschaltet, braucht es hier ein App-Passwort statt des"
+                                + " Kontopassworts",
+                        "user name or password are wrong – with two-factor sign-in switched on, an"
+                                + " app password is needed here instead of the account password");
             case 403:
-                return "der Server verweigert die Anmeldung – oft ein vorgeschalteter Schutz oder eine"
-                        + " Sperre nach zu vielen Fehlversuchen";
+                return t("der Server verweigert die Anmeldung – oft ein vorgeschalteter Schutz oder"
+                                + " eine Sperre nach zu vielen Fehlversuchen",
+                        "the server refuses the sign-in – often a protection in front of it or a"
+                                + " lockout after too many failed attempts");
             case 404:
                 return nextcloudLayout
-                        ? "diese WebDAV-Wurzel gibt es nicht – bei Nextcloud steht der Benutzername im"
-                        + " Pfad und muss zu dem passen, mit dem sich die App anmeldet"
-                        : "diese WebDAV-Wurzel gibt es nicht – bei generischem WebDAV gehört die"
-                        + " vollständige DAV-Wurzel in das Adressfeld";
+                        ? t("diese WebDAV-Wurzel gibt es nicht – bei Nextcloud steht der Benutzername"
+                                + " im Pfad und muss zu dem passen, mit dem sich die App anmeldet",
+                            "that WebDAV root does not exist – with Nextcloud the user name is part of"
+                                + " the path and must match the one the app signs in with")
+                        : t("diese WebDAV-Wurzel gibt es nicht – bei generischem WebDAV gehört die"
+                                + " vollständige DAV-Wurzel in das Adressfeld",
+                            "that WebDAV root does not exist – with generic WebDAV the full DAV root"
+                                + " belongs in the address field");
             case 405:
             case 501:
-                return "dort spricht kein WebDAV – oft ist versehentlich die Adresse der"
-                        + " Weboberfläche eingetragen";
+                return t("dort spricht kein WebDAV – oft ist versehentlich die Adresse der"
+                                + " Weboberfläche eingetragen",
+                        "nothing there speaks WebDAV – often the address of the web interface was"
+                                + " entered by mistake");
             default:
-                return code >= 500 ? "der Server meldet einen eigenen Fehler" : "";
+                return code >= 500
+                        ? t("der Server meldet einen eigenen Fehler", "the server reports an error of its own")
+                        : "";
         }
     }
 
@@ -337,13 +384,17 @@ public final class WebDavDiagnostics {
     static String ordnerDeutung(int code) {
         switch (code) {
             case 403:
-                return "der Ordner ist für dieses Konto gesperrt";
+                return t("der Ordner ist für dieses Konto gesperrt",
+                        "the folder is barred for this account");
             case 404:
-                return "diesen Ordner gibt es dort nicht";
+                return t("diesen Ordner gibt es dort nicht", "that folder does not exist there");
             case 423:
-                return "der Ordner ist gesperrt (jemand anders bearbeitet ihn gerade)";
+                return t("der Ordner ist gesperrt (jemand anders bearbeitet ihn gerade)",
+                        "the folder is locked (somebody else is working on it)");
             default:
-                return code >= 500 ? "der Server meldet einen eigenen Fehler" : "";
+                return code >= 500
+                        ? t("der Server meldet einen eigenen Fehler", "the server reports an error of its own")
+                        : "";
         }
     }
 
@@ -357,17 +408,23 @@ public final class WebDavDiagnostics {
     /** Netzfehler in Worten – hier ist die Art der Störung die eigentliche Auskunft. */
     static String netzgrund(Throwable e) {
         if (e instanceof UnknownHostException) {
-            return "der Name ist nicht auflösbar – Schreibweise, DNS oder gar keine Verbindung";
+            return t("der Name ist nicht auflösbar – Schreibweise, DNS oder gar keine Verbindung",
+                    "the name cannot be resolved – spelling, DNS, or no connection at all");
         }
         if (e instanceof SSLException) {
-            return Diagnostics.shorten(e.getMessage()) + " – das Zertifikat wird nicht angenommen"
-                    + " (abgelaufen, selbst ausgestellt oder für einen anderen Namen)";
+            return Diagnostics.shorten(e.getMessage())
+                    + t(" – das Zertifikat wird nicht angenommen (abgelaufen, selbst ausgestellt"
+                            + " oder für einen anderen Namen)",
+                        " – the certificate is not accepted (expired, self-signed, or issued for a"
+                            + " different name)");
         }
         if (e instanceof SocketTimeoutException) {
-            return "keine Antwort in der Wartezeit – Port gesperrt oder Server überlastet";
+            return t("keine Antwort in der Wartezeit – Port gesperrt oder Server überlastet",
+                    "no answer within the timeout – port blocked or server overloaded");
         }
         if (e instanceof ConnectException) {
-            return "die Gegenstelle nimmt keine Verbindung an – Port, Firewall oder falscher Server";
+            return t("die Gegenstelle nimmt keine Verbindung an – Port, Firewall oder falscher Server",
+                    "the other end refuses the connection – port, firewall, or wrong server");
         }
         String raw = Diagnostics.shorten(e.getMessage());
         return raw.isEmpty() ? e.getClass().getSimpleName() : raw;
@@ -376,11 +433,13 @@ public final class WebDavDiagnostics {
     // ---- Text ----
 
     /** Die Kopfzeile des Berichts – sie sagt dem Empfänger, worum es überhaupt geht. */
-    public static final String TITLE = "WebDAV-Diagnose (KMySync)";
+    public static String title() {
+        return t("WebDAV-Diagnose (KMySync)", "WebDAV diagnostics (KMySync)");
+    }
 
     /** Kompletter Bericht als Text – genau das, was der Nutzer kopiert und schickt. */
     public static String report(List<Step> steps) {
-        return Diagnostics.report(TITLE, steps);
+        return Diagnostics.report(title(), steps);
     }
 
     /**

@@ -36,14 +36,14 @@ final class DiagnosticsDialog {
     /** SMB: prüft im Hintergrund und zeigt das Ergebnis. */
     static void runSmb(Activity activity, DiagnosticsBanner banner, String url, String user,
                        String password, String folder, String file) {
-        run(activity, banner, R.string.diag_title_smb, SmbDiagnostics.TITLE,
+        run(activity, banner, R.string.diag_title_smb, SmbDiagnostics.title(),
                 () -> SmbDiagnostics.run(url, user, password, folder, file, banner));
     }
 
     /** WebDAV/Nextcloud: dasselbe, nur die andere Kette. */
     static void runWebDav(Activity activity, DiagnosticsBanner banner, String url, String user,
                           String password, boolean nextcloudLayout, String folder, String file) {
-        run(activity, banner, R.string.diag_title_webdav, WebDavDiagnostics.TITLE,
+        run(activity, banner, R.string.diag_title_webdav, WebDavDiagnostics.title(),
                 () -> WebDavDiagnostics.run(url, user, password, nextcloudLayout, folder, file,
                         banner));
     }
