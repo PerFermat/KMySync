@@ -7,9 +7,13 @@
   hellem Grund und waeren ohne tint unsichtbar - ein Knopf, den man nur zufaellig trifft. Die Zeichnungen
   selbst bleiben unangetastet: anderswo ist ihr Weiss richtig.
 
-  app:tint statt android:tint, weil AppCompat den ImageButton ohnehin als AppCompatImageButton
-  aufbläst - der eigene Weg der Bibliothek faerbt zuverlaessig auch dort, wo der des Systems
-  je nach Android-Fassung aussetzt.
+  app:tint statt android:tint: AppCompat blaest den ImageButton ohnehin als AppCompatImageButton auf
+  (LayoutInflater.from(Activity) in StatementRulesActivity), also ist das die Schreibweise, die die
+  Bibliothek erwartet - Lint besteht als UseAppTint darauf.
+
+  Dass android:tint hier falsch gewesen waere, ist damit NICHT gesagt: Es gibt die Eigenschaft seit
+  API 21, minSdk ist 26, und in der Gegenprobe faerbte sie genauso. Der Umbau folgt der Konvention,
+  er repariert nichts.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
