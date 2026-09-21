@@ -221,7 +221,7 @@ public final class ReceiptSync {
      * dasselbe nur im Text seiner {@code IOException}. Im Zweifel lautet die Antwort {@code false} –
      * dann wird noch einmal versucht, und das ist der harmlosere Irrtum.
      */
-    private static boolean saysNotFound(Exception e) {
+    static boolean saysNotFound(Exception e) {
         if (e instanceof de.spahr.ausgaben.net.HttpStatusException) {
             return ((de.spahr.ausgaben.net.HttpStatusException) e).code == 404;
         }

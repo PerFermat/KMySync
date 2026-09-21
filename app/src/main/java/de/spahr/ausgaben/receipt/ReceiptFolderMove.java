@@ -7,7 +7,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import de.spahr.ausgaben.net.Net;
 import de.spahr.ausgaben.net.RemoteStorage;
 import de.spahr.ausgaben.settings.SettingsStore;
 
@@ -28,6 +27,7 @@ import de.spahr.ausgaben.settings.SettingsStore;
  */
 public final class ReceiptFolderMove {
 
+    private static final String TAG = "ReceiptFolderMove";
     private static final ExecutorService IO = Executors.newSingleThreadExecutor();
 
     private ReceiptFolderMove() {
@@ -112,8 +112,7 @@ public final class ReceiptFolderMove {
      */
     public static void movePending(Context context) {
         Context app = context.getApplicationContext();
-        Set<String> offen = Receipts.folderMoves(app);
-        if (offen.isEmpty()) {
+        if (Receipts.folderMoves(app).isEmpty()) {
             return;
         }
         SettingsStore settings = new SettingsStore(app);
@@ -126,6 +125,18 @@ public final class ReceiptFolderMove {
         } catch (Exception e) {
             return;
         }
+        movePending(app, storage);
+    }
+
+    /**
+     * Dasselbe mit bereits aufgebauter Verbindung.
+     *
+     * <p>Paketsichtbar, damit {@code ReceiptFolderMoveRetryTest} den Fehlerfall festhalten kann –
+     * ohne diese Naht ließe sich nur mit echtem Server prüfen, was bei einem fehlgeschlagenen
+     * Verschieben passiert. Genau dort saß der Fehler.</p>
+     */
+    static void movePending(Context app, RemoteStorage storage) {
+        Set<String> offen = Receipts.folderMoves(app);
         for (String entry : offen) {
             String[] teile = Receipts.folderMoveParts(entry);
             if (teile == null) {
@@ -140,11 +151,24 @@ public final class ReceiptFolderMove {
                 storage.move(von, name, nach, name);
                 Receipts.removeFolderMove(app, entry);
             } catch (Exception e) {
-                // Wie beim Jahreswechsel: Nicht jeder Fehlschlag ist ein Netzproblem. Ein Original
-                // gibt es oft gar nicht, und eine nie hochgeladene Datei liegt auch nicht im alten
-                // Ordner. Solche Einträge dürfen nicht ewig bleiben – wer offline ist, behält seinen.
-                if (Net.isOnline(app)) {
+                // Hier liegt der Unterschied zum Jahreswechsel, der den Eintrag bei bestehender
+                // Verbindung wegwirft. Dort ist ein Fehlschlag der Regelfall: Ein „Original" gibt es
+                // oft gar nicht, und eine nie hochgeladene Datei liegt auch nicht im alten Ordner.
+                // Hier dagegen wurde die Datei vorher aufgelistet (scheduleMove) – sie ist da. Ein
+                // Fehlschlag heißt also „später noch einmal", nicht „nichts zu tun".
+                //
+                // Genau daran ist der erste Umzug gescheitert: Der Zielordner existierte noch nicht
+                // (ensureFolder war auf SMB ein No-op), der rename schlug fehl, und weil das Gerät
+                // online war, verschwand der Vorsatz sofort und für immer.
+                //
+                // Die eine Ausnahme ist „Quelle gibt es nicht": Dann ist die Datei entweder längst
+                // umgezogen oder gelöscht – in beiden Fällen bleibt nichts zu tun, und der Eintrag
+                // soll nicht ewig mitlaufen.
+                if (ReceiptSync.saysNotFound(e)) {
                     Receipts.removeFolderMove(app, entry);
+                } else {
+                    android.util.Log.w(TAG, "Beleg " + name + " zieht noch nicht nach " + nach
+                            + " um – bleibt vorgemerkt", e);
                 }
             }
         }

@@ -121,6 +121,24 @@ public class SmbStorage implements RemoteStorage {
      * einem Zug aus – anders als beim direkten Überschreiben (dort kürzt {@code FILE_OVERWRITE_IF} die
      * Datei erst auf null) kann das Ziel dabei nie halb geschrieben zurückbleiben.
      */
+    /**
+     * Legt den Ordner samt fehlender Elternordner an.
+     *
+     * <p>Die Standardfassung in {@link RemoteStorage} tut nichts, weil der SMB-<b>Upload</b> den
+     * Ordner ohnehin selbst anlegt. Für das Verschieben gilt das nicht: {@link #move} macht nur ein
+     * {@code rename}, und das scheitert an einem Zielordner, den es noch nicht gibt. Aufgefallen ist
+     * das beim Wechsel des Belegordners – der Umzug in den frisch benannten Ordner schlug fehl,
+     * bevor dieser je angelegt wurde.</p>
+     */
+    @Override
+    public void ensureFolder(String folder) throws IOException {
+        final String dir = joinPath(base, folder);
+        withShare(disk -> {
+            ensureDir(disk, dir);
+            return null;
+        });
+    }
+
     @Override
     public void move(String folder, String fromName, String toName) throws IOException {
         move(folder, fromName, folder, toName);
