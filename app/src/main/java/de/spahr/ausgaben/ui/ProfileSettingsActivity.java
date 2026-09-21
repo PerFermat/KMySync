@@ -1440,6 +1440,10 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
 
     private void finishResetProfile() {
         profiles.clearActiveProfileSettings(this);
+        // Schließt eine Lücke: Bis 2.1 fehlte hier jede Belegbereinigung, weil Receipts.reset die
+        // Belege ALLER Profile gelöscht hätte. „Nur dieses Profil zurücksetzen" ließ dessen Belege
+        // also liegen. Jetzt trifft reset() genau das eine Profil.
+        de.spahr.ausgaben.receipt.Receipts.reset(this);
         Toast.makeText(this, R.string.reset_done, Toast.LENGTH_LONG).show();
         Intent i = new Intent(this, MainActivity.class);
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

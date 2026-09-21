@@ -10,24 +10,76 @@ import java.util.Set;
 /**
  * Lokale Ablage der Belegfotos (app-privates {@code belege/}-Verzeichnis) und die Merkliste der noch nicht
  * hochgeladenen Dateien (SharedPreferences – keine Room-Tabelle, keine Migration).
+ *
+ * <h2>Alles hier gehört einem Profil</h2>
+ *
+ * <p>Bis 2.1 lagen die Dateien aller Profile in <b>einem</b> Ordner, und die beiden Merklisten
+ * standen unter blanken Schlüsseln – als einzige Einstellungen der App ohne Profil-Präfix. Das war
+ * der Boden für einen Datenverlust: {@code ReceiptGc} bildet seine Behalte-Liste aus der Datenbank
+ * des <b>aktiven</b> Profils, listete aber alle Dateien des gemeinsamen Ordners und erklärte den
+ * Rest zu Waisen. Bei jedem Kaltstart traf es die Belege des jeweils anderen Profils.</p>
+ *
+ * <p>Jedes Profil hat deshalb seinen eigenen Unterordner und seine eigenen Merklisten. Die
+ * Signaturen sind dabei absichtlich <b>unverändert</b> geblieben: Die rund vierzig Aufrufstellen
+ * arbeiten weiter mit {@link #dir(Context)} und den Merklisten des aktiven Profils, ohne davon zu
+ * wissen. Den Bestand ordnet {@link ReceiptProfileMigration} einmalig zu.</p>
  */
 public final class Receipts {
 
     private static final String PREFS = "receipts";
-    private static final String KEY_PENDING = "pending";
-    private static final String KEY_MOVES = "moves";
-    private static final String KEY_FOLDER_MOVES = "folder_moves";
+    static final String KEY_PENDING = "pending";
+    static final String KEY_MOVES = "moves";
+    static final String KEY_FOLDER_MOVES = "folder_moves";
+
+    /** Name des Wurzelverzeichnisses; darunter liegt je Profil ein Unterordner. */
+    private static final String ROOT = "belege";
 
     private Receipts() {
     }
 
-    /** App-privater Ordner der lokal gespeicherten Belege (wird bei Bedarf angelegt). */
-    public static File dir(Context ctx) {
-        File d = ctx.getExternalFilesDir("belege");
+    /**
+     * Die Wurzel aller Belegordner. Enthält seit 2.2 nur noch Profil-Unterordner – wer hier Dateien
+     * findet, sieht Altbestand (siehe {@link ReceiptProfileMigration}).
+     */
+    static File root(Context ctx) {
+        File d = ctx.getExternalFilesDir(ROOT);
         if (d == null) {
-            d = new File(ctx.getFilesDir(), "belege");
+            d = new File(ctx.getFilesDir(), ROOT);
         }
         if (!d.exists()) {
+            d.mkdirs();
+        }
+        return d;
+    }
+
+    /**
+     * Der Unterordnername eines Profils.
+     *
+     * <p>Das Präfix {@code p_} ist nicht Zierrat: Es macht im Dateisystem auf einen Blick
+     * unterscheidbar, was Profilordner und was Altbestand ist, und es hält künftige Zusatzordner
+     * (etwa ein lokaler Zwischenspeicher) von einer Profil-Id fern.</p>
+     *
+     * <p>Eine leere Id – im Test, und theoretisch vor der Profil-Migration – ergibt einen
+     * <b>festen Ersatznamen</b> statt nichts. Ohne ihn wäre der Profilordner die Wurzel selbst, und
+     * die Bestandsmigration räumte sich selbst aus.</p>
+     *
+     * <p>Rein und ohne Android, damit {@code ReceiptProfileFolderTest} die Randfälle festhält.</p>
+     */
+    public static String folderFor(String profileId) {
+        String id = profileId == null ? "" : profileId.replaceAll("[^A-Za-z0-9_-]", "");
+        return id.isEmpty() ? "p_default" : "p_" + id;
+    }
+
+    /** Belegordner des aktiven Profils (wird bei Bedarf angelegt). */
+    public static File dir(Context ctx) {
+        return dirOf(ctx, activeProfileId(ctx));
+    }
+
+    /** Belegordner eines bestimmten Profils – für die Migration und das Löschen eines Profils. */
+    public static File dirOf(Context ctx, String profileId) {
+        File d = new File(root(ctx), folderFor(profileId));
+        if (!d.exists()) {
+            //noinspection ResultOfMethodCallIgnored
             d.mkdirs();
         }
         return d;
@@ -37,17 +89,65 @@ public final class Receipts {
         return new File(dir(ctx), file);
     }
 
-    /** Auslieferungszustand: alle lokalen Belegdateien und die Merkliste offener Belege entfernen. */
+    /**
+     * Setzt <b>dieses</b> Profil zurück: seine Belegdateien und seine drei Merklisten.
+     *
+     * <p>Bis 2.1 löschte diese Methode die Belege aller Profile – deshalb durfte sie beim
+     * Zurücksetzen eines einzelnen Profils gar nicht gerufen werden, und dessen Belege blieben
+     * liegen. Beides ist jetzt in Ordnung; für den Werksreset gibt es {@link #resetAll(Context)}.</p>
+     */
     public static synchronized void reset(Context ctx) {
-        File d = dir(ctx);
-        File[] files = d.listFiles();
-        if (files != null) {
-            for (File f : files) {
-                //noinspection ResultOfMethodCallIgnored
-                f.delete();
-            }
-        }
+        deleteProfile(ctx, activeProfileId(ctx));
+    }
+
+    /** Werksreset: der ganze Baum und die komplette Merklisten-Datei. */
+    public static synchronized void resetAll(Context ctx) {
+        loescheInhalt(root(ctx));
         prefs(ctx).edit().clear().apply();
+    }
+
+    /** Beim Löschen eines Profils: dessen Ordner und dessen Merklisten. */
+    public static synchronized void deleteProfile(Context ctx, String profileId) {
+        File d = new File(root(ctx), folderFor(profileId));
+        loescheInhalt(d);
+        //noinspection ResultOfMethodCallIgnored
+        d.delete();
+        String prefix = folderFor(profileId) + "_";
+        prefs(ctx).edit()
+                .remove(prefix + KEY_PENDING)
+                .remove(prefix + KEY_MOVES)
+                .remove(prefix + KEY_FOLDER_MOVES)
+                .apply();
+    }
+
+    /** Löscht den Inhalt eines Ordners rekursiv, den Ordner selbst nicht. */
+    private static void loescheInhalt(File dir) {
+        File[] files = dir.listFiles();
+        if (files == null) {
+            return;
+        }
+        for (File f : files) {
+            if (f.isDirectory()) {
+                loescheInhalt(f);
+            }
+            //noinspection ResultOfMethodCallIgnored
+            f.delete();
+        }
+    }
+
+    private static String activeProfileId(Context ctx) {
+        return new de.spahr.ausgaben.settings.ProfileManager(ctx.getApplicationContext())
+                .getActiveProfileId();
+    }
+
+    /**
+     * Der Merklisten-Schlüssel des aktiven Profils, etwa {@code p_a1b2_pending}.
+     *
+     * <p>Derselbe Gedanke wie der Profil-Präfix in {@code SettingsStore#pk} – nur dass er hier gut
+     * zwei Jahre gefehlt hat.</p>
+     */
+    private static String key(Context ctx, String baseKey) {
+        return folderFor(activeProfileId(ctx)) + "_" + baseKey;
     }
 
     private static SharedPreferences prefs(Context ctx) {
@@ -60,7 +160,7 @@ public final class Receipts {
      * werden weiter gelesen (Jahr dann aus dem Dateinamen).
      */
     public static synchronized Set<String> pending(Context ctx) {
-        return new HashSet<>(prefs(ctx).getStringSet(KEY_PENDING, new HashSet<>()));
+        return new HashSet<>(prefs(ctx).getStringSet(key(ctx, KEY_PENDING), new HashSet<>()));
     }
 
     /** Dateiname eines Merklisten-Eintrags. */
@@ -87,14 +187,14 @@ public final class Receipts {
         Set<String> s = pending(ctx);
         removeFile(s, file);
         if (s.add(year + "|" + file)) {
-            prefs(ctx).edit().putStringSet(KEY_PENDING, s).apply();
+            prefs(ctx).edit().putStringSet(key(ctx, KEY_PENDING), s).apply();
         }
     }
 
     public static synchronized void removePending(Context ctx, String file) {
         Set<String> s = pending(ctx);
         if (removeFile(s, file)) {
-            prefs(ctx).edit().putStringSet(KEY_PENDING, s).apply();
+            prefs(ctx).edit().putStringSet(key(ctx, KEY_PENDING), s).apply();
         }
     }
 
@@ -109,7 +209,7 @@ public final class Receipts {
      * steht der Vorsatz hier, bis er ausgeführt ist – wie die Merkliste der offenen Uploads.</p>
      */
     public static synchronized Set<String> moves(Context ctx) {
-        return new HashSet<>(prefs(ctx).getStringSet(KEY_MOVES, new HashSet<>()));
+        return new HashSet<>(prefs(ctx).getStringSet(key(ctx, KEY_MOVES), new HashSet<>()));
     }
 
     /** Merkt einen Umzug vor. Ein schon vorgemerkter Umzug derselben Datei wird zusammengefasst. */
@@ -137,14 +237,14 @@ public final class Receipts {
         if (von != toYear) {
             s.add(von + "|" + toYear + "|" + file);
         }
-        prefs(ctx).edit().putStringSet(KEY_MOVES, s).apply();
+        prefs(ctx).edit().putStringSet(key(ctx, KEY_MOVES), s).apply();
     }
 
     /** Streicht einen erledigten (oder gegenstandslosen) Umzug. */
     public static synchronized void removeMove(Context ctx, String entry) {
         Set<String> s = moves(ctx);
         if (s.remove(entry)) {
-            prefs(ctx).edit().putStringSet(KEY_MOVES, s).apply();
+            prefs(ctx).edit().putStringSet(key(ctx, KEY_MOVES), s).apply();
         }
     }
 
@@ -172,7 +272,7 @@ public final class Receipts {
      * solange etwas offen ist, sucht {@code ReceiptPages} zusätzlich am alten Ort.</p>
      */
     public static synchronized Set<String> folderMoves(Context ctx) {
-        return new HashSet<>(prefs(ctx).getStringSet(KEY_FOLDER_MOVES, new HashSet<>()));
+        return new HashSet<>(prefs(ctx).getStringSet(key(ctx, KEY_FOLDER_MOVES), new HashSet<>()));
     }
 
     /**
@@ -197,14 +297,14 @@ public final class Receipts {
         if (!von.equals(toFolder)) {
             s.add(von + "|" + toFolder + "|" + file);
         }
-        prefs(ctx).edit().putStringSet(KEY_FOLDER_MOVES, s).apply();
+        prefs(ctx).edit().putStringSet(key(ctx, KEY_FOLDER_MOVES), s).apply();
     }
 
     /** Streicht einen erledigten (oder gegenstandslosen) Ordnerwechsel. */
     public static synchronized void removeFolderMove(Context ctx, String entry) {
         Set<String> s = folderMoves(ctx);
         if (s.remove(entry)) {
-            prefs(ctx).edit().putStringSet(KEY_FOLDER_MOVES, s).apply();
+            prefs(ctx).edit().putStringSet(key(ctx, KEY_FOLDER_MOVES), s).apply();
         }
     }
 

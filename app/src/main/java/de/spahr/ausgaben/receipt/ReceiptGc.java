@@ -57,6 +57,10 @@ public final class ReceiptGc {
     }
 
     private static void sweep(Context ctx) {
+        // Deckt die Einstiege ab, die nicht über AusgabenApp.onCreate laufen. Im Normalfall ein
+        // No-op – aber gerade dieser Lauf darf keinen unzugeordneten Altbestand vorfinden: Er hielte
+        // die Belege der anderen Profile für verwaist.
+        ReceiptProfileMigration.ensureDone(ctx);
         AppDatabase db = AppDatabase.getInstance(ctx);
         // Sicherheitsleine: ohne Buchungen (frische Installation vor dem ersten Import) wird nichts
         // gelöscht – sonst räumte der Lauf den ganzen Beleg-Ordner auf dem Server aus.

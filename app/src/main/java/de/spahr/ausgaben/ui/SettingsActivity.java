@@ -421,7 +421,9 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
         settings.clearAll();
         new de.spahr.ausgaben.settings.ProfileManager(this).clearAll(this);
         new de.spahr.ausgaben.settings.PlacesStore(this).clearAll();
-        de.spahr.ausgaben.receipt.Receipts.reset(this);
+        // resetAll, nicht reset: Seit die Belege je Profil liegen, räumt reset() nur noch das aktive
+        // Profil – für den Werksreset zu wenig.
+        de.spahr.ausgaben.receipt.Receipts.resetAll(this);
         // commit() statt apply(): siehe oben.
         getSharedPreferences("widget_selection", MODE_PRIVATE).edit().clear().commit();
         Toast.makeText(this, R.string.reset_done, Toast.LENGTH_LONG).show();

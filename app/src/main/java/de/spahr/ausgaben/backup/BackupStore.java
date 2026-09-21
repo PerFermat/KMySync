@@ -63,9 +63,17 @@ public final class BackupStore {
      */
     private static final String SETTINGS_FILE = "ausgaben_settings";
     private static final String[] PROFILE_PREFIXED_FILES = {
-            SETTINGS_FILE, "ausgaben_places", "ausgaben_statements"};
-    /** Geräteweite Prefs-Dateien ohne Profil-Bezug – nur in einer Alle-Profile-Sicherung dabei. */
-    private static final String[] GLOBAL_ONLY_FILES = {"receipts", "widget_selection"};
+            SETTINGS_FILE, "ausgaben_places", "ausgaben_statements", "receipts"};
+    /**
+     * Geräteweite Prefs-Dateien ohne Profil-Bezug – nur in einer Alle-Profile-Sicherung dabei.
+     *
+     * <p>{@code receipts} stand bis 2.1 hier und gehört seit 2.2 nach oben: Die Beleg-Merklisten
+     * tragen jetzt einen Profil-Präfix wie jede andere Einstellung. Damit nimmt eine Profil-Sicherung
+     * sie mit, und eine eingespielte Sicherung legt sie unter das Präfix des Zielprofils. Eine
+     * Sicherung aus der Zeit davor führt sie unpräfixiert – die ordnet
+     * {@code ReceiptProfileMigration} beim Einspielen zu.</p>
+     */
+    private static final String[] GLOBAL_ONLY_FILES = {"widget_selection"};
     private static final String PROFILES_FILE = "ausgaben_profiles";
 
     private BackupStore() {
@@ -309,6 +317,11 @@ public final class BackupStore {
             // Bewusst commit() statt apply() – siehe Klassenkopf.
             editor.commit();
         }
+        // Eine Sicherung aus einer Fassung vor 2.2 bringt die Beleg-Merklisten ohne Profil-Präfix
+        // zurück. Der Prozess startet dabei nicht neu (postRestoreDone ruft nur MainActivity mit
+        // CLEAR_TASK), also muss die Zuordnung hier laufen – sonst hielte der nächste Aufräumlauf
+        // die Belege für herrenlos.
+        de.spahr.ausgaben.receipt.ReceiptProfileMigration.ensureDone(app);
     }
 
     /** Ersetzt die Datenbankdateien aller in der Sicherung enthaltenen Profile. */

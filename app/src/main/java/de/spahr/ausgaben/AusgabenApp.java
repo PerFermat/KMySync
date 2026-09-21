@@ -50,6 +50,11 @@ public class AusgabenApp extends Application implements Application.ActivityLife
         // bleibt liegen), Neuinstallationen ein leeres Erstprofil. SettingsStore liest ab hier
         // profilbezogen, muss also erst danach konstruiert werden.
         de.spahr.ausgaben.settings.ProfileManager.migrateLegacyInstallationIfNeeded(this);
+        // Direkt danach, und bewusst synchron: Der Belegbestand lag bis 2.1 flach in einem Ordner für
+        // alle Profile. Ohne Profilliste gäbe es kein Ziel, und liefe die Zuordnung nebenher, könnte
+        // der Aufräumlauf sie überholen und genau die Dateien in den Papierkorb schieben, die gerade
+        // zugeordnet werden.
+        de.spahr.ausgaben.receipt.ReceiptProfileMigration.ensureDone(this);
         settings = new SettingsStore(this);
         // Sprache seeden (falls leer) und aktive Sprache laden, bevor die erste Activity Texte anfragt.
         de.spahr.ausgaben.i18n.LocaleManager.init(this);

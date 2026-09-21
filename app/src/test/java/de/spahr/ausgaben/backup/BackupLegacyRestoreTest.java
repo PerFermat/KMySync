@@ -28,8 +28,8 @@ import de.spahr.ausgaben.settings.ProfileManager;
  * Einspielen einer Sicherung aus der Zeit vor den Profilen (Archivformat 1, App-Fassung 1.11).
  *
  * <p>Dort stehen Profil- und geräteweite Einstellungen unpräfixiert nebeneinander, und es gibt die
- * Dateien {@code receipts} und {@code widget_selection}, die es heute nur noch in einer
- * Alle-Profile-Sicherung gibt. Behandelte man ein solches Archiv wie ein heutiges, bekämen Sprache,
+ * Datei {@code widget_selection}, die es heute nur noch in einer Alle-Profile-Sicherung gibt
+ * ({@code receipts} gehört seit 2.2 zum Profil). Behandelte man ein solches Archiv wie ein heutiges, bekämen Sprache,
  * Nachtmodus, Schriftgröße, Kategoriefarben und App-Sperre ein Profil-Präfix – und wären damit still
  * verloren, während die alten Werte unberührt daneben stehen blieben.</p>
  */
@@ -96,20 +96,46 @@ public class BackupLegacyRestoreTest {
         assertFalse(prefs.contains(prefix + "color_Lebensmittel"));
     }
 
+    /**
+     * Die Beleg-Merkliste gehört seit 2.2 zum Profil und muss beim Einspielen unters Präfix wandern.
+     *
+     * <p>Bis dahin stand hier die umgekehrte Zusicherung. Sie war richtig, solange die Merklisten
+     * geräteweit lagen – und genau das war der Boden für den Datenverlust bei zwei Profilen: Der
+     * Aufräumlauf des aktiven Profils hielt die Belege des anderen für herrenlos.</p>
+     */
     @Test
-    public void geraeteweiteDateienBekommenKeinProfilPraefix() throws Exception {
+    public void belegMerklisteWandertUntersProfil() throws Exception {
         String prefix = "p_" + new ProfileManager(ctx).getActiveProfileId() + "_";
 
         Map<String, Object> belege = new LinkedHashMap<>();
-        belege.put("receipt_enabled", true);
+        belege.put("pending", new java.util.HashSet<>(java.util.Arrays.asList("2026|abc_p1.jpg")));
         Map<String, Map<String, Object>> dateien = new LinkedHashMap<>();
         dateien.put("receipts", belege);
 
         BackupStore.restoreProfileSettings(ctx, BackupArchive.read(altesArchiv(dateien)));
 
         SharedPreferences prefs = ctx.getSharedPreferences("receipts", Context.MODE_PRIVATE);
-        assertTrue(prefs.getBoolean("receipt_enabled", false));
-        assertFalse(prefs.contains(prefix + "receipt_enabled"));
+        assertTrue("unters Profil, nicht blank", prefs.contains(prefix + "pending"));
+    }
+
+    /**
+     * {@code widget_selection} ist die letzte wirklich geräteweite Prefs-Datei – ihr Zweig muss
+     * gedeckt bleiben, auch nachdem {@code receipts} ihn verlassen hat.
+     */
+    @Test
+    public void geraeteweiteDateienBekommenKeinProfilPraefix() throws Exception {
+        String prefix = "p_" + new ProfileManager(ctx).getActiveProfileId() + "_";
+
+        Map<String, Object> widgets = new LinkedHashMap<>();
+        widgets.put("widget_17", "Girokonto");
+        Map<String, Map<String, Object>> dateien = new LinkedHashMap<>();
+        dateien.put("widget_selection", widgets);
+
+        BackupStore.restoreProfileSettings(ctx, BackupArchive.read(altesArchiv(dateien)));
+
+        SharedPreferences prefs = ctx.getSharedPreferences("widget_selection", Context.MODE_PRIVATE);
+        assertEquals("Girokonto", prefs.getString("widget_17", null));
+        assertFalse(prefs.contains(prefix + "widget_17"));
     }
 
     /** Eine heutige Sicherung darf der Sonderweg nicht anfassen: dort ist alles Profil-Sache. */

@@ -404,6 +404,10 @@ public class ProfileManager {
         saveProfiles(profiles);
         deleteProfileFiles(context, toDelete.dbFileName);
         clearProfilePrefixedSettings(context, profileId);
+        // Die Belege liegen seit 2.2 in einem eigenen Ordner je Profil. Ohne diese Zeile bliebe er
+        // samt Inhalt liegen – niemand räumte ihn je auf, denn der Aufräumlauf sieht nur den Ordner
+        // des aktiven Profils.
+        de.spahr.ausgaben.receipt.Receipts.deleteProfile(context, profileId);
     }
 
     private void deleteProfileFiles(Context context, String dbFileName) {
@@ -436,6 +440,15 @@ public class ProfileManager {
      * Orte, Akzentfarbe) von {@code fromProfileId} nach {@code toProfileId} – z. B. beim Anlegen eines
      * weiteren Profils, um nicht alles neu eintippen zu müssen. Die eigentlichen Buchungsdaten
      * (Datenbank) bleiben davon unberührt.
+     *
+     * <p>Die Beleg-Merklisten (Prefs-Datei {@code receipts}) werden <b>nicht</b> mitkopiert, und das
+     * ist kein Versehen: Sie verweisen auf Dateien des Quellprofils. Im Zielprofil zeigten sie ins
+     * Leere, {@code ReceiptSync} striche sie beim ersten Lauf ohnehin wieder – und ein
+     * mitgenommener Ordnerwechsel verschöbe fremde Dateien auf dem Server.</p>
+     *
+     * <p>Der Belegordner selbst ({@code receipt_folder}) wandert dagegen mit, wie jede andere
+     * Einstellung der Datenquelle. Beide Profile stehen damit zunächst auf demselben Ordner – genau
+     * dafür gibt es die Rückfrage beim Speichern, wenn der Zielordner nicht leer ist.</p>
      */
     public void copySettingsFrom(Context context, String fromProfileId, String toProfileId) {
         Context app = context.getApplicationContext();
