@@ -53,6 +53,39 @@ public class ScheduledDueDatesTest {
         assertEquals("und er gehört nach vorn", base, (long) dues.get(0));
     }
 
+    /**
+     * Der zweite Teil: <b>jeder</b> verpasste Termin gehört in die Liste, nicht nur der älteste.
+     *
+     * <p>Seit Januar liegengeblieben, heute im September – Februar bis Juli sind genauso offen wie
+     * Januar und dürfen nicht still ausfallen.</p>
+     */
+    @Test
+    public void jederVerpassteTerminErscheint() {
+        long base = ymd(2026, 1, 1);
+        long from = ymd(2026, 8, 1);          // Fenster: ein Monat vor „heute" (01.09.)
+        long to = ymd(2026, 12, 1);
+
+        List<Long> dues = ScheduledActivity.dueDates(base, monatlich(), from, to);
+
+        for (int monat = 1; monat <= 12; monat++) {
+            assertTrue("der 01." + monat + ". fehlt", dues.contains(ymd(2026, monat, 1)));
+        }
+        assertEquals("lückenlos ab dem fälligen Termin", 12, dues.size());
+        assertEquals(base, (long) dues.get(0));
+    }
+
+    /** Die Kette muss lückenlos sein – kein Sprung vom fälligen Termin zum Fensteranfang. */
+    @Test
+    public void keineLueckeZwischenFaelligemTerminUndFenster() {
+        long base = ymd(2026, 1, 1);
+        List<Long> dues = ScheduledActivity.dueDates(base, monatlich(),
+                ymd(2026, 8, 1), ymd(2026, 10, 1));
+
+        assertEquals(ymd(2026, 1, 1), (long) dues.get(0));
+        assertEquals("direkt danach der Februar, nicht der August", ymd(2026, 2, 1), (long) dues.get(1));
+        assertEquals(ymd(2026, 3, 1), (long) dues.get(2));
+    }
+
     /** Liegt der fällige Termin im Fenster, ändert sich nichts – und er steht nur einmal da. */
     @Test
     public void terminImFensterWirdNichtVerdoppelt() {
