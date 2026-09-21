@@ -274,6 +274,43 @@ public class ScheduledActivity extends LocalizedActivity {
         return advanced <= 0 ? 0 : Math.max(st.nextDueMs, advanced);
     }
 
+    /**
+     * Die Termine einer Planung, die in der Liste erscheinen – die Projektion und, wenn er davor
+     * liegt, <b>der fällige Termin selbst</b>.
+     *
+     * <h2>Warum der Zusatz nötig ist</h2>
+     *
+     * <p>{@link ScheduleProjection#occurrences} wirft alles vor {@code fromMs} weg. Für die
+     * Diagramme und die Fälligkeits-Erinnerung ist das richtig: Eine Summe über die nächsten zwölf
+     * Monate soll keine Zahlung aus dem August enthalten. Hier ist es fatal.</p>
+     *
+     * <p>Das Fenster dieser Liste beginnt einen Monat vor heute. Eine Planung, die länger
+     * liegengeblieben ist, hat ihre nächste Fälligkeit <em>davor</em> – der Termin fiel also aus der
+     * Liste. Buchen und Überspringen hängen aber beide daran, dass eine angezeigte Zeile genau diesen
+     * Termin trägt ({@code due == base}, siehe {@link Occurrence#next}). Ohne ihn zeigte die Liste
+     * zwar die künftigen Termine, aber keiner ließ sich anfassen: Der lange Druck antwortete nur noch
+     * „Nur der nächste Termin einer Planung lässt sich buchen oder überspringen", und der Haken fehlte
+     * überall.</p>
+     *
+     * <p>Das Tückische daran ist die Richtung: Überspringen ist der <em>einzige</em> Weg, eine
+     * liegengebliebene Planung wieder einzufangen – und genau der war gesperrt. Einmal über die
+     * Monatsgrenze gerutscht, blieb sie es für immer. Aufgefallen ist es am „Deutschlandticket“
+     * (monatlich, fällig am 01.08., gemeldet am 21.09.).</p>
+     *
+     * <p>Paketsichtbar und ohne Android-Bezug, damit {@code ScheduledDueDatesTest} beide Fälle
+     * festhält.</p>
+     */
+    static List<Long> dueDates(long base, ScheduledTransaction st, long fromMs, long toMs) {
+        List<Long> dues = new ArrayList<>(ScheduleProjection.occurrences(base, st.occurrence,
+                st.occurrenceMultiplier, st.endMs, fromMs, toMs, MAX_PER_SCHEDULE));
+        boolean vorDemFenster = base < fromMs;
+        boolean nochNichtBeendet = st.endMs <= 0 || base <= st.endMs;
+        if (vorDemFenster && nochNichtBeendet && !dues.contains(base)) {
+            dues.add(0, base);
+        }
+        return dues;
+    }
+
     private void render() {
         container.removeAllViews();
         long fromMs = windowFromMs();
@@ -289,8 +326,7 @@ public class ScheduledActivity extends LocalizedActivity {
             if (base <= 0 || !kindSelected(st.kind) || !accountMatches(st) || !nameMatches(st)) {
                 continue;
             }
-            for (long due : ScheduleProjection.occurrences(base, st.occurrence,
-                    st.occurrenceMultiplier, st.endMs, fromMs, toMs, MAX_PER_SCHEDULE)) {
+            for (long due : dueDates(base, st, fromMs, toMs)) {
                 if (fDateFrom != null && due < fDateFrom) {
                     continue;
                 }
