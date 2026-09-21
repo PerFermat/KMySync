@@ -44,6 +44,7 @@ public class SettingsStore {
     private static final String KEY_LOCAL_EXPORT_TREE = "local_export_tree";
     private static final String KEY_EXPORT_MODE = "export_mode";
     private static final String KEY_KMY_PATH = "kmy_path";
+    private static final String KEY_RECEIPT_FOLDER = "receipt_folder";
     private static final String KEY_APP_LOCK = "app_lock";
     private static final String KEY_GPS_ENABLED = "gps_enabled";
     private static final String KEY_AMOUNT_SUGGEST = "amount_suggest";
@@ -476,6 +477,55 @@ public class SettingsStore {
     /** Relativer Nextcloud-Pfad zur .kmy inkl. Dateiname, z. B. {@code KMyMoney/gdyx.kmy}. */
     public String getKmyPath() {
         return prefs.getString(pk(KEY_KMY_PATH), "").trim();
+    }
+
+    /** Vorgabe des Belegordners – der Name, unter dem bis 2.1 jedes Profil ablegte. */
+    public static final String RECEIPT_FOLDER_DEFAULT = "Belege";
+
+    /**
+     * Name des Belegordners dieses Profils, <b>ein einzelner Ordnername</b> neben der KMyMoney-Datei
+     * bzw. im Sync-Ordner (siehe {@code ReceiptSync#remoteBase}).
+     *
+     * <h2>Warum das überhaupt einstellbar ist</h2>
+     *
+     * <p>Der Belegordner ergibt sich aus dem Ordner der .kmy-Datei. Zwei Profile, deren .kmy-Dateien
+     * im <b>selben</b> Ordner liegen, bekamen damit zwangsläufig denselben Belegordner – und der
+     * Aufräumlauf jedes Profils hielt die Belege des anderen für herrenlos, weil er seine
+     * Behalte-Liste nur aus der eigenen Datenbank bildet. Ein eigener Ordnername je Profil trennt
+     * das an der Quelle.</p>
+     *
+     * <p>Liefert <b>nie</b> leer: Ohne Eintrag – also für jede bestehende Installation und für jedes
+     * neu angelegte Profil – steht hier {@code Belege}, womit alles bleibt, wie es war.</p>
+     */
+    public String getReceiptFolder() {
+        return normalizeReceiptFolder(prefs.getString(pk(KEY_RECEIPT_FOLDER), ""));
+    }
+
+    public void setReceiptFolder(String folder) {
+        prefs.edit().putString(pk(KEY_RECEIPT_FOLDER), normalizeReceiptFolder(folder)).apply();
+    }
+
+    /**
+     * Macht aus einer Nutzereingabe einen brauchbaren Ordnernamen: getrimmt, ohne führende oder
+     * abschließende Schrägstriche, Rückfall auf {@link #RECEIPT_FOLDER_DEFAULT}.
+     *
+     * <p>Die Schrägstriche sind der eigentliche Grund: {@code RemotePath.join} fügt selbst einen
+     * ein, und eine Eingabe wie {@code "/Belege/"} ergäbe sonst einen Pfad mit leeren Abschnitten.
+     * Auf SMB kommt dabei kein Fehler, sondern ein Ordner mit seltsamem Namen heraus – ein Fehler,
+     * den man erst bemerkt, wenn die Belege verschwunden scheinen.</p>
+     *
+     * <p>Statisch und ohne Android, damit {@code ReceiptFolderSettingTest} die Randfälle festhält.</p>
+     */
+    public static String normalizeReceiptFolder(String folder) {
+        String f = folder == null ? "" : folder.trim();
+        while (f.startsWith("/")) {
+            f = f.substring(1);
+        }
+        while (f.endsWith("/")) {
+            f = f.substring(0, f.length() - 1);
+        }
+        f = f.trim();
+        return f.isEmpty() ? RECEIPT_FOLDER_DEFAULT : f;
     }
 
     /** Standard: dem System folgen, bis der Nutzer aktiv umschaltet. */

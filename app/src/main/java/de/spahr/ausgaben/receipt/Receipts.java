@@ -16,6 +16,7 @@ public final class Receipts {
     private static final String PREFS = "receipts";
     private static final String KEY_PENDING = "pending";
     private static final String KEY_MOVES = "moves";
+    private static final String KEY_FOLDER_MOVES = "folder_moves";
 
     private Receipts() {
     }
@@ -151,6 +152,89 @@ public final class Receipts {
     public static String[] moveParts(String entry) {
         String[] teile = entry == null ? null : entry.split("\\|", 3);
         return teile != null && teile.length == 3 ? teile : null;
+    }
+
+    // ---- Offener Wechsel des Belegordners ----
+
+    /**
+     * Offene Ordnerwechsel in der Form {@code <vonOrdner>|<nachOrdner>|<datei>}, beide Ordner als
+     * vollständige Serverpfade einschließlich Jahresordner.
+     *
+     * <h2>Warum eine eigene Liste neben {@link #moves(Context)}</h2>
+     *
+     * <p>Der Jahreswechsel kennt nur zwei Zahlen und leitet die Pfade beim Ausführen aus den
+     * Einstellungen ab. Genau das geht hier nicht: Der Ausgangsordner ist der <b>alte</b>
+     * Belegordner, und der steht nach dem Umstellen in keiner Einstellung mehr. Er muss deshalb im
+     * Eintrag selbst stehen.</p>
+     *
+     * <p>Vorgemerkt wird, wenn der Nutzer den Belegordner seines Profils ändert. Ausgeführt wird im
+     * Hintergrund ({@code ReceiptFolderMove}), damit ein Funkloch die Umstellung nicht blockiert –
+     * solange etwas offen ist, sucht {@code ReceiptPages} zusätzlich am alten Ort.</p>
+     */
+    public static synchronized Set<String> folderMoves(Context ctx) {
+        return new HashSet<>(prefs(ctx).getStringSet(KEY_FOLDER_MOVES, new HashSet<>()));
+    }
+
+    /**
+     * Merkt einen Ordnerwechsel vor. Ein schon vorgemerkter Wechsel derselben Datei wird
+     * zusammengefasst: Es zählt der <b>ursprüngliche</b> Ausgangsordner, denn dort liegt die Datei
+     * noch – dieselbe Überlegung wie bei {@link #addMove}.
+     */
+    public static synchronized void addFolderMove(Context ctx, String file, String fromFolder,
+                                                  String toFolder) {
+        if (file == null || fromFolder == null || toFolder == null || fromFolder.equals(toFolder)) {
+            return;
+        }
+        Set<String> s = folderMoves(ctx);
+        String von = fromFolder;
+        for (java.util.Iterator<String> it = s.iterator(); it.hasNext(); ) {
+            String[] teile = folderMoveParts(it.next());
+            if (teile != null && teile[2].equals(file)) {
+                von = teile[0];
+                it.remove();
+            }
+        }
+        if (!von.equals(toFolder)) {
+            s.add(von + "|" + toFolder + "|" + file);
+        }
+        prefs(ctx).edit().putStringSet(KEY_FOLDER_MOVES, s).apply();
+    }
+
+    /** Streicht einen erledigten (oder gegenstandslosen) Ordnerwechsel. */
+    public static synchronized void removeFolderMove(Context ctx, String entry) {
+        Set<String> s = folderMoves(ctx);
+        if (s.remove(entry)) {
+            prefs(ctx).edit().putStringSet(KEY_FOLDER_MOVES, s).apply();
+        }
+    }
+
+    /**
+     * Ausgangsordner, Zielordner und Datei eines Ordnerwechsel-Eintrags; {@code null}, wenn
+     * unbrauchbar.
+     *
+     * <p>Zerlegt wird von <b>hinten</b>, nicht mit {@code split("\\|", 3)} wie bei den Jahren: Ein
+     * Serverpfad darf ein {@code |} enthalten, ein Belegdateiname (UUID plus {@code _p1.jpg}) nicht.
+     * Von vorn zerlegt risse ein solcher Pfad den Eintrag an der falschen Stelle auseinander.</p>
+     */
+    public static String[] folderMoveParts(String entry) {
+        if (entry == null) {
+            return null;
+        }
+        int letzter = entry.lastIndexOf('|');
+        if (letzter < 0) {
+            return null;
+        }
+        int vorletzter = entry.lastIndexOf('|', letzter - 1);
+        if (vorletzter < 0) {
+            return null;
+        }
+        String von = entry.substring(0, vorletzter);
+        String nach = entry.substring(vorletzter + 1, letzter);
+        String datei = entry.substring(letzter + 1);
+        if (von.isEmpty() || nach.isEmpty() || datei.isEmpty()) {
+            return null;
+        }
+        return new String[]{von, nach, datei};
     }
 
     /** Entfernt alle Einträge zu {@code file} – mit und ohne Jahresangabe. */

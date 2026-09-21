@@ -112,6 +112,13 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
     private TextInputEditText editFolder;
     private TextInputEditText editImportFolder;
     private TextInputEditText editKmyPath;
+    private TextInputEditText editReceiptFolder;
+    /**
+     * Der Belegpfad, wie er beim Öffnen der Maske galt. Nur wenn er sich beim Speichern
+     * <b>geändert</b> hat, wird gewarnt und umgezogen – sonst bekäme jeder, der seine Einstellungen
+     * nur erneut speichert, eine Warnung über seine eigenen Belege.
+     */
+    private String belegPfadBeimOeffnen = "";
     private MaterialAutoCompleteTextView editCsvSeparator;
     /** Aktuell gewähltes CSV-Trennzeichen (SettingsStore.CSV_SEP_*). */
     private String selectedCsvSeparator = SettingsStore.CSV_SEP_SEMICOLON;
@@ -214,6 +221,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         editFolder = findViewById(R.id.editFolder);
         editImportFolder = findViewById(R.id.editImportFolder);
         editKmyPath = findViewById(R.id.editKmyPath);
+        editReceiptFolder = findViewById(R.id.editReceiptFolder);
         editCsvSeparator = findViewById(R.id.editCsvSeparator);
         urlLayout = findViewById(R.id.urlLayout);
         userLayout = findViewById(R.id.userLayout);
@@ -340,8 +348,10 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
             if (blockIfImporting() || !steuersatzIstBrauchbar()) {
                 return;
             }
-            saveSettings();
-            finishToMainActivity();
+            mitBelegordnerPruefung(() -> {
+                saveSettings();
+                finishToMainActivity();
+            });
         });
 
         ((MaterialButton) findViewById(R.id.btnBackupProfile)).setOnClickListener(v -> askBackupOptions());
@@ -531,6 +541,8 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         editFolder.setText(settings.getFolder());
         editImportFolder.setText(settings.getImportFolder());
         editKmyPath.setText(settings.getKmyPath());
+        editReceiptFolder.setText(settings.getReceiptFolder());
+        belegPfadBeimOeffnen = de.spahr.ausgaben.receipt.ReceiptSync.remoteBase(settings);
         // Passwort bleibt leer: leer speichern lässt ein vorhandenes unverändert. Ist bereits eines
         // gespeichert, unter dem Feld „••••••" anzeigen (wie in den Einstellungen).
         if (settings.hasPassword()) {
@@ -541,6 +553,93 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         if (SettingsStore.isSecretStorageUnencrypted(this)) {
             passwordLayout.setError(getString(R.string.settings_secret_fallback));
             passwordLayout.setErrorIconDrawable(null);
+        }
+    }
+
+    // ---- Belegordner ----
+
+    /**
+     * Der Belegpfad, der sich aus den <b>Feldern</b> ergibt – nicht aus den gespeicherten
+     * Einstellungen. Gebraucht vor dem Speichern, um zu erkennen, ob der Nutzer ihn verstellt hat.
+     *
+     * <p>Bildet {@code ReceiptSync#remoteBase} nach; die Wurzel hängt am Format, weil die Belege im
+     * kmy-Modus neben der Datei liegen und sonst im Sync-Ordner.</p>
+     */
+    private String belegPfadAusFeldern() {
+        String wurzel = SettingsStore.MODE_KMY.equals(selectedExportMode)
+                ? de.spahr.ausgaben.net.RemotePath.folderOf(textOf(editKmyPath))
+                : textOf(editFolder);
+        return de.spahr.ausgaben.net.RemotePath.join(wurzel,
+                SettingsStore.normalizeReceiptFolder(textOf(editReceiptFolder)));
+    }
+
+    /**
+     * Führt {@code weiter} aus – vorher aber, falls der Belegordner sich ändert, eine Rückfrage.
+     *
+     * <p>Gewarnt wird nur bei einer <b>Änderung</b> des wirksamen Pfads. Ohne diese Bedingung
+     * bekäme jeder, der seine Einstellungen nur erneut speichert, eine Warnung über seine eigenen
+     * Belege – und lernte, sie wegzuklicken.</p>
+     *
+     * <p>Ein nicht leerer Zielordner ist kein Fehler, sondern ein Verdacht: Dort könnten die Belege
+     * eines anderen Profils liegen, die dieses Profil dann für herrenlos hielte. Deshalb Rückfrage
+     * statt Verbot. Ist der Ordner nicht lesbar (offline, gibt es noch nicht), wird nicht gewarnt
+     * und auch nichts abgebrochen — die Prüfung ist eine Hilfe, keine Hürde.</p>
+     */
+    private void mitBelegordnerPruefung(Runnable weiter) {
+        final String neu = belegPfadAusFeldern();
+        if (neu.equals(belegPfadBeimOeffnen) || !settings.hasRemoteConfig()) {
+            weiter.run();
+            return;
+        }
+        repository.executor().execute(() -> {
+            final boolean belegt = zielOrdnerIstBelegt(neu);
+            post(() -> {
+                if (!belegt) {
+                    weiter.run();
+                    return;
+                }
+                new AppDialog(this)
+                        .setTitle(R.string.receipt_folder_not_empty_title)
+                        .setMessage(getString(R.string.receipt_folder_not_empty_message, neu))
+                        .setPositiveButton(R.string.receipt_folder_not_empty_continue,
+                                (d, w) -> weiter.run())
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .show();
+            });
+        });
+    }
+
+    /**
+     * Übernimmt den Belegordner und stößt bei einer Änderung den Umzug an.
+     *
+     * <p>Die Einstellung gilt <b>sofort</b>, der Umzug läuft im Hintergrund. Andersherum – erst
+     * umziehen, dann umstellen – käme man im Funkloch gar nicht aus der Maske heraus. Den Preis
+     * dafür, dass die Belege eine Weile an zwei Orten liegen, trägt {@code ReceiptSync#searchFolders}:
+     * Es sucht zusätzlich in den Ausgangsordnern der offenen Umzüge.</p>
+     */
+    private void belegordnerUebernehmen() {
+        final String alt = belegPfadBeimOeffnen;
+        settings.setReceiptFolder(textOf(editReceiptFolder));
+        final String neu = de.spahr.ausgaben.receipt.ReceiptSync.remoteBase(settings);
+        if (neu.equals(alt) || alt.isEmpty()) {
+            return;
+        }
+        // Damit ein erneutes Speichern in derselben Sitzung nicht noch einmal umzieht.
+        belegPfadBeimOeffnen = neu;
+        Toast.makeText(this, getString(R.string.receipt_folder_moving, neu), Toast.LENGTH_LONG).show();
+        repository.executor().execute(
+                () -> de.spahr.ausgaben.receipt.ReceiptFolderMove.scheduleMove(this, alt, neu));
+    }
+
+    /** Liegt im Zielordner schon etwas? Unlesbar zählt als „nein" – siehe {@link #mitBelegordnerPruefung}. */
+    private boolean zielOrdnerIstBelegt(String pfad) {
+        try {
+            de.spahr.ausgaben.net.RemoteStorage storage =
+                    de.spahr.ausgaben.net.RemoteStorage.from(settings);
+            de.spahr.ausgaben.net.RemoteStorage.Entries e = storage.listEntries(pfad, null);
+            return !e.files.isEmpty() || !e.folders.isEmpty();
+        } catch (Exception nichtLesbar) {
+            return false;
         }
     }
 
@@ -562,6 +661,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
                 textOf(editKmyPath),
                 syncFields.serverType());
         settings.setCsvSeparator(selectedCsvSeparator);
+        belegordnerUebernehmen();
 
         repository.ensureAccount(defaultAccount);
         settings.setCurrency(textOf(editCurrency));

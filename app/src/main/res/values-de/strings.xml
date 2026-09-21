@@ -622,6 +622,12 @@
     <string name="export_mode_csv">CSV (kMyMoney-Import)</string>
     <string name="export_mode_kmy">KMyMoney-Datei (.kmy)</string>
     <string name="kmy_path_hint">KMyMoney-Datei (Pfad, z. B. KMyMoney/gdyx.kmy)</string>
+    <string name="receipt_folder_hint">Belegordner</string>
+    <string name="receipt_folder_helper">Liegt neben der KMyMoney-Datei. Mehrere Profile mit Datei im selben Ordner brauchen je einen eigenen Namen.</string>
+    <string name="receipt_folder_not_empty_title">Ordner ist nicht leer</string>
+    <string name="receipt_folder_not_empty_message">In „%1$s" liegen bereits Dateien. Gehören sie einem anderen Profil, hält dieses Profil sie für herrenlos und schiebt sie in den Papierkorb.</string>
+    <string name="receipt_folder_not_empty_continue">Trotzdem verwenden</string>
+    <string name="receipt_folder_moving">Die Belege ziehen im Hintergrund nach „%1$s" um.</string>
     <string name="default_account_section">Standardkonto</string>
     <string name="default_account_hint">Standardkonto</string>
 

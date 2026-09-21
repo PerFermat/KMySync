@@ -117,7 +117,8 @@ public class ProfileManager {
      */
     private static final String[] PROFILE_STRING_KEYS = {"nextcloud_url", "nextcloud_user",
             "nextcloud_folder", "nextcloud_import_folder", "local_export_tree", "export_mode",
-            "kmy_path", "server_type", "csv_separator", "default_account", "currency", "number_format"};
+            "kmy_path", "receipt_folder", "server_type", "csv_separator", "default_account",
+            "currency", "number_format"};
     private static final String[] PROFILE_BOOLEAN_KEYS = {"show_currency", "dividend_gross",
             "budget_internal", "alias_prompt"};
     private static final String[] PROFILE_LONG_KEYS = {"account_group", "dividend_tax_rate"};

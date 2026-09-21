@@ -681,6 +681,10 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         de.spahr.ausgaben.settings.DateFormats.refresh(this);
         // Offene Belegfotos im Hintergrund ins Netzlaufwerk hochladen (No-op ohne offene/ohne Config).
         de.spahr.ausgaben.receipt.ReceiptSync.syncPending(this);
+        // Ein angefangener Wechsel des Belegordners wird hier zu Ende gebracht (No-op, wenn keiner
+        // offen ist). Vor dem Aufräumlauf: Solange Belege noch im alten Ordner liegen, soll der
+        // Umzug laufen, nicht das Aufräumen.
+        de.spahr.ausgaben.receipt.ReceiptFolderMove.run(this);
         // Belege gelöschter Buchungen entsorgen – nur einmal je App-Start, damit das „Rückgängig" nach
         // dem Löschen (onResume läuft auch beim Zurückkommen aus dem Editor) seine Bilder behält.
         de.spahr.ausgaben.receipt.ReceiptGc.runOncePerStart(this);

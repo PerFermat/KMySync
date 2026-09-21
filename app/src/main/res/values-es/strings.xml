@@ -620,6 +620,12 @@
     <string name="export_mode_csv">CSV (importación kMyMoney)</string>
     <string name="export_mode_kmy">Archivo KMyMoney (.kmy)</string>
     <string name="kmy_path_hint">Archivo KMyMoney (ruta, p. ej. KMyMoney/gdyx.kmy)</string>
+    <string name="receipt_folder_hint">Carpeta de justificantes</string>
+    <string name="receipt_folder_helper">Está junto al archivo KMyMoney. Si varios perfiles guardan su archivo en la misma carpeta, dé a cada uno un nombre propio.</string>
+    <string name="receipt_folder_not_empty_title">La carpeta no está vacía</string>
+    <string name="receipt_folder_not_empty_message">«%1$s» ya contiene archivos. Si pertenecen a otro perfil, este perfil los tomará por huérfanos y los moverá a la papelera.</string>
+    <string name="receipt_folder_not_empty_continue">Usar de todos modos</string>
+    <string name="receipt_folder_moving">Los justificantes se están moviendo a «%1$s» en segundo plano.</string>
     <string name="default_account_section">Cuenta por defecto</string>
     <string name="default_account_hint">Cuenta por defecto</string>
 

@@ -23,7 +23,6 @@ import de.spahr.ausgaben.settings.SettingsStore;
  */
 public final class ReceiptSync {
 
-    private static final String REMOTE_SUBDIR = "Belege";
     private static final ExecutorService IO = Executors.newSingleThreadExecutor();
 
     private ReceiptSync() {
@@ -32,20 +31,29 @@ public final class ReceiptSync {
     /**
      * Der Beleg-Ordner auf dem Server, relativ zur konfigurierten Wurzel: neben der KMyMoney-Datei bzw. im
      * Sync-Ordner.
+     *
+     * <p>Der Ordnername kommt seit 2.2 aus den Einstellungen des Profils
+     * ({@code SettingsStore#getReceiptFolder}) statt aus einer Konstante. Ohne Eintrag steht dort
+     * {@code Belege} – für jede bestehende Installation ändert sich damit nichts. Der Grund für die
+     * Einstellung steht an jener Methode: Zwei .kmy-Dateien im selben Ordner ergaben sonst
+     * zwangsläufig denselben Belegordner.</p>
      */
     public static String remoteBase(SettingsStore settings) {
         String base = settings.isKmyMode()
                 ? RemotePath.folderOf(settings.getKmyPath())
                 : settings.getFolder();
-        return RemotePath.join(base, REMOTE_SUBDIR);
+        return RemotePath.join(base, settings.getReceiptFolder());
     }
 
     /**
      * Der frühere Ablageort (immer der Sync-Ordner). Wird nur noch <b>gelesen</b>, damit Belege, die vor
      * der Umstellung im kmy-Modus hochgeladen wurden, weiter gefunden werden.
+     *
+     * <p>Folgt demselben Ordnernamen wie {@link #remoteBase}: Wer ihn umstellt, meint seinen
+     * Belegordner – nicht nur den an der einen Stelle.</p>
      */
     private static String legacyBase(SettingsStore settings) {
-        return RemotePath.join(settings.getFolder(), REMOTE_SUBDIR);
+        return RemotePath.join(settings.getFolder(), settings.getReceiptFolder());
     }
 
     /**
@@ -158,10 +166,9 @@ public final class ReceiptSync {
             }
         }
         boolean allMissing = true;
-        // Neuer Ort zuerst, danach der frühere – so bleiben vorhandene Uploads erreichbar.
-        for (String base : new String[]{remoteBase(settings), legacyBase(settings)}) {
+        for (String folder : searchFolders(ctx, settings, y)) {
             try {
-                byte[] bytes = storage.downloadBytes(base + "/" + y, file);
+                byte[] bytes = storage.downloadBytes(folder, file);
                 try (FileOutputStream fos = new FileOutputStream(local)) {
                     fos.write(bytes);
                 }
@@ -172,6 +179,41 @@ public final class ReceiptSync {
             }
         }
         return new Fetched(null, allMissing);
+    }
+
+    /**
+     * Wo ein Beleg des Jahres {@code y} liegen kann, in der Reihenfolge, in der gesucht wird.
+     *
+     * <ol>
+     *   <li>Der <b>gültige</b> Belegordner – der Regelfall, und deshalb zuerst.</li>
+     *   <li>Der <b>frühere</b> Ort (immer der Sync-Ordner), damit Uploads von vor der Umstellung auf
+     *       den kmy-Modus erreichbar bleiben.</li>
+     *   <li>Die <b>Ausgangsordner offener Ordnerwechsel</b>. Wer seinen Belegordner umbenennt, hat
+     *       für eine Weile Belege an zwei Orten: Die Einstellung gilt sofort, der Umzug läuft im
+     *       Hintergrund ({@link ReceiptFolderMove}). Ohne diesen dritten Ort wären genau die noch
+     *       nicht umgezogenen Belege in dieser Zeit unauffindbar – und der Nutzer sähe „Beleg
+     *       fehlt", obwohl nichts fehlt.</li>
+     * </ol>
+     *
+     * <p>Die offenen Ausgangsordner tragen ihr Jahr bereits im Pfad; gefiltert wird deshalb auf das
+     * gesuchte Jahr, statt eines anzuhängen. Ein Ordnerwechsel betrifft leicht mehrere Jahre, und
+     * jeder zusätzliche Kandidat kostet im Fehlerfall eine Anfrage übers Netz.</p>
+     *
+     * <p>Doppelte fallen weg ({@link java.util.LinkedHashSet}): Ohne Umzug und ohne kmy-Modus sind
+     * die ersten beiden Einträge derselbe Ordner, und zweimal dieselbe vergebliche Anfrage wäre nur
+     * Wartezeit.</p>
+     */
+    private static java.util.Collection<String> searchFolders(Context ctx, SettingsStore settings,
+                                                              int y) {
+        java.util.Set<String> out = new java.util.LinkedHashSet<>();
+        out.add(remoteBase(settings) + "/" + y);
+        out.add(legacyBase(settings) + "/" + y);
+        for (String folder : ReceiptFolderMove.openSourceFolders(ctx)) {
+            if (folder.endsWith("/" + y)) {
+                out.add(folder);
+            }
+        }
+        return out;
     }
 
     /**

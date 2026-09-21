@@ -306,6 +306,24 @@
                     android:text="@string/kmy_browse" />
             </LinearLayout>
 
+            <!-- Bewusst AUSSERHALB von csvOptions und kmyOptions: Belege gibt es in beiden Modi,
+                 nur die Wurzel darüber unterscheidet sich (Sync-Ordner bzw. Ordner der .kmy). -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/receiptFolderLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:helperTextEnabled="true"
+                app:helperText="@string/receipt_folder_helper"
+                android:hint="@string/receipt_folder_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editReceiptFolder"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textNoSuggestions" />
+            </com.google.android.material.textfield.TextInputLayout>
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnImportAccounts"
                 android:layout_width="match_parent"

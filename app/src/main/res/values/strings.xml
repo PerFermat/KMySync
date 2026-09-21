@@ -647,6 +647,12 @@
     <string name="export_mode_csv">CSV (kMyMoney import)</string>
     <string name="export_mode_kmy">KMyMoney file (.kmy)</string>
     <string name="kmy_path_hint">KMyMoney file (path, e.g. KMyMoney/gdyx.kmy)</string>
+    <string name="receipt_folder_hint">Receipt folder</string>
+    <string name="receipt_folder_helper">Sits next to the KMyMoney file. Give each profile its own name if several profiles keep their file in the same folder.</string>
+    <string name="receipt_folder_not_empty_title">Folder is not empty</string>
+    <string name="receipt_folder_not_empty_message">„%1$s" already holds files. If they belong to another profile, this profile will take them for orphaned and move them to the trash.</string>
+    <string name="receipt_folder_not_empty_continue">Use anyway</string>
+    <string name="receipt_folder_moving">The receipts are moving to „%1$s" in the background.</string>
     <string name="default_account_section">Default account</string>
     <string name="default_account_hint">Default account</string>
 
