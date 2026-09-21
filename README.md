@@ -138,7 +138,7 @@ reporting or ad library.
 `backup`, `i18n`, `notify`, `widget`, `wear` and `ui`.
 
 **Storage.** [Room](https://developer.android.com/training/data-storage/room) on SQLite, database
-version 51 with an unbroken chain of migrations — an update keeps your data, a fresh install is never
+version 52 with an unbroken chain of migrations — an update keeps your data, a fresh install is never
 required. The schema is checked in under `app/schemas/`, and a test replays the whole chain against
 Room's own validator. Amounts are `long` cents throughout, never floating point.
 

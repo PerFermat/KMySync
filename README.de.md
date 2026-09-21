@@ -140,7 +140,7 @@ Analyse-, Absturz- oder Werbe-Bibliothek.
 `location`, `security`, `settings`, `backup`, `i18n`, `notify`, `widget`, `wear` und `ui`.
 
 **Datenhaltung.** [Room](https://developer.android.com/training/data-storage/room) über SQLite,
-Datenbankfassung 51 mit lückenloser Migrationskette – ein Update behält den Bestand, ein
+Datenbankfassung 52 mit lückenloser Migrationskette – ein Update behält den Bestand, ein
 Neuinstallieren ist nie nötig. Das Schema liegt unter `app/schemas/` im Quelltext, und ein Test spielt
 die gesamte Kette gegen Rooms eigene Prüfung durch. Beträge liegen durchgehend als `long` in Cent, nie
 als Fließkommazahl.

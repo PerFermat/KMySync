@@ -1,5 +1,5 @@
-Der Empfänger ist jetzt freiwillig - wie in KMyMoney. Bleibt das Feld leer, steht in Buchungsliste, Widget und Auswertungen die Kategorie an seiner Stelle. Ist der Betrag aufgeteilt, steht dort "Split-Buchung"; fehlt auch die Kategorie, "*** NICHT ZUGEWIESEN ***" - derselbe Text wie in KMyMoney.
+Der Empfänger ist jetzt freiwillig - wie in KMyMoney. Bleibt das Feld leer, steht die Kategorie an seiner Stelle.
 
-Kleineres: anhaltbarer Beleg-Export, Datum in der Sprache der App, vollständiges Spanisch.
+Neu: Live-Suche in der Buchungsliste, Empfängerwahl im Umkreis auf der Uhr, Erkennung geplanter Wertpapierbuchungen, anhaltbarer Beleg-Export, Datum in der Sprache der App.
 
-Android sichert die Daten dieser App nicht mehr mit; beim Gerätewechsel hilft "Sicherung erstellen".
+Weggeräumte Belege landen im Ordner "Papierkorb" auf dem Server. Android sichert die Daten dieser App nicht mehr mit; beim Gerätewechsel hilft "Sicherung erstellen".

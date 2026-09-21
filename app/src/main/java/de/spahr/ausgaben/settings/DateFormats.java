@@ -96,6 +96,12 @@ public final class DateFormats {
      * @param device Sprache und Land des Geräts, oder {@code null} im Test
      */
     static void apply(String lang, Locale device) {
+        waehle(lang, device);
+        // Nach jeder Änderung sind die zwischengespeicherten Formatierer ungültig – siehe cached().
+        generation++;
+    }
+
+    private static void waehle(String lang, Locale device) {
         locale = LocaleManager.toLocale(lang);
         if (device != null && !device.getCountry().isEmpty()
                 && device.getLanguage().equals(locale.getLanguage())) {
@@ -134,14 +140,54 @@ public final class DateFormats {
         return pattern;
     }
 
+    /**
+     * Die Formatierer, je Faden einmal gebaut statt bei jedem Aufruf.
+     *
+     * <p>{@link SimpleDateFormat} ist nicht fadensicher, sein Bau aber auch nicht umsonst: Muster
+     * zerlegen und {@code DateFormatSymbols} laden. Aufgefallen ist das in der Buchungsliste – dort
+     * ruft {@code BookingAdapter} die Formatierung in <i>jedem</i> {@code onBindViewHolder}, also für
+     * jede Zeile beim Scrollen. Vorher hielt der Adapter einen eigenen Formatierer; mit dem Umzug
+     * hierher entstand er plötzlich je Zeile neu.</p>
+     *
+     * <p>Ein {@link ThreadLocal} löst beides: geteilt wird nichts, gebaut wird trotzdem nur, wenn sich
+     * Sprache oder Muster geändert haben. Der Zähler wird <b>vor</b> dem Bauen gelesen – ändert sich
+     * die Sprache genau dazwischen, bleibt der Merker auf dem alten Stand und der nächste Aufruf baut
+     * neu, statt den neuen Stand fälschlich als aktuell zu führen.</p>
+     */
+    private static final class Cached {
+        int generation = -1;
+        SimpleDateFormat date;
+        SimpleDateFormat dateTime;
+        SimpleDateFormat shortDate;
+    }
+
+    /** Zählt jede Änderung von Muster oder Sprache. */
+    private static volatile int generation;
+
+    private static final ThreadLocal<Cached> CACHE = ThreadLocal.withInitial(Cached::new);
+
+    private static Cached cached() {
+        Cached c = CACHE.get();
+        int g = generation;
+        if (c.generation != g) {
+            String p = pattern;
+            Locale l = locale;
+            c.date = new SimpleDateFormat(p, l);
+            c.dateTime = new SimpleDateFormat(p + " HH:mm", l);
+            c.shortDate = new SimpleDateFormat(p.replaceAll("y+", "yy"), l);
+            c.generation = g;
+        }
+        return c;
+    }
+
     /** Ein Datum in der eingestellten Sprache. */
     public static String date(long millis) {
-        return new SimpleDateFormat(pattern, locale).format(new Date(millis));
+        return cached().date.format(new Date(millis));
     }
 
     /** Datum mit Uhrzeit; die Uhrzeit bleibt 24-stündig, wie überall sonst in der App. */
     public static String dateTime(long millis) {
-        return new SimpleDateFormat(pattern + " HH:mm", locale).format(new Date(millis));
+        return cached().dateTime.format(new Date(millis));
     }
 
     /**
@@ -152,7 +198,7 @@ public final class DateFormats {
      * Kurz- und Langform gar nicht erst auseinanderlaufen können.</p>
      */
     public static String shortDate(long millis) {
-        return new SimpleDateFormat(pattern.replaceAll("y+", "yy"), locale).format(new Date(millis));
+        return cached().shortDate.format(new Date(millis));
     }
 
     /**

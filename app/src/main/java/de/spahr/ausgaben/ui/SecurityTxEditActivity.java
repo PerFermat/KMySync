@@ -609,6 +609,17 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                 .create();
     }
 
+    /**
+     * Nimmt zurück, was noch aussteht: Die verzögerten Läufe auf {@link #ankerHandler} hielten sonst
+     * bis zu {@link #ANKER_DEBOUNCE_MS} lang eine Maske fest, die es nicht mehr gibt, und stießen danach
+     * noch eine Datenbankabfrage an, deren Antwort niemanden mehr erreicht.
+     */
+    @Override
+    protected void onDestroy() {
+        ankerHandler.removeCallbacksAndMessages(null);
+        super.onDestroy();
+    }
+
     @Override
     protected void onSaveInstanceState(@androidx.annotation.NonNull Bundle out) {
         super.onSaveInstanceState(out);
@@ -1571,8 +1582,11 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             return;
         }
         repository.findScheduleMatches(java.util.Collections.singletonList(candidate), matches -> {
-            if (token != scheduleMatchToken || isFinishing()) {
-                return; // der Nutzer hat inzwischen weitergetippt – diese Antwort gilt nicht mehr
+            // Zwei Gründe, diese Antwort fallen zu lassen: Der Nutzer hat weitergetippt (dann gilt sie
+            // nicht mehr), oder die Maske ist inzwischen weg. Letzteres prüft sonst Ui#post für die
+            // ganze App; dieser Rückweg führt aber über den Handler von Repository, also hier.
+            if (token != scheduleMatchToken || isFinishing() || isDestroyed()) {
+                return;
             }
             if (matches.isEmpty()) {
                 currentScheduleMatch = null;

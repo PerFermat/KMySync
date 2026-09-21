@@ -313,6 +313,13 @@ public class Repository {
                 }
                 double price = Math.abs(tx.amountCents) / 100.0 / Math.abs(tx.shares);
                 double newShares = ScheduleMatch.newShares(match, price);
+                if (newShares <= 0) {
+                    // Kein Kurs, also keine Stückzahl: Bei einer Bewegung über 0 € (Gratisstücke,
+                    // Berichtigung) käme hier 0 heraus, und genau die stünde später im Split der
+                    // Planung – zusammen mit dem Ersatzkurs „1/1" aus KmyExporter#priceFraction.
+                    // Lieber keinen Treffer melden als die Planung mit einer 0 überschreiben.
+                    continue;
+                }
                 results.add(new ScheduleMatch.Result(tx, match, newShares));
             }
             mainHandler.post(() -> callback.onResult(results));

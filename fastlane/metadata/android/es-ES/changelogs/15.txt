@@ -1,5 +1,5 @@
-El beneficiario ahora es opcional, como en KMyMoney. Si el campo queda vacío, la lista, el widget y los informes muestran la categoría en su lugar. Si el importe se reparte, muestran "Dividir asiento"; si tampoco hay categoría, "*** SIN ASIGNAR ***", el mismo texto de KMyMoney.
+El beneficiario ahora es opcional, como en KMyMoney. Si el campo queda vacío, la categoría ocupa su lugar.
 
-Menor: exportación de justificantes pausable, fechas en el idioma de la app, español completo.
+Nuevo: búsqueda en vivo en la lista, beneficiario cercano en el reloj, apuntes programados de valores reconocidos, exportación de justificantes pausable, fechas en el idioma de la app.
 
-Android ya no respalda los datos de esta app; al cambiar de dispositivo, use "Crear copia de seguridad".
+Los justificantes retirados van a la carpeta "Papelera" del servidor. Android ya no respalda los datos de esta app; al cambiar de dispositivo, use "Crear copia de seguridad".
