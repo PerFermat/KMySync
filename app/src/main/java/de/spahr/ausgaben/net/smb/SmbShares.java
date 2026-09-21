@@ -76,9 +76,31 @@ public final class SmbShares {
     /**
      * Freigaben über eine <b>bestehende</b> Sitzung auflisten – so kann die Diagnose die ganze Kette
      * in einer einzigen Anmeldung durchlaufen.
+     *
+     * <h2>Warum {@code IPC$} hier <b>nicht</b> geschlossen wird</h2>
+     *
+     * <p>Das sieht nach einem vergessenen {@code close} aus und ist das Gegenteil. smbj legt jede
+     * Freigabe einer Sitzung in seiner {@code TreeConnectTable} ab und gibt sie bei erneutem
+     * {@code connectShare} von dort zurück. {@code TreeConnect.close()} schickt zwar das
+     * Trennungspaket, <b>nimmt die Freigabe aber nicht aus der Tabelle</b>. Wer sie hier schlösse,
+     * hinterließe also einen toten Eintrag unter dem Namen {@code IPC$} – und der nächste, der danach
+     * fragt, bekäme ihn.</p>
+     *
+     * <p>Genau das ist passiert: Die Sitzung läuft mit eingeschaltetem DFS (siehe
+     * {@code SmbSessions#configure}), und smbjs {@code DFSPathResolver} ist die einzige Stelle, die
+     * von sich aus {@code IPC$} anfordert. Beim ersten {@code list()} auf der eigentlichen Freigabe
+     * griff er in die Tabelle und bekam die geschlossene Pipe-Freigabe zurück. In der Diagnose stand
+     * danach „Freigabe öffnen ✓" und eine Millisekunde später „Ordner lesen ✗ … has already been
+     * closed" – ein Fehler, der wie ein Rechteproblem am Ordner aussah und keines war.</p>
+     *
+     * <p>Die Freigabe gehört der Sitzung, nicht dieser Methode. Aufgeräumt wird sie, wenn die
+     * Verbindung fällt ({@code SmbSessions.Link#close}) – bei beiden Aufrufern der Fall. Die
+     * <b>Pipe</b> dagegen wird weiterhin geschlossen: Die ist eine Datei in der Freigabe und gehört
+     * wirklich hierher.</p>
      */
     public static List<String> listOn(Session session, String host) throws IOException {
-        try (PipeShare ipc = (PipeShare) session.connectShare("IPC$")) {
+        try {
+            PipeShare ipc = (PipeShare) session.connectShare("IPC$");
             NamedPipe pipe = ipc.open("srvsvc", SMB2ImpersonationLevel.Impersonation,
                     EnumSet.of(AccessMask.GENERIC_READ, AccessMask.GENERIC_WRITE), null,
                     SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
