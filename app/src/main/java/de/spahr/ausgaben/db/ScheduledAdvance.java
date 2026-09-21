@@ -43,6 +43,21 @@ public class ScheduledAdvance {
     @ColumnInfo(name = "updated_at")
     public long updatedAt;
 
+    /**
+     * Nur gesetzt, wenn zusammen mit dem Erledigen auch die Stückzahl einer geplanten Wertpapier-
+     * Umbuchung korrigiert werden soll (siehe {@link ScheduleMatch}): Depot und KMyMoney-Wertpapier-Id,
+     * damit der Export das betroffene Unterkonto der Planung findet.
+     */
+    @ColumnInfo(name = "security_depot")
+    public String securityDepot;
+
+    @ColumnInfo(name = "security_kmy_id")
+    public String securityKmyId;
+
+    /** Neue Stückzahl für den Wertpapier-Split der Planung; {@code null} = Stückzahl unverändert lassen. */
+    @ColumnInfo(name = "new_shares")
+    public Double newShares;
+
     public ScheduledAdvance() {
     }
 

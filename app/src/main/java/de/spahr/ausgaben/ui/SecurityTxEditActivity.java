@@ -94,6 +94,12 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     public static final String EXTRA_DUPLICATE = "duplicate";
     /** Zurück an die Liste: diese Bewegung steht schon im Depot. */
     public static final String EXTRA_DUP_BOOKED = "dupBooked";
+    /**
+     * Zurück an die Liste: ein erkannter Schedule-Treffer wurde aktiv abgewählt (siehe
+     * {@link #cbScheduleMatch}). Fehlt das Extra oder steht es auf {@code false}, bleibt die Zuordnung
+     * beim endgültigen Speichern des Stapels aktiv – auch wenn dieser Entwurf nie geöffnet wurde.
+     */
+    public static final String EXTRA_SCHEDULE_MATCH_OPT_OUT = "scheduleMatchOptOut";
     /** Pfad zum zwischengespeicherten Abrechnungstext; daraus lernt die App beim Speichern die Anker. */
     public static final String EXTRA_STATEMENT_TEXT = "statementText";
     public static final String EXTRA_STATEMENT_ISIN = "statementIsin";
@@ -171,6 +177,12 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     private View incomeSplitBox;
     private TextView feeSplitHeading;
     private PickerTextView editAccount;
+    private com.google.android.material.checkbox.MaterialCheckBox cbScheduleMatch;
+    /** Der zuletzt live erkannte Schedule-Treffer; {@code null}, solange keiner ansteht. */
+    private de.spahr.ausgaben.db.ScheduleMatch.Result currentScheduleMatch;
+    /** Verwirft veraltete Antworten, wenn der Nutzer weitertippt, während eine Anfrage noch läuft. */
+    private long scheduleMatchToken;
+    private Runnable scheduleMatchPending;
     /**
      * Die Kategoriezeilen der beiden Rollen — bedient wie die Splitbuchung einer Geldbuchung, nur je
      * Rolle eine eigene Liste mit ihrem eigenen Gesamtbetrag darüber.
@@ -476,6 +488,8 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         incomeSplitBox = findViewById(R.id.incomeSplitBox);
         feeSplitHeading = findViewById(R.id.feeSplitHeading);
         editAccount = findViewById(R.id.editAccount);
+        cbScheduleMatch = findViewById(R.id.cbScheduleMatch);
+        editAccount.addTextChangedListener(new SimpleWatcher(this::planeScheduleMatchCheck));
         btnSave = findViewById(R.id.btnSave);
         btnDelete = findViewById(R.id.btnDelete);
         sharesRow = findViewById(R.id.sharesRow);
@@ -1404,6 +1418,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             // Auch hier prüfen: an einem widersprüchlichen Stand ist keine Doppelung zu erkennen, und
             // ein noch stehender Hinweis von vorhin verschwindet damit.
             checkDuplicate();
+            planeScheduleMatchCheck();
             return;
         }
         if (r.computed != null) {
@@ -1430,6 +1445,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             planeAnkerSuche(r.computed);
         }
         checkDuplicate();
+        planeScheduleMatchCheck();
     }
 
     /**
@@ -1511,6 +1527,67 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         // Dieselben Regeln wie beim Speichern – buchstäblich dieselben, siehe SecurityTx.applyAmounts.
         tx.applyAmounts(action, count, gross, net, fee == null ? 0 : fee);
         return tx;
+    }
+
+    /**
+     * Wie {@link #duplicateCandidate()}, nur zusätzlich mit dem Geldkonto befüllt — das braucht
+     * {@link de.spahr.ausgaben.db.ScheduleMatch}, aber keine Doppelungsprüfung.
+     */
+    private SecurityTx scheduleMatchCandidate() {
+        SecurityTx tx = duplicateCandidate();
+        if (tx == null) {
+            return null;
+        }
+        tx.moneyAccount = textOf(editAccount).trim();
+        return tx.moneyAccount.isEmpty() ? null : tx;
+    }
+
+    /**
+     * Verwirft eine noch anstehende Prüfung und stößt sie mit Wartezeit neu an — wie
+     * {@link #planeAnkerSuche}, nur für den einen Schedule-Abgleich statt je Feld.
+     */
+    private void planeScheduleMatchCheck() {
+        if (readOnly) {
+            return;
+        }
+        if (scheduleMatchPending != null) {
+            ankerHandler.removeCallbacks(scheduleMatchPending);
+        }
+        scheduleMatchPending = this::performScheduleMatchCheck;
+        ankerHandler.postDelayed(scheduleMatchPending, ANKER_DEBOUNCE_MS);
+    }
+
+    /**
+     * Sucht live nach einer passenden geplanten Umbuchung (siehe {@link de.spahr.ausgaben.db.ScheduleMatch})
+     * und zeigt bei einem Treffer {@link #cbScheduleMatch} an — vorbelegt angehakt. Ohne Treffer oder bei
+     * unvollständigen Angaben bleibt sie versteckt.
+     */
+    private void performScheduleMatchCheck() {
+        SecurityTx candidate = scheduleMatchCandidate();
+        final long token = ++scheduleMatchToken;
+        if (candidate == null) {
+            currentScheduleMatch = null;
+            cbScheduleMatch.setVisibility(View.GONE);
+            return;
+        }
+        repository.findScheduleMatches(java.util.Collections.singletonList(candidate), matches -> {
+            if (token != scheduleMatchToken || isFinishing()) {
+                return; // der Nutzer hat inzwischen weitergetippt – diese Antwort gilt nicht mehr
+            }
+            if (matches.isEmpty()) {
+                currentScheduleMatch = null;
+                cbScheduleMatch.setVisibility(View.GONE);
+                return;
+            }
+            currentScheduleMatch = matches.get(0);
+            String date = java.text.DateFormat.getDateInstance(java.text.DateFormat.SHORT,
+                    getResources().getConfiguration().getLocales().get(0))
+                    .format(new java.util.Date(currentScheduleMatch.schedule.nextDueMs));
+            cbScheduleMatch.setText(getString(R.string.schedule_match_confirm,
+                    currentScheduleMatch.schedule.name, date, MoneyFormat.shares(currentScheduleMatch.newShares)));
+            cbScheduleMatch.setChecked(true);
+            cbScheduleMatch.setVisibility(View.VISIBLE);
+        });
     }
 
     /**
@@ -1782,7 +1859,19 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                 Toast.makeText(this, R.string.statement_receipt_failed, Toast.LENGTH_LONG).show();
             }
             Toast.makeText(this, R.string.security_tx_saved, Toast.LENGTH_SHORT).show();
-            offerToLearn(action, sharesGiven, priceGiven, feeGiven, netGiven, grossGiven);
+            Runnable weiter = () -> offerToLearn(action, sharesGiven, priceGiven, feeGiven, netGiven,
+                    grossGiven);
+            // Die Checkbox trägt die Entscheidung schon: angehakt zuordnen, abgewählt nichts weiter tun –
+            // keine Rückfrage mehr nach dem Speichern.
+            if (cbScheduleMatch.getVisibility() == View.VISIBLE && cbScheduleMatch.isChecked()
+                    && currentScheduleMatch != null) {
+                repository.confirmScheduleMatch(currentScheduleMatch, () -> {
+                    Toast.makeText(this, R.string.schedule_match_done, Toast.LENGTH_SHORT).show();
+                    weiter.run();
+                });
+            } else {
+                weiter.run();
+            }
         };
         // Ab hier ist geschrieben; erst jetzt sperren, damit eine abgebrochene Prüfung oben den Knopf
         // nicht für immer stilllegt.
@@ -1843,6 +1932,8 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                         : new ArrayList<>());
         out.putExtra(EXTRA_CONFLICT, conflict);
         out.putExtra(EXTRA_DUP_BOOKED, dupBooked);
+        out.putExtra(EXTRA_SCHEDULE_MATCH_OPT_OUT,
+                cbScheduleMatch.getVisibility() == View.VISIBLE && !cbScheduleMatch.isChecked());
         setResult(RESULT_OK, out);
         finish();
     }
@@ -3377,6 +3468,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         dateKnown = true;
         editDate.setText(DateFormats.date(selectedDate.getTimeInMillis()));
         dateLayout.setError(null);
+        planeScheduleMatchCheck();
     }
 
     /**

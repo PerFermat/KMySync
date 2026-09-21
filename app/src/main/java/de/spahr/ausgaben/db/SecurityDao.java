@@ -36,6 +36,13 @@ public interface SecurityDao {
     List<Security> getAllSecurities();
 
     /**
+     * Ein Wertpapier über Depot und KMyMoney-Id – für den Schedule-Abgleich beim Speichern einer
+     * Bewegung ({@link ScheduleMatch}), der über den Namen läuft (siehe {@link #getSecurityNames}).
+     */
+    @Query("SELECT * FROM security WHERE depot = :depot AND kmy_id = :kmyId LIMIT 1")
+    Security getSecurity(String depot, String kmyId);
+
+    /**
      * Die Namen aller Wertpapiere. In der KMyMoney-Datei heißt das Unterkonto eines Wertpapiers genauso
      * wie das Wertpapier selbst – daran erkennt der Buchungs-Editor eine Wertpapier-Buchung.
      */

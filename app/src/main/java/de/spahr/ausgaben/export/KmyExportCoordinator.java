@@ -119,6 +119,10 @@ public class KmyExportCoordinator {
                 KmyExporter.ScheduleResult schedRes = exporter.applyScheduleAdvances(res.xml, advances);
                 res.xml = schedRes.xml;
 
+                // Bei bestätigten Schedule-Treffern (Wertpapier-Umbuchung) zusätzlich die Stückzahl der
+                // Planung auf den zuletzt erfassten Kurs korrigieren (siehe ScheduleMatch).
+                res.xml = exporter.applyShareCorrections(res.xml, advances);
+
                 // Erfasste Depot-Bewegungen als vollständige Wertpapier-Transaktionen anhängen.
                 KmyExporter.SecurityResult secRes =
                         exporter.buildSecurityTransactions(res.xml, securityTx);

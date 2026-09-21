@@ -292,6 +292,74 @@ public class Repository {
         });
     }
 
+    /**
+     * Sucht für jede frisch gespeicherte Wertpapier-Bewegung eine passende geplante Umbuchung auf das
+     * Wertpapierkonto (siehe {@link ScheduleMatch}). Läuft erst nach dem Speichern, damit die Bewegung
+     * schon in der DB steht; ändert selbst nichts, meldet nur Treffer zurück – bestätigt werden sie über
+     * {@link #confirmScheduleMatch}.
+     */
+    public void findScheduleMatches(final List<SecurityTx> txs, final Callback<List<ScheduleMatch.Result>> callback) {
+        executor.execute(() -> {
+            final List<ScheduleMatch.Result> results = new ArrayList<>();
+            final List<ScheduledTransaction> schedules = scheduledTransactionDao.getAllByDue();
+            for (SecurityTx tx : txs) {
+                Security security = securityDao.getSecurity(tx.depot, tx.securityKmyId);
+                if (security == null) {
+                    continue;
+                }
+                ScheduledTransaction match = ScheduleMatch.findMatch(schedules, tx, security.name);
+                if (match == null || tx.shares == 0) {
+                    continue;
+                }
+                double price = Math.abs(tx.amountCents) / 100.0 / Math.abs(tx.shares);
+                double newShares = ScheduleMatch.newShares(match, price);
+                results.add(new ScheduleMatch.Result(tx, match, newShares));
+            }
+            mainHandler.post(() -> callback.onResult(results));
+        });
+    }
+
+    /**
+     * Übernimmt einen vom Nutzer bestätigten Schedule-Treffer: stellt den Termin erledigt weiter (wie
+     * {@link #advanceScheduled}) und merkt zusätzlich die neu berechnete Stückzahl für den
+     * Wertpapier-Split der Planung vor (wird beim nächsten kmy-Export geschrieben, siehe
+     * {@code KmyExporter.applyShareCorrections}).
+     */
+    public void confirmScheduleMatch(final ScheduleMatch.Result match, final Runnable onDone) {
+        final ScheduledTransaction st = match.schedule;
+        if (st == null || st.kmyId == null || st.kmyId.trim().isEmpty()) {
+            if (onDone != null) {
+                mainHandler.post(onDone);
+            }
+            return;
+        }
+        final long dueMs = st.nextDueMs;
+        final long next = ScheduleProjection.nextDue(dueMs, st.occurrence, st.occurrenceMultiplier);
+        executor.execute(() -> {
+            ScheduledAdvance a = scheduledAdvanceDao.getByKmyId(st.kmyId);
+            boolean isNew = a == null;
+            if (isNew) {
+                a = new ScheduledAdvance(st.kmyId, dueMs, next, dueMs, System.currentTimeMillis());
+            } else {
+                a.fromDueMs = dueMs;
+                a.nextDueMs = next;
+                a.lastPaymentMs = dueMs;
+                a.updatedAt = System.currentTimeMillis();
+            }
+            a.securityDepot = match.tx.depot;
+            a.securityKmyId = match.tx.securityKmyId;
+            a.newShares = match.newShares;
+            if (isNew) {
+                scheduledAdvanceDao.insert(a);
+            } else {
+                scheduledAdvanceDao.update(a);
+            }
+            if (onDone != null) {
+                mainHandler.post(onDone);
+            }
+        });
+    }
+
     /** Alle Kategorie-Teile geplanter Splitbuchungen auf einmal (für die Kategorien-Auswertung). */
     public void getAllScheduledSplits(final Callback<List<ScheduledSplit>> callback) {
         executor.execute(() -> {

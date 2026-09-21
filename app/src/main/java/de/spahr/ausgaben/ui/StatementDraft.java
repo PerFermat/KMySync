@@ -86,6 +86,14 @@ public class StatementDraft implements Parcelable {
     /** Dieselbe Bewegung kam in der Auswahl schon vorher vor (die erste bleibt unmarkiert). */
     public boolean dupSelected;
 
+    /**
+     * In der Detailmaske wurde ein erkannter Schedule-Treffer (siehe
+     * {@link de.spahr.ausgaben.db.ScheduleMatch}) aktiv abgewählt. Bleibt {@code false} (Regelfall,
+     * auch wenn die Maske nie geöffnet wurde), wird beim endgültigen Speichern des Stapels trotzdem
+     * automatisch zugeordnet — Opt-out, nicht Opt-in.
+     */
+    public boolean scheduleMatchOptOut;
+
     public StatementDraft() {
     }
 
@@ -266,6 +274,7 @@ public class StatementDraft implements Parcelable {
         conflict = in.readInt() != 0;
         dupBooked = in.readInt() != 0;
         dupSelected = in.readInt() != 0;
+        scheduleMatchOptOut = in.readInt() != 0;
     }
 
     @Override
@@ -292,6 +301,7 @@ public class StatementDraft implements Parcelable {
         out.writeInt(conflict ? 1 : 0);
         out.writeInt(dupBooked ? 1 : 0);
         out.writeInt(dupSelected ? 1 : 0);
+        out.writeInt(scheduleMatchOptOut ? 1 : 0);
     }
 
     @Override

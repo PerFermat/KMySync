@@ -17,7 +17,7 @@ import de.spahr.ausgaben.settings.ProfileManager;
         AnalysisExtra.class, SecurityTxValueOverride.class, KmyPendingDelete.class, SecurityPrice.class,
         ScheduledAdvance.class, AccountGroup.class, AccountGroupMember.class, AccountKindOrder.class,
         Tag.class, SecurityTxSplit.class},
-        version = 51, exportSchema = true)
+        version = 52, exportSchema = true)
 public abstract class AppDatabase extends RoomDatabase {
 
     /** v1 → v2: Notiz-Spalte ergänzen (bestehende Buchungen bleiben erhalten). */
@@ -700,6 +700,21 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    /**
+     * v51 → v52: Für die Stückzahl-Korrektur bei geplanten Wertpapier-Umbuchungen (siehe
+     * {@link ScheduleMatch}) braucht {@link ScheduledAdvance} zusätzlich das Depot, die
+     * KMyMoney-Wertpapier-Id und die neu berechnete Stückzahl. Alle drei bleiben leer, solange kein
+     * Treffer bestätigt wurde.
+     */
+    static final Migration MIGRATION_51_52 = new Migration(51, 52) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("ALTER TABLE scheduled_advance ADD COLUMN security_depot TEXT");
+            db.execSQL("ALTER TABLE scheduled_advance ADD COLUMN security_kmy_id TEXT");
+            db.execSQL("ALTER TABLE scheduled_advance ADD COLUMN new_shares REAL");
+        }
+    };
+
     public abstract BookingDao bookingDao();
 
     public abstract AccountDao accountDao();
@@ -768,7 +783,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                 MIGRATION_41_42, MIGRATION_42_43, MIGRATION_43_44,
                                 MIGRATION_44_45, MIGRATION_45_46, MIGRATION_46_47,
                                 MIGRATION_47_48, MIGRATION_48_49, MIGRATION_49_50,
-                                MIGRATION_50_51)
+                                MIGRATION_50_51, MIGRATION_51_52)
                         .build();
             }
             return instance;

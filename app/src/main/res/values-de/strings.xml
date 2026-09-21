@@ -160,6 +160,8 @@
     <string name="scheduled_skip_booking">Buchung überspringen</string>
     <string name="scheduled_skip_confirm">%1$s „%2$s" überspringen? Es wird keine Buchung erzeugt; die Planung rückt auf den nächsten Termin.</string>
     <string name="scheduled_skipped">Termin übersprungen</string>
+    <string name="schedule_match_confirm">Passt zur geplanten Buchung „%1$s" fällig am %2$s — als erledigt markieren und die Stückzahl des nächsten Termins auf %3$s anpassen</string>
+    <string name="schedule_match_done">Planung angepasst</string>
     <string name="scheduled_only_next">Nur der nächste Termin einer Planung lässt sich buchen oder überspringen.</string>
     <string name="scheduled_book_hint">Lange drücken, um jetzt zu buchen</string>
     <string name="sched_saldo_surplus">Überschuss</string>

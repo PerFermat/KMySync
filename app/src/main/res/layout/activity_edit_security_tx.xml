@@ -254,6 +254,16 @@
                         android:inputType="textCapWords" />
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- Erscheint nur, solange eine passende geplante Umbuchung erkannt ist (siehe
+                     ScheduleMatch); vorbelegt angehakt, aktives Abwählen unterdrückt die Zuordnung. -->
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/cbScheduleMatch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:checked="true"
+                    android:visibility="gone" />
+
                 <!-- Nur bei einer Dividende: der Bruttobetrag hängt in KMyMoney an Ertragskategorien.
                      Mehrere sind erlaubt, wie bei einer Splitbuchung; die Zeilen kommen aus
                      item_split_row.xml und werden vom SplitRowController verwaltet. -->

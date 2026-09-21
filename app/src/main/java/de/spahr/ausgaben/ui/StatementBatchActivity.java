@@ -380,6 +380,8 @@ public class StatementBatchActivity extends LocalizedActivity {
                 data, SecurityTxEditActivity.EXTRA_PREFILL_INCOME_PARTS);
         d.conflict = data.getBooleanExtra(SecurityTxEditActivity.EXTRA_CONFLICT, false);
         d.dupBooked = data.getBooleanExtra(SecurityTxEditActivity.EXTRA_DUP_BOOKED, d.dupBooked);
+        d.scheduleMatchOptOut = data.getBooleanExtra(
+                SecurityTxEditActivity.EXTRA_SCHEDULE_MATCH_OPT_OUT, d.scheduleMatchOptOut);
         // Die Maske hat schon gerechnet; hier wird nur ergänzt, was sie offen gelassen hat.
         d.resolve();
         render();
@@ -449,7 +451,7 @@ public class StatementBatchActivity extends LocalizedActivity {
             }
             final int count = txs.size();
             post(() -> repository.saveManualSecurityTxBatch(txs, bookings,
-                    () -> belegeAblegenUndSchliessen(liste, belege, count),
+                    () -> belegeAblegenUndSchliessen(liste, belege, count, txs),
                     () -> {
                         // Die Transaktion ist zurückgerollt und keine Datei bewegt: die vorläufigen
                         // Kopien liegen noch da, der Stapel steht unverändert auf dem Schirm und lässt
@@ -472,7 +474,7 @@ public class StatementBatchActivity extends LocalizedActivity {
      */
     private void belegeAblegenUndSchliessen(List<StatementDraft> liste,
                                             List<de.spahr.ausgaben.receipt.SingleReceipt.Planned> belege,
-                                            int count) {
+                                            int count, List<SecurityTx> txs) {
         int misslungen = 0;
         for (int i = 0; i < belege.size(); i++) {
             if (de.spahr.ausgaben.receipt.SingleReceipt.attach(this, belege.get(i))) {
@@ -487,7 +489,33 @@ public class StatementBatchActivity extends LocalizedActivity {
             Toast.makeText(this, getString(R.string.statement_batch_receipt_failed, misslungen),
                     Toast.LENGTH_LONG).show();
         }
-        finish();
+        applyScheduleMatches(liste, txs, this::finish);
+    }
+
+    /**
+     * Ordnet die gerade gespeicherten Bewegungen still den passenden geplanten Umbuchungen zu (siehe
+     * {@link de.spahr.ausgaben.db.ScheduleMatch}) — ohne Rückfrage: die Entscheidung stand schon in der
+     * Detailmaske (Checkbox, siehe {@link SecurityTxEditActivity#EXTRA_SCHEDULE_MATCH_OPT_OUT}); ein nie
+     * geöffneter Entwurf wird trotzdem zugeordnet (Opt-out, nicht Opt-in).
+     */
+    private void applyScheduleMatches(List<StatementDraft> liste, List<SecurityTx> txs, Runnable weiter) {
+        List<SecurityTx> kandidaten = new ArrayList<>();
+        for (int i = 0; i < liste.size(); i++) {
+            if (!liste.get(i).scheduleMatchOptOut) {
+                kandidaten.add(txs.get(i));
+            }
+        }
+        repository.findScheduleMatches(kandidaten, matches -> confirmScheduleMatches(matches, 0, weiter));
+    }
+
+    private void confirmScheduleMatches(List<de.spahr.ausgaben.db.ScheduleMatch.Result> matches,
+                                        int index, Runnable weiter) {
+        if (isFinishing() || index >= matches.size()) {
+            weiter.run();
+            return;
+        }
+        repository.confirmScheduleMatch(matches.get(index),
+                () -> confirmScheduleMatches(matches, index + 1, weiter));
     }
 
     private void confirmDiscard() {

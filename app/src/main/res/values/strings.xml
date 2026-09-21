@@ -181,6 +181,8 @@
     <string name="scheduled_skip_booking">Skip booking</string>
     <string name="scheduled_skip_confirm">Skip %1$s „%2$s"? No transaction is created; the schedule moves on to the next date.</string>
     <string name="scheduled_skipped">Date skipped</string>
+    <string name="schedule_match_confirm">Matches the scheduled booking „%1$s" due %2$s — mark it as done and adjust the next share count to %3$s</string>
+    <string name="schedule_match_done">Schedule updated</string>
     <string name="scheduled_only_next">Only the next date of a schedule can be entered or skipped.</string>
     <string name="scheduled_book_hint">Long-press to book now</string>
     <string name="sched_saldo_surplus">Surplus</string>

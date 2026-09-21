@@ -167,6 +167,8 @@
     <string name="scheduled_skip_booking">Omitir apunte</string>
     <string name="scheduled_skip_confirm">¿Omitir %1$s „%2$s"? No se crea transacción; el programa avanza a la siguiente fecha.</string>
     <string name="scheduled_skipped">Fecha omitida</string>
+    <string name="schedule_match_confirm">Coincide con el apunte programado „%1$s" con vencimiento %2$s — marcarlo como hecho y ajustar la cantidad de la próxima fecha a %3$s</string>
+    <string name="schedule_match_done">Programa actualizado</string>
     <string name="scheduled_only_next">Solo se puede introducir u omitir la siguiente fecha de un programa.</string>
     <string name="scheduled_book_hint">Pulsa largo para apuntar ahora</string>
     <string name="sched_saldo_surplus">Superávit</string>
