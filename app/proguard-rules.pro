@@ -41,6 +41,37 @@
 -keep class de.spahr.ausgaben.R$string { *; }
 
 # ---------------------------------------------------------------------------
+# smbj schreibt seine eigenen Klassennamen in Fehlertexte
+# ---------------------------------------------------------------------------
+# `-keepnames` ist nicht `-keep`: Es verbietet nur das Umbenennen, nicht das Wegwerfen
+# (`-keep,allowshrinking`). Ungenutzte Klassen fliegen also weiterhin raus – anders als bei einem
+# pauschalen Keep, das hier genau falsch wäre.
+#
+# Anlass war ein Fehlerbericht aus der SMB-Diagnose, in dem wörtlich stand:
+#
+#     ✗ Ordner „\" lesen: I has already been closed
+#
+# Gemeint war „PipeShare has already been closed". smbj baut die Meldung in Share#send so:
+#
+#     throw new SMBRuntimeException(getClass().getSimpleName() + " has already been closed");
+#
+# Nach der Verschleierung heißt die Klasse `I`, und damit ist die Meldung wertlos – gerade in dem
+# Moment, in dem sie gebraucht wird. Zehn Klassen in smbj schreiben ihren eigenen Namen auf diese
+# Weise in Texte; betroffen ist davon das share-Paket, aus dem die Meldungen stammen, die ein Nutzer
+# je zu sehen bekommt.
+#
+# Warum die Namen und nicht die Meldung: Der Text entsteht in der Bibliothek, nicht bei uns. Ihn
+# nachzubessern hieße, jede Meldung von smbj abzufangen und umzuschreiben.
+#
+# Kosten nachgemessen, nicht geschätzt – und die Schätzung lag daneben: „kostet fast nichts" hieß
+# beim Nachwiegen foss-Release 7.268.237 → 7.275.293 Byte (+7.056), full 7.538.830 → 7.545.126
+# (+6.296). Das sind rund 7 KB für einen lesbaren Fehlerbericht, gemessen an 6,5 MB APK also etwa
+# ein Promille. Vertretbar – aber wer die nächste Regel „kostet ja nichts" begründet, wiege sie.
+#
+# Gegenprobe im fertigen Dex: „PipeShare" und „DiskShare" stehen wieder als Klartext darin.
+-keepnames class com.hierynomus.smbj.share.** { *; }
+
+# ---------------------------------------------------------------------------
 # Klassen, die es auf Android gar nicht gibt
 # ---------------------------------------------------------------------------
 # Diese beiden Regeln schützen nichts – sie kosten also auch nichts. Sie sagen R8 nur, dass das
