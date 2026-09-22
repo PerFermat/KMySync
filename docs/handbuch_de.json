@@ -1888,6 +1888,11 @@
       ]
     },
     {
+      "type": "p",
+      "id": "b-0188a",
+      "text": "<b>Belegordner</b>: der Ordner neben der KMyMoney-Datei, in dem die Belegfotos liegen – Vorgabe «Belege»; halten mehrere Profile ihre Datei im selben Ordner, gibt man jedem einen eigenen Namen, sonst hielte jedes Profil die Belege des anderen für herrenlos."
+    },
+    {
       "type": "h2",
       "id": "b-0189",
       "text": "SMB/Samba einrichten (Assistent)"

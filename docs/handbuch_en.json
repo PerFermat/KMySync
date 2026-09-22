@@ -1883,6 +1883,11 @@
       ]
     },
     {
+      "type": "p",
+      "id": "b-0188a",
+      "text": "<b>Receipt folder</b>: the folder next to the KMyMoney file that holds the receipt photos – «Belege» by default; if several profiles keep their file in the same folder, give each one its own name, otherwise each profile would take the other’s receipts for orphaned."
+    },
+    {
       "type": "h2",
       "id": "b-0189",
       "text": "Setting up SMB/Samba (wizard)"
