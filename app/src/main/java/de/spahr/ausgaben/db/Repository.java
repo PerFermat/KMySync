@@ -328,9 +328,8 @@ public class Repository {
 
     /**
      * Übernimmt einen vom Nutzer bestätigten Schedule-Treffer: stellt den Termin erledigt weiter (wie
-     * {@link #advanceScheduled}) und merkt zusätzlich die neu berechnete Stückzahl für den
-     * Wertpapier-Split der Planung vor (wird beim nächsten kmy-Export geschrieben, siehe
-     * {@code KmyExporter.applyShareCorrections}).
+     * {@link #advanceScheduled}). Die Stückzahl der Planung selbst wird nicht mehr angefasst – der Export
+     * schreibt an dieser Stelle nichts in die .kmy-Datei zurück.
      */
     public void confirmScheduleMatch(final ScheduleMatch.Result match, final Runnable onDone) {
         final ScheduledTransaction st = match.schedule;
@@ -353,9 +352,6 @@ public class Repository {
                 a.lastPaymentMs = dueMs;
                 a.updatedAt = System.currentTimeMillis();
             }
-            a.securityDepot = match.tx.depot;
-            a.securityKmyId = match.tx.securityKmyId;
-            a.newShares = match.newShares;
             if (isNew) {
                 scheduledAdvanceDao.insert(a);
             } else {
