@@ -10,22 +10,13 @@
 ## Worum es geht
 
 KMySync (früher „Ausgaben") soll erstmals zu F-Droid. Der GMS-freie `foss`-Flavor ist geprüft und
-fertig, das Rezept liegt bereits im GitLab-Fork bereit. Es fehlt nur noch der Tag – und davor ein paar
-Tage Alltagstest.
+fertig, 2.0 ist getaggt und veröffentlicht, das Rezept liegt im GitLab-Fork bereit. Es fehlt nur noch
+der Merge Request.
 
-## Der eine Punkt, der leicht falsch gemacht wird
+## Nächste Version: 2.1
 
-**Version 2.0 ist nirgends veröffentlicht.** Es gibt keinen Tag `v2.0` (letzter Tag: `v1.12`) und kein
-GitHub-Release dafür; die 2.0 liegt nur als Testinstallation auf Michaels Pixel 7.
-
-Fällt beim Testen ein Fehler auf, wird er **in der 2.0 behoben** und die 2.0 danach veröffentlicht.
-Kein Sprung auf 2.1, kein neuer versionCode, keine Änderung am Rezept. Eine Versionsnummer ist erst ab
-der Veröffentlichung bindend – ein bereits gepushter Tag dürfte dagegen nie verschoben werden.
-
-Was bei einer Codeänderung tatsächlich zählt, ist nicht die Nummer, sondern die **Testtage**: Danach
-gilt das bisher Getestete nur für den alten Stand. Bei einem Eingriff in den Export lohnt es, neu zu
-zählen. Deshalb: Änderungen an `app/`, `wear/`, `mpandroidchart/` nur nach Rückfrage. Metadaten
-(`fastlane/`, `fdroid/`, `docs/`, READMEs) sind unbedenklich, sie berühren das APK nicht.
+Im Repo steht bereits `versionCode 15` / `versionName "2.1"`, die Änderungstexte
+`changelogs/15.txt` liegen in allen drei Sprachen. Veröffentlicht wird 2.1 erst nach dem Alltagstest.
 
 ## Erledigt
 
@@ -81,8 +72,7 @@ unzip -p app/build/outputs/apk/foss/release/app-foss-release*.apk 'classes*.dex'
   Passwort – für Git über HTTPS bräuchte es ein Personal Access Token. Über die Weboberfläche irrelevant.
 - `fdroid/fdroiddata` geforkt nach **`gitlab.com/PerFermat/fdroiddata`** (öffentlich).
 - Das Rezept liegt dort als `metadata/de.spahr.ausgaben.yml` im Branch
-  **`add-kmysync-de.spahr.ausgaben`**. **Noch kein Merge Request** – zum Zeitpunkt dieser Notiz fehlte
-  der Tag `v2.0`; inzwischen gibt es ihn, der MR kann eröffnet werden.
+  **`add-kmysync-de.spahr.ausgaben`**. **Noch kein Merge Request** – er kann eröffnet werden.
 
 ## Erledigt am 2026-09-12
 
@@ -124,7 +114,8 @@ unzip -p app/build/outputs/apk/foss/release/app-foss-release*.apk 'classes*.dex'
    das Rezept im Fork stimmt mit `fdroid/de.spahr.ausgaben.yml` überein (nur der Zeilenumbruch am
    Dateiende fehlt dort, ohne Folgen). Die ausgefüllte Checkliste und der Punkt zu Reproducible
    Builds stehen in `fdroid/README.md`.
-5. Danach `versionName`/`versionCode` im Repo auf die nächste Entwicklungsversion heben.
+5. ~~Danach `versionName`/`versionCode` im Repo auf die nächste Entwicklungsversion heben.~~ Steht auf
+   2.1 / 15.
 
 Ein Entwurf für die MR-Beschreibung (Flavor, Submodul statt JitPack) steht in
 `fdroid/README.md`.
