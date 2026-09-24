@@ -13,10 +13,11 @@ KMySync (früher „Ausgaben") soll erstmals zu F-Droid. Der GMS-freie `foss`-Fl
 fertig, 2.0 ist getaggt und veröffentlicht, das Rezept liegt im GitLab-Fork bereit. Es fehlt nur noch
 der Merge Request.
 
-## Nächste Version: 2.1
+## Nächste Version: 2.2
 
-Im Repo steht bereits `versionCode 15` / `versionName "2.1"`, die Änderungstexte
-`changelogs/15.txt` liegen in allen drei Sprachen. Veröffentlicht wird 2.1 erst nach dem Alltagstest.
+2.1 ist am 24.09.2026 veröffentlicht – Tag `v2.1` (Commit `409f3af`) und GitHub-Release mit den drei
+signierten APKs. Im Repo steht jetzt `versionCode 16` / `versionName "2.2"`; `changelogs/16.txt`
+muss vor dem nächsten Tag geschrieben werden.
 
 ## Erledigt
 
@@ -115,7 +116,7 @@ unzip -p app/build/outputs/apk/foss/release/app-foss-release*.apk 'classes*.dex'
    Dateiende fehlt dort, ohne Folgen). Die ausgefüllte Checkliste und der Punkt zu Reproducible
    Builds stehen in `fdroid/README.md`.
 5. ~~Danach `versionName`/`versionCode` im Repo auf die nächste Entwicklungsversion heben.~~ Steht auf
-   2.1 / 15.
+   2.2 / 16.
 
 Ein Entwurf für die MR-Beschreibung (Flavor, Submodul statt JitPack) steht in
 `fdroid/README.md`.
@@ -133,7 +134,7 @@ Die Bibliothek `androidx.security:security-crypto` ist abgekündigt und steckt a
 aus dem Android-Keystore). Die alte Bibliothek ist **nur noch ein Lesepfad**, damit das Passwort
 bestehender Nutzer beim Update nicht verlorengeht.
 
-Sobald 2.1 draußen und eine Weile im Feld ist, fällt beides weg. Drei Handgriffe:
+2.1 ist seit 24.09.2026 draußen; ist es eine Weile im Feld, fällt beides weg. Drei Handgriffe:
 
 1. `app/src/main/java/de/spahr/ausgaben/settings/SecretMigration.java` löschen.
 2. Den einen Aufruf `SecretMigration.uebernehmenFallsNoetig(app, store)` in `SecretStore.open`
