@@ -16,7 +16,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
@@ -1940,18 +1939,8 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
             Toast.makeText(this, R.string.kmy_path_missing, Toast.LENGTH_LONG).show();
             return;
         }
-        MaterialAlertDialogBuilder b = new AppDialog(this)
-                .setNegativeButton(R.string.cancel, null);
-        if (isAll) {
-            b.setTitle(R.string.kmy_import_all_title)
-                    .setMessage(R.string.kmy_import_all_message)
-                    .setPositiveButton(R.string.kmy_import_replace, (d, w) -> runKmyImport(null));
-        } else {
-            b.setTitle(R.string.kmy_replace_title)
-                    .setMessage(getString(R.string.kmy_replace_message, account))
-                    .setPositiveButton(R.string.kmy_import_replace, (d, w) -> runKmyImport(account));
-        }
-        b.show();
+        // Ohne Rückfrage: die KMyMoney-Datei ist führend.
+        runKmyImport(isAll ? null : account);
     }
 
     /** „Neues Konto hinzufügen": lädt die .kmy und zeigt den Konto-Auswahldialog. */

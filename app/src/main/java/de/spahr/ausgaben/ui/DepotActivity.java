@@ -23,7 +23,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.appbar.MaterialToolbar;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -564,7 +563,7 @@ public class DepotActivity extends LocalizedActivity {
     // ---- Konten aktualisieren (langer Druck in der Schublade – wie im Hauptbildschirm) ----
 
     /**
-     * Langer Druck auf ein Konto bzw. „Alle Konten": fragt nach und ersetzt die Buchungen dieser Konten
+     * Langer Druck auf ein Konto bzw. „Alle Konten": ersetzt die Buchungen dieser Konten ohne Rückfrage
      * aus der .kmy. Läuft hier im Depot ab, damit die Schublade offen bleibt.
      *
      * @param account einzelnes Konto oder {@code null} für „Alle Konten"
@@ -578,19 +577,8 @@ public class DepotActivity extends LocalizedActivity {
             Toast.makeText(this, R.string.kmy_path_missing, Toast.LENGTH_LONG).show();
             return;
         }
-        MaterialAlertDialogBuilder b =
-                new AppDialog(this)
-                        .setNegativeButton(R.string.cancel, null);
-        if (account == null) {
-            b.setTitle(R.string.kmy_import_all_title)
-                    .setMessage(R.string.kmy_import_all_message)
-                    .setPositiveButton(R.string.kmy_import_replace, (d, w) -> runAccountImport(null));
-        } else {
-            b.setTitle(R.string.kmy_replace_title)
-                    .setMessage(getString(R.string.kmy_replace_message, account))
-                    .setPositiveButton(R.string.kmy_import_replace, (d, w) -> runAccountImport(account));
-        }
-        b.show();
+        // Ohne Rückfrage: die KMyMoney-Datei ist führend.
+        runAccountImport(account);
     }
 
     /** Konto-Import mit dem gelben Banner dieser Ansicht (gleiche Logik wie im Hauptbildschirm). */

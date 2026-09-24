@@ -248,8 +248,6 @@
     <string name="drawer_open">Open accounts</string>
     <string name="drawer_close">Close accounts</string>
     <string name="add_account">Add new account</string>
-    <string name="kmy_import_all_title">Import all accounts?</string>
-    <string name="kmy_import_all_message">All accounts, portfolios and scheduled transactions are updated from the KMyMoney file (already exported bookings are replaced).</string>
     <string name="kmy_import_done_multi">Imported — bookings: %1$d, accounts: %2$d</string>
     <string name="import_running_banner">Importing account…</string>
     <string name="import_stage_download">Loading file…</string>
@@ -708,9 +706,6 @@
     <string name="depot_tx_set_value">Set value</string>
     <string name="depot_tx_value_title">Set value for %1$s</string>
     <string name="depot_tx_value_hint">Value</string>
-    <string name="kmy_replace_title">Replace account?</string>
-    <string name="kmy_replace_message">The already exported bookings of account “%1$s” are replaced by the import.</string>
-    <string name="kmy_import_replace">Replace</string>
     <string name="kmy_import_done">Bookings imported for account “%2$s”: %1$d</string>
     <string name="progress_loading">Loading file list…</string>
     <string name="progress_download">Downloading KMyMoney file…</string>

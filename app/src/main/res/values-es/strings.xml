@@ -231,8 +231,6 @@
     <string name="drawer_open">Abrir cuentas</string>
     <string name="drawer_close">Cerrar cuentas</string>
     <string name="add_account">Añadir nueva cuenta</string>
-    <string name="kmy_import_all_title">¿Importar todas las cuentas?</string>
-    <string name="kmy_import_all_message">Todas las cuentas, carteras y transacciones programadas se actualizan desde el archivo KMyMoney (los apuntes ya exportados se reemplazan).</string>
     <string name="kmy_import_done_multi">Importado – apuntes: %1$d, cuentas: %2$d</string>
     <string name="import_running_banner">Importando cuenta…</string>
     <string name="import_stage_download">Cargando archivo…</string>
@@ -681,9 +679,6 @@
     <string name="depot_tx_set_value">Establecer valor</string>
     <string name="depot_tx_value_title">Establecer valor para %1$s</string>
     <string name="depot_tx_value_hint">Valor</string>
-    <string name="kmy_replace_title">¿Reemplazar cuenta?</string>
-    <string name="kmy_replace_message">Los apuntes ya exportados de la cuenta \"%1$s\" se reemplazan con la importación.</string>
-    <string name="kmy_import_replace">Reemplazar</string>
     <string name="kmy_import_done">Apuntes importados para la cuenta \"%2$s\": %1$d</string>
     <string name="progress_loading">Cargando lista de archivos…</string>
     <string name="progress_download">Descargando archivo KMyMoney…</string>

@@ -226,8 +226,6 @@
     <string name="drawer_open">Konten öffnen</string>
     <string name="drawer_close">Konten schließen</string>
     <string name="add_account">Neues Konto hinzufügen</string>
-    <string name="kmy_import_all_title">Alle Konten importieren?</string>
-    <string name="kmy_import_all_message">Alle Konten, Depots und geplanten Buchungen werden aus der KMyMoney-Datei aktualisiert (bereits exportierte Buchungen werden ersetzt).</string>
     <string name="kmy_import_done_multi">Importiert – Buchungen: %1$d, Konten: %2$d</string>
     <string name="import_running_banner">Konto wird importiert…</string>
     <string name="import_stage_download">Datei wird geladen…</string>
@@ -683,9 +681,6 @@
     <string name="depot_tx_set_value">Wert festlegen</string>
     <string name="depot_tx_value_title">Wert für %1$s festlegen</string>
     <string name="depot_tx_value_hint">Wert</string>
-    <string name="kmy_replace_title">Konto ersetzen?</string>
-    <string name="kmy_replace_message">Die bereits exportierten Buchungen des Kontos „%1$s" werden durch den Import ersetzt.</string>
-    <string name="kmy_import_replace">Ersetzen</string>
     <string name="kmy_import_done">Buchungen importiert für Konto „%2$s“: %1$d</string>
     <string name="progress_loading">Lade Dateiliste…</string>
     <string name="progress_download">Lade KMyMoney-Datei…</string>
