@@ -207,6 +207,81 @@ public class NextcloudUploader {
         }
     }
 
+    /**
+     * Benennt per WebDAV-MOVE um, ohne ein vorhandenes Ziel zu ersetzen ({@code Overwrite: F}). Ist
+     * {@code expectedEtag} gesetzt, verschiebt der Server nur, wenn die <b>Quelle</b> noch diesen ETag
+     * hat ({@code If-Match} bezieht sich auf die Anfrage-URL). Beides meldet der Server mit HTTP 412 –
+     * und in beiden Fällen ist nichts angefasst worden.
+     */
+    public void moveNoReplace(String baseUrl, String user, String password, String folder,
+                              String fromName, String toName, String expectedEtag) throws IOException {
+        Request.Builder builder = new Request.Builder()
+                .url(buildUrl(baseUrl, user, folder, fromName))
+                .header("Authorization", Credentials.basic(user, password))
+                .header("Destination", buildUrl(baseUrl, user, folder, toName))
+                .header("Overwrite", "F")
+                .method("MOVE", null);
+        if (expectedEtag != null && !expectedEtag.isEmpty()) {
+            builder.header("If-Match", expectedEtag);
+        }
+        try (Response response = client.newCall(builder.build()).execute()) {
+            if (response.code() == 412) {
+                throw new RemoteConflictException("HTTP 412 (MOVE " + fromName + " → " + toName
+                        + "): Ziel belegt oder Quelle geändert");
+            }
+            if (!response.isSuccessful()) {
+                throw new HttpStatusException(response.code(), response.message());
+            }
+        }
+    }
+
+    /** Größe der Datei per PROPFIND (Depth 0); {@code -1}, wenn der Server keine nennt. */
+    public long contentLength(String baseUrl, String user, String password, String folder,
+                              String fileName) throws IOException {
+        String url = buildUrl(baseUrl, user, folder, fileName);
+        String body = "<?xml version=\"1.0\"?><d:propfind xmlns:d=\"DAV:\">"
+                + "<d:prop><d:getcontentlength/></d:prop></d:propfind>";
+        Request request = new Request.Builder()
+                .url(url)
+                .header("Authorization", Credentials.basic(user, password))
+                .header("Depth", "0")
+                .method("PROPFIND", RequestBody.create(body, XML))
+                .build();
+        try (Response response = client.newCall(request).execute()) {
+            ResponseBody rb = response.body();
+            String xml = rb == null ? "" : rb.string();
+            if (!response.isSuccessful()) {
+                throw new HttpStatusException(response.code(), response.message());
+            }
+            return parseContentLength(xml);
+        }
+    }
+
+    /** Erstes {@code <d:getcontentlength>} aus der PROPFIND-Antwort; {@code -1}, wenn keins. */
+    private long parseContentLength(String xml) throws IOException {
+        try {
+            XmlPullParser parser = Xml.newPullParser();
+            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
+            parser.setInput(new StringReader(xml));
+            int event = parser.getEventType();
+            while (event != XmlPullParser.END_DOCUMENT) {
+                if (event == XmlPullParser.START_TAG
+                        && "getcontentlength".equals(localName(parser.getName()))) {
+                    String v = parser.nextText();
+                    try {
+                        return v == null ? -1 : Long.parseLong(v.trim());
+                    } catch (NumberFormatException e) {
+                        return -1;
+                    }
+                }
+                event = parser.next();
+            }
+        } catch (XmlPullParserException e) {
+            throw new IOException("PROPFIND (Größe) nicht lesbar", e);
+        }
+        return -1;
+    }
+
     /** Löscht eine Datei per WebDAV-DELETE; ein 404 (gibt es nicht mehr) gilt als Erfolg. */
     public void delete(String baseUrl, String user, String password, String folder, String fileName)
             throws IOException {

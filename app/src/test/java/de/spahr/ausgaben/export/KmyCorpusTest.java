@@ -105,6 +105,8 @@ public class KmyCorpusTest {
         assertEquals(name + ": Buchung nicht geschrieben " + r.skipped, 1, r.writtenIds.size());
         assertWellFormed(name, r.xml);
         assertCountMatches(name, r.xml);
+        // Dieselbe Selbstprüfung, die der Export vor dem Hochladen macht, muss jede Datei bestehen.
+        KmyExportCheck.pruefen(doc.xml(), r.xml, KmyDocument.gzip(r.xml), 0, r.writtenIds.size());
 
         // 3) Zurücklesen: derselbe Betrag, dasselbe Datum, dieselbe Kategorie.
         KmyDocument written = new KmyDocument(r.xml.getBytes(StandardCharsets.UTF_8), ctx);
@@ -133,6 +135,7 @@ public class KmyCorpusTest {
         assertEquals(name + ": Buchung nicht wieder löschbar", 1, dr.resolvedIds.size());
         assertWellFormed(name, dr.xml);
         assertCountMatches(name, dr.xml);
+        KmyExportCheck.pruefen(r.xml, dr.xml, KmyDocument.gzip(dr.xml), dr.resolvedIds.size(), 0);
         return true;
     }
 

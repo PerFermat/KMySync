@@ -503,6 +503,16 @@ public class DepotActivity extends LocalizedActivity {
                         dismissProgress();
                         Toast.makeText(DepotActivity.this, message, Toast.LENGTH_LONG).show();
                     }
+
+                    @Override
+                    public void onFailed(String message) {
+                        dismissProgress();
+                        new AppDialog(DepotActivity.this)
+                                .setTitle(R.string.kmy_export_stopped_title)
+                                .setMessage(message)
+                                .setPositiveButton(android.R.string.ok, null)
+                                .show();
+                    }
                 });
     }
 

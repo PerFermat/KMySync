@@ -11,26 +11,37 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * Nagelt das Versprechen fest, an dem der Verlust einer .kmy hing: <b>bricht das Schreiben ab, bleibt die
- * vorhandene Datei unangetastet</b>. Ohne Emulator und ohne Mock-Bibliothek – die Attrappe unten ist eine
- * gewöhnliche Map, die auf Wunsch mittendrin abbricht.
+ * Nagelt das Versprechen fest, an dem der Verlust einer .kmy hing: <b>was auch schiefgeht, unter einem
+ * bekannten Namen liegt immer ein vollständiger Stand</b>. Ohne Emulator und ohne Mock-Bibliothek – die
+ * Attrappe unten ist eine gewöhnliche Map, die auf Wunsch scheitert, kürzt oder Antworten verliert.
  */
 public class SafeReplaceTest {
 
     private static final byte[] ALT = "die gute alte Datei".getBytes(StandardCharsets.UTF_8);
     private static final byte[] NEU = "der frische Stand".getBytes(StandardCharsets.UTF_8);
 
-    @Test
-    public void erfolg_zieldateiTraegtDenNeuenInhalt() throws Exception {
+    private static final String STAMP = "20260925-132129";
+    private static final String TMP = "michael.kmy." + STAMP + ".tmp";
+    private static final String OLD = "michael.kmy." + STAMP + ".old";
+
+    private static FakeStorage mitAlterDatei() {
         FakeStorage s = new FakeStorage();
         s.files.put("michael.kmy", ALT);
+        return s;
+    }
 
-        SafeReplace.replace(s, "", "michael.kmy", NEU, "", "20260909-0337");
+    @Test
+    public void erfolg_zieldateiTraegtDenNeuenInhalt() throws Exception {
+        FakeStorage s = mitAlterDatei();
+
+        SafeReplace.replace(s, "", "michael.kmy", NEU, "", STAMP);
 
         assertArrayEquals(NEU, s.files.get("michael.kmy"));
         assertTrue("keine Zwischendatei darf zurückbleiben", tmpNames(s).isEmpty());
@@ -39,36 +50,35 @@ public class SafeReplaceTest {
 
     @Test
     public void abbruchBeimSchreiben_alteDateiBleibtBytegleich() {
-        FakeStorage s = new FakeStorage();
-        s.files.put("michael.kmy", ALT);
+        FakeStorage s = mitAlterDatei();
         s.failOnUpload = true; // wie ein Timeout mitten im Hochladen
 
-        try {
-            SafeReplace.replace(s, "", "michael.kmy", NEU, "", "20260909-0337");
-            fail("der Fehler muss durchgereicht werden");
-        } catch (IOException expected) {
-            // so gewollt
-        }
+        erwarte(IOException.class, s, "");
 
         assertArrayEquals("die vorhandene Datei darf nicht angefasst worden sein",
                 ALT, s.files.get("michael.kmy"));
         assertTrue("die halbe Zwischendatei muss weg sein", tmpNames(s).isEmpty());
     }
 
+    /** Ein Proxy kürzt und meldet trotzdem Erfolg: Die gekürzte Datei darf nie an ihren Platz. */
+    @Test
+    public void gekuerzterUpload_wirdNichtEingesetzt() {
+        FakeStorage s = mitAlterDatei();
+        s.kuerztUpload = true;
+
+        erwarte(IOException.class, s, "");
+
+        assertArrayEquals(ALT, s.files.get("michael.kmy"));
+        assertTrue(tmpNames(s).isEmpty());
+        assertTrue(oldNames(s).isEmpty());
+    }
+
     @Test
     public void abbruchBeimUmbenennen_alteDateiBleibtBytegleich() {
-        FakeStorage s = new FakeStorage();
-        s.files.put("michael.kmy", ALT);
-        s.failOnMove = true;
+        FakeStorage s = mitAlterDatei();
+        s.failMoveFrom.add("michael.kmy");
 
-        try {
-            SafeReplace.replace(s, "", "michael.kmy", NEU, "", "20260909-0337");
-            fail("der Fehler muss durchgereicht werden");
-        } catch (RemoteMoveException expected) {
-            // Eigene Ausnahme: alles geschrieben, nur das Ersetzen ging nicht.
-        } catch (IOException e) {
-            fail("erwartet war RemoteMoveException, nicht " + e);
-        }
+        erwarte(RemoteMoveException.class, s, "");
 
         assertArrayEquals(ALT, s.files.get("michael.kmy"));
         assertTrue(tmpNames(s).isEmpty());
@@ -76,26 +86,15 @@ public class SafeReplaceTest {
     }
 
     /**
-     * Der Fall vom 25.09.2026: Nextcloud löscht bei einem überschreibenden MOVE zuerst das Ziel und
-     * benennt dann um – und das Umbenennen scheiterte. Mit dem alten Ablauf waren danach die .kmy
-     * <b>und</b> die Zwischendatei weg. Beim Tausch ist das Ziel des MOVE nie belegt; scheitert das
-     * Einsetzen, kommt die alte Datei zurück.
+     * Der Fall vom 25.09.2026: Das Einsetzen der neuen Datei scheitert. Die alte kommt zurück an ihren
+     * Platz – Stand wie vor dem Export.
      */
     @Test
-    public void einsetzenScheitertWieBeiNextcloud_alteDateiKommtZurueck() {
-        FakeStorage s = new FakeStorage();
-        s.files.put("michael.kmy", ALT);
-        s.loeschtZielZuerst = true;
-        s.failMoveFrom = "michael.kmy.20260925-132129.tmp";
+    public void einsetzenScheitert_alteDateiKommtZurueck() {
+        FakeStorage s = mitAlterDatei();
+        s.failMoveFrom.add(TMP);
 
-        try {
-            SafeReplace.replace(s, "", "michael.kmy", NEU, "", "20260925-132129");
-            fail("der Fehler muss durchgereicht werden");
-        } catch (RemoteMoveException expected) {
-            // Zustand wie vor dem Export
-        } catch (IOException e) {
-            fail("erwartet war RemoteMoveException, nicht " + e);
-        }
+        erwarte(RemoteMoveException.class, s, "");
 
         assertArrayEquals("die alte Datei muss wieder an ihrem Platz stehen",
                 ALT, s.files.get("michael.kmy"));
@@ -106,39 +105,84 @@ public class SafeReplaceTest {
     /** Scheitert auch das Zurückbenennen, wird nichts gelöscht – beide Stände bleiben liegen. */
     @Test
     public void auchZurueckbenennenScheitert_beideStaendeBleibenErhalten() {
-        FakeStorage s = new FakeStorage();
-        s.files.put("michael.kmy", ALT);
-        s.failMoveFrom = "michael.kmy.20260925-132129.tmp";
-        s.failMoveFrom2 = "michael.kmy.20260925-132129.old";
+        FakeStorage s = mitAlterDatei();
+        s.failMoveFrom.add(TMP);
+        s.failMoveFrom.add(OLD);
 
-        try {
-            SafeReplace.replace(s, "", "michael.kmy", NEU, "", "20260925-132129");
-            fail("der Fehler muss durchgereicht werden");
-        } catch (RemoteReplaceStuckException expected) {
-            assertEquals("michael.kmy.20260925-132129.old", expected.oldName);
-            assertEquals("michael.kmy", expected.file);
-        } catch (IOException e) {
-            fail("erwartet war RemoteReplaceStuckException, nicht " + e);
-        }
+        RemoteReplaceStuckException stuck = erwarte(RemoteReplaceStuckException.class, s, "");
 
-        assertArrayEquals(ALT, s.files.get("michael.kmy.20260925-132129.old"));
-        assertArrayEquals(NEU, s.files.get("michael.kmy.20260925-132129.tmp"));
+        assertEquals(OLD, stuck.oldName);
+        assertEquals("michael.kmy", stuck.file);
+        assertArrayEquals(ALT, s.files.get(OLD));
+        assertArrayEquals(NEU, s.files.get(TMP));
+    }
+
+    /**
+     * Der Server benennt die alte Datei um, die Antwort geht verloren. Früher hätte der Code
+     * „unverändert" gemeldet und die neue Datei weggeworfen – unter dem eigentlichen Namen läge dann
+     * nichts. Jetzt sieht er nach und macht weiter.
+     */
+    @Test
+    public void antwortVerlorenBeimBeiseitelegen_exportLaeuftDurch() throws Exception {
+        FakeStorage s = mitAlterDatei();
+        s.antwortVerlorenBeiMove.add("michael.kmy");
+
+        SafeReplace.replace(s, "", "michael.kmy", NEU, "", STAMP);
+
+        assertArrayEquals(NEU, s.files.get("michael.kmy"));
+        assertTrue(tmpNames(s).isEmpty());
+        assertTrue(oldNames(s).isEmpty());
+    }
+
+    /** Die neue Datei steht schon, nur die Antwort fehlt: Das ist ein Erfolg, kein Rückbau. */
+    @Test
+    public void antwortVerlorenBeimEinsetzen_exportLaeuftDurch() throws Exception {
+        FakeStorage s = mitAlterDatei();
+        s.antwortVerlorenBeiMove.add(TMP);
+
+        SafeReplace.replace(s, "", "michael.kmy", NEU, "", STAMP);
+
+        assertArrayEquals(NEU, s.files.get("michael.kmy"));
+        assertTrue(tmpNames(s).isEmpty());
+        assertTrue(oldNames(s).isEmpty());
+    }
+
+    /** Lässt sich nach einem Fehlschlag nicht feststellen, was liegt, wird nichts gelöscht. */
+    @Test
+    public void zustandNichtLesbar_nichtsWirdGeloescht() {
+        FakeStorage s = mitAlterDatei();
+        s.antwortVerlorenBeiMove.add("michael.kmy");
+        s.listenScheitert = true;
+
+        erwarte(RemoteReplaceStuckException.class, s, "");
+
+        assertArrayEquals("der alte Stand liegt unter seinem Zwischennamen", ALT, s.files.get(OLD));
+        assertArrayEquals("die neue Fassung wurde nicht weggeräumt", NEU, s.files.get(TMP));
+    }
+
+    /**
+     * Die Stand-Prüfung sitzt im Umbenennen selbst: Ändert jemand die Datei nach der Frühwarnung, aber
+     * vor dem Beiseitelegen, wird nichts angefasst.
+     */
+    @Test
+    public void aenderungKurzVorDemTausch_wirdImUmbenennenErkannt() {
+        FakeStorage s = mitAlterDatei();
+        s.version = "etag-alt";
+        s.versionNachFruehwarnung = "etag-neu";
+
+        erwarte(RemoteConflictException.class, s, "etag-alt");
+
+        assertArrayEquals(ALT, s.files.get("michael.kmy"));
+        assertTrue(tmpNames(s).isEmpty());
+        assertTrue(oldNames(s).isEmpty());
     }
 
     @Test
     public void fremdeAenderung_meldetKonfliktUndSchreibtNicht() {
-        FakeStorage s = new FakeStorage();
-        s.files.put("michael.kmy", ALT);
+        FakeStorage s = mitAlterDatei();
         s.version = "etag-neu"; // erwartet wurde „etag-alt"
 
-        try {
-            SafeReplace.replace(s, "", "michael.kmy", NEU, "etag-alt", "20260909-0337");
-            fail("ein Konflikt muss gemeldet werden");
-        } catch (RemoteConflictException expected) {
-            // so gewollt
-        } catch (IOException e) {
-            fail("erwartet war RemoteConflictException, nicht " + e);
-        }
+        erwarte(RemoteConflictException.class, s, "etag-alt");
 
         assertArrayEquals(ALT, s.files.get("michael.kmy"));
         assertTrue(tmpNames(s).isEmpty());
@@ -146,8 +190,7 @@ public class SafeReplaceTest {
 
     @Test
     public void aufraeumen_entferntNurEigeneReste() {
-        FakeStorage s = new FakeStorage();
-        s.files.put("michael.kmy", ALT);
+        FakeStorage s = mitAlterDatei();
         s.files.put("michael.kmy.20260908-2200.tmp", NEU);   // Rest eines Abbruchs
         s.files.put("michael.kmy.20260908-2200.old", ALT);   // liegengebliebene alte Datei
         s.files.put("fremd.kmy.20260908-2200.tmp", NEU);     // gehört einer anderen Datei
@@ -162,38 +205,51 @@ public class SafeReplaceTest {
         assertTrue(s.files.containsKey("michael2.kmy"));
     }
 
-    private static List<String> tmpNames(FakeStorage s) {
-        List<String> out = new ArrayList<>();
-        for (String name : s.files.keySet()) {
-            if (name.endsWith("." + SafeReplace.TMP_EXT)) {
-                out.add(name);
+    private static <T extends IOException> T erwarte(Class<T> art, FakeStorage s, String version) {
+        try {
+            SafeReplace.replace(s, "", "michael.kmy", NEU, version, STAMP);
+        } catch (IOException e) {
+            if (art.isInstance(e)) {
+                return art.cast(e);
             }
+            fail("erwartet war " + art.getSimpleName() + ", nicht " + e);
         }
-        return out;
+        fail("der Fehler muss durchgereicht werden");
+        return null;
+    }
+
+    private static List<String> tmpNames(FakeStorage s) {
+        return namesWith(s, "." + SafeReplace.TMP_EXT);
     }
 
     private static List<String> oldNames(FakeStorage s) {
+        return namesWith(s, "." + SafeReplace.OLD_EXT);
+    }
+
+    private static List<String> namesWith(FakeStorage s, String suffix) {
         List<String> out = new ArrayList<>();
         for (String name : s.files.keySet()) {
-            if (name.endsWith("." + SafeReplace.OLD_EXT)) {
+            if (name.endsWith(suffix)) {
                 out.add(name);
             }
         }
         return out;
     }
 
-    /** Ablage im Speicher; kann das Hochladen oder das Umbenennen scheitern lassen. */
+    /** Ablage im Speicher; kann scheitern, kürzen, Antworten verlieren oder das Auflisten verweigern. */
     private static final class FakeStorage implements RemoteStorage {
 
         final Map<String, byte[]> files = new LinkedHashMap<>();
         boolean failOnUpload;
-        boolean failOnMove;
-        /** Nur das Umbenennen dieser Quelle(n) scheitert. */
-        String failMoveFrom;
-        String failMoveFrom2;
-        /** Wie Nextcloud: ein belegtes Ziel wird vor dem Umbenennen gelöscht – auch wenn es danach scheitert. */
-        boolean loeschtZielZuerst;
+        boolean kuerztUpload;
+        boolean listenScheitert;
+        /** Das Umbenennen dieser Quellen scheitert, ohne etwas zu tun. */
+        final Set<String> failMoveFrom = new HashSet<>();
+        /** Das Umbenennen dieser Quellen wird ausgeführt, meldet aber einen Fehler. */
+        final Set<String> antwortVerlorenBeiMove = new HashSet<>();
         String version = "";
+        /** Stand, den die Datei nach der ersten Abfrage annimmt (fremde Änderung im Zeitfenster). */
+        String versionNachFruehwarnung;
 
         @Override
         public void uploadBytes(String folder, String fileName, byte[] content) throws IOException {
@@ -202,22 +258,47 @@ public class SafeReplaceTest {
                 files.put(fileName, new byte[]{content[0]});
                 throw new IOException("timeout");
             }
+            if (kuerztUpload) {
+                byte[] halb = new byte[content.length / 2];
+                System.arraycopy(content, 0, halb, 0, halb.length);
+                files.put(fileName, halb);
+                return; // meldet Erfolg
+            }
             files.put(fileName, content);
         }
 
         @Override
-        public void move(String folder, String fromName, String toName) throws IOException {
-            if (loeschtZielZuerst) {
-                files.remove(toName);
+        public long fileSize(String folder, String fileName) {
+            byte[] content = files.get(fileName);
+            return content == null ? -1 : content.length;
+        }
+
+        @Override
+        public void moveNoReplace(String folder, String fromName, String toName, String expectedVersion)
+                throws IOException {
+            if (expectedVersion != null && !expectedVersion.isEmpty()
+                    && !expectedVersion.equals(version)) {
+                throw new RemoteConflictException("Quelle geändert");
             }
-            if (failOnMove || fromName.equals(failMoveFrom) || fromName.equals(failMoveFrom2)) {
+            if (failMoveFrom.contains(fromName)) {
                 throw new IOException("move fehlgeschlagen");
+            }
+            if (files.containsKey(toName)) {
+                throw new RemoteConflictException("Ziel belegt: " + toName);
             }
             byte[] content = files.remove(fromName);
             if (content == null) {
                 throw new IOException("Quelle fehlt: " + fromName);
             }
             files.put(toName, content);
+            if (antwortVerlorenBeiMove.remove(fromName)) {
+                throw new IOException("timeout – ausgeführt, aber keine Antwort");
+            }
+        }
+
+        @Override
+        public void move(String folder, String fromName, String toName) {
+            throw new AssertionError("SafeReplace darf nicht mehr überschreibend verschieben");
         }
 
         @Override
@@ -227,7 +308,20 @@ public class SafeReplaceTest {
 
         @Override
         public String fileVersion(String folder, String fileName) {
-            return version;
+            String jetzt = version;
+            if (versionNachFruehwarnung != null) {
+                version = versionNachFruehwarnung;
+                versionNachFruehwarnung = null;
+            }
+            return jetzt;
+        }
+
+        @Override
+        public List<String> listAllFiles(String folder) throws IOException {
+            if (listenScheitert) {
+                throw new IOException("offline");
+            }
+            return new ArrayList<>(files.keySet());
         }
 
         @Override

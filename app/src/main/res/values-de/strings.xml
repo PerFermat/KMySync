@@ -609,7 +609,10 @@
     <string name="conn_test">Verbindung testen</string>
     <string name="conn_ok">Verbindung erfolgreich</string>
     <string name="conn_failed">Verbindung fehlgeschlagen: %1$s</string>
-    <string name="kmy_replace_stuck">Die neue Datei ließ sich nicht an ihren Platz setzen, und die alte ließ sich nicht zurückholen. Ihr bisheriger Stand ist vollständig erhalten und liegt als „%1$s“ im selben Ordner. Bitte benennen Sie diese Datei auf dem Server in „%2$s“ um; danach erneut übertragen.</string>
+    <string name="kmy_export_stopped_title">Export abgebrochen</string>
+    <string name="kmy_check_failed">Die neu erzeugte Datei hat die Selbstprüfung nicht bestanden (%1$s). Es wurde nichts geschrieben; Ihre KMyMoney-Datei ist unverändert und die Buchungen bleiben zum Übertragen vorgemerkt. Bitte melden Sie diesen Fehler.</string>
+    <string name="kmy_locked">KMyMoney hat „%1$s“ gerade geöffnet. Bitte dort schließen und erneut übertragen – sonst überschreibt KMyMoney beim Speichern die übertragenen Buchungen. Es wurde nichts geschrieben. Ist KMyMoney nicht geöffnet, stammt die Sperre von einem Absturz: KMyMoney einmal öffnen und schließen räumt sie weg.</string>
+    <string name="kmy_replace_stuck">Beim Ersetzen der Datei ist die Verbindung abgerissen, und die App konnte nicht mehr feststellen, was auf dem Server liegt. Es wurde nichts gelöscht. Fehlt „%2$s“ im Ordner, liegt Ihr bisheriger Stand vollständig als „%1$s“ daneben – bitte in „%2$s“ umbenennen und danach erneut übertragen.</string>
     <string name="kmy_move_failed">Die Datei wurde vollständig übertragen, konnte aber nicht an ihren Platz gesetzt werden (%1$s). Ihre KMyMoney-Datei ist unverändert; bitte später erneut übertragen.</string>
     <string name="kmy_browse">.kmy auswählen</string>
     <string name="folder_browse">Ordner durchsuchen</string>

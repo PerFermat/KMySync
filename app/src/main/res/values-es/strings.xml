@@ -696,7 +696,10 @@
     <string name="kmy_result_scheduled">, programas avanzados: %1$d</string>
     <string name="kmy_result_backup">Copia de seguridad: %1$s</string>
     <string name="kmy_conflict">El .kmy fue modificado en el meantime (probablemente en el ordenador). No se escribió nada – reimporta las cuentas y exporta de nuevo.</string>
-    <string name="kmy_replace_stuck">No se pudo colocar el archivo nuevo en su sitio ni restaurar el anterior. Tu versión anterior se conserva completa como «%1$s» en la misma carpeta. Cámbiale el nombre en el servidor a «%2$s» y vuelve a transferir.</string>
+    <string name="kmy_export_stopped_title">Exportación interrumpida</string>
+    <string name="kmy_check_failed">El archivo recién generado no ha superado la autocomprobación (%1$s). No se ha escrito nada; tu archivo de KMyMoney está intacto y los apuntes siguen pendientes de transferir. Por favor, informa de este error.</string>
+    <string name="kmy_locked">KMyMoney tiene «%1$s» abierto en este momento. Ciérralo allí y vuelve a transferir; si no, KMyMoney sobrescribirá los apuntes transferidos al guardar. No se ha escrito nada. Si KMyMoney no está abierto, el bloqueo quedó de un cierre inesperado: abrir y cerrar KMyMoney una vez lo elimina.</string>
+    <string name="kmy_replace_stuck">La conexión se interrumpió al sustituir el archivo y la app ya no pudo comprobar qué hay en el servidor. No se ha borrado nada. Si falta «%2$s» en la carpeta, tu versión anterior se conserva completa a su lado como «%1$s»: cámbiale el nombre a «%2$s» y vuelve a transferir.</string>
     <string name="kmy_move_failed">El archivo se transfirió por completo, pero no se pudo colocar en su sitio (%1$s). Tu archivo de KMyMoney está intacto; vuelve a transferirlo más tarde.</string>
     <string name="kmy_skipped">Omisiones: %1$d — %2$s</string>
 

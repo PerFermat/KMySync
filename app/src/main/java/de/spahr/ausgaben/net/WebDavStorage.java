@@ -68,6 +68,17 @@ public class WebDavStorage implements RemoteStorage {
         uploader.move(baseUrl, user, password, fromFolder, fromName, toFolder, toName);
     }
 
+    @Override
+    public void moveNoReplace(String folder, String fromName, String toName, String expectedVersion)
+            throws IOException {
+        uploader.moveNoReplace(baseUrl, user, password, folder, fromName, toName, expectedVersion);
+    }
+
+    @Override
+    public long fileSize(String folder, String fileName) throws IOException {
+        return uploader.contentLength(baseUrl, user, password, folder, fileName);
+    }
+
     /** Herunterladen mit Rückmeldung der gelesenen Bytes (Fortschrittsanzeige). */
     @Override
     public byte[] downloadBytes(String folder, String fileName,

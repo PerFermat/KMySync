@@ -92,13 +92,12 @@ public interface RemoteStorage {
     }
 
     /**
-     * Benennt eine Datei innerhalb desselben Ordners um und ersetzt dabei ein vorhandenes Ziel. Der
-     * Vorgang läuft auf dem Server und ist dort unteilbar – darauf beruht das gefahrlose Ersetzen der
-     * KMyMoney-Datei (siehe {@link SafeReplace}): geschrieben wird erst vollständig unter einem
-     * Zwischennamen, das Ziel wird nur durch dieses Umbenennen ersetzt.
+     * Benennt eine Datei innerhalb desselben Ordners um und ersetzt dabei ein vorhandenes Ziel.
      *
-     * <p>Standard: nicht unterstützt. Ein Backend ohne Umbenennen muss weiterhin direkt schreiben – dann
-     * bleibt das alte Risiko bestehen, deshalb implementieren es WebDAV und SMB beide.</p>
+     * <p><b>Nicht unteilbar:</b> Bei WebDAV löscht der Server laut RFC 4918 zuerst das Ziel und benennt
+     * dann um; scheitert der zweite Schritt, ist das Ziel weg. Für Dateien, die nicht verloren gehen
+     * dürfen, deshalb {@link #moveNoReplace} – so macht es {@link SafeReplace}. Hier bleiben die Belege
+     * (Papierkorb, Jahreswechsel, Ordnerumzug), bei denen das Ziel ohnehin frei ist.</p>
      */
     default void move(String folder, String fromName, String toName) throws IOException {
         move(folder, fromName, folder, toName);
@@ -114,6 +113,29 @@ public interface RemoteStorage {
     default void move(String fromFolder, String fromName, String toFolder, String toName)
             throws IOException {
         throw new IOException("Verschieben wird von diesem Server nicht unterstützt");
+    }
+
+    /**
+     * Benennt innerhalb eines Ordners um, ersetzt aber <b>nie</b> ein vorhandenes Ziel – ist es belegt,
+     * scheitert der Aufruf mit {@link RemoteConflictException}, ohne etwas anzufassen.
+     *
+     * <p>Der Unterschied zu {@link #move(String, String, String)} ist der Grund für diese Methode: Ein
+     * WebDAV-{@code MOVE} mit {@code Overwrite: T} löscht laut RFC 4918 zuerst das Ziel, und scheitert
+     * danach das Umbenennen, ist das Ziel weg. Genau so ging am 25.09.2026 eine .kmy verloren.
+     * {@link SafeReplace} benutzt deshalb nur noch diese Methode.</p>
+     *
+     * @param expectedVersion Stand, auf dem die <b>Quelle</b> noch stehen muss (aus
+     *                        {@link #fileVersion}); sonst {@link RemoteConflictException}. Leer =
+     *                        ungeprüft. Bei WebDAV prüft der Server selbst ({@code If-Match}).
+     */
+    default void moveNoReplace(String folder, String fromName, String toName, String expectedVersion)
+            throws IOException {
+        throw new IOException("Umbenennen ohne Ersetzen wird von diesem Server nicht unterstützt");
+    }
+
+    /** Größe der Datei in Bytes; {@code -1}, wenn das Backend sie nicht nennen kann. */
+    default long fileSize(String folder, String fileName) throws IOException {
+        return -1;
     }
 
     String downloadText(String folder, String fileName) throws IOException;

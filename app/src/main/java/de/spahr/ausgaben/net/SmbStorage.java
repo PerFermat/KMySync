@@ -161,6 +161,40 @@ public class SmbStorage implements RemoteStorage {
         });
     }
 
+    /**
+     * Umbenennen ohne Ersetzen. Stand-Prüfung und Umbenennen laufen in <b>einer</b> Sitzung – SMB kennt
+     * kein {@code If-Match}, das Restrisiko schrumpft so auf den Abstand zweier Anfragen.
+     */
+    @Override
+    public void moveNoReplace(String folder, String fromName, String toName, String expectedVersion)
+            throws IOException {
+        final String from = joinPath(joinPath(base, folder), fromName);
+        final String to = joinPath(joinPath(base, folder), toName);
+        withShare(disk -> {
+            if (expectedVersion != null && !expectedVersion.isEmpty()) {
+                String current = versionOf(disk, from);
+                if (!current.isEmpty() && !current.equals(expectedVersion)) {
+                    throw new RemoteConflictException("SMB: " + fromName + " wurde zwischenzeitlich geändert");
+                }
+            }
+            if (disk.fileExists(to)) {
+                throw new RemoteConflictException("SMB: Ziel " + toName + " ist belegt");
+            }
+            try (com.hierynomus.smbj.share.File f = disk.openFile(from,
+                    EnumSet.of(AccessMask.DELETE, AccessMask.GENERIC_READ), null,
+                    SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null)) {
+                f.rename(to, false);
+            }
+            return null;
+        });
+    }
+
+    @Override
+    public long fileSize(String folder, String fileName) throws IOException {
+        final String path = joinPath(joinPath(base, folder), fileName);
+        return withShare(disk -> disk.getFileInformation(path).getStandardInformation().getEndOfFile());
+    }
+
     /** Dateistand als {@code "changeTime:size"}; leer, wenn die Datei (noch) nicht lesbar ist. */
     @Override
     public String fileVersion(String folder, String fileName) throws IOException {

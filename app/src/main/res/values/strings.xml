@@ -634,7 +634,10 @@
     <string name="conn_test">Test connection</string>
     <string name="conn_ok">Connection successful</string>
     <string name="conn_failed">Connection failed: %1$s</string>
-    <string name="kmy_replace_stuck">The new file could not be put in place, and the old one could not be restored. Your previous version is fully preserved as “%1$s” in the same folder. Please rename that file on the server to “%2$s”, then transfer again.</string>
+    <string name="kmy_export_stopped_title">Export stopped</string>
+    <string name="kmy_check_failed">The newly built file failed the self-check (%1$s). Nothing was written; your KMyMoney file is unchanged and the bookings stay queued for transfer. Please report this error.</string>
+    <string name="kmy_locked">KMyMoney currently has “%1$s” open. Please close it there and transfer again – otherwise KMyMoney will overwrite the transferred bookings when it saves. Nothing was written. If KMyMoney is not open, the lock is left over from a crash: opening and closing KMyMoney once clears it.</string>
+    <string name="kmy_replace_stuck">The connection broke off while replacing the file, and the app could no longer tell what is on the server. Nothing was deleted. If “%2$s” is missing from the folder, your previous version is fully preserved next to it as “%1$s” – please rename it to “%2$s”, then transfer again.</string>
     <string name="kmy_move_failed">The file was transferred in full but could not be put in place (%1$s). Your KMyMoney file is unchanged; please transfer again later.</string>
     <string name="kmy_browse">Select .kmy</string>
     <string name="folder_browse">Browse folder</string>

@@ -1909,6 +1909,18 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                             refreshBookings();
                         }
                     }
+
+                    @Override
+                    public void onFailed(String message) {
+                        dismissProgress();
+                        // Kein Toast: der zeigt zwei Zeilen und ist nach Sekunden weg – ausgerechnet
+                        // bei den Meldungen, die man lesen muss.
+                        new AppDialog(MainActivity.this)
+                                .setTitle(R.string.kmy_export_stopped_title)
+                                .setMessage(message)
+                                .setPositiveButton(android.R.string.ok, null)
+                                .show();
+                    }
                 });
     }
 

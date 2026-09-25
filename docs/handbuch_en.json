@@ -1743,6 +1743,31 @@
       "text": "If somebody works in KMyMoney on the computer while the app exports, their changes must not be lost: if the file changed in the meantime, the export aborts and writes nothing – the bookings stay unexported and can be exported again after a fresh import, without any loss."
     },
     {
+      "type": "h2",
+      "id": "b-0171a",
+      "text": "KMyMoney open on the computer"
+    },
+    {
+      "type": "p",
+      "id": "b-0171b",
+      "text": "The reverse case is one the app cannot always prevent: if the file is open in KMyMoney while the app exports and KMyMoney saves afterwards, it writes its own state over the file – the bookings just transferred are gone, and the app will not send them again. KMyMoney does not check on saving whether the file has changed in the meantime. <b>So close KMyMoney before exporting</b> – or reopen the file afterwards before you save there."
+    },
+    {
+      "type": "p",
+      "id": "b-0171c",
+      "text": "From <b>KMyMoney 5.2</b> on, the app detects this itself: KMyMoney places a lock file <b>«filename.lck»</b> next to the file when opening it, and if the app finds it on the server, the export stops without writing anything. This only works if the lock file actually reaches the server:"
+    },
+    {
+      "type": "bullets",
+      "id": "b-0171d",
+      "items": [
+        "<b>Nextcloud with the sync client</b>: only if the client transfers «.lck» files. The Nextcloud client does so by default; if you have added «*.lck» to its exclusion list, you lose the protection.",
+        "<b>SMB share or another WebDAV server</b>: works as soon as KMyMoney opens the file through a file path – that is, if the shared folder is on the same computer KMyMoney runs on, or if the share is mounted as a drive (network drive on Windows, mounted share on Linux). If KMyMoney opens the file through an address such as «smb://» or «webdavs://», it works on a downloaded copy and creates no lock file.",
+        "<b>KMyMoney before 5.2</b> creates no lock file; closing it is the only protection.",
+        "If the app reports a lock although KMyMoney is closed, it is left over from a crash. Opening and closing KMyMoney once clears it."
+      ]
+    },
+    {
       "type": "h1",
       "id": "b-0173",
       "text": "18. Wear OS (watch)"

@@ -24,8 +24,10 @@ import java.util.List;
  * hielt, räumte er obendrein die Zwischendatei weg. Übrig blieb nichts; gerettet hat der Papierkorb
  * der Nextcloud.</p>
  *
- * <p>Beim Tauschen ist jedes Umbenennen eines auf einen <b>freien</b> Namen, und gelöscht wird erst,
- * wenn die neue Datei an ihrem Platz steht. Zu jedem Zeitpunkt liegt also mindestens ein
+ * <p>Beim Tauschen ist jedes Umbenennen eines auf einen <b>freien</b> Namen – erzwungen über
+ * {@link RemoteStorage#moveNoReplace}, das ein belegtes Ziel nie ersetzt –, und gelöscht wird erst,
+ * wenn die neue Datei an ihrem Platz steht. Nach jedem gescheiterten Schritt wird nachgesehen, was
+ * wirklich im Ordner liegt: Eine Antwort kann verlorengehen, nachdem der Server längst umbenannt hat. Zu jedem Zeitpunkt liegt also mindestens ein
  * vollständiger Stand unter einem bekannten Namen. Scheitert das Einsetzen der neuen Datei, wird die
  * alte zurückbenannt – der Zustand ist dann derselbe wie vor dem Export, passend dazu, dass der
  * Aufrufer nichts als exportiert markiert.</p>
@@ -61,64 +63,134 @@ public final class SafeReplace {
     /**
      * Schreibt {@code content} nach {@code folder/file}.
      *
+     * <p>Jedes Umbenennen geht über {@link RemoteStorage#moveNoReplace} – ein belegtes Ziel wird nie
+     * ersetzt. Scheitert ein Schritt, sieht der Code nach, was auf dem Server tatsächlich liegt, statt
+     * es zu vermuten: Eine verlorene Antwort heißt nicht, dass der Server nichts getan hat.</p>
+     *
      * @param expectedVersion Stand, auf dem die Datei noch stehen muss (aus
      *                        {@link RemoteStorage#fileVersion}); {@code ""} = ungeprüft. Geprüft wird
-     *                        unmittelbar vor dem Ersetzen, also so spät wie möglich.
+     *                        im Umbenennen selbst – bei WebDAV vom Server, also ohne Zeitfenster.
      * @param stamp           Zeitstempel für die Zwischennamen (vom Aufrufer, damit testbar).
      * @throws RemoteConflictException    wenn die Datei zwischenzeitlich fremd geändert wurde
-     * @throws RemoteMoveException        wenn der Tausch nicht ging; die Zieldatei steht dann wieder
+     * @throws RemoteMoveException        wenn der Tausch nicht ging; die Zieldatei steht dann
      *                                    unverändert an ihrem Platz
-     * @throws RemoteReplaceStuckException wenn auch das Zurückbenennen scheiterte – die Datei fehlt,
-     *                                    beide Stände liegen unter ihren Zwischennamen
+     * @throws RemoteReplaceStuckException wenn sich das nicht sicherstellen ließ – dann ist nichts
+     *                                    gelöscht, der alte Stand liegt unter seinem Zwischennamen
      */
     public static void replace(RemoteStorage storage, String folder, String file, byte[] content,
                                String expectedVersion, String stamp) throws IOException {
         String tmp = tmpName(file, stamp);
         String old = oldName(file, stamp);
+        String version = expectedVersion == null ? "" : expectedVersion;
+
+        // 1. Neue Fassung vollständig hochladen und nachmessen.
         try {
             storage.uploadBytes(folder, tmp, content);
-            // So spät wie möglich prüfen: zwischen Herunterladen und hier liegen Minuten, zwischen hier
-            // und dem Tausch nur Millisekunden.
-            if (expectedVersion != null && !expectedVersion.isEmpty()) {
+            long size = storage.fileSize(folder, tmp);
+            if (size >= 0 && size != content.length) {
+                // Ein Proxy oder Server, der kürzt und trotzdem „OK" sagt: Die Datei darf nicht an
+                // ihren Platz.
+                throw new IOException("Übertragung unvollständig: " + size + " von " + content.length
+                        + " Bytes auf dem Server");
+            }
+            // Frühwarnung vor dem ersten Umbenennen. Verbindlich prüft erst moveNoReplace.
+            if (!version.isEmpty()) {
                 String now = storage.fileVersion(folder, file);
-                if (!now.isEmpty() && !now.equals(expectedVersion)) {
+                if (!now.isEmpty() && !now.equals(version)) {
                     throw new RemoteConflictException("Datei wurde zwischenzeitlich geändert: " + file);
                 }
             }
-            try {
-                storage.move(folder, file, old);
-            } catch (IOException | RuntimeException e) {
-                // Noch nichts vertauscht: Die Zieldatei steht, wie sie war.
-                throw new RemoteMoveException(
-                        "Umbenennen auf dem Server nicht möglich: " + file + " → " + old, e);
-            }
         } catch (IOException | RuntimeException e) {
-            // Die Zwischendatei ist wertlos, sobald es bis hierher schiefging – wegräumen, aber den
-            // eigentlichen Fehler nicht dadurch verdecken, dass auch das Aufräumen scheitert.
             deleteQuietly(storage, folder, tmp);
             throw e;
         }
 
-        // Ab hier liegt die alte Datei unter „old". Nichts wird gelöscht, bevor die neue steht.
+        // 2. Alte Datei zur Seite – nur, wenn sie noch auf dem erwarteten Stand ist.
         try {
-            storage.move(folder, tmp, file);
+            storage.moveNoReplace(folder, file, old, version);
+        } catch (RemoteConflictException e) {
+            deleteQuietly(storage, folder, tmp);
+            throw e;
         } catch (IOException | RuntimeException e) {
+            Lage lage = Lage.lesen(storage, folder, file, tmp, old);
+            if (lage != null && lage.file && !lage.old) {
+                // Wirklich nichts passiert.
+                deleteQuietly(storage, folder, tmp);
+                throw new RemoteMoveException(
+                        "Umbenennen auf dem Server nicht möglich: " + file + " → " + old, e);
+            }
+            if (lage == null || lage.file || !lage.old) {
+                // Unklar oder unerwartet – nichts anfassen.
+                throw new RemoteReplaceStuckException(file, old, e);
+            }
+            // Datei weg, „old" da: Der Server hat umbenannt, nur die Antwort kam nicht an. Weiter.
+        }
+
+        // 3. Neue Datei an ihren Platz. Ab hier liegt die alte unter „old"; nichts wird gelöscht,
+        // bevor die neue steht.
+        try {
+            storage.moveNoReplace(folder, tmp, file, "");
+        } catch (IOException | RuntimeException e) {
+            Lage lage = Lage.lesen(storage, folder, file, tmp, old);
+            if (lage != null && lage.file && !lage.tmp) {
+                // Hat geklappt, nur die Antwort fehlte.
+                deleteQuietly(storage, folder, old);
+                return;
+            }
+            if (lage != null && lage.file) {
+                // Unter dem Namen liegt eine fremde, jüngere Datei (etwa vom Rechner gerade
+                // gespeichert). Die gilt; unsere beiden Stände sind überholt und bleiben bis zum
+                // nächsten Aufräumen liegen.
+                throw new RemoteConflictException("Während des Tauschs neu angelegt: " + file);
+            }
             try {
-                storage.move(folder, old, file);
+                storage.moveNoReplace(folder, old, file, "");
             } catch (IOException | RuntimeException zurueck) {
-                // Weder neu noch alt an ihrem Platz. Beide Stände bleiben liegen – jede Löschung wäre
-                // jetzt ein Verlust. Die Meldung nennt den Namen, der zurückbenannt werden muss.
-                RemoteReplaceStuckException stuck = new RemoteReplaceStuckException(file, old, e);
-                stuck.addSuppressed(zurueck);
-                throw stuck;
+                Lage nach = Lage.lesen(storage, folder, file, tmp, old);
+                if (nach == null || !nach.file || nach.old) {
+                    RemoteReplaceStuckException stuck = new RemoteReplaceStuckException(file, old, e);
+                    stuck.addSuppressed(zurueck);
+                    throw stuck;
+                }
+                // Zurückbenennen hat doch gegriffen.
             }
             // Alte Datei steht wieder: wie vor dem Export. Erst jetzt ist die neue wertlos.
             deleteQuietly(storage, folder, tmp);
             throw new RemoteMoveException(
                     "Umbenennen auf dem Server nicht möglich: " + tmp + " → " + file, e);
         }
-        // Die neue Datei steht. Bleibt die alte liegen, räumt sie der nächste Export weg.
+
+        // 4. Die neue Datei steht. Bleibt die alte liegen, räumt sie der nächste Export weg.
         deleteQuietly(storage, folder, old);
+    }
+
+    /** Was nach einem unklaren Ausgang tatsächlich im Ordner liegt. */
+    static final class Lage {
+        final boolean file;
+        final boolean tmp;
+        final boolean old;
+
+        Lage(boolean file, boolean tmp, boolean old) {
+            this.file = file;
+            this.tmp = tmp;
+            this.old = old;
+        }
+
+        /**
+         * Einmal auflisten, bei Fehler ein zweites Mal; {@code null}, wenn es sich nicht feststellen
+         * lässt. Dann darf der Aufrufer nichts löschen.
+         */
+        static Lage lesen(RemoteStorage storage, String folder, String file, String tmp, String old) {
+            for (int versuch = 0; versuch < 2; versuch++) {
+                try {
+                    List<String> names = storage.listAllFiles(folder);
+                    return new Lage(names.contains(file), names.contains(tmp), names.contains(old));
+                } catch (Exception ignored) {
+                    // noch einmal
+                }
+            }
+            return null;
+        }
     }
 
     private static void deleteQuietly(RemoteStorage storage, String folder, String name) {

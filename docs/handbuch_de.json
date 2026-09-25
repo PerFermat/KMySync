@@ -1748,6 +1748,31 @@
       "text": "Arbeitet jemand am Rechner in KMyMoney, während die App exportiert, dürfen dessen Änderungen nicht verloren gehen: Wurde die Datei zwischenzeitlich geändert, bricht der Export ab und schreibt nichts – die Buchungen bleiben unexportiert und lassen sich nach einem erneuten Import ohne Verlust nochmals exportieren."
     },
     {
+      "type": "h2",
+      "id": "b-0171a",
+      "text": "KMyMoney am Rechner geöffnet"
+    },
+    {
+      "type": "p",
+      "id": "b-0171b",
+      "text": "Den umgekehrten Fall kann die App nicht in jedem Fall verhindern: Ist die Datei in KMyMoney geöffnet, während die App exportiert, und speichert KMyMoney danach, schreibt es seinen eigenen Stand über die Datei – die gerade übertragenen Buchungen sind dann weg, und die App schickt sie nicht noch einmal. KMyMoney prüft beim Speichern nicht, ob sich die Datei inzwischen geändert hat. <b>Schließen Sie KMyMoney deshalb vor dem Export</b> – oder öffnen Sie die Datei danach neu, bevor Sie dort speichern."
+    },
+    {
+      "type": "p",
+      "id": "b-0171c",
+      "text": "Ab <b>KMyMoney 5.2</b> erkennt die App das selbst: KMyMoney legt beim Öffnen eine Sperrdatei <b>«Dateiname.lck»</b> neben die Datei, und findet die App sie auf dem Server, bricht der Export ab, ohne etwas zu schreiben. Das klappt allerdings nur, wenn die Sperrdatei auch auf dem Server liegt:"
+    },
+    {
+      "type": "bullets",
+      "id": "b-0171d",
+      "items": [
+        "<b>Nextcloud mit Sync-Client</b>: nur, wenn der Client «.lck»-Dateien mit überträgt. Der Nextcloud-Client tut das in der Grundeinstellung; wer «*.lck» in seine Ausschlussliste aufgenommen hat, verliert den Schutz.",
+        "<b>SMB-Freigabe oder anderer WebDAV-Server</b>: klappt, sobald KMyMoney die Datei über einen Dateipfad öffnet – also wenn der freigegebene Ordner auf demselben Rechner liegt, auf dem KMyMoney läuft, oder wenn die Freigabe als Laufwerk eingebunden ist (Netzlaufwerk unter Windows, eingehängte Freigabe unter Linux). Öffnet KMyMoney die Datei dagegen über eine Adresse wie «smb://» oder «webdavs://», arbeitet es mit einer heruntergeladenen Kopie und legt keine Sperrdatei an.",
+        "<b>KMyMoney vor 5.2</b> legt keine Sperrdatei an; dort hilft nur das Schließen.",
+        "Meldet die App eine Sperre, obwohl KMyMoney geschlossen ist, stammt sie von einem Absturz. KMyMoney einmal öffnen und wieder schließen räumt sie weg."
+      ]
+    },
+    {
       "type": "h1",
       "id": "b-0173",
       "text": "18. Wear OS (Uhr)"

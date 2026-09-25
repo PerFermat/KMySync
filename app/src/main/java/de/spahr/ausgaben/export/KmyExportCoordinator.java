@@ -28,6 +28,15 @@ public class KmyExportCoordinator {
 
         /** Auf dem Main-Thread: Endergebnis. */
         void onComplete(String message, boolean refreshNeeded);
+
+        /**
+         * Auf dem Main-Thread: Der Export ist abgebrochen, nichts wurde geschrieben. Eigener Weg, weil
+         * diese Meldungen die wichtigsten sind und lang ausfallen – ein Toast zeigt seit Android 12
+         * höchstens zwei Zeilen und ist nach Sekunden weg. Standard: wie ein gewöhnliches Ergebnis.
+         */
+        default void onFailed(String message) {
+            onComplete(message, false);
+        }
     }
 
     /** Unterordner neben der .kmy, in dem die Sicherungen vor jedem Export abgelegt werden. */
@@ -53,12 +62,12 @@ public class KmyExportCoordinator {
         repository.executor().execute(() -> {
             Context r = res();
             if (!settings.hasRemoteConfig()) {
-                complete(listener, r.getString(de.spahr.ausgaben.R.string.export_no_config), false);
+                failed(listener, r.getString(de.spahr.ausgaben.R.string.export_no_config));
                 return;
             }
             String path = settings.getKmyPath();
             if (path.isEmpty()) {
-                complete(listener, r.getString(de.spahr.ausgaben.R.string.kmy_path_missing), false);
+                failed(listener, r.getString(de.spahr.ausgaben.R.string.kmy_path_missing));
                 return;
             }
             String folder = RemotePath.folderOf(path);
@@ -132,6 +141,21 @@ public class KmyExportCoordinator {
                     return;
                 }
 
+                // Die neue Fassung einmal ganz durchlesen und gegen die alte halten, bevor irgendetwas
+                // den Server erreicht. Gepackt wird schon hier, damit genau die Bytes geprüft sind,
+                // die nachher hochgehen.
+                byte[] packed = KmyDocument.gzip(res.xml);
+                KmyExportCheck.pruefen(doc.xml(), res.xml, packed, delRes.resolvedIds.size(),
+                        res.writtenIds.size() + secRes.writtenIds.size());
+
+                // Hat KMyMoney die Datei gerade offen, überschriebe es beim Speichern diesen Export –
+                // still, und die App schickte die Buchungen nie wieder. Also gar nicht erst schreiben.
+                // So spät wie möglich geprüft, direkt vor dem ersten Schreibzugriff.
+                if (KmyLock.isOpenInKmyMoney(storage, folder, file)) {
+                    failed(listener, r.getString(de.spahr.ausgaben.R.string.kmy_locked, file));
+                    return;
+                }
+
                 // Sicherung in den Unterordner „Backup" neben der .kmy (wird bei Bedarf angelegt).
                 progress(listener, r.getString(de.spahr.ausgaben.R.string.kmy_progress_backup));
                 String backupFolder = folder.isEmpty() ? BACKUP_DIR : folder + "/" + BACKUP_DIR;
@@ -144,7 +168,6 @@ public class KmyExportCoordinator {
                 KmyBackups.prune(storage, backupFolder, file, KmyBackups.KEEP);
 
                 progress(listener, r.getString(de.spahr.ausgaben.R.string.kmy_progress_writing));
-                byte[] packed = KmyDocument.gzip(res.xml);
                 // Nicht über die vorhandene Datei schreiben: erst vollständig in eine Zwischendatei,
                 // dann auf dem Server umbenennen. Ein Abbruch mittendrin (Timeout, Funkloch) läßt sonst
                 // einen unlesbaren Torso zurück – genau so ging schon einmal eine .kmy verloren.
@@ -192,22 +215,27 @@ public class KmyExportCoordinator {
                         delRes.resolvedIds.size(), schedRes.writtenIds.size(), file, backup), true);
             } catch (de.spahr.ausgaben.net.RemoteConflictException e) {
                 // Fremdänderung erkannt: nichts geschrieben, nichts als exportiert markiert.
-                complete(listener, r.getString(de.spahr.ausgaben.R.string.kmy_conflict), false);
+                failed(listener, r.getString(de.spahr.ausgaben.R.string.kmy_conflict));
+            } catch (KmyExportCheck.Failed e) {
+                // Die erzeugte Datei hat die Selbstprüfung nicht bestanden: nichts geschrieben.
+                android.util.Log.e("KmyExport", "Selbstprüfung fehlgeschlagen", e);
+                failed(listener, r.getString(de.spahr.ausgaben.R.string.kmy_check_failed,
+                        e.getMessage()));
             } catch (de.spahr.ausgaben.net.RemoteReplaceStuckException e) {
                 // Weder neu noch alt an ihrem Platz. Nichts ist als exportiert markiert; die Meldung
                 // sagt, welche Datei zurückbenannt werden muss.
-                complete(listener, r.getString(de.spahr.ausgaben.R.string.kmy_replace_stuck,
-                        e.oldName, e.file), false);
+                failed(listener, r.getString(de.spahr.ausgaben.R.string.kmy_replace_stuck,
+                        e.oldName, e.file));
             } catch (de.spahr.ausgaben.net.RemoteMoveException e) {
                 // Übertragen hat geklappt, nur das Ersetzen nicht – ein anderer Sachverhalt als ein
                 // Netzfehler, und die Datei ist nachweislich unberührt. Das soll die Meldung sagen.
                 Throwable cause = e.getCause() == null ? e : e.getCause();
                 String msg = cause.getMessage() == null ? cause.toString() : cause.getMessage();
-                complete(listener,
-                        r.getString(de.spahr.ausgaben.R.string.kmy_move_failed, msg), false);
+                failed(listener,
+                        r.getString(de.spahr.ausgaben.R.string.kmy_move_failed, msg));
             } catch (Exception e) {
                 String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-                complete(listener, r.getString(de.spahr.ausgaben.R.string.export_failed, msg), false);
+                failed(listener, r.getString(de.spahr.ausgaben.R.string.export_failed, msg));
             }
         });
     }
@@ -290,5 +318,9 @@ public class KmyExportCoordinator {
 
     private void complete(Listener l, String message, boolean refresh) {
         repository.mainHandler().post(() -> l.onComplete(message, refresh));
+    }
+
+    private void failed(Listener l, String message) {
+        repository.mainHandler().post(() -> l.onFailed(message));
     }
 }
