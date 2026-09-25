@@ -51,7 +51,7 @@ public class PendingStore {
         for (PendingEntry e : entries) {
             if (e.id.equals(id)) {
                 out.add(new PendingEntry(e.id, e.text, e.type, gps, e.account, e.place,
-                        e.timestamp, readyAt));
+                        e.timestamp, readyAt, e.noPayee));
             } else {
                 out.add(e);
             }
@@ -63,14 +63,16 @@ public class PendingStore {
      * Setzt den Buchungstext neu – auf der Bestätigungsseite des Zahlenblocks, wenn der Empfänger
      * durchgeschaltet wird. Der Eintrag liegt da schon, damit ein Absturz in den zehn Sekunden den
      * getippten Betrag nicht verschluckt.
+     *
+     * @param noPayee ausdrücklich „ohne Empfänger" gewählt (siehe {@link PendingEntry#noPayee})
      */
-    public synchronized void updateText(String id, String text) {
+    public synchronized void updateText(String id, String text, boolean noPayee) {
         List<PendingEntry> entries = getPending();
         List<PendingEntry> out = new ArrayList<>();
         for (PendingEntry e : entries) {
             if (e.id.equals(id)) {
                 out.add(new PendingEntry(e.id, text, e.type, e.gps, e.account, e.place,
-                        e.timestamp, e.readyAt));
+                        e.timestamp, e.readyAt, noPayee));
             } else {
                 out.add(e);
             }

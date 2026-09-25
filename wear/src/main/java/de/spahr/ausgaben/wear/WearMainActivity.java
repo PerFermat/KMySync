@@ -638,7 +638,7 @@ public class WearMainActivity extends WearLocalizedActivity {
         payeePick = (payeePick + 1) % (payeeCandidates.size() + 1);
         updatePayeeRow();
         if (confirmEntryId != null) {
-            store.updateText(confirmEntryId, buchungstext());
+            store.updateText(confirmEntryId, buchungstext(), ohneEmpfaengerGewaehlt());
             startCancelCountdown(btnCancelNumber);
         }
     }
@@ -661,6 +661,15 @@ public class WearMainActivity extends WearLocalizedActivity {
     /** Der gewählte Empfänger oder leer („ohne Empfänger" bzw. keiner in der Nähe). */
     private String chosenPayee() {
         return payeePick < payeeCandidates.size() ? payeeCandidates.get(payeePick) : "";
+    }
+
+    /**
+     * Ausdrücklich „ohne Empfänger" gewählt – im Unterschied zu „keiner in der Nähe", wo das Handy
+     * weiterhin selbst im Umkreis sucht. Beides ergibt denselben Buchungstext; das Handy kann es nur
+     * an diesem Merkmal auseinanderhalten.
+     */
+    private boolean ohneEmpfaengerGewaehlt() {
+        return !payeeCandidates.isEmpty() && payeePick == payeeCandidates.size();
     }
 
     /** Enter: Betrag als stille Buchung ablegen (Art = gewählter Typ) und übertragen. */
@@ -702,7 +711,7 @@ public class WearMainActivity extends WearLocalizedActivity {
         confirmEntryId = UUID.randomUUID().toString();
         store.add(new PendingEntry(confirmEntryId, buchungstext(), pendingType, "",
                 BalanceStore.selectedAccount(this), BalanceStore.selectedPlace(this),
-                now, now + CANCEL_WINDOW_MS + LOCATION_WAIT_MS));
+                now, now + CANCEL_WINDOW_MS + LOCATION_WAIT_MS, ohneEmpfaengerGewaehlt()));
         requestTileUpdate();
 
         confirmAmount.setText(amt);

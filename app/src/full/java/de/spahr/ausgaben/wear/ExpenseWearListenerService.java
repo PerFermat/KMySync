@@ -65,8 +65,10 @@ public class ExpenseWearListenerService extends WearableListenerService {
             String gps = json.optString("gps", "");
             String account = json.optString("account", "");
             String place = json.optString("place", "");
+            // Fehlt bei älteren Uhr-Fassungen – dann sucht das Handy wie bisher selbst im Umkreis.
+            boolean noPayee = json.optBoolean("noPayee", false);
             Log.d(TAG, "empfangen id=" + id + " type=" + type + " text=" + text + " gps=" + gps
-                    + " account=" + account + " place=" + place);
+                    + " account=" + account + " place=" + place + " noPayee=" + noPayee);
             if (id.isEmpty()) {
                 return;
             }
@@ -78,7 +80,7 @@ public class ExpenseWearListenerService extends WearableListenerService {
                     String targetAccount = account != null && !account.isEmpty()
                             ? account : new SettingsStore(this).getDefaultAccount();
                     boolean created = repository.createVoiceBookingBlocking(
-                            text, targetAccount, place, type, gps);
+                            text, targetAccount, place, type, gps, noPayee);
                     Log.d(TAG, "Buchung angelegt: " + created);
                     if (created) {
                         // Offene App/MainActivity sofort aktualisieren.

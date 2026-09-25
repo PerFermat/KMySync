@@ -19,9 +19,15 @@ public class PendingEntry {
     public final long timestamp;
     /** Frühester Sendezeitpunkt (lokal): erlaubt das 10-Sekunden-Abbrechen vor der Übertragung. */
     public final long readyAt;
+    /**
+     * Auf der Uhr ausdrücklich „ohne Empfänger" gewählt. Der Text ist dann derselbe reine Betrag wie
+     * ohne Kandidaten in der Nähe – nur dieses Merkmal hält das Handy davon ab, selbst im Umkreis zu
+     * suchen.
+     */
+    public final boolean noPayee;
 
     public PendingEntry(String id, String text, String type, String gps, String account, String place,
-                        long timestamp, long readyAt) {
+                        long timestamp, long readyAt, boolean noPayee) {
         this.id = id;
         this.text = text;
         this.type = type;
@@ -30,9 +36,10 @@ public class PendingEntry {
         this.place = place == null ? "" : place;
         this.timestamp = timestamp;
         this.readyAt = readyAt;
+        this.noPayee = noPayee;
     }
 
-    /** JSON: {"id","text","type","gps","account","place","timestamp","readyAt"}. */
+    /** JSON: {"id","text","type","gps","account","place","timestamp","readyAt","noPayee"}. */
     public String toJson() throws JSONException {
         JSONObject o = new JSONObject();
         o.put("id", id);
@@ -43,6 +50,7 @@ public class PendingEntry {
         o.put("place", place);
         o.put("timestamp", timestamp);
         o.put("readyAt", readyAt);
+        o.put("noPayee", noPayee);
         return o.toString();
     }
 
@@ -56,6 +64,7 @@ public class PendingEntry {
                 o.optString("account", ""),
                 o.optString("place", ""),
                 ts,
-                o.optLong("readyAt", ts));
+                o.optLong("readyAt", ts),
+                o.optBoolean("noPayee", false));
     }
 }

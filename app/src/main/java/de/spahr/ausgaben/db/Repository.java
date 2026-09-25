@@ -1082,6 +1082,16 @@ public class Repository {
      */
     public boolean createVoiceBookingBlocking(String spokenText, String account, String place, String type,
                                               String coords) {
+        return createVoiceBookingBlocking(spokenText, account, place, type, coords, false);
+    }
+
+    /**
+     * @param noPayee auf der Uhr ausdrücklich „ohne Empfänger" gewählt: Ein reiner Betrag bleibt dann
+     *                ohne Empfänger, statt ihn über den Standort zu suchen. Die Koordinaten bleiben für
+     *                die Standortnotiz erhalten.
+     */
+    public boolean createVoiceBookingBlocking(String spokenText, String account, String place, String type,
+                                              String coords, boolean noPayee) {
         // Bei ausgeschaltetem GPS keinen Standort verwenden: reiner Betrag von der Uhr → leerer Empfänger,
         // keine GPS-Notiz. (Auf der Uhr bleibt die Betrag-only-Erfassung damit möglich.)
         de.spahr.ausgaben.settings.SettingsStore settings =
@@ -1100,12 +1110,13 @@ public class Repository {
         String def = account == null ? "" : account.trim();
         String selPlace = place == null ? "" : place.trim();
 
-        // Auflösung: mit Empfänger normal; bei reinem Betrag über den aktuellen Standort (100 m).
+        // Auflösung: mit Empfänger normal; bei reinem Betrag über den aktuellen Standort (100 m) –
+        // außer auf der Uhr wurde ausdrücklich „ohne Empfänger" gewählt.
         Booking[] resolvedBooking = new Booking[1];
         PayeeCorrection[] resolvedAlias = new PayeeCorrection[1];
         java.util.Set<String> closed = aliasResolver.closedAccounts();
         if (term.isEmpty()) {
-            double[] ll = de.spahr.ausgaben.location.Geo.parse(coords);
+            double[] ll = noPayee ? null : de.spahr.ausgaben.location.Geo.parse(coords);
             if (ll != null) {
                 // Der Betrag siebt mit: bei mehreren Empfängern am selben Ort fällt heraus, wer
                 // solche Beträge nachweislich nie hat (80 € sind keine Autowäsche). Das auf der Uhr
