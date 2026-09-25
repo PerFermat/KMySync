@@ -634,6 +634,7 @@
     <string name="conn_test">Test connection</string>
     <string name="conn_ok">Connection successful</string>
     <string name="conn_failed">Connection failed: %1$s</string>
+    <string name="kmy_replace_stuck">The new file could not be put in place, and the old one could not be restored. Your previous version is fully preserved as “%1$s” in the same folder. Please rename that file on the server to “%2$s”, then transfer again.</string>
     <string name="kmy_move_failed">The file was transferred in full but could not be put in place (%1$s). Your KMyMoney file is unchanged; please transfer again later.</string>
     <string name="kmy_browse">Select .kmy</string>
     <string name="folder_browse">Browse folder</string>

@@ -8,7 +8,9 @@ import java.io.IOException;
  * unterscheiden und den wahren Grund nennen kann: geschrieben wurde vollständig, nur das Ersetzen ging
  * nicht.
  *
- * <p>Die Zieldatei ist dabei <b>unberührt</b> geblieben. Ursachen sind etwa eine gesperrte Datei
+ * <p>Die Zieldatei steht dabei unverändert an ihrem Platz – entweder wurde sie nie angefasst, oder sie
+ * wurde nach dem gescheiterten Tausch zurückbenannt. Ging auch das nicht, kommt stattdessen
+ * {@link RemoteReplaceStuckException}. Ursachen sind etwa eine gesperrte Datei
  * (Nextcloud-Locking, HTTP 423), ein Proxy, der die Methode {@code MOVE} nicht durchläßt, oder – bei
  * SMB – eine Freigabe, die Schreiben erlaubt, Löschen aber nicht.</p>
  */

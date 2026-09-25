@@ -696,6 +696,7 @@
     <string name="kmy_result_scheduled">, programas avanzados: %1$d</string>
     <string name="kmy_result_backup">Copia de seguridad: %1$s</string>
     <string name="kmy_conflict">El .kmy fue modificado en el meantime (probablemente en el ordenador). No se escribió nada – reimporta las cuentas y exporta de nuevo.</string>
+    <string name="kmy_replace_stuck">No se pudo colocar el archivo nuevo en su sitio ni restaurar el anterior. Tu versión anterior se conserva completa como «%1$s» en la misma carpeta. Cámbiale el nombre en el servidor a «%2$s» y vuelve a transferir.</string>
     <string name="kmy_move_failed">El archivo se transfirió por completo, pero no se pudo colocar en su sitio (%1$s). Tu archivo de KMyMoney está intacto; vuelve a transferirlo más tarde.</string>
     <string name="kmy_skipped">Omisiones: %1$d — %2$s</string>
 

@@ -609,6 +609,7 @@
     <string name="conn_test">Verbindung testen</string>
     <string name="conn_ok">Verbindung erfolgreich</string>
     <string name="conn_failed">Verbindung fehlgeschlagen: %1$s</string>
+    <string name="kmy_replace_stuck">Die neue Datei ließ sich nicht an ihren Platz setzen, und die alte ließ sich nicht zurückholen. Ihr bisheriger Stand ist vollständig erhalten und liegt als „%1$s“ im selben Ordner. Bitte benennen Sie diese Datei auf dem Server in „%2$s“ um; danach erneut übertragen.</string>
     <string name="kmy_move_failed">Die Datei wurde vollständig übertragen, konnte aber nicht an ihren Platz gesetzt werden (%1$s). Ihre KMyMoney-Datei ist unverändert; bitte später erneut übertragen.</string>
     <string name="kmy_browse">.kmy auswählen</string>
     <string name="folder_browse">Ordner durchsuchen</string>

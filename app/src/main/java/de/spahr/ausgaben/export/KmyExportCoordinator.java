@@ -193,6 +193,11 @@ public class KmyExportCoordinator {
             } catch (de.spahr.ausgaben.net.RemoteConflictException e) {
                 // Fremdänderung erkannt: nichts geschrieben, nichts als exportiert markiert.
                 complete(listener, r.getString(de.spahr.ausgaben.R.string.kmy_conflict), false);
+            } catch (de.spahr.ausgaben.net.RemoteReplaceStuckException e) {
+                // Weder neu noch alt an ihrem Platz. Nichts ist als exportiert markiert; die Meldung
+                // sagt, welche Datei zurückbenannt werden muss.
+                complete(listener, r.getString(de.spahr.ausgaben.R.string.kmy_replace_stuck,
+                        e.oldName, e.file), false);
             } catch (de.spahr.ausgaben.net.RemoteMoveException e) {
                 // Übertragen hat geklappt, nur das Ersetzen nicht – ein anderer Sachverhalt als ein
                 // Netzfehler, und die Datei ist nachweislich unberührt. Das soll die Meldung sagen.

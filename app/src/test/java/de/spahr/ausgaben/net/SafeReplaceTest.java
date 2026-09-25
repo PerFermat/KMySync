@@ -34,6 +34,7 @@ public class SafeReplaceTest {
 
         assertArrayEquals(NEU, s.files.get("michael.kmy"));
         assertTrue("keine Zwischendatei darf zurückbleiben", tmpNames(s).isEmpty());
+        assertTrue("die alte Datei ist nach dem Tausch weg", oldNames(s).isEmpty());
     }
 
     @Test
@@ -71,6 +72,57 @@ public class SafeReplaceTest {
 
         assertArrayEquals(ALT, s.files.get("michael.kmy"));
         assertTrue(tmpNames(s).isEmpty());
+        assertTrue(oldNames(s).isEmpty());
+    }
+
+    /**
+     * Der Fall vom 25.09.2026: Nextcloud löscht bei einem überschreibenden MOVE zuerst das Ziel und
+     * benennt dann um – und das Umbenennen scheiterte. Mit dem alten Ablauf waren danach die .kmy
+     * <b>und</b> die Zwischendatei weg. Beim Tausch ist das Ziel des MOVE nie belegt; scheitert das
+     * Einsetzen, kommt die alte Datei zurück.
+     */
+    @Test
+    public void einsetzenScheitertWieBeiNextcloud_alteDateiKommtZurueck() {
+        FakeStorage s = new FakeStorage();
+        s.files.put("michael.kmy", ALT);
+        s.loeschtZielZuerst = true;
+        s.failMoveFrom = "michael.kmy.20260925-132129.tmp";
+
+        try {
+            SafeReplace.replace(s, "", "michael.kmy", NEU, "", "20260925-132129");
+            fail("der Fehler muss durchgereicht werden");
+        } catch (RemoteMoveException expected) {
+            // Zustand wie vor dem Export
+        } catch (IOException e) {
+            fail("erwartet war RemoteMoveException, nicht " + e);
+        }
+
+        assertArrayEquals("die alte Datei muss wieder an ihrem Platz stehen",
+                ALT, s.files.get("michael.kmy"));
+        assertTrue(tmpNames(s).isEmpty());
+        assertTrue(oldNames(s).isEmpty());
+    }
+
+    /** Scheitert auch das Zurückbenennen, wird nichts gelöscht – beide Stände bleiben liegen. */
+    @Test
+    public void auchZurueckbenennenScheitert_beideStaendeBleibenErhalten() {
+        FakeStorage s = new FakeStorage();
+        s.files.put("michael.kmy", ALT);
+        s.failMoveFrom = "michael.kmy.20260925-132129.tmp";
+        s.failMoveFrom2 = "michael.kmy.20260925-132129.old";
+
+        try {
+            SafeReplace.replace(s, "", "michael.kmy", NEU, "", "20260925-132129");
+            fail("der Fehler muss durchgereicht werden");
+        } catch (RemoteReplaceStuckException expected) {
+            assertEquals("michael.kmy.20260925-132129.old", expected.oldName);
+            assertEquals("michael.kmy", expected.file);
+        } catch (IOException e) {
+            fail("erwartet war RemoteReplaceStuckException, nicht " + e);
+        }
+
+        assertArrayEquals(ALT, s.files.get("michael.kmy.20260925-132129.old"));
+        assertArrayEquals(NEU, s.files.get("michael.kmy.20260925-132129.tmp"));
     }
 
     @Test
@@ -97,12 +149,14 @@ public class SafeReplaceTest {
         FakeStorage s = new FakeStorage();
         s.files.put("michael.kmy", ALT);
         s.files.put("michael.kmy.20260908-2200.tmp", NEU);   // Rest eines Abbruchs
+        s.files.put("michael.kmy.20260908-2200.old", ALT);   // liegengebliebene alte Datei
         s.files.put("fremd.kmy.20260908-2200.tmp", NEU);     // gehört einer anderen Datei
         s.files.put("michael2.kmy", ALT);
 
         SafeReplace.cleanUp(s, "", "michael.kmy");
 
         assertFalse(s.files.containsKey("michael.kmy.20260908-2200.tmp"));
+        assertFalse(s.files.containsKey("michael.kmy.20260908-2200.old"));
         assertTrue("fremde Zwischendatei bleibt", s.files.containsKey("fremd.kmy.20260908-2200.tmp"));
         assertTrue(s.files.containsKey("michael.kmy"));
         assertTrue(s.files.containsKey("michael2.kmy"));
@@ -118,12 +172,27 @@ public class SafeReplaceTest {
         return out;
     }
 
+    private static List<String> oldNames(FakeStorage s) {
+        List<String> out = new ArrayList<>();
+        for (String name : s.files.keySet()) {
+            if (name.endsWith("." + SafeReplace.OLD_EXT)) {
+                out.add(name);
+            }
+        }
+        return out;
+    }
+
     /** Ablage im Speicher; kann das Hochladen oder das Umbenennen scheitern lassen. */
     private static final class FakeStorage implements RemoteStorage {
 
         final Map<String, byte[]> files = new LinkedHashMap<>();
         boolean failOnUpload;
         boolean failOnMove;
+        /** Nur das Umbenennen dieser Quelle(n) scheitert. */
+        String failMoveFrom;
+        String failMoveFrom2;
+        /** Wie Nextcloud: ein belegtes Ziel wird vor dem Umbenennen gelöscht – auch wenn es danach scheitert. */
+        boolean loeschtZielZuerst;
         String version = "";
 
         @Override
@@ -138,7 +207,10 @@ public class SafeReplaceTest {
 
         @Override
         public void move(String folder, String fromName, String toName) throws IOException {
-            if (failOnMove) {
+            if (loeschtZielZuerst) {
+                files.remove(toName);
+            }
+            if (failOnMove || fromName.equals(failMoveFrom) || fromName.equals(failMoveFrom2)) {
                 throw new IOException("move fehlgeschlagen");
             }
             byte[] content = files.remove(fromName);
