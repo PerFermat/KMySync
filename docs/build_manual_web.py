@@ -3,7 +3,7 @@
 
 Quelle sind dieselben JSON-Dateien wie für das PDF (build_manual.py). Aufruf:
 
-    python3 docs/build_manual_web.py                 # Ziel: ~/git/homepage/kmysync/handbuch
+    python3 docs/build_manual_web.py                 # Ziel: ~/git/kmysync-handbuch (eigenes Repo)
     python3 docs/build_manual_web.py --ziel /pfad    # anderes Ziel
 
 Screenshots werden als WebP in zwei Größen abgelegt (540 px für die Seite, 1080 px für die
@@ -22,8 +22,15 @@ from PIL import Image
 DOCS = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(DOCS)
 SPRACHEN = ["de", "en"]
-STANDARD_ZIEL = os.path.expanduser("~/git/homepage/kmysync/handbuch")
-SITE = "https://michaelspahr.de/kmysync/handbuch/"
+STANDARD_ZIEL = os.path.expanduser("~/git/kmysync-handbuch")
+# Adresse der veröffentlichten Seite (GitHub Pages des Handbuch-Repos), nur für canonical/hreflang.
+SITE = "https://perfermat.github.io/kmysync-handbuch/"
+APP_URL = "https://github.com/PerFermat/KMySync"
+IMPRESSUM = "https://michaelspahr.de/impressum.html"
+DATENSCHUTZ = "https://michaelspahr.de/datenschutz.html"
+FAVICON = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" '
+           'fill="#2e7d32"/><path d="M10 7v18M22 7l-9 9 9 9" fill="none" stroke="#fff" stroke-width="3.4" '
+           'stroke-linecap="round" stroke-linejoin="round"/></svg>\n')
 PDF = {"de": "Handbuch-KMySync-de.pdf", "en": "Manual-KMySync-en.pdf"}
 # Die PDFs (je ~13 MB) liegen im KMySync-Repo; die Webseite verlinkt sie dort, statt sie zu kopieren.
 PDF_URL = "https://github.com/PerFermat/KMySync/raw/main/docs/"
@@ -31,13 +38,13 @@ KLEIN = 540
 
 UI = {
     "de": {"art": "Handbuch", "suche": "Im Handbuch suchen …", "inhalt": "Inhalt", "pdf": "Als PDF",
-           "start": "Zur Startseite", "keine": "Keine Treffer", "thema": "Hell/Dunkel umschalten",
+           "start": "KMySync auf GitHub", "keine": "Keine Treffer", "thema": "Hell/Dunkel umschalten",
            "impressum": "Impressum", "datenschutz": "Datenschutz", "oben": "Nach oben",
            "beschreibung": "Benutzerhandbuch für KMySync, die quelloffene Android-App zum Erfassen "
                            "von Bargeld-Buchungen für KMyMoney.",
            "unterzeile": "Bargeld unterwegs erfassen – und in KMyMoney weiterverarbeiten."},
     "en": {"art": "Manual", "suche": "Search the manual …", "inhalt": "Contents", "pdf": "As PDF",
-           "start": "Home page", "keine": "No results", "thema": "Toggle light/dark",
+           "start": "KMySync on GitHub", "keine": "No results", "thema": "Toggle light/dark",
            "impressum": "Legal notice", "datenschutz": "Privacy", "oben": "Back to top",
            "beschreibung": "User manual for KMySync, the open-source Android app for recording "
                            "cash transactions for KMyMoney.",
@@ -176,7 +183,6 @@ class Seite:
     def html(self):
         I, U, lang = self.I, UI[self.lang], self.lang
         wurzel = self.wurzel
-        home = "../../" + wurzel                         # zur Homepage
         andere = [l for l in SPRACHEN if l != lang][0]
         andere_href = ("en/" if andere == "en" else "../")
         kap = self.kapitel()
@@ -207,7 +213,7 @@ class Seite:
 <meta property="og:title" content="{html.escape(I["doc_title"])}">
 <meta property="og:description" content="{U["beschreibung"]}">
 <meta name="theme-color" content="#2e7d32">
-<link rel="icon" href="{home}assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="{wurzel}favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="{wurzel}handbuch.css">
 <script>(function(){{var t=null;try{{t=localStorage.getItem('theme')}}catch(e){{}}document.documentElement.setAttribute('data-theme',t||'dark')}})();</script>
 </head>
@@ -228,8 +234,8 @@ class Seite:
   </main>
   <aside class="stage" aria-hidden="true"><div class="phone"><img id="ph" alt=""></div><div class="dots" id="dots"></div><div class="cap" id="phcap"></div></aside>
 </div>
-<footer class="foot"><a href="{home}">← {U["start"]}</a><span>{html.escape(I["footer_text"])}</span>
-  <span><a href="{home}impressum.html">{U["impressum"]}</a> · <a href="{home}datenschutz.html">{U["datenschutz"]}</a></span></footer>
+<footer class="foot"><a href="{APP_URL}">{U["start"]} ↗</a><span>{html.escape(I["footer_text"])}</span>
+  <span><a href="{IMPRESSUM}">{U["impressum"]}</a> · <a href="{DATENSCHUTZ}">{U["datenschutz"]}</a></span></footer>
 <div class="lb" id="lb" role="dialog" aria-modal="true"><img alt=""><p></p></div>
 <script src="{wurzel}handbuch.js"></script>
 </body>
@@ -245,6 +251,9 @@ def main():
     bilder = Bilder(ziel)
     for datei in ("handbuch.css", "handbuch.js"):
         shutil.copy2(os.path.join(DOCS, "web", datei), os.path.join(ziel, datei))
+    with open(os.path.join(ziel, "favicon.svg"), "w", encoding="utf-8") as f:
+        f.write(FAVICON)
+    open(os.path.join(ziel, ".nojekyll"), "w").close()  # GitHub Pages: Dateien unverändert ausliefern
     for lang in SPRACHEN:
         out = ziel if lang == "de" else os.path.join(ziel, lang)
         os.makedirs(out, exist_ok=True)

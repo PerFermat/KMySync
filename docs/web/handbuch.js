@@ -13,6 +13,19 @@
     try { localStorage.setItem('theme', next); } catch (e) {}
   });
 
+  // --- Als Datei geöffnet (file://) liefert niemand die index.html eines Ordners aus:
+  //     Ordner-Links dann ausdrücklich auf index.html zeigen lassen ---
+  if (location.protocol === 'file:') {
+    $$('a[href]').forEach(function (a) {
+      var h = a.getAttribute('href');
+      if (!/^[a-z]+:|^#/i.test(h) && /(^|\/)(\.\.?)?\/?$/.test(h.split('#')[0])) {
+        var teile = h.split('#'), pfad = teile[0];
+        if (pfad && !/\/$/.test(pfad)) pfad += '/';
+        a.setAttribute('href', pfad + 'index.html' + (teile[1] ? '#' + teile[1] : ''));
+      }
+    });
+  }
+
   // --- Sprachwechsel bleibt am selben Abschnitt (Block-IDs sind in allen Sprachen gleich) ---
   $$('.langs a.alt').forEach(function (a) {
     a.addEventListener('click', function () { a.href = a.href.split('#')[0] + location.hash; });
