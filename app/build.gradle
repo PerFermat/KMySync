@@ -21,8 +21,8 @@ android {
         // versionCode und versionName bleiben absichtlich Literale: F-Droids checkupdates sucht sie
         // hier per regulärem Ausdruck. Im Versionskatalog fände es sie nicht – und das fiele erst
         // beim nächsten Versionsabgleich auf, nicht beim Bauen.
-        versionCode 16
-        versionName "2.1.1"
+        versionCode 17
+        versionName "2.2"
 
         // Room schreibt das erzeugte Schema als JSON hierher, eine Datei je Datenbankversion. Die
         // Dateien gehören ins Repo: SchemaMigrationTest baut daraus den alten Zustand nach und lässt

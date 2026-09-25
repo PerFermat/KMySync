@@ -15,9 +15,11 @@ der Merge Request.
 
 ## Nächste Version: 2.2
 
-2.1 ist am 24.09.2026 veröffentlicht – Tag `v2.1` (Commit `409f3af`) und GitHub-Release mit den drei
-signierten APKs. Im Repo steht jetzt `versionCode 16` / `versionName "2.2"`; `changelogs/16.txt`
-muss vor dem nächsten Tag geschrieben werden.
+2.1 ist am 24.09.2026 veröffentlicht, 2.1.1 am 25.09.2026 als Fehlerbehebung hinterher – Tag
+`v2.1.1` (Commit `c2a7ae8`, versionCode 16): Der Export tauscht die .kmy jetzt, statt sie per
+WebDAV-MOVE zu überschreiben (Nextcloud löschte dabei das Ziel zuerst; bei einem gescheiterten
+Umbenennen war die Datei weg). Im Repo steht jetzt `versionCode 17` / `versionName "2.2"`;
+`changelogs/17.txt` muss vor dem nächsten Tag geschrieben werden.
 
 ## Erledigt
 
@@ -116,7 +118,7 @@ unzip -p app/build/outputs/apk/foss/release/app-foss-release*.apk 'classes*.dex'
    Dateiende fehlt dort, ohne Folgen). Die ausgefüllte Checkliste und der Punkt zu Reproducible
    Builds stehen in `fdroid/README.md`.
 5. ~~Danach `versionName`/`versionCode` im Repo auf die nächste Entwicklungsversion heben.~~ Steht auf
-   2.2 / 16.
+   2.2 / 17.
 
 Ein Entwurf für die MR-Beschreibung (Flavor, Submodul statt JitPack) steht in
 `fdroid/README.md`.
