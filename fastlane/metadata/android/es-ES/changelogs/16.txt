@@ -1,0 +1,3 @@
+Corrige un error que podía hacer perder el archivo de KMyMoney: si al exportar a un servidor WebDAV (p. ej. Nextcloud) fallaba la colocación del archivo nuevo, se borraban tanto el antiguo como el nuevo. Ahora el archivo se intercambia en lugar de sobrescribirse; si algo falla, el antiguo queda intacto.
+
+Además: "sin destinatario" elegido en el reloj ya no recibe un beneficiario en el móvil.

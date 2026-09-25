@@ -1,0 +1,3 @@
+Fixes a bug that could cost you your KMyMoney file: if putting the new file in place failed during export to a WebDAV server (e.g. Nextcloud), both the old and the new file ended up deleted. The file is now swapped instead of overwritten; if anything fails, the old file stays as it was.
+
+Also: "no payee" chosen on the watch now stays without a payee on the phone.

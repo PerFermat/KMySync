@@ -21,7 +21,7 @@ android {
         targetSdk libs.versions.targetSdk.get().toInteger()
         // Literal wie in app/build.gradle – siehe die Begründung dort (F-Droids checkupdates).
         versionCode 16
-        versionName "2.2"
+        versionName "2.1.1"
     }
 
     signingConfigs {

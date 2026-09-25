@@ -1,0 +1,3 @@
+Behebt einen Fehler, der die KMyMoney-Datei kosten konnte: Scheiterte beim Export das Einsetzen der neuen Datei auf einem WebDAV-Server (z. B. Nextcloud), waren danach alte und neue Datei gelöscht. Jetzt wird getauscht statt überschrieben; im Fehlerfall steht die alte Datei unverändert da.
+
+Außerdem: "ohne Empfänger" auf der Uhr bleibt auch am Handy ohne Empfänger.
