@@ -15,8 +15,9 @@ instead of typing everything in by hand later.
 > your bookings, profiles, settings and receipts stay exactly where they are. There is nothing to
 > export, uninstall or migrate. Only the name and the launcher label change.
 
-📖 The full **[user manual (PDF, English)](docs/Manual-KMySync-en.pdf)** describes every feature in
-detail, with screenshots.
+📖 The full user manual describes every feature in detail, with screenshots –
+**[read it online: kmysync.michaelspahr.de/en](https://kmysync.michaelspahr.de/en/)** or as a
+**[PDF (English)](docs/Manual-KMySync-en.pdf)**.
 
 <p>
   <img src="screenshots/en/Promo-Datenschutz.png" width="220">

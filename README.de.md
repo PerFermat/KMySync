@@ -16,8 +16,9 @@ nach KMyMoney, statt alles später von Hand nachzutragen.
 > exportieren, zu deinstallieren oder zu übertragen. Nur der Name und die Beschriftung im
 > App-Menü ändern sich.
 
-📖 Das vollständige **[Benutzerhandbuch (PDF, Deutsch)](docs/Handbuch-KMySync-de.pdf)** beschreibt jede
-Funktion im Detail, mit Bildschirmfotos.
+📖 Das vollständige Benutzerhandbuch beschreibt jede Funktion im Detail, mit Bildschirmfotos –
+**[online lesen: kmysync.michaelspahr.de](https://kmysync.michaelspahr.de/)** oder als
+**[PDF (Deutsch)](docs/Handbuch-KMySync-de.pdf)**.
 
 <p>
   <img src="screenshots/de/Promo-Datenschutz.png" width="220">
