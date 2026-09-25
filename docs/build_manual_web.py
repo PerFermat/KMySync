@@ -23,8 +23,8 @@ DOCS = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(DOCS)
 SPRACHEN = ["de", "en"]
 STANDARD_ZIEL = os.path.expanduser("~/git/kmysync-handbuch")
-# Adresse der veröffentlichten Seite (GitHub Pages des Handbuch-Repos), nur für canonical/hreflang.
-SITE = "https://perfermat.github.io/kmysync-handbuch/"
+# Adresse der veröffentlichten Seite (Upload mit deploy-server.sh im Handbuch-Repo), für canonical/hreflang.
+SITE = "https://kmysync.michaelspahr.de/"
 APP_URL = "https://github.com/PerFermat/KMySync"
 IMPRESSUM = "https://michaelspahr.de/impressum.html"
 DATENSCHUTZ = "https://michaelspahr.de/datenschutz.html"
@@ -253,7 +253,6 @@ def main():
         shutil.copy2(os.path.join(DOCS, "web", datei), os.path.join(ziel, datei))
     with open(os.path.join(ziel, "favicon.svg"), "w", encoding="utf-8") as f:
         f.write(FAVICON)
-    open(os.path.join(ziel, ".nojekyll"), "w").close()  # GitHub Pages: Dateien unverändert ausliefern
     for lang in SPRACHEN:
         out = ziel if lang == "de" else os.path.join(ziel, lang)
         os.makedirs(out, exist_ok=True)
