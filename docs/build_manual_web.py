@@ -49,8 +49,10 @@ UI = {
            "start": "KMySync auf GitHub", "keine": "Keine Treffer", "thema": "Hell/Dunkel umschalten",
            "impressum": "Impressum", "datenschutz": "Datenschutz", "oben": "Nach oben",
            "titel": "KMySync Handbuch – Bargeld für KMyMoney erfassen (Android-App)",
-           "beschreibung": "Online-Handbuch zu KMySync, der kostenlosen Open-Source-App für Android und "
-                           "Wear OS: Bargeld und Depot unterwegs erfassen und mit KMyMoney synchronisieren.",
+           "beschreibung": "Handbuch zu KMySync, der kostenlosen Open-Source-App nur für Android und Wear OS "
+                           "(kein iPhone): Bargeld und Depot erfassen, mit KMyMoney synchronisieren.",
+           "plattform": "<b>Nur für Android</b> (ab 8.0) und Wear OS (ab 3) – für iPhone/iOS gibt es KMySync nicht.",
+           "og_plattform": "Nur für Android & Wear OS – nicht für iPhone",
            "release": "Neueste Version", "release_titel": "Neueste Version von KMySync auf GitHub herunterladen",
            "og_unter": "Benutzerhandbuch", "og_zeile": "Bargeld unterwegs erfassen –\nund in KMyMoney weiterverarbeiten.",
            "locale": "de_DE",
@@ -59,8 +61,10 @@ UI = {
            "start": "KMySync on GitHub", "keine": "No results", "thema": "Toggle light/dark",
            "impressum": "Legal notice", "datenschutz": "Privacy", "oben": "Back to top",
            "titel": "KMySync Manual – record cash for KMyMoney (Android app)",
-           "beschreibung": "Online manual for KMySync, the free open-source Android and Wear OS app: "
-                           "record cash, transactions and securities on the go and sync them with KMyMoney.",
+           "beschreibung": "Manual for KMySync, the free open-source app for Android and Wear OS only "
+                           "(no iPhone): record cash and securities and sync them with KMyMoney.",
+           "plattform": "<b>Android only</b> (8.0 and later) and Wear OS (3 and later) – there is no KMySync for iPhone/iOS.",
+           "og_plattform": "Android & Wear OS only – not for iPhone",
            "release": "Latest version", "release_titel": "Download the latest KMySync version from GitHub",
            "og_unter": "User Manual", "og_zeile": "Record cash on the go –\nand process it in KMyMoney.",
            "locale": "en_US",
@@ -96,7 +100,7 @@ def vorschaubild(ziel, lang, bild_pfad):
     d.text((70, 190), "KMySync", font=ImageFont.truetype(SCHRIFT_FETT, 92), fill="#ffffff")
     d.text((74, 300), U["og_unter"], font=ImageFont.truetype(SCHRIFT, 50), fill="#d8efd9")
     d.multiline_text((74, 400), U["og_zeile"], font=ImageFont.truetype(SCHRIFT, 32), fill="#ffffff", spacing=12)
-    d.text((74, 540), SITE.replace("https://", "").rstrip("/"), font=ImageFont.truetype(SCHRIFT, 26), fill="#b5dcb7")
+    d.text((74, 530), U["og_plattform"], font=ImageFont.truetype(SCHRIFT_FETT, 28), fill="#ffffff")
     if os.path.exists(bild_pfad):
         with Image.open(bild_pfad) as shot:
             sh = 560
@@ -273,7 +277,7 @@ class Seite:
              "image": og_bild or None, "about": {"@id": SITE + "#app"},
              "isPartOf": {"@type": "WebSite", "@id": SITE + "#site", "url": SITE, "name": "KMySync"}},
             {"@type": "SoftwareApplication", "@id": SITE + "#app", "name": "KMySync",
-             "operatingSystem": "Android, Wear OS", "applicationCategory": "FinanceApplication",
+             "operatingSystem": "Android 8.0+, Wear OS 3+", "applicationCategory": "FinanceApplication",
              "softwareVersion": (self.version or "").replace("KMySync ", "") or None,
              "downloadUrl": RELEASE_URL, "url": SITE, "sameAs": APP_URL, "author": AUTOR,
              "license": "https://www.gnu.org/licenses/gpl-3.0.html",
@@ -321,6 +325,7 @@ class Seite:
   <nav class="toc" id="toc" aria-label="{U["inhalt"]}"><h5>{U["inhalt"]}</h5><ol>{"".join(toc)}</ol></nav>
   <main class="doc">
     <div class="hero"><h1>{html.escape(I["doc_title"])}</h1><p>{U["unterzeile"]}</p>
+      <p class="plattform"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85a.64.64 0 00-.83.22l-1.88 3.24a11.43 11.43 0 00-8.94 0L5.65 5.67a.64.64 0 00-.87-.2c-.28.18-.37.54-.22.83L6.4 9.48A10.81 10.81 0 001 18h22a10.81 10.81 0 00-5.4-8.52zM7 15.25a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5zm10 0a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5z"/></svg><span>{U["plattform"]}</span></p>
       <div class="meta">{release}{pdf}<span class="pill">{I["version_text"]}</span><span class="pill">{I["date_text"]}</span></div></div>
     {"".join(inhalt)}
   </main>

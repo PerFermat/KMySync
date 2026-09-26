@@ -187,3 +187,9 @@ figure.shot.wide { margin: 14px 0 22px; }
   .shell { display: block; }
   .doc figure.shot, .doc .shot-row { display: block; }
 }
+
+/* Plattform-Hinweis im Kopf: KMySync gibt es nur für Android */
+.hero p.plattform { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; padding: 10px 14px;
+  background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent);
+  border-radius: 10px; color: var(--text); font-size: 14.5px; line-height: 1.4; }
+.hero p.plattform svg { color: #3ddc84; flex: none; }

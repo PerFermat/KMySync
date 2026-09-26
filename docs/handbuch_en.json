@@ -100,7 +100,12 @@
     {
       "type": "p",
       "id": "b-0002",
-      "text": "<b>KMySync</b> is a mobile companion to the desktop finance software <b>KMyMoney</b>. Use it to record cash expenses, income and transfers on the go – right on your phone or a Wear OS watch – and transfer them into KMyMoney later, instead of typing everything in by hand."
+      "text": "<b>KMySync</b> is a mobile companion to the desktop finance software <b>KMyMoney</b>. Use it to record cash expenses, income and transfers on the go – right on your Android phone or a Wear OS watch – and transfer them into KMyMoney later, instead of typing everything in by hand."
+    },
+    {
+      "type": "p",
+      "id": "b-0074",
+      "text": "<b>Android only:</b> KMySync runs on Android phones from Android 8.0 and on Wear OS watches from Wear OS 3. There is no version for iPhone or iPad (iOS/iPadOS)."
     },
     {
       "type": "p",

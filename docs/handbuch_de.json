@@ -100,7 +100,12 @@
     {
       "type": "p",
       "id": "b-0002",
-      "text": "<b>KMySync</b> ist eine mobile Ergänzung zur Desktop-Finanzsoftware <b>KMyMoney</b>. Damit erfassen Sie Bargeld-Ausgaben, -Einnahmen und Umbuchungen unterwegs direkt auf dem Smartphone oder einer Wear-OS-Uhr und übertragen sie später nach KMyMoney – statt alles von Hand nachzutragen."
+      "text": "<b>KMySync</b> ist eine mobile Ergänzung zur Desktop-Finanzsoftware <b>KMyMoney</b>. Damit erfassen Sie Bargeld-Ausgaben, -Einnahmen und Umbuchungen unterwegs direkt auf dem Android-Smartphone oder einer Wear-OS-Uhr und übertragen sie später nach KMyMoney – statt alles von Hand nachzutragen."
+    },
+    {
+      "type": "p",
+      "id": "b-0074",
+      "text": "<b>Nur für Android:</b> KMySync läuft auf Android-Smartphones ab Android 8.0 und auf Wear-OS-Uhren ab Wear OS 3. Für iPhone und iPad (iOS/iPadOS) gibt es KMySync nicht."
     },
     {
       "type": "p",
