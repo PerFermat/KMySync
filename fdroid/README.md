@@ -43,6 +43,8 @@ via F-Droid; it stays a GitHub-only artifact (its microphone permission is unaff
      scanner walks and pulls in the Google Wear Data Layer. Deleting it before the scan keeps that
      dependency out entirely; verified that `:app:assembleFossRelease` succeeds without the
      directory. (`scanignore` is not allowed in fdroiddata.)
+   - `WebSite:` — the online user manual (https://kmysync.michaelspahr.de/, DE + EN). It sits
+     between `AuthorName` and `SourceCode` because that is the order `rewritemeta` enforces.
 
    Keep the file name and the
    package id `de.spahr.ausgaben`: F-Droid keys apps by applicationId, not by display name, and
