@@ -11,7 +11,7 @@ Funktionen:
 * Sync über einen gemeinsamen WebDAV- oder SMB-Ordner — eigener Server, eigene Daten
 * Diagramme und Auswertung je Konto, Ort oder gesamt
 * Depot mit Beständen, letztem Kurs und Gesamtvermögen
-* Wertpapier-Buchungen zu bereits vorhandenen Papieren eintragen — Kauf, Verkauf und Dividende, mit Stückzahl, Kurs, Gebühren und Steuern, inklusive optionaler PDF-Erkennung der Abrechnung
+* Wertpapier-Buchungen zu bereits vorhandenen Papieren eintragen — Kauf, Verkauf und Dividende, inklusive optionaler PDF-Erkennung der Abrechnung
 * Unscharfe Spracheingabe mit optionaler standortbasierter Empfänger-Erkennung
 * Mehrsprachig — Deutsch, Englisch und Spanisch eingebaut, weitere Sprachen per Upload
 * Biometrische Sperre und verschlüsselte Zugangsdaten

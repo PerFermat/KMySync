@@ -11,7 +11,7 @@ Funciones:
 * Sincronización a través de una carpeta WebDAV o SMB compartida: tu propio servidor, tus datos
 * Gráficos y análisis por cuenta, lugar o total
 * Cartera con posiciones, último precio y patrimonio neto
-* Registra operaciones de valores que ya tienes: compras, ventas y dividendos, con número de títulos, precio, comisiones e impuestos, incluido el reconocimiento opcional del extracto en PDF
+* Registra operaciones de valores que ya tienes: compras, ventas y dividendos, incluido el reconocimiento opcional del extracto en PDF
 * Entrada por voz difusa con sugerencia opcional de beneficiario basada en ubicación
 * Multilingüe: inglés, alemán y español integrados, y más idiomas mediante carga
 * Bloqueo biométrico y credenciales cifradas

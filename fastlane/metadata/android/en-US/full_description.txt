@@ -11,7 +11,7 @@ Features:
 * Sync through a shared WebDAV or SMB folder — your own server, your data
 * Charts and analysis per account, place or total
 * Portfolio with holdings, latest price and net worth
-* Record transactions for securities you already hold — buys, sells and dividends, with quantity, price, fees and taxes, including optional PDF recognition of the statement
+* Record transactions for securities you already hold — buys, sells and dividends, including optional PDF recognition of the statement
 * Fuzzy voice entry with optional location-based payee suggestion
 * Multilingual — English, German and Spanish built in, more languages via upload
 * Biometric lock and encrypted credentials
