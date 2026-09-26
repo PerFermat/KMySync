@@ -7,12 +7,11 @@ One exception to that: the optional map on which you pick a location loads its t
 Features:
 
 * Seamless KMyMoney integration via .kmy files or CSV import
-* Several profiles — keep several KMyMoney files side by side, each with its own bookings, its own accent colour and its own backup
+* Several profiles — keep several KMyMoney files side by side
 * Sync through a shared WebDAV or SMB folder — your own server, your data
-* Split bookings and transfers, categories, and per-account "places" (track where your cash physically is)
 * Charts and analysis per account, place or total
 * Portfolio with holdings, latest price and net worth
-* Record transactions for securities you already hold — buys, sells and dividends, with quantity, price, fees and taxes, including optional PDF recognition of the statement; written back into KMyMoney
+* Record transactions for securities you already hold — buys, sells and dividends, with quantity, price, fees and taxes, including optional PDF recognition of the statement
 * Fuzzy voice entry with optional location-based payee suggestion
 * Multilingual — English, German and Spanish built in, more languages via upload
 * Biometric lock and encrypted credentials
@@ -20,5 +19,7 @@ Features:
 On the PDF recognition: the app reads the statement's text layer, recognises the security, the date and the amounts, and learns per bank and portfolio where those values sit in the document. It does not work with every bank — scanned documents are out of reach, and unusual layouts can escape it. It is off by default and is switched on in the settings.
 
 Note on this F-Droid build: it is the phone app without Google Play Services. The optional Wear OS companion (voice entry from a watch) requires the Google Wear Data Layer and is only available from the project's GitHub releases: https://github.com/PerFermat/KMySync/releases
+
+User manual (English and German): https://kmysync.michaelspahr.de/en/
 
 Free and open source (GPL-3.0).

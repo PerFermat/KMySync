@@ -7,12 +7,11 @@ Una excepción a esto: el mapa opcional en el que eliges una ubicación carga su
 Funciones:
 
 * Integración perfecta con KMyMoney mediante archivos .kmy o importación CSV
-* Varios perfiles: lleva varios archivos de KMyMoney en paralelo, cada uno con sus propios apuntes, su propio color de acento y su propia copia de seguridad
+* Varios perfiles: lleva varios archivos de KMyMoney en paralelo
 * Sincronización a través de una carpeta WebDAV o SMB compartida: tu propio servidor, tus datos
-* Apuntes divididos (split) y traspasos, categorías y "lugares" por cuenta (sigue dónde está tu efectivo físicamente)
 * Gráficos y análisis por cuenta, lugar o total
 * Cartera con posiciones, último precio y patrimonio neto
-* Registra operaciones de valores que ya tienes: compras, ventas y dividendos, con número de títulos, precio, comisiones e impuestos, incluido el reconocimiento opcional del extracto en PDF; se escriben de vuelta en KMyMoney
+* Registra operaciones de valores que ya tienes: compras, ventas y dividendos, con número de títulos, precio, comisiones e impuestos, incluido el reconocimiento opcional del extracto en PDF
 * Entrada por voz difusa con sugerencia opcional de beneficiario basada en ubicación
 * Multilingüe: inglés, alemán y español integrados, y más idiomas mediante carga
 * Bloqueo biométrico y credenciales cifradas
@@ -20,5 +19,7 @@ Funciones:
 Sobre el reconocimiento del PDF: la app lee la capa de texto del extracto, reconoce el valor, la fecha y los importes, y aprende para cada banco y cada cartera dónde están esos datos en el documento. No funciona con todos los bancos: los documentos escaneados quedan fuera de su alcance y las disposiciones poco habituales pueden escapársele. Viene desactivado de fábrica y se activa en los ajustes.
 
 Nota sobre esta compilación F-Droid: es la app de teléfono sin Google Play Services. El complemento opcional de Wear OS (entrada por voz desde un reloj) requiere el Google Wear Data Layer y solo está disponible en los lanzamientos de GitHub del proyecto: https://github.com/PerFermat/KMySync/releases
+
+Manual de usuario (en inglés y alemán): https://kmysync.michaelspahr.de/en/
 
 Libre y de código abierto (GPL-3.0).
