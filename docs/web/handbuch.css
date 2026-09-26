@@ -112,7 +112,9 @@ pre.code { background: var(--surface-2); border: 1px solid var(--border); border
 figure.shot { margin: 0; text-align: center; }
 figure.shot img { width: 100%; height: auto; max-width: 250px; border-radius: 22px; border: 6px solid var(--frame);
   background: var(--frame); box-shadow: var(--shadow); cursor: zoom-in; display: block; margin: 0 auto; }
-figure.shot.wide img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
+/* Ausschnitte im Querformat: im Text, ohne Handy-Rahmen */
+figure.shot.wide img { max-width: min(100%, 560px); border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface); box-shadow: var(--shadow); }
 figure.shot figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
 figure.shot.wide { margin: 14px 0 22px; }
 .missing { display: grid; place-items: center; aspect-ratio: 9 / 20; max-width: 250px; margin: 0 auto;

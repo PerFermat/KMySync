@@ -43,6 +43,9 @@ PDF = {"de": "Handbuch-KMySync-de.pdf", "en": "Manual-KMySync-en.pdf"}
 # Die PDFs (je ~13 MB) liegen im KMySync-Repo; die Webseite verlinkt sie dort, statt sie zu kopieren.
 PDF_URL = "https://github.com/PerFermat/KMySync/raw/main/docs/"
 KLEIN = 540
+# Bilder flacher als dieses Verhältnis (Höhe/Breite) sind Ausschnitte, keine ganzen Handy-Bildschirme:
+# Sie stehen immer im Text und nie im Handy-Rahmen. Ganze Bildschirme liegen bei etwa 2,2.
+QUER_BIS = 1.5
 
 UI = {
     "de": {"art": "Handbuch", "suche": "Im Handbuch suchen …", "inhalt": "Inhalt", "pdf": "Als PDF",
@@ -164,7 +167,8 @@ class Bilder:
                 im = im.convert("RGB")
                 im.save(gross, "WEBP", quality=82, method=6)
                 im.resize((kb, kh), Image.LANCZOS).save(klein, "WEBP", quality=80, method=6)
-        return {"klein": f"img/{lang}/{name}-540.webp", "gross": f"img/{lang}/{name}.webp", "b": kb, "h": kh}
+        return {"klein": f"img/{lang}/{name}-540.webp", "gross": f"img/{lang}/{name}.webp", "b": kb, "h": kh,
+                "quer": h / b < QUER_BIS}
 
 
 class Seite:
@@ -177,19 +181,30 @@ class Seite:
     def shot(self, fname):
         return self.bilder.hole(os.path.join(REPO, "screenshots", self.lang, fname), self.lang)
 
-    def figur(self, bild, caption, breit=False):
+    def figur(self, bild, caption):
         cap = inline(caption or "")
         if not bild:
             return (f'<figure class="shot"><div class="missing">{html.escape(self.I["placeholder_no_image"])}</div>'
                     f"<figcaption>{cap}</figcaption></figure>")
         alt = html.escape(re.sub(r"<[^>]+>", "", caption or ""))
-        return (f'<figure class="shot{" wide" if breit else ""}"><img src="{self.wurzel}{bild["klein"]}" data-full="{self.wurzel}{bild["gross"]}" '
+        klein, gross = self.wurzel + bild["klein"], self.wurzel + bild["gross"]
+        # Querformat steht breit im Text; dort lohnt die große Fassung für scharfe Anzeige.
+        srcset = f' srcset="{klein} 540w, {gross} 1080w" sizes="(max-width: 600px) 100vw, 560px"' if bild["quer"] else ""
+        return (f'<figure class="shot{" wide" if bild["quer"] else ""}"><img src="{klein}"{srcset} data-full="{gross}" '
                 f'width="{bild["b"]}" height="{bild["h"]}" alt="{alt}" loading="lazy" decoding="async">'
                 f"<figcaption>{cap}</figcaption></figure>")
 
     def daten_attr(self, paare):
-        liste = [[self.wurzel + b["klein"], c] for b, c in paare if b]
+        """Nur ganze Bildschirme kommen ins mitlaufende Handy."""
+        liste = [[self.wurzel + b["klein"], c] for b, c in paare if b and not b["quer"]]
         return html.escape(json.dumps(liste, ensure_ascii=False), quote=True) if liste else ""
+
+    def bildreihe(self, paare):
+        """Handy-Bilder als Reihe (breit: im Handy statt im Text), Querformat darunter im Text."""
+        hoch = [(bi, c) for bi, c in paare if not (bi and bi["quer"])]
+        quer = [(bi, c) for bi, c in paare if bi and bi["quer"]]
+        reihe = ('<div class="shot-row">' + "".join(self.figur(bi, c) for bi, c in hoch) + "</div>") if hoch else ""
+        return reihe + "".join(self.figur(bi, c) for bi, c in quer)
 
     def block(self, b):
         t = b["type"]
@@ -212,19 +227,19 @@ class Seite:
                     f'<tbody>{zeilen}</tbody></table></div><p class="note">{inline(self.I["table_note"])}</p>')
         if t == "shot_row":
             paare = [(self.shot(s["fname"]), s["caption"]) for s in b["shots"]]
-            return (f'<div class="shot-row has-shot" data-shots="{self.daten_attr(paare)}">'
-                    + "".join(self.figur(bi, c) for bi, c in paare) + "</div>")
+            return f'<div class="has-shot" data-shots="{self.daten_attr(paare)}">{self.bildreihe(paare)}</div>'
         if t in ("text_with_single_shot", "text_with_shot_row", "text_with_pic"):
             text = "".join(self.block(c) for c in b["content"])
             if t == "text_with_pic":
                 paare = [(self.bilder.hole(os.path.join(REPO, b["pic"]["relpath"]), self.lang), b["pic"]["caption"])]
                 return (f'<div class="has-shot" data-shots="{self.daten_attr(paare)}">{text}'
-                        f"{self.figur(paare[0][0], paare[0][1], breit=True)}</div>")
+                        f"{self.figur(*paare[0])}</div>")
             if t == "text_with_shot_row":
                 paare = [(self.shot(s["fname"]), s["caption"]) for s in b["shots"]]
-                return (f'<div class="has-shot" data-shots="{self.daten_attr(paare)}">{text}<div class="shot-row">'
-                        + "".join(self.figur(bi, c) for bi, c in paare) + "</div></div>")
+                return f'<div class="has-shot" data-shots="{self.daten_attr(paare)}">{text}{self.bildreihe(paare)}</div>'
             paare = [(self.shot(b["shot"]["fname"]), b["shot"]["caption"])]
+            if paare[0][0] and paare[0][0]["quer"]:  # Ausschnitt: unter den Text statt daneben
+                return f'<div class="has-shot">{text}{self.figur(*paare[0])}</div>'
             seite = "" if self.links else " flip"
             self.links = not self.links
             return (f'<div class="pair has-shot{seite}" data-shots="{self.daten_attr(paare)}">'
