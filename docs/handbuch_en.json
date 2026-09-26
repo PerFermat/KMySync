@@ -1784,16 +1784,16 @@
         {
           "type": "p",
           "id": "b-0175",
-          "text": "With the watch app you record an expense by voice right on your wrist. The watch only captures the text; processing and creating the booking happen on the phone."
+          "text": "With the watch app you record a booking by <b>voice</b> or by <b>digits</b> right on your wrist. The watch captures amount and payee; the booking itself is created on the phone."
         },
         {
           "type": "bullets",
           "id": "b-0176",
           "items": [
-            "<b>Three type buttons</b>: income (green), transfer (yellow), expense (red). Then voice starts.",
-            "<b>Silent digit entry</b>: enter an amount silently via the digits symbol.",
-            "<b>Wear tile</b>: quick access as a tile.",
-            "<b>Default-place balance</b>: below the buttons, the app shows the balance of the default place.",
+            "<b>Three type buttons</b>: income (green), transfer (yellow), expense (red). A tap starts voice entry.",
+            "<b>Amount by digits</b>: the digits symbol opens a number pad – for recording silently, e.g. in a meeting.",
+            "<b>Tile</b>: the same three buttons plus the balance are available as a Wear tile; it shows a preview in the watch's tile picker.",
+            "<b>Default-place balance</b>: shown below the buttons, e.g. «Wallet: €70.00».",
             "<b>Offline</b>: bookings not yet transmitted are delivered automatically once the phone is reachable."
           ]
         }
@@ -1806,13 +1806,53 @@
     },
     {
       "type": "h2",
+      "id": "b-0076",
+      "text": "Requirements"
+    },
+    {
+      "type": "p",
+      "id": "b-0180",
+      "text": "The watch app needs the watch's Google services (Wear Data Layer). It is therefore only available together with the full version from the <b>GitHub releases</b>, not via F-Droid. Phone and watch app must share the same signature (same key) – which is the case when both come from the same release."
+    },
+    {
+      "type": "h2",
+      "id": "b-0079",
+      "text": "Speaking"
+    },
+    {
+      "type": "p",
+      "id": "b-0086",
+      "text": "After tapping a type button the watch first shows «One moment…». Only when it <b>vibrates</b> briefly and shows «Speak now…» is it listening – say payee and amount, e.g. «Barber 20 euros». If recognition heard nothing at all on the first attempt, the watch silently tries once more by itself. If it does not understand the sentence, «Not recognized» appears; just tap the type button again."
+    },
+    {
+      "type": "h2",
+      "id": "b-0122",
+      "text": "Confirming amount and payee"
+    },
+    {
+      "type": "p",
+      "id": "b-0123",
+      "text": "Voice and digit entry end on the same confirmation page: the amount at the top, below it the payee, a grey <b>«Next payee»</b> button and <b>«Cancel»</b> with a countdown."
+    },
+    {
+      "type": "bullets",
+      "id": "b-0126",
+      "items": [
+        "A <b>spoken payee</b> comes first and stays the default as long as you change nothing.",
+        "It is followed by the <b>payees within 100 m</b>, nearest first – in the same order as on the phone (preferred aliases first) and matching the selected account. This works even without the phone nearby, because the list is stored on the watch.",
+        "<b>«no payee»</b> books deliberately without a payee; the phone then does not look for one either.",
+        "After <b>10 seconds</b> without a change the booking is made; every payee change restarts the countdown. Simply leaving the page also books. «Cancel» or the back gesture discard the entry."
+      ]
+    },
+    {
+      "type": "h2",
       "id": "b-0176a",
       "text": "Switching account and place"
     },
     {
       "type": "p",
       "id": "b-0176b",
-      "text": "Above «Record booking» a grey <b>switch button</b> cycles through the shown account; the next booking then targets that account. After a short while the selection reverts to the default place by itself."
+      "text": "Above «Record booking» the grey <b>«Switch account/place»</b> button cycles through the shown account; the next booking then targets that account. After one minute the selection reverts to the default place by itself."
     },
     {
       "type": "h2",
@@ -1822,7 +1862,7 @@
     {
       "type": "p",
       "id": "b-0176e",
-      "text": "While bookings are <b>not yet transferred</b>, the reason takes the place of the balance, e.g. «Waiting for GPS» or «No connection to phone»."
+      "text": "While bookings are <b>not yet transferred</b>, the place of the balance shows how many are pending and why: «2 pending · GPS» (the watch is still waiting for a location), «1 pending · No phone» or «… · sending…». As soon as everything has reached the phone, the balance is back."
     },
     {
       "type": "h2",
@@ -1832,12 +1872,7 @@
     {
       "type": "p",
       "id": "b-0178",
-      "text": "Speech recognition also works without the phone/network, provided an <b>offline speech model</b> is present on the watch – installed once via the setting «Install offline speech package on the watch». If offline speech fails, the watch automatically opens the <b>number pad</b>: type the amount, the booking is buffered and sent once the phone is reachable again."
-    },
-    {
-      "type": "p",
-      "id": "b-0180",
-      "text": "Requirement: the phone and watch apps share the same signature (same key)."
+      "text": "Speech recognition also works without the phone and network, provided an <b>offline speech model</b> is present on the watch. On the phone, the setting «Install offline speech package on the watch» downloads it once; on some watches it must additionally be enabled under System → Languages &amp; input. If recognition really has no connection, the watch opens the number pad («Offline – enter amount»): type the amount, pick the payee as above, and the booking is sent once the phone is available again."
     },
     {
       "type": "h1",

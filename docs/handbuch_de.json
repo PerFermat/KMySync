@@ -1789,17 +1789,17 @@
         {
           "type": "p",
           "id": "b-0175",
-          "text": "Mit der Uhren-App erfassen Sie eine Ausgabe per Sprache direkt am Handgelenk. Die Uhr nimmt nur den Text auf; die Verarbeitung und das Anlegen der Buchung passieren auf dem Handy."
+          "text": "Mit der Uhren-App erfassen Sie eine Buchung per <b>Sprache</b> oder per <b>Ziffern</b> direkt am Handgelenk. Die Uhr nimmt Betrag und Empfänger auf; angelegt wird die Buchung auf dem Handy."
         },
         {
           "type": "bullets",
           "id": "b-0176",
           "items": [
-            "<b>Drei Typ-Knöpfe</b>: Einnahme (grün), Umbuchung (gelb), Ausgabe (rot). Danach startet die Sprache.",
-            "<b>Stille Zifferneingabe</b>: über das Ziffern-Symbol einen Betrag lautlos eingeben.",
-            "<b>Wear-Tile</b>: Schnellzugriff als Kachel.",
-            "<b>Standardort-Saldo</b>: unter den Knöpfen zeigt die App den Saldo des Standardorts.",
-            "<b>Offline</b>: nicht übertragene Buchungen werden automatisch nachgereicht, sobald das Handy erreichbar ist."
+            "<b>Drei Typ-Knöpfe</b>: Einnahme (grün), Umbuchung (gelb), Ausgabe (rot). Ein Tipp startet die Spracheingabe.",
+            "<b>Betrag per Ziffern</b>: Das Ziffern-Symbol öffnet einen Zahlenblock – zum lautlosen Erfassen, etwa in einer Besprechung.",
+            "<b>Kachel</b>: Dieselben drei Knöpfe samt Saldo gibt es als Wear-Kachel; in der Kachel-Auswahl der Uhr erscheint sie mit Vorschaubild.",
+            "<b>Saldo des Standardorts</b>: steht unter den Knöpfen, z. B. «Geldbeutel: 70,00 €».",
+            "<b>Offline</b>: Nicht übertragene Buchungen gehen automatisch nach, sobald das Handy erreichbar ist."
           ]
         }
       ],
@@ -1811,13 +1811,53 @@
     },
     {
       "type": "h2",
+      "id": "b-0076",
+      "text": "Voraussetzungen"
+    },
+    {
+      "type": "p",
+      "id": "b-0180",
+      "text": "Die Uhren-App braucht die Google-Dienste der Uhr (Wear Data Layer). Es gibt sie deshalb nur zusammen mit der Vollversion aus den <b>GitHub-Releases</b>, nicht über F-Droid. Handy- und Uhren-App müssen dieselbe Signatur haben (gleicher Schlüssel) – bei Installation aus demselben Release ist das der Fall."
+    },
+    {
+      "type": "h2",
+      "id": "b-0079",
+      "text": "Sprechen"
+    },
+    {
+      "type": "p",
+      "id": "b-0086",
+      "text": "Nach dem Tipp auf einen Typ-Knopf steht zuerst «Moment…». Erst wenn die Uhr kurz <b>vibriert</b> und «Sprich jetzt…» zeigt, hört sie zu – sagen Sie Empfänger und Betrag, z. B. «Frisör 20 Euro». Hat die Erkennung beim ersten Versuch gar nichts gehört, versucht es die Uhr einmal still von selbst. Versteht sie den Satz nicht, erscheint «Nicht erkannt»; tippen Sie dann einfach erneut auf den Typ-Knopf."
+    },
+    {
+      "type": "h2",
+      "id": "b-0122",
+      "text": "Betrag und Empfänger bestätigen"
+    },
+    {
+      "type": "p",
+      "id": "b-0123",
+      "text": "Sprache und Zifferneingabe enden auf derselben Bestätigungsseite: oben der Betrag, darunter der Empfänger, ein grauer Knopf <b>«Nächster Empfänger»</b> und <b>«Abbrechen»</b> mit Countdown."
+    },
+    {
+      "type": "bullets",
+      "id": "b-0126",
+      "items": [
+        "Ein <b>gesprochener Empfänger</b> steht vorn und bleibt die Vorgabe, solange Sie nichts ändern.",
+        "Dahinter folgen die <b>Empfänger im Umkreis von 100 m</b>, der nächstgelegene zuerst – in derselben Reihenfolge wie am Handy (bevorzugte Aliase zuerst) und passend zum gewählten Konto. Das klappt auch ohne Handy in der Nähe, denn die Liste liegt auf der Uhr.",
+        "<b>«ohne Empfänger»</b> bucht bewusst ohne Empfänger; das Handy sucht dann auch selbst keinen.",
+        "Nach <b>10 Sekunden</b> ohne Änderung wird gebucht; jeder Empfängerwechsel startet den Countdown neu. Auch wer die Seite einfach verlässt, bucht. «Abbrechen» oder die Zurück-Geste verwerfen die Eingabe."
+      ]
+    },
+    {
+      "type": "h2",
       "id": "b-0176a",
       "text": "Konto und Ort wechseln"
     },
     {
       "type": "p",
       "id": "b-0176b",
-      "text": "Oberhalb von «Buchung erfassen» schaltet ein grauer <b>Wechsel-Knopf</b> das angezeigte Konto durch; die nächste Buchung betrifft dann dieses Konto. Nach kurzer Zeit springt die Auswahl von selbst auf den Standardort zurück."
+      "text": "Oberhalb von «Buchung erfassen» schaltet der graue Knopf <b>«Konto/Ort wechseln»</b> das angezeigte Konto durch; die nächste Buchung betrifft dann dieses Konto. Nach einer Minute springt die Auswahl von selbst auf den Standardort zurück."
     },
     {
       "type": "h2",
@@ -1827,7 +1867,7 @@
     {
       "type": "p",
       "id": "b-0176e",
-      "text": "Sind noch Buchungen <b>nicht übertragen</b>, steht an der Stelle des Saldos der Grund dafür, z. B. «Warten auf GPS» oder «Keine Verbindung zum Handy»."
+      "text": "Sind noch Buchungen <b>nicht übertragen</b>, steht an der Stelle des Saldos, wie viele offen sind und warum: «2 offen · GPS» (die Uhr wartet noch auf den Standort), «1 offen · Kein Handy» oder «… · sendet…». Sobald alles beim Handy angekommen ist, steht wieder der Saldo da."
     },
     {
       "type": "h2",
@@ -1837,12 +1877,7 @@
     {
       "type": "p",
       "id": "b-0178",
-      "text": "Die Spracherkennung funktioniert auch ohne Handy/Netz, sofern auf der Uhr ein <b>Offline-Sprachmodell</b> vorhanden ist – lädt sich per Schalter in den Einstellungen («Offline-Sprachpaket auf der Uhr installieren») einmalig herunter. Klappt die Sprache offline nicht, öffnet die Uhr automatisch den <b>Zahlenblock</b>: Sie tippen nur den Betrag, die Buchung wird zwischengespeichert und gesendet, sobald das Handy wieder verfügbar ist."
-    },
-    {
-      "type": "p",
-      "id": "b-0180",
-      "text": "Voraussetzung: Handy- und Uhren-App haben dieselbe Signatur (gleicher Schlüssel)."
+      "text": "Die Spracherkennung funktioniert auch ohne Handy und Netz, sofern auf der Uhr ein <b>Offline-Sprachmodell</b> vorhanden ist. Am Handy lädt es der Schalter «Offline-Sprachpaket auf der Uhr installieren» in den Einstellungen einmalig herunter; auf manchen Uhren muss es zusätzlich unter System → Sprachen &amp; Eingabe aktiviert werden. Fehlt der Erkennung wirklich die Verbindung, öffnet die Uhr den Zahlenblock («Offline – Betrag eingeben»): Sie tippen den Betrag, wählen wie oben den Empfänger, und die Buchung wird gesendet, sobald das Handy wieder verfügbar ist."
     },
     {
       "type": "h1",
