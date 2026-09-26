@@ -10,14 +10,16 @@ Screenshots werden als WebP in zwei Größen abgelegt (540 px für die Seite, 10
 Lightbox); unveränderte Bilder werden beim nächsten Lauf übersprungen.
 """
 import argparse
+import datetime
 import html
 import json
 import os
 import re
 import shutil
 import sys
+import urllib.request
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 DOCS = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(DOCS)
@@ -31,6 +33,12 @@ DATENSCHUTZ = "https://michaelspahr.de/datenschutz.html"
 FAVICON = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" '
            'fill="#2e7d32"/><path d="M10 7v18M22 7l-9 9 9 9" fill="none" stroke="#fff" stroke-width="3.4" '
            'stroke-linecap="round" stroke-linejoin="round"/></svg>\n')
+# Zeigt immer auf das neueste Release, auch wenn die Seite noch nicht neu erzeugt ist.
+RELEASE_URL = APP_URL + "/releases/latest"
+RELEASE_API = "https://api.github.com/repos/PerFermat/KMySync/releases/latest"
+AUTOR = {"@type": "Person", "name": "Michael Spahr", "url": "https://michaelspahr.de/"}
+SCHRIFT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+SCHRIFT_FETT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 PDF = {"de": "Handbuch-KMySync-de.pdf", "en": "Manual-KMySync-en.pdf"}
 # Die PDFs (je ~13 MB) liegen im KMySync-Repo; die Webseite verlinkt sie dort, statt sie zu kopieren.
 PDF_URL = "https://github.com/PerFermat/KMySync/raw/main/docs/"
@@ -40,16 +48,67 @@ UI = {
     "de": {"art": "Handbuch", "suche": "Im Handbuch suchen …", "inhalt": "Inhalt", "pdf": "Als PDF",
            "start": "KMySync auf GitHub", "keine": "Keine Treffer", "thema": "Hell/Dunkel umschalten",
            "impressum": "Impressum", "datenschutz": "Datenschutz", "oben": "Nach oben",
-           "beschreibung": "Benutzerhandbuch für KMySync, die quelloffene Android-App zum Erfassen "
-                           "von Bargeld-Buchungen für KMyMoney.",
+           "titel": "KMySync Handbuch – Bargeld für KMyMoney erfassen (Android-App)",
+           "beschreibung": "Online-Handbuch zu KMySync, der kostenlosen Open-Source-App für Android und "
+                           "Wear OS: Bargeld und Depot unterwegs erfassen und mit KMyMoney synchronisieren.",
+           "release": "Neueste Version", "release_titel": "Neueste Version von KMySync auf GitHub herunterladen",
+           "og_unter": "Benutzerhandbuch", "og_zeile": "Bargeld unterwegs erfassen –\nund in KMyMoney weiterverarbeiten.",
+           "locale": "de_DE",
            "unterzeile": "Bargeld unterwegs erfassen – und in KMyMoney weiterverarbeiten."},
     "en": {"art": "Manual", "suche": "Search the manual …", "inhalt": "Contents", "pdf": "As PDF",
            "start": "KMySync on GitHub", "keine": "No results", "thema": "Toggle light/dark",
            "impressum": "Legal notice", "datenschutz": "Privacy", "oben": "Back to top",
-           "beschreibung": "User manual for KMySync, the open-source Android app for recording "
-                           "cash transactions for KMyMoney.",
+           "titel": "KMySync Manual – record cash for KMyMoney (Android app)",
+           "beschreibung": "Online manual for KMySync, the free open-source Android and Wear OS app: "
+                           "record cash, transactions and securities on the go and sync them with KMyMoney.",
+           "release": "Latest version", "release_titel": "Download the latest KMySync version from GitHub",
+           "og_unter": "User Manual", "og_zeile": "Record cash on the go –\nand process it in KMyMoney.",
+           "locale": "en_US",
            "unterzeile": "Record cash on the go – and process it in KMyMoney."},
 }
+
+
+def neueste_version():
+    """Name des neuesten Releases (z. B. "KMySync 2.1.1") – ohne Netz einfach None."""
+    try:
+        req = urllib.request.Request(RELEASE_API, headers={"Accept": "application/vnd.github+json"})
+        with urllib.request.urlopen(req, timeout=8) as r:
+            daten = json.load(r)
+        return daten.get("name") or daten.get("tag_name")
+    except Exception as e:  # Seite trotzdem erzeugen, Knopf dann ohne Nummer
+        warnung(f"neueste Version nicht abrufbar ({e})")
+        return None
+
+
+def vorschaubild(ziel, lang, bild_pfad):
+    """Vorschaubild 1200×630 für Links in Suchmaschinen, Messengern und sozialen Netzen."""
+    U = UI[lang]
+    b, h = 1200, 630
+    im = Image.new("RGB", (b, h), "#1b4d1e")
+    d = ImageDraw.Draw(im)
+    for y in range(h):  # sanfter Verlauf von Dunkel- nach PDF-Grün
+        t = y / h
+        d.line([(0, y), (b, y)], fill=(int(0x1b + t * 0x13), int(0x4d + t * 0x30), int(0x1e + t * 0x14)))
+    d.rounded_rectangle((70, 70, 150, 150), 18, fill="#ffffff")
+    d.line((96, 88, 96, 132), fill="#2e7d32", width=9)
+    d.line((126, 88, 102, 110), fill="#2e7d32", width=9)
+    d.line((102, 110, 126, 132), fill="#2e7d32", width=9)
+    d.text((70, 190), "KMySync", font=ImageFont.truetype(SCHRIFT_FETT, 92), fill="#ffffff")
+    d.text((74, 300), U["og_unter"], font=ImageFont.truetype(SCHRIFT, 50), fill="#d8efd9")
+    d.multiline_text((74, 400), U["og_zeile"], font=ImageFont.truetype(SCHRIFT, 32), fill="#ffffff", spacing=12)
+    d.text((74, 540), SITE.replace("https://", "").rstrip("/"), font=ImageFont.truetype(SCHRIFT, 26), fill="#b5dcb7")
+    if os.path.exists(bild_pfad):
+        with Image.open(bild_pfad) as shot:
+            sh = 560
+            shot = shot.convert("RGB").resize((round(shot.width * sh / shot.height), sh), Image.LANCZOS)
+            rahmen = Image.new("RGB", (shot.width + 20, sh + 20), "#111111")
+            maske = Image.new("L", rahmen.size, 0)
+            ImageDraw.Draw(maske).rounded_rectangle((0, 0, *rahmen.size), 34, fill=255)
+            rahmen.paste(shot, (10, 10))
+            im.paste(rahmen, (b - rahmen.width - 110, (h - rahmen.height) // 2), maske)
+    name = f"og-{lang}.png"
+    im.save(os.path.join(ziel, name), optimize=True)
+    return name
 
 
 def json_pfad(lang):
@@ -105,8 +164,9 @@ class Bilder:
 
 
 class Seite:
-    def __init__(self, lang, daten, bilder):
+    def __init__(self, lang, daten, bilder, version=None, og=None):
         self.lang, self.I, self.bilder = lang, daten, bilder
+        self.version, self.og = version, og
         self.links = True  # abwechselnde Bildseite wie im PDF
         self.wurzel = "" if lang == "de" else "../"  # Seite liegt für en eine Ebene tiefer als img/
 
@@ -199,19 +259,51 @@ class Seite:
         sprachen = "".join(
             f'<a href="{andere_href if l != lang else "./"}" class="{"on" if l == lang else "alt"}" hreflang="{l}" '
             f'lang="{l}">{l.upper()}</a>' for l in SPRACHEN)
-        pdf = f'<a class="btn" href="{PDF_URL}{PDF[lang]}">↓ {U["pdf"]}</a>'
+        pdf = f'<a class="btn ghost" href="{PDF_URL}{PDF[lang]}">↓ {U["pdf"]}</a>'
+        release = (f'<a class="btn" href="{RELEASE_URL}" title="{U["release_titel"]}">'
+                   f'<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>'
+                   f'{U["release"]}{": " + html.escape(self.version) if self.version else ""}</a>')
+        url = SITE + ("" if lang == "de" else "en/")
+        og_bild = SITE + self.og if self.og else ""
+        heute = datetime.date.today().isoformat()
+        ld = {"@context": "https://schema.org", "@graph": [
+            {"@type": "TechArticle", "@id": url + "#handbuch", "url": url, "inLanguage": lang,
+             "headline": I["doc_title"], "name": U["titel"], "description": U["beschreibung"],
+             "dateModified": heute, "author": AUTOR, "publisher": AUTOR,
+             "image": og_bild or None, "about": {"@id": SITE + "#app"},
+             "isPartOf": {"@type": "WebSite", "@id": SITE + "#site", "url": SITE, "name": "KMySync"}},
+            {"@type": "SoftwareApplication", "@id": SITE + "#app", "name": "KMySync",
+             "operatingSystem": "Android, Wear OS", "applicationCategory": "FinanceApplication",
+             "softwareVersion": (self.version or "").replace("KMySync ", "") or None,
+             "downloadUrl": RELEASE_URL, "url": SITE, "sameAs": APP_URL, "author": AUTOR,
+             "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+             "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"}},
+        ]}
+        for knoten in ld["@graph"]:  # leere Angaben weglassen
+            for k in [k for k, v in knoten.items() if v is None]:
+                del knoten[k]
+        ld_json = json.dumps(ld, ensure_ascii=False).replace("</", "<\\/")
         return f"""<!DOCTYPE html>
 <html lang="{lang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{html.escape(I["doc_title"])}</title>
-<meta name="description" content="{U["beschreibung"]}">
-<link rel="canonical" href="{SITE}{"" if lang == "de" else "en/"}">
+<title>{html.escape(U["titel"])}</title>
+<meta name="description" content="{html.escape(U["beschreibung"])}">
+<meta name="author" content="Michael Spahr">
+<link rel="canonical" href="{url}">
 <link rel="alternate" hreflang="de" href="{SITE}">
 <link rel="alternate" hreflang="en" href="{SITE}en/">
-<meta property="og:title" content="{html.escape(I["doc_title"])}">
-<meta property="og:description" content="{U["beschreibung"]}">
+<link rel="alternate" hreflang="x-default" href="{SITE}">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="KMySync">
+<meta property="og:url" content="{url}">
+<meta property="og:locale" content="{U["locale"]}">
+<meta property="og:title" content="{html.escape(U["titel"])}">
+<meta property="og:description" content="{html.escape(U["beschreibung"])}">
+{f'<meta property="og:image" content="{og_bild}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">' if og_bild else ""}
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{ld_json}</script>
 <meta name="theme-color" content="#2e7d32">
 <link rel="icon" href="{wurzel}favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="{wurzel}handbuch.css">
@@ -229,7 +321,7 @@ class Seite:
   <nav class="toc" id="toc" aria-label="{U["inhalt"]}"><h5>{U["inhalt"]}</h5><ol>{"".join(toc)}</ol></nav>
   <main class="doc">
     <div class="hero"><h1>{html.escape(I["doc_title"])}</h1><p>{U["unterzeile"]}</p>
-      <div class="meta"><span class="pill">{I["version_text"]}</span><span class="pill">{I["date_text"]}</span>{pdf}</div></div>
+      <div class="meta">{release}{pdf}<span class="pill">{I["version_text"]}</span><span class="pill">{I["date_text"]}</span></div></div>
     {"".join(inhalt)}
   </main>
   <aside class="stage" aria-hidden="true"><div class="phone"><img id="ph" alt=""></div><div class="dots" id="dots"></div><div class="cap" id="phcap"></div></aside>
@@ -253,13 +345,35 @@ def main():
         shutil.copy2(os.path.join(DOCS, "web", datei), os.path.join(ziel, datei))
     with open(os.path.join(ziel, "favicon.svg"), "w", encoding="utf-8") as f:
         f.write(FAVICON)
+    version = neueste_version()
     for lang in SPRACHEN:
         out = ziel if lang == "de" else os.path.join(ziel, lang)
         os.makedirs(out, exist_ok=True)
-        text = Seite(lang, lade_sprache(lang), bilder).html()
+        og = vorschaubild(ziel, lang, os.path.join(REPO, "screenshots", lang, "Kontobuchungen.png"))
+        text = Seite(lang, lade_sprache(lang), bilder, version, og).html()
         with open(os.path.join(out, "index.html"), "w", encoding="utf-8") as f:
             f.write(text)
         print(f"{lang}: {os.path.join(out, 'index.html')}")
+    suchmaschinen(ziel)
+
+
+def suchmaschinen(ziel):
+    """robots.txt und sitemap.xml (mit Sprachverweisen), damit Google beide Sprachen findet."""
+    heute = datetime.date.today().isoformat()
+    alternativen = "".join(f'\n    <xhtml:link rel="alternate" hreflang="{l}" href="{SITE}{"" if l == "de" else l + "/"}"/>'
+                           for l in SPRACHEN)
+    urls = "".join(f"""
+  <url>
+    <loc>{SITE}{"" if l == "de" else l + "/"}</loc>
+    <lastmod>{heute}</lastmod>{alternativen}
+  </url>""" for l in SPRACHEN)
+    with open(os.path.join(ziel, "sitemap.xml"), "w", encoding="utf-8") as f:
+        f.write(f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">{urls}
+</urlset>
+""")
+    with open(os.path.join(ziel, "robots.txt"), "w", encoding="utf-8") as f:
+        f.write(f"User-agent: *\nAllow: /\n\nSitemap: {SITE}sitemap.xml\n")
 
 
 if __name__ == "__main__":
