@@ -6,7 +6,7 @@
   --border: #dfe5dd; --accent: #2e7d32; --accent-2: #1b4d1e; --tint: #e4f1e4; --out: #b00020;
   --on-accent: #fff; --frame: #1c1f1c;
   --shadow: 0 1px 2px rgba(20, 40, 20, .05), 0 8px 24px rgba(20, 40, 20, .07);
-  --radius: 14px; --top: 60px;
+  --radius: 14px; --top: 60px; --foot: 38px;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace;
 }
@@ -19,7 +19,7 @@
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: calc(var(--top) + 16px); -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.62 var(--font); }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.62 var(--font); padding-bottom: var(--foot); }
 a { color: var(--accent); }
 b { font-weight: 650; }
 .out { color: var(--out); font-weight: 600; }
@@ -61,7 +61,7 @@ b { font-weight: 650; }
   max-width: 1480px; margin: 0 auto; padding: 0 20px; }
 
 /* Inhaltsverzeichnis */
-.toc { position: sticky; top: var(--top); align-self: start; max-height: calc(100vh - var(--top)); overflow: auto;
+.toc { position: sticky; top: var(--top); align-self: start; max-height: calc(100vh - var(--top) - var(--foot)); overflow: auto;
   padding: 26px 4px 40px 0; font-size: 14px; scrollbar-width: thin; }
 .toc h5 { margin: 0 0 8px 10px; text-transform: uppercase; letter-spacing: .07em; font-size: 11px; color: var(--muted); }
 .toc ol, .toc ul { list-style: none; margin: 0; padding: 0; }
@@ -124,9 +124,9 @@ figure.shot.wide { margin: 14px 0 22px; }
 .pair.flip figure { order: -1; }
 
 /* Mitlaufendes Handy */
-.stage { position: sticky; top: var(--top); align-self: start; height: calc(100vh - var(--top));
+.stage { position: sticky; top: var(--top); align-self: start; height: calc(100vh - var(--top) - var(--foot));
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 16px 0; }
-.phone { height: min(620px, calc(100vh - var(--top) - 150px)); aspect-ratio: 1080 / 2400; border-radius: 40px;
+.phone { height: min(620px, calc(100vh - var(--top) - var(--foot) - 150px)); aspect-ratio: 1080 / 2400; border-radius: 40px;
   background: #111; padding: 10px; box-shadow: 0 30px 60px rgba(0, 0, 0, .22), 0 0 0 2px #333 inset; cursor: zoom-in; }
 .phone img { width: 100%; height: 100%; object-fit: cover; object-position: top; border-radius: 31px; display: block;
   transition: opacity .22s; }
@@ -170,10 +170,17 @@ figure.shot.wide { margin: 14px 0 22px; }
   .results { position: fixed; top: calc(var(--top) - 4px); left: 8px; right: 8px; }
 }
 
-/* ---------- Fußzeile ---------- */
-.foot { border-top: 1px solid var(--border); padding: 22px 20px 30px; display: flex; flex-wrap: wrap; gap: 10px 24px;
-  justify-content: center; font-size: 13.5px; color: var(--muted); }
+/* ---------- Fußzeile: immer sichtbar, damit Impressum und Datenschutz ohne Scrollen erreichbar sind ---------- */
+.foot { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; height: var(--foot);
+  display: flex; align-items: center; justify-content: center; gap: 0 24px; padding: 0 16px;
+  background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(10px);
+  border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); white-space: nowrap; }
 .foot a { color: var(--muted); }
+.foot a:hover { color: var(--accent); }
+@media (max-width: 819px) {
+  .foot { justify-content: space-between; }
+  .foot .foot-text { display: none; }
+}
 
 /* ---------- Lightbox ---------- */
 .lb { position: fixed; inset: 0; background: rgba(0, 0, 0, .85); z-index: 100; display: none; align-items: center;

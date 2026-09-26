@@ -331,7 +331,7 @@ class Seite:
   </main>
   <aside class="stage" aria-hidden="true"><div class="phone"><img id="ph" alt=""></div><div class="dots" id="dots"></div><div class="cap" id="phcap"></div></aside>
 </div>
-<footer class="foot"><a href="{APP_URL}">{U["start"]} ↗</a><span>{html.escape(I["footer_text"])}</span>
+<footer class="foot"><a href="{APP_URL}">{U["start"]} ↗</a><span class="foot-text">{html.escape(I["footer_text"])}</span>
   <span><a href="{IMPRESSUM}">{U["impressum"]}</a> · <a href="{DATENSCHUTZ}">{U["datenschutz"]}</a></span></footer>
 <div class="lb" id="lb" role="dialog" aria-modal="true"><img alt=""><p></p></div>
 <script src="{wurzel}handbuch.js"></script>
