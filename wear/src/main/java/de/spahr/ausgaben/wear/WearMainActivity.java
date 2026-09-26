@@ -83,14 +83,10 @@ public class WearMainActivity extends WearLocalizedActivity {
     private TextView payeeName;
     /** Betrag der laufenden Bestätigung – der Text wird bei jedem Empfängerwechsel neu gebaut. */
     private String pendingAmount = "";
-    /** Gesprochener Empfänger dieser Bestätigung; steht als Vorgabe vorn (leer beim Zahlenblock). */
-    private String spokenPayee = "";
     /** Der gesprochene Satz im Wortlaut – er geht unverändert hinaus, solange die Vorgabe steht. */
     private String spokenText = "";
-    /** Empfänger im 100-m-Umkreis, der nächstgelegene zuerst; leer = keiner in der Nähe. */
-    private final java.util.List<String> payeeCandidates = new java.util.ArrayList<>();
-    /** Gewählter Empfänger; die Stelle hinter dem letzten steht für „ohne Empfänger". */
-    private int payeePick;
+    /** Empfänger-Runde der laufenden Bestätigung: gesprochener vorn, dahinter die im Umkreis. */
+    private final WearPayeeChoice payees = new WearPayeeChoice();
 
     /** Zuletzt geprüfte Erreichbarkeit des Phones; optimistisch, bis die Abfrage antwortet. */
     private boolean phoneConnected = true;
@@ -129,6 +125,8 @@ public class WearMainActivity extends WearLocalizedActivity {
             onListenError(SpeechRecognizer.ERROR_CLIENT);
         }
     };
+    /** Verzögerter zweiter Anlauf bei belegtem Erkenner; {@link #destroySpeech} nimmt ihn zurück. */
+    private final Runnable neuStart = this::startListening;
     /** So lange wird auf die Aufnahmebereitschaft gewartet. Der Kaltstart braucht knapp eine Sekunde. */
     private static final long BEREITSCHAFT_TIMEOUT_MS = 6000L;
     private ActivityResultLauncher<String> permissionLauncher;
@@ -385,55 +383,39 @@ public class WearMainActivity extends WearLocalizedActivity {
     }
 
     /**
-     * Erkennung fehlgeschlagen. Ohne nutzbares Internet (dann ist ein Sprach-Wiederholen sinnlos – ein
-     * Offline-Modell hätte schon gegriffen) oder bei einem Netzwerk-/Serverfehler direkt in den stillen
-     * Zahlenblock wechseln (Betrag+GPS werden gepuffert und später gesendet), damit die Eingabe <b>immer</b>
-     * möglich bleibt. Nur bei vorhandenem Internet und einem reinen „nicht erkannt" → „Nicht verstanden"
-     * (Sprache erneut versuchen; der Zahlenblock-Knopf steht dort ohnehin bereit).
+     * Erkennung fehlgeschlagen. Die Entscheidung trifft {@link WearVoiceFehler}: einmal still
+     * wiederholen, wenn der Dienst nie Sprache gehört hat; Zahlenblock nur bei echtem Netzproblem;
+     * sonst „Nicht verstanden" mit dem Zahlenblock-Knopf.
      */
     private void onListenError(int code) {
-        if (stillWiederholen(code)) {
-            return;
+        boolean internet = hasValidatedInternet();
+        WearVoiceFehler.Folge folge =
+                WearVoiceFehler.entscheiden(code, speechBegonnen, wiederholungsVersuche, internet);
+        // Ohne diese Zeile ist ein Sprung in den Zahlenblock am Handgelenk nicht zu erklären. Der
+        // erkannte Text steht bewusst nicht darin.
+        android.util.Log.i("AusgabenWearVoice", "Fehler " + code + ", Sprache begonnen="
+                + speechBegonnen + ", Wiederholungen=" + wiederholungsVersuche + ", Internet=" + internet
+                + ", Handy=" + phoneConnected + " → " + folge);
+        switch (folge) {
+            case STILL_WIEDERHOLEN:
+                wiederholungsVersuche++;
+                if (code == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) {
+                    // Der vorige Erkenner ist noch nicht frei; kurz Luft lassen.
+                    bereitschaftsWache.postDelayed(neuStart, 300);
+                } else {
+                    startListening();
+                }
+                break;
+            case ZAHLENBLOCK:
+                android.widget.Toast.makeText(this, R.string.wear_offline_number,
+                        android.widget.Toast.LENGTH_SHORT).show();
+                showNumberPad();
+                break;
+            default:
+                showTypeSelection();
+                showStatus(getString(R.string.wear_not_understood));
+                break;
         }
-        boolean offline = !hasValidatedInternet()
-                || !phoneConnected
-                || code == SpeechRecognizer.ERROR_NETWORK
-                || code == SpeechRecognizer.ERROR_NETWORK_TIMEOUT
-                || code == SpeechRecognizer.ERROR_SERVER
-                || code == SpeechRecognizer.ERROR_CLIENT
-                || (android.os.Build.VERSION.SDK_INT >= 31
-                    && code == SpeechRecognizer.ERROR_SERVER_DISCONNECTED);
-        if (offline) {
-            android.widget.Toast.makeText(this, R.string.wear_offline_number,
-                    android.widget.Toast.LENGTH_SHORT).show();
-            showNumberPad();
-        } else {
-            showTypeSelection();
-            showStatus(getString(R.string.wear_not_understood));
-        }
-    }
-
-    /**
-     * Noch einmal still zuhören, statt zur Auswahl zurückzuspringen — {@code true}, wenn das gerade
-     * geschieht.
-     *
-     * <p>Nur unter einer Bedingung: Der Dienst hat nichts erkannt und dabei <b>nie einen Sprachanfang
-     * gemeldet</b>. Dann lief er beim Losreden noch nicht, und genau das ist der Fall, den der Nutzer
-     * bisher von Hand ausgeglichen hat („beim zweiten Mal geht es"). Hat er dagegen Sprache gehört und
-     * sie nicht verstanden, wäre eine Wiederholung nur Zeitverlust: dann liegt es nicht am Zeitpunkt.</p>
-     *
-     * <p>Höchstens einmal. Eine Uhr, die unbemerkt immer weiter zuhört, wäre schlimmer als eine, die
-     * aufgibt.</p>
-     */
-    private boolean stillWiederholen(int code) {
-        if (speechBegonnen || wiederholungsVersuche >= 1
-                || (code != SpeechRecognizer.ERROR_NO_MATCH
-                    && code != SpeechRecognizer.ERROR_SPEECH_TIMEOUT)) {
-            return false;
-        }
-        wiederholungsVersuche++;
-        startListening();
-        return true;
     }
 
     /** Bevorzugt die erste Erkennungs-Alternative mit einer Zahl (sonst die beste), damit ein Betrag nicht
@@ -567,46 +549,30 @@ public class WearMainActivity extends WearLocalizedActivity {
     }
 
     /**
-     * Die Auswahl neu aufbauen: der gesprochene Empfänger zuerst (er bleibt, wenn man nichts tut),
-     * dahinter die im 100-m-Umkreis aus der vom Handy übertragenen Liste.
+     * Die Empfänger im 100-m-Umkreis aus der vom Handy übertragenen Liste; leer ohne Standort.
      *
-     * <p>Läuft auch während des Countdowns noch einmal, falls der Standort erst dann eintrifft.
-     * Deshalb wird die bereits getroffene Wahl über den Namen gemerkt und wiederhergestellt – sonst
-     * spränge sie dem Nutzer unter den Fingern weg.</p>
+     * <p>Bleibt die Liste leer, sind drei Dinge möglich: kein Fix, keine übertragene Liste, oder
+     * wirklich keiner in der Nähe. Ohne die Protokollzeile ist das am Handgelenk nicht zu
+     * unterscheiden. Die Koordinaten selbst stehen bewusst nicht darin – wo jemand einkauft, gehört
+     * nicht ins Systemlog.</p>
      */
-    private void refreshPayees() {
-        String gewaehlt = payeeCandidates.isEmpty() ? null : chosenPayee();
-        payeeCandidates.clear();
-        payeePick = 0;
-        if (!spokenPayee.isEmpty()) {
-            payeeCandidates.add(spokenPayee);
-        }
+    private java.util.List<String> nahePayees() {
         String coords = location.currentCoords();
         double[] ll = parseCoords(coords);
-        if (ll != null) {
-            for (String name : PayeeStore.nearby(this, ll[0], ll[1],
-                    BalanceStore.selectedAccount(this))) {
-                // Den gesprochenen nicht doppelt führen, auch wenn er zufällig in der Nähe liegt.
-                if (!name.equalsIgnoreCase(spokenPayee)) {
-                    payeeCandidates.add(name);
-                }
-            }
-        }
-        // Eine schon getroffene Wahl überlebt den Neuaufbau.
-        if (gewaehlt != null) {
-            for (int i = 0; i < payeeCandidates.size(); i++) {
-                if (payeeCandidates.get(i).equalsIgnoreCase(gewaehlt)) {
-                    payeePick = i;
-                    break;
-                }
-            }
-        }
-        // Bleibt die Zeile leer, sind drei Dinge möglich: kein Fix, keine übertragene Liste, oder
-        // wirklich keiner in der Nähe. Ohne diese Zeile ist das am Handgelenk nicht zu unterscheiden.
-        // Die Koordinaten selbst stehen bewusst nicht im Protokoll – wo jemand einkauft, gehört
-        // nicht ins Systemlog.
+        java.util.List<String> nahe = ll == null ? java.util.Collections.emptyList()
+                : PayeeStore.nearby(this, ll[0], ll[1], BalanceStore.selectedAccount(this));
         android.util.Log.d("AusgabenWearPayees", "Standort " + (coords == null ? "fehlt" : "da")
-                + ", Kandidaten=" + payeeCandidates.size());
+                + ", in der Nähe=" + nahe.size());
+        return nahe;
+    }
+
+    /**
+     * Neuaufbau innerhalb derselben Bestätigung, wenn der Standort erst während des Countdowns
+     * eintrifft. Die getroffene Wahl bleibt – eine neue Eingabe beginnt dagegen mit
+     * {@link WearPayeeChoice#neu} in {@link #showConfirm}.
+     */
+    private void refreshPayees() {
+        payees.aktualisieren(nahePayees());
         updatePayeeRow();
     }
 
@@ -632,10 +598,10 @@ public class WearMainActivity extends WearLocalizedActivity {
      * Jede Änderung stellt den Countdown zurück – gebucht wird, wenn zehn Sekunden nichts passiert.
      */
     private void cyclePayee() {
-        if (payeeCandidates.isEmpty()) {
+        if (payees.leer()) {
             return;
         }
-        payeePick = (payeePick + 1) % (payeeCandidates.size() + 1);
+        payees.weiter();
         updatePayeeRow();
         if (confirmEntryId != null) {
             store.updateText(confirmEntryId, buchungstext(), ohneEmpfaengerGewaehlt());
@@ -644,7 +610,7 @@ public class WearMainActivity extends WearLocalizedActivity {
     }
 
     private void updatePayeeRow() {
-        if (payeeCandidates.isEmpty()) {
+        if (payees.leer()) {
             // Keiner in der Nähe: Zeile und Knopf bleiben weg, gebucht wird der reine Betrag – das
             // Handy sucht den Empfänger dann wie bisher selbst. Die Seite kommt trotzdem, damit der
             // Widerruf überall gleich funktioniert.
@@ -654,13 +620,13 @@ public class WearMainActivity extends WearLocalizedActivity {
         }
         payeeName.setVisibility(View.VISIBLE);
         btnPayeeNext.setVisibility(View.VISIBLE);
-        payeeName.setText(payeePick < payeeCandidates.size()
-                ? payeeCandidates.get(payeePick) : getString(R.string.wear_payee_none));
+        payeeName.setText(payees.ohneEmpfaenger()
+                ? getString(R.string.wear_payee_none) : payees.gewaehlt());
     }
 
     /** Der gewählte Empfänger oder leer („ohne Empfänger" bzw. keiner in der Nähe). */
     private String chosenPayee() {
-        return payeePick < payeeCandidates.size() ? payeeCandidates.get(payeePick) : "";
+        return payees.gewaehlt();
     }
 
     /**
@@ -669,7 +635,7 @@ public class WearMainActivity extends WearLocalizedActivity {
      * an diesem Merkmal auseinanderhalten.
      */
     private boolean ohneEmpfaengerGewaehlt() {
-        return !payeeCandidates.isEmpty() && payeePick == payeeCandidates.size();
+        return payees.ohneEmpfaenger();
     }
 
     /** Enter: Betrag als stille Buchung ablegen (Art = gewählter Typ) und übertragen. */
@@ -704,8 +670,9 @@ public class WearMainActivity extends WearLocalizedActivity {
     private void showConfirm(String amt, String spoken) {
         numberEntryActive = false;
         pendingAmount = amt;
-        spokenPayee = spoken == null ? "" : spoken.trim();
-        refreshPayees();
+        // Neue Eingabe: keine Wahl der vorigen übernehmen, der gesprochene Empfänger steht vorn.
+        payees.neu(spoken, nahePayees());
+        updatePayeeRow();
 
         long now = System.currentTimeMillis();
         confirmEntryId = UUID.randomUUID().toString();
@@ -735,7 +702,7 @@ public class WearMainActivity extends WearLocalizedActivity {
      */
     private String buchungstext() {
         String payee = chosenPayee();
-        if (!spokenText.isEmpty() && payee.equals(spokenPayee)) {
+        if (!spokenText.isEmpty() && payees.aufGesprochenem()) {
             return spokenText;
         }
         if (payee.isEmpty()) {
@@ -793,7 +760,7 @@ public class WearMainActivity extends WearLocalizedActivity {
                 target.setText(getString(R.string.wear_cancel) + " (" + secs + ")");
                 // Beim Öffnen liegt oft noch kein Fix vor. Kommt er während des Countdowns, soll die
                 // Empfängerzeile noch erscheinen, statt bis zur nächsten Buchung zu fehlen.
-                if (numberConfirmView.getVisibility() == View.VISIBLE && payeeCandidates.isEmpty()) {
+                if (numberConfirmView.getVisibility() == View.VISIBLE && !payees.hatNahe()) {
                     refreshPayees();
                 }
             }
@@ -837,6 +804,7 @@ public class WearMainActivity extends WearLocalizedActivity {
 
     private void destroySpeech() {
         bereitschaftsWache.removeCallbacks(bereitschaftAbgelaufen);
+        bereitschaftsWache.removeCallbacks(neuStart);
         if (speech != null) {
             speech.destroy();
             speech = null;
