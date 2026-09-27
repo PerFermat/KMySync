@@ -67,7 +67,17 @@ public class LocaleContextWrapper extends ContextWrapper {
         public String getString(int id, Object... formatArgs) throws NotFoundException {
             String v = lookup(id);
             if (v != null) {
-                return String.format(Strings.locale(), v, formatArgs);
+                try {
+                    return String.format(Strings.locale(), v, formatArgs);
+                } catch (java.util.IllegalFormatException e) {
+                    // Eine importierte Sprachdatei kann fehlerhafte Platzhalter enthalten (z.B. „%d"
+                    // statt „%s", oder falsch nummerierte „%2$s") – dann lieber die eingebaute
+                    // Übersetzung zeigen, als an dieser Stelle abzustürzen. Wichtig: super.getText(id)
+                    // statt super.getString(id, formatArgs) – Letzteres ruft intern wieder virtuell
+                    // getText(id) auf dieser Klasse auf und landete so erneut bei der kaputten
+                    // Übersetzung statt bei der eingebauten Ressource.
+                    return String.format(Strings.locale(), super.getText(id).toString(), formatArgs);
+                }
             }
             return super.getString(id, formatArgs);
         }
