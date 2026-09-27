@@ -391,6 +391,11 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
 
                     @Override
                     public void onDepotSelect(String depot) {
+                        // Depots funktionieren nur im kmy-Modus; die Schublade blendet sie im CSV-Modus
+                        // schon aus, das hier ist nur die zweite Verteidigungslinie.
+                        if (!settings.isKmyMode()) {
+                            return;
+                        }
                         drawerLayout.closeDrawers();
                         // Ein Depot ist eine Auswahl wie ein Konto: die Depot-Ansicht ersetzt diese
                         // Kontoansicht, statt sich darüberzulegen. Darum hier beenden – so bleibt

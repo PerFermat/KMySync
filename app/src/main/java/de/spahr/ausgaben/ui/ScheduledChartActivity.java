@@ -43,6 +43,7 @@ import de.spahr.ausgaben.db.ScheduledTransaction;
 import de.spahr.ausgaben.settings.Currencies;
 import de.spahr.ausgaben.settings.MoneyFormat;
 import de.spahr.ausgaben.settings.DateFormats;
+import de.spahr.ausgaben.settings.SettingsStore;
 
 /**
  * Grafik der geplanten Buchungen – wie die Auswertung der echten Buchungen (grüne/rote Balken je Zeit-Bucket
@@ -88,6 +89,11 @@ public class ScheduledChartActivity extends LocalizedActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Geplante Buchungen funktionieren nur im kmy-Modus; siehe ScheduledActivity.onCreate.
+        if (!new SettingsStore(this).isKmyMode()) {
+            finish();
+            return;
+        }
         setContentView(R.layout.activity_scheduled_chart);
 
         MaterialToolbar toolbar = findViewById(R.id.toolbar);

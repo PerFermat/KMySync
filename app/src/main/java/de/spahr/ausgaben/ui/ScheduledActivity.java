@@ -103,6 +103,12 @@ public class ScheduledActivity extends LocalizedActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Geplante Buchungen funktionieren nur im kmy-Modus; der Menüpunkt ist im CSV-Modus zwar schon
+        // ausgeblendet, aber Benachrichtigung/Deep-Link könnten trotzdem hierher führen.
+        if (!new SettingsStore(this).isKmyMode()) {
+            finish();
+            return;
+        }
         setContentView(R.layout.activity_scheduled);
 
         MaterialToolbar toolbar = findViewById(R.id.toolbar);

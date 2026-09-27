@@ -205,7 +205,9 @@ public class AccountDrawerHeader {
             repository.getAccountKindOrder(adapter::setKindOrder);
             repository.getAccountsGrouped(groupId, g -> {
                 adapter.setAccounts(g.assets, g.liabilities);
-                adapter.setDepots(g.depots);
+                // Depots funktionieren nur im kmy-Modus; im CSV-Modus bleiben sie auch dann verborgen,
+                // wenn noch Alt-Daten aus einer früheren kmy-Nutzung in der DB liegen.
+                adapter.setDepots(settings.isKmyMode() ? g.depots : java.util.Collections.emptyList());
             });
             repository.getAccountNamesInGroup(groupId,
                     names -> listener.onGroupChanged(groupId, label, names));

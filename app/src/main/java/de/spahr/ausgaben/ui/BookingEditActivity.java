@@ -32,6 +32,7 @@ import de.spahr.ausgaben.R;
 import de.spahr.ausgaben.db.Booking;
 import de.spahr.ausgaben.db.BookingSplit;
 import de.spahr.ausgaben.db.BookingTags;
+import de.spahr.ausgaben.db.CsvModeGuard;
 import de.spahr.ausgaben.db.PayeeCorrection;
 import de.spahr.ausgaben.db.Repository;
 import de.spahr.ausgaben.location.LocationTagger;
@@ -99,6 +100,8 @@ public class BookingEditActivity extends LocalizedActivity {
     private Booking booking; // null = Neu-Modus
     /** true = reine Ansicht (kurzer Druck): alle Felder gesperrt, keine Aktionsknöpfe. */
     private boolean readOnly;
+    /** true = bereits exportierte Buchung im CSV-Modus: erzwingt {@link #readOnly}, s. {@link CsvModeGuard}. */
+    private boolean csvLocked;
 
     // Ursprünglicher Typ beim Bearbeiten (für Umbuchung ↔ normale Buchung Umwandlungen).
     private boolean origIsTransfer;
@@ -881,6 +884,9 @@ public class BookingEditActivity extends LocalizedActivity {
             return;
         }
         booking = b;
+        // Gesperrt heißt hier nur: nicht mehr änderbar/löschbar (siehe unten bei btnUpdate/btnDelete) –
+        // die Daten bleiben als Vorlage für „Neue Buchung" nutzbar, deshalb kein genereller readOnly.
+        csvLocked = CsvModeGuard.lockedForEdit(b, settings.isKmyMode());
         // Gespeicherte Buchung: die Kategorie ist gesetzte Wahrheit und keine Vorbelegung.
         keepLoadedCategories = true;
         origIsTransfer = b.isTransfer;
@@ -897,10 +903,11 @@ public class BookingEditActivity extends LocalizedActivity {
         switchExported.setChecked(b.exported);
         // „Bearbeitet" ist kein Schalterzustand, sondern die Folge einer Änderung: nur anzeigen, gesperrt.
         // Von Hand ist dieser Status damit nicht zu setzen und auch nicht wegzunehmen.
-        switchExported.setEnabled(!b.edited);
+        switchExported.setEnabled(!b.edited && !csvLocked);
         switchExported.setText(b.edited ? R.string.edited_locked : R.string.mark_exported);
-        btnUpdate.setVisibility(View.VISIBLE);
-        btnDelete.setVisibility(View.VISIBLE);
+        // Gesperrte Buchung: nicht mehr änderbar/löschbar, aber „Neue Buchung" mit diesen Daten bleibt.
+        btnUpdate.setVisibility(csvLocked ? View.GONE : View.VISIBLE);
+        btnDelete.setVisibility(csvLocked ? View.GONE : View.VISIBLE);
         emphasizeUpdate();
         // Bestehende Buchung: GPS/Beleg aus der Notiz in die zwei Zeilen (bleiben beim Aktualisieren erhalten).
         gpsRowCoords = parseGpsCoords(b.note);
@@ -1727,16 +1734,20 @@ public class BookingEditActivity extends LocalizedActivity {
         int accent = getColor(R.color.button_accent);
         android.content.res.ColorStateList accentList =
                 android.content.res.ColorStateList.valueOf(accent);
+        // Ohne btnUpdate (gesperrte Buchung im CSV-Modus) ist „Neue Buchung" die einzige Aktion und
+        // verdient deshalb die auffällige Farbe statt der sonst zweitrangigen Umrandung.
+        MaterialButton primary = csvLocked ? btnSaveNew : btnUpdate;
+        MaterialButton secondary = csvLocked ? btnUpdate : btnSaveNew;
 
-        btnUpdate.setBackgroundTintList(accentList);
-        btnUpdate.setTextColor(getColor(R.color.white));
-        btnUpdate.setStrokeWidth(0);
+        primary.setBackgroundTintList(accentList);
+        primary.setTextColor(getColor(R.color.white));
+        primary.setStrokeWidth(0);
 
-        btnSaveNew.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+        secondary.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
                 android.graphics.Color.TRANSPARENT));
-        btnSaveNew.setTextColor(accent);
-        btnSaveNew.setStrokeColor(accentList);
-        btnSaveNew.setStrokeWidth(Math.round(getResources().getDisplayMetrics().density));
+        secondary.setTextColor(accent);
+        secondary.setStrokeColor(accentList);
+        secondary.setStrokeWidth(Math.round(getResources().getDisplayMetrics().density));
     }
 
     /**
@@ -2591,7 +2602,7 @@ public class BookingEditActivity extends LocalizedActivity {
     // ---- Aktualisieren (bestehende Buchung) ----
 
     private void update() {
-        if (booking == null) {
+        if (booking == null || csvLocked) {
             return;
         }
         if (notesOnly) {
@@ -2761,7 +2772,7 @@ public class BookingEditActivity extends LocalizedActivity {
     }
 
     private void confirmDelete() {
-        if (booking == null) {
+        if (booking == null || csvLocked) {
             return;
         }
         if (securityTxFound) {

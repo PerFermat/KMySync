@@ -815,6 +815,11 @@
       "text": "The portfolio displays your securities from KMyMoney and allows you to record buys, sells and dividends – both manually and through automatic PDF recognition of bank statements. This chapter covers the portfolio view and its features."
     },
     {
+      "type": "p",
+      "id": "b-0062z1a",
+      "text": "The portfolio only exists in <b>.kmy mode</b> – securities only come from reading the KMyMoney file, and CSV export cannot write securities bookings back. In CSV mode, the portfolio section is therefore missing from the account drawer."
+    },
+    {
       "type": "h2",
       "id": "b-0062z2",
       "text": "Securities bookings: buys, sells and dividends"

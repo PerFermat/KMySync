@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import de.spahr.ausgaben.db.AppDatabase;
 import de.spahr.ausgaben.db.ScheduledTransaction;
+import de.spahr.ausgaben.settings.SettingsStore;
 
 /**
  * Das Tagesfenster der Planungs-Erinnerung.
@@ -160,5 +161,28 @@ public class ScheduledReminderTest {
         planung("Morgen", tageVersetzt(1), EINMALIG, 0);
 
         assertEquals(2, faelligHeute());
+    }
+
+    /**
+     * Im CSV-Modus gibt es keinen Rücksync für Planungen – eine Erinnerung, die nach ScheduledActivity
+     * führt, wäre dort eine Sackgasse. {@code shouldCheck} ist deshalb der einzige Ort, an dem der Modus
+     * geprüft wird (der Weg über Wecker/Benachrichtigung selbst bleibt wie bisher ungetestet).
+     */
+    @Test
+    public void csvModusPrueftGarNichtErst() {
+        SettingsStore settings = new SettingsStore(ctx);
+        settings.setScheduledReminderEnabled(true);
+        settings.setExportMode(SettingsStore.MODE_CSV);
+
+        assertEquals(false, receiver.shouldCheck(settings));
+    }
+
+    @Test
+    public void kmyModusMitEingeschalteterErinnerungPrueft() {
+        SettingsStore settings = new SettingsStore(ctx);
+        settings.setScheduledReminderEnabled(true);
+        settings.setExportMode(SettingsStore.MODE_KMY);
+
+        assertEquals(true, receiver.shouldCheck(settings));
     }
 }

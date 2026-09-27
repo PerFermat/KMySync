@@ -35,7 +35,7 @@ public class ScheduledReminderReceiver extends BroadcastReceiver {
             ScheduledReminder.apply(app);   // Wecker überlebt den Neustart nicht
             return;
         }
-        if (!ACTION_CHECK.equals(action) || !new SettingsStore(app).isScheduledReminderEnabled()) {
+        if (!ACTION_CHECK.equals(action) || !shouldCheck(new SettingsStore(app))) {
             return;
         }
         final PendingResult result = goAsync();
@@ -51,6 +51,18 @@ public class ScheduledReminderReceiver extends BroadcastReceiver {
                 result.finish();
             }
         }).start();
+    }
+
+    /**
+     * Ob überhaupt geprüft werden soll: die Einstellung muss an sein, <b>und</b> es muss der kmy-Modus
+     * sein – Planungen funktionieren im CSV-Modus grundsätzlich nicht (kein Rücksync möglich), eine
+     * Erinnerung dorthin wäre also eine Sackgasse.
+     *
+     * <p>Paketsichtbar aus demselben Grund wie {@link #countDueToday}: geprüft werden soll diese eine
+     * Bedingung, nicht der volle Weg über Wecker und Benachrichtigungsdienst.</p>
+     */
+    boolean shouldCheck(SettingsStore settings) {
+        return settings.isScheduledReminderEnabled() && settings.isKmyMode();
     }
 
     /**

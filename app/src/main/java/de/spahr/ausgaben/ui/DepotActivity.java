@@ -95,6 +95,13 @@ public class DepotActivity extends LocalizedActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Depot/Wertpapiere funktionieren nur im kmy-Modus; dritte Verteidigungslinie nach Schublade
+        // und MainActivity.onDepotSelect, falls die Activity je über einen anderen Weg (Deep-Link,
+        // Alt-Task) erreicht wird – deckt damit auch den PDF-Kontoauszug-Import ab.
+        if (!new SettingsStore(this).isKmyMode()) {
+            finish();
+            return;
+        }
         setContentView(R.layout.activity_depot);
         repository = new Repository(this);
         settings = new SettingsStore(this);

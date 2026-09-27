@@ -815,6 +815,11 @@
       "text": "Das Depot zeigt Ihre Wertpapiere aus KMyMoney und erlaubt die Erfassung von Käufen, Verkäufen und Dividenden – sowohl manuell als auch durch automatische PDF-Erkennung von Bank-Abrechnungen. Dieses Kapitel behandelt die Depot-Ansicht und deren Funktionen."
     },
     {
+      "type": "p",
+      "id": "b-0062z1a",
+      "text": "Das Depot gibt es <b>nur im .kmy-Modus</b> – Wertpapiere entstehen ausschließlich beim Einlesen der KMyMoney-Datei, und der CSV-Export kann Wertpapier-Buchungen nicht zurückschreiben. Im CSV-Modus fehlt der Depot-Bereich deshalb in der Kontenschublade."
+    },
+    {
       "type": "h2",
       "id": "b-0062z2",
       "text": "Wertpapier-Buchungen: Käufe, Verkäufe und Dividenden"
