@@ -1830,19 +1830,30 @@
       "text": "Confirming amount and payee"
     },
     {
-      "type": "p",
-      "id": "b-0123",
-      "text": "Voice and digit entry end on the same confirmation page: the amount at the top, below it the payee, a grey <b>«Next payee»</b> button and <b>«Cancel»</b> with a countdown."
-    },
-    {
-      "type": "bullets",
-      "id": "b-0126",
-      "items": [
-        "A <b>spoken payee</b> comes first and stays the default as long as you change nothing.",
-        "It is followed by the <b>payees within 100 m</b>, nearest first – in the same order as on the phone (preferred aliases first) and matching the selected account. This works even without the phone nearby, because the list is stored on the watch.",
-        "<b>«no payee»</b> books deliberately without a payee; the phone then does not look for one either.",
-        "After <b>10 seconds</b> without a change the booking is made; every payee change restarts the countdown. Simply leaving the page also books. «Cancel» or the back gesture discard the entry."
-      ]
+      "type": "text_with_single_shot",
+      "id": "b-0130",
+      "content": [
+        {
+          "type": "p",
+          "id": "b-0123",
+          "text": "Voice and digit entry end on the same confirmation page: the amount at the top, below it the payee, a grey <b>«Next payee»</b> button and <b>«Cancel»</b> with a countdown."
+        },
+        {
+          "type": "bullets",
+          "id": "b-0126",
+          "items": [
+            "A <b>spoken payee</b> comes first and stays the default as long as you change nothing.",
+            "It is followed by the <b>payees within 100 m</b>, nearest first – in the same order as on the phone (preferred aliases first) and matching the selected account. This works even without the phone nearby, because the list is stored on the watch.",
+            "<b>«no payee»</b> books deliberately without a payee; the phone then does not look for one either.",
+            "After <b>10 seconds</b> without a change the booking is made; every payee change restarts the countdown. Simply leaving the page also books. «Cancel» or the back gesture discard the entry."
+          ]
+        }
+      ],
+      "shot": {
+        "fname": "Uhr Bestätigung.png",
+        "caption": "Confirmation page: amount, payee, «Next payee» and «Cancel» with countdown",
+        "width": 4.0
+      }
     },
     {
       "type": "h2",

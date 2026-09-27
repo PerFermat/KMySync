@@ -202,3 +202,16 @@ figure.shot.wide { margin: 14px 0 22px; }
   background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent);
   border-radius: 10px; color: var(--text); font-size: 14.5px; line-height: 1.4; }
 .hero p.plattform svg { color: #3ddc84; flex: none; }
+
+/* Bildschirmfotos der Uhr: rund, neben dem Text – in jeder Ansicht, nie im mitlaufenden Handy */
+figure.shot.uhr img { max-width: 190px; border-radius: 50%; border: 7px solid #2a2d2a; background: #000;
+  box-shadow: var(--shadow), 0 0 0 2px #555 inset; }
+.pair.uhr-pair { grid-template-columns: minmax(0, 1fr) 200px; }
+.pair.uhr-pair.flip { grid-template-columns: 200px minmax(0, 1fr); }
+@media (min-width: 1200px) {
+  .pair.uhr-pair { display: grid; }
+  .doc .pair.uhr-pair figure.shot.uhr { display: block; }
+}
+@media (max-width: 819px) {
+  .pair.uhr-pair, .pair.uhr-pair.flip { grid-template-columns: minmax(0, 1fr); }
+}

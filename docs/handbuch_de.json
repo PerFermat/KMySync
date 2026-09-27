@@ -1835,19 +1835,30 @@
       "text": "Betrag und Empfänger bestätigen"
     },
     {
-      "type": "p",
-      "id": "b-0123",
-      "text": "Sprache und Zifferneingabe enden auf derselben Bestätigungsseite: oben der Betrag, darunter der Empfänger, ein grauer Knopf <b>«Nächster Empfänger»</b> und <b>«Abbrechen»</b> mit Countdown."
-    },
-    {
-      "type": "bullets",
-      "id": "b-0126",
-      "items": [
-        "Ein <b>gesprochener Empfänger</b> steht vorn und bleibt die Vorgabe, solange Sie nichts ändern.",
-        "Dahinter folgen die <b>Empfänger im Umkreis von 100 m</b>, der nächstgelegene zuerst – in derselben Reihenfolge wie am Handy (bevorzugte Aliase zuerst) und passend zum gewählten Konto. Das klappt auch ohne Handy in der Nähe, denn die Liste liegt auf der Uhr.",
-        "<b>«ohne Empfänger»</b> bucht bewusst ohne Empfänger; das Handy sucht dann auch selbst keinen.",
-        "Nach <b>10 Sekunden</b> ohne Änderung wird gebucht; jeder Empfängerwechsel startet den Countdown neu. Auch wer die Seite einfach verlässt, bucht. «Abbrechen» oder die Zurück-Geste verwerfen die Eingabe."
-      ]
+      "type": "text_with_single_shot",
+      "id": "b-0130",
+      "content": [
+        {
+          "type": "p",
+          "id": "b-0123",
+          "text": "Sprache und Zifferneingabe enden auf derselben Bestätigungsseite: oben der Betrag, darunter der Empfänger, ein grauer Knopf <b>«Nächster Empfänger»</b> und <b>«Abbrechen»</b> mit Countdown."
+        },
+        {
+          "type": "bullets",
+          "id": "b-0126",
+          "items": [
+            "Ein <b>gesprochener Empfänger</b> steht vorn und bleibt die Vorgabe, solange Sie nichts ändern.",
+            "Dahinter folgen die <b>Empfänger im Umkreis von 100 m</b>, der nächstgelegene zuerst – in derselben Reihenfolge wie am Handy (bevorzugte Aliase zuerst) und passend zum gewählten Konto. Das klappt auch ohne Handy in der Nähe, denn die Liste liegt auf der Uhr.",
+            "<b>«ohne Empfänger»</b> bucht bewusst ohne Empfänger; das Handy sucht dann auch selbst keinen.",
+            "Nach <b>10 Sekunden</b> ohne Änderung wird gebucht; jeder Empfängerwechsel startet den Countdown neu. Auch wer die Seite einfach verlässt, bucht. «Abbrechen» oder die Zurück-Geste verwerfen die Eingabe."
+          ]
+        }
+      ],
+      "shot": {
+        "fname": "Uhr Bestätigung.png",
+        "caption": "Bestätigungsseite: Betrag, Empfänger, «Nächster Empfänger» und «Abbrechen» mit Countdown",
+        "width": 4.0
+      }
     },
     {
       "type": "h2",

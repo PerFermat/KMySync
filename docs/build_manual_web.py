@@ -46,6 +46,10 @@ KLEIN = 540
 # Bilder flacher als dieses Verhältnis (Höhe/Breite) sind Ausschnitte, keine ganzen Handy-Bildschirme:
 # Sie stehen immer im Text und nie im Handy-Rahmen. Ganze Bildschirme liegen bei etwa 2,2.
 QUER_BIS = 1.5
+# Quadratisch und klein (Uhren liefern 384–480 px, Handy-Ausschnitte 1080 px): ein Bildschirmfoto der Uhr.
+# Rund dargestellt neben dem Text, nie im Handy-Rahmen.
+UHR = (0.95, 1.05)
+UHR_BREITE_BIS = 600
 
 UI = {
     "de": {"art": "Handbuch", "suche": "Im Handbuch suchen …", "inhalt": "Inhalt", "pdf": "Als PDF",
@@ -167,8 +171,9 @@ class Bilder:
                 im = im.convert("RGB")
                 im.save(gross, "WEBP", quality=82, method=6)
                 im.resize((kb, kh), Image.LANCZOS).save(klein, "WEBP", quality=80, method=6)
+        uhr = UHR[0] <= h / b <= UHR[1] and b <= UHR_BREITE_BIS
         return {"klein": f"img/{lang}/{name}-540.webp", "gross": f"img/{lang}/{name}.webp", "b": kb, "h": kh,
-                "quer": h / b < QUER_BIS}
+                "quer": h / b < QUER_BIS and not uhr, "uhr": uhr}
 
 
 class Seite:
@@ -190,19 +195,20 @@ class Seite:
         klein, gross = self.wurzel + bild["klein"], self.wurzel + bild["gross"]
         # Querformat steht breit im Text; dort lohnt die große Fassung für scharfe Anzeige.
         srcset = f' srcset="{klein} 540w, {gross} 1080w" sizes="(max-width: 600px) 100vw, 560px"' if bild["quer"] else ""
-        return (f'<figure class="shot{" wide" if bild["quer"] else ""}"><img src="{klein}"{srcset} data-full="{gross}" '
+        art = " wide" if bild["quer"] else " uhr" if bild["uhr"] else ""
+        return (f'<figure class="shot{art}"><img src="{klein}"{srcset} data-full="{gross}" '
                 f'width="{bild["b"]}" height="{bild["h"]}" alt="{alt}" loading="lazy" decoding="async">'
                 f"<figcaption>{cap}</figcaption></figure>")
 
     def daten_attr(self, paare):
         """Nur ganze Bildschirme kommen ins mitlaufende Handy."""
-        liste = [[self.wurzel + b["klein"], c] for b, c in paare if b and not b["quer"]]
+        liste = [[self.wurzel + b["klein"], c] for b, c in paare if b and not (b["quer"] or b["uhr"])]
         return html.escape(json.dumps(liste, ensure_ascii=False), quote=True) if liste else ""
 
     def bildreihe(self, paare):
         """Handy-Bilder als Reihe (breit: im Handy statt im Text), Querformat darunter im Text."""
-        hoch = [(bi, c) for bi, c in paare if not (bi and bi["quer"])]
-        quer = [(bi, c) for bi, c in paare if bi and bi["quer"]]
+        hoch = [(bi, c) for bi, c in paare if not (bi and (bi["quer"] or bi["uhr"]))]
+        quer = [(bi, c) for bi, c in paare if bi and (bi["quer"] or bi["uhr"])]
         reihe = ('<div class="shot-row">' + "".join(self.figur(bi, c) for bi, c in hoch) + "</div>") if hoch else ""
         return reihe + "".join(self.figur(bi, c) for bi, c in quer)
 
@@ -242,6 +248,8 @@ class Seite:
                 return f'<div class="has-shot">{text}{self.figur(*paare[0])}</div>'
             seite = "" if self.links else " flip"
             self.links = not self.links
+            if paare[0][0] and paare[0][0]["uhr"]:  # Uhr: rund neben dem Text, auch in der breiten Ansicht
+                return f'<div class="pair uhr-pair{seite}"><div>{text}</div>{self.figur(*paare[0])}</div>'
             return (f'<div class="pair has-shot{seite}" data-shots="{self.daten_attr(paare)}">'
                     f"<div>{text}</div>{self.figur(*paare[0])}</div>")
         warnung(f"unbekannter Blocktyp {t} ({b.get('id')})")
