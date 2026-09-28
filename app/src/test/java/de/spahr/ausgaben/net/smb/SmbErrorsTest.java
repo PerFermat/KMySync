@@ -99,4 +99,23 @@ public class SmbErrorsTest {
         assertEquals(R.string.smb_err_share, SmbErrors.reasonFor(SmbErrors.Step.SHARE, e));
         assertTrue(SmbErrors.textOf(e).contains("STATUS_BAD_NETWORK_NAME"));
     }
+
+    /**
+     * {@code ExecutionException(cause)} (Einzelargument-Konstruktor) setzt die eigene Meldung auf den
+     * vollen {@code toString()} der Ursache – lief die Kette blind weiter, stünde derselbe Grund
+     * zweimal im Bericht (genau das Muster aus einem echten Diagnose-Fehlschlag: „Aufräumen im
+     * Ordner" zeigte den EOFException-Text doppelt).
+     */
+    @Test
+    public void executionExceptionCauseIsNotDuplicated() {
+        Throwable eof = new java.io.EOFException("EOF while reading packet");
+        Throwable exec = new java.util.concurrent.ExecutionException(eof);
+
+        String out = SmbErrors.textOf(exec);
+
+        int first = out.indexOf("EOF while reading packet");
+        assertTrue("Grund muss vorkommen: " + out, first >= 0);
+        assertEquals("Grund darf nur einmal vorkommen: " + out, -1,
+                out.indexOf("EOF while reading packet", first + 1));
+    }
 }

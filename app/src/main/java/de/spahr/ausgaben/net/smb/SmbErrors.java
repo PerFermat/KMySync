@@ -101,13 +101,19 @@ public final class SmbErrors {
         return message + " (" + one + ")";
     }
 
+    /**
+     * Läuft die Ursachenkette ab und hängt jede Stufe an – aber nur, wenn ihr Text nicht schon
+     * drinsteht. Nötig, weil manche Ausnahmen (allen voran {@code ExecutionException}, meist über den
+     * Einzelargument-Konstruktor {@code new ExecutionException(cause)} gebaut) ihre eigene
+     * {@code getMessage()} bereits mit dem vollen {@code toString()} der Ursache füllen – ohne die
+     * Prüfung stünde derselbe Grund zweimal hintereinander im Bericht.
+     */
     static String textOf(Throwable error) {
         StringBuilder sb = new StringBuilder();
         for (Throwable t = error; t != null && sb.length() < 500; t = t.getCause()) {
-            if (t.getMessage() != null) {
-                sb.append(t.getMessage()).append(' ');
-            } else {
-                sb.append(t.getClass().getSimpleName()).append(' ');
+            String piece = t.getMessage() != null ? t.getMessage() : t.getClass().getSimpleName();
+            if (sb.indexOf(piece) < 0) {
+                sb.append(piece).append(' ');
             }
             if (t.getCause() == t) {
                 break;
