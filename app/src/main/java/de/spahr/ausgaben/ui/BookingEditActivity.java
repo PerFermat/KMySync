@@ -997,7 +997,9 @@ public class BookingEditActivity extends LocalizedActivity {
         bookedSchedule = st;
         bookedScheduleDueMs = dueMs;
         bindSchedule(st, dueMs, false);
-        if (st != null) {
+        // „Überspringen" bewirkt nur eine Weiterstell-Vormerkung, keine Buchung – ohne Schreibziel kmy
+        // hätte der Knopf keinerlei Wirkung (die Vormerkung würde nie exportiert).
+        if (st != null && settings.isKmyMode()) {
             btnSkipSchedule.setVisibility(View.VISIBLE);
             btnSkipSchedule.setOnClickListener(v -> confirmSkipSchedule(st, dueMs));
         }
@@ -1026,7 +1028,10 @@ public class BookingEditActivity extends LocalizedActivity {
      * gewählt wurde: die Regel hängt am Plan, nicht am Zahltag.
      */
     private void finishAfterSave() {
-        if (bookedSchedule == null) {
+        // Ohne Schreibziel kmy bleibt die Buchung selbst normal gespeichert (per CSV exportierbar) –
+        // nur die Weiterstell-Vormerkung entfällt, sie würde ohnehin nie in die .kmy geschrieben.
+        if (bookedSchedule == null || !settings.isKmyMode()) {
+            bookedSchedule = null;
             finish();
             return;
         }

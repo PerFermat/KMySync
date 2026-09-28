@@ -337,7 +337,7 @@ public class BudgetActivity extends LocalizedActivity {
                 repository.computeBudgetFromHistory(displayYear, this::reload));
         container.addView(compute);
 
-        if (settings.isKmyMode()) {
+        if (settings.isKmySource()) {
             MaterialButton imp = new MaterialButton(this,
                     null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
             imp.setText(R.string.budget_import);

@@ -54,15 +54,15 @@ public class ScheduledReminderReceiver extends BroadcastReceiver {
     }
 
     /**
-     * Ob überhaupt geprüft werden soll: die Einstellung muss an sein, <b>und</b> es muss der kmy-Modus
-     * sein – Planungen funktionieren im CSV-Modus grundsätzlich nicht (kein Rücksync möglich), eine
+     * Ob überhaupt geprüft werden soll: die Einstellung muss an sein, <b>und</b> es muss aus der .kmy
+     * gelesen werden – im reinen CSV-Modus gibt es gar keine Planungsdaten (nie importiert), eine
      * Erinnerung dorthin wäre also eine Sackgasse.
      *
      * <p>Paketsichtbar aus demselben Grund wie {@link #countDueToday}: geprüft werden soll diese eine
      * Bedingung, nicht der volle Weg über Wecker und Benachrichtigungsdienst.</p>
      */
     boolean shouldCheck(SettingsStore settings) {
-        return settings.isScheduledReminderEnabled() && settings.isKmyMode();
+        return settings.isScheduledReminderEnabled() && settings.isKmySource();
     }
 
     /**

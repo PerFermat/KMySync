@@ -105,6 +105,12 @@ public class SettingsStore {
     public static final String MODE_CSV = "csv";
     /** Export-/Import-Modus: direkt in eine KMyMoney-.kmy-Datei. */
     public static final String MODE_KMY = "kmy";
+    /**
+     * Export-/Import-Modus: Konten/Kategorien/Empfänger/Planungen/Depot aus der .kmy-Datei lesen, aber
+     * nie hineinschreiben – Export nur per CSV. Für Nutzer, die keinen Schreibzugriff auf ihre .kmy
+     * erlauben wollen (KMyMoney rät offiziell davon ab), aber den Lesekomfort behalten möchten.
+     */
+    public static final String MODE_KMY_CSV = "kmy_csv";
 
     private final SharedPreferences prefs;
     private final SharedPreferences secret;
@@ -444,17 +450,44 @@ public class SettingsStore {
         prefs.edit().putString(KEY_SMB_KNOWN_HOSTS, sb.toString()).apply();
     }
 
-    /** {@link #MODE_CSV} (Standard) oder {@link #MODE_KMY}. */
+    /** {@link #MODE_CSV} (Standard), {@link #MODE_KMY} oder {@link #MODE_KMY_CSV}. */
     public String getExportMode() {
         return prefs.getString(pk(KEY_EXPORT_MODE), MODE_CSV);
     }
 
     public void setExportMode(String exportMode) {
-        prefs.edit().putString(pk(KEY_EXPORT_MODE), MODE_KMY.equals(exportMode) ? MODE_KMY : MODE_CSV).apply();
+        prefs.edit().putString(pk(KEY_EXPORT_MODE), normalizeExportMode(exportMode)).apply();
     }
 
+    /** Unbekannte/fehlerhafte Werte (z.B. aus einer Sicherung einer neueren Version) fallen auf CSV zurück. */
+    static String normalizeExportMode(String exportMode) {
+        if (MODE_KMY.equals(exportMode) || MODE_KMY_CSV.equals(exportMode)) {
+            return exportMode;
+        }
+        return MODE_CSV;
+    }
+
+    /** Schreibziel ist die .kmy-Datei – nur im vollen kmy-Modus. */
     public boolean isKmyMode() {
         return MODE_KMY.equals(getExportMode());
+    }
+
+    /**
+     * Lesequelle für Konten/Kategorien/Empfänger/Planungen/Depot ist die .kmy-Datei – im vollen
+     * kmy-Modus ebenso wie im gemischten Modus ({@link #MODE_KMY_CSV}), der nur beim Schreiben auf CSV
+     * ausweicht. Anders als {@link #isKmyMode()} sagt das nichts darüber, ob geschrieben werden darf.
+     */
+    public boolean isKmySource() {
+        return isKmySourceMode(getExportMode());
+    }
+
+    /**
+     * Wie {@link #isKmySource()}, aber für einen noch nicht gespeicherten Modus-Wert – etwa während der
+     * Nutzer in den Einstellungen gerade zwischen Optionen wechselt (siehe
+     * {@code ProfileSettingsActivity#belegPfadAusFeldern}).
+     */
+    public static boolean isKmySourceMode(String exportMode) {
+        return MODE_KMY.equals(exportMode) || MODE_KMY_CSV.equals(exportMode);
     }
 
     /**
@@ -783,7 +816,7 @@ public class SettingsStore {
                 .putString(pk(KEY_FOLDER), folder == null ? "" : folder.trim())
                 .putString(pk(KEY_IMPORT_FOLDER), importFolder == null ? "" : importFolder.trim())
                 .putString(pk(KEY_DEFAULT_ACCOUNT), defaultAccount == null ? "" : defaultAccount.trim())
-                .putString(pk(KEY_EXPORT_MODE), MODE_KMY.equals(exportMode) ? MODE_KMY : MODE_CSV)
+                .putString(pk(KEY_EXPORT_MODE), normalizeExportMode(exportMode))
                 .putString(pk(KEY_KMY_PATH), kmyPath == null ? "" : kmyPath.trim())
                 .putString(pk(KEY_SERVER_TYPE), normalizeServerType(serverType))
                 .apply();

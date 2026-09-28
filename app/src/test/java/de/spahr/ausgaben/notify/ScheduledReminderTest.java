@@ -185,4 +185,17 @@ public class ScheduledReminderTest {
 
         assertEquals(true, receiver.shouldCheck(settings));
     }
+
+    /**
+     * Der gemischte Modus (kmy lesen, CSV schreiben) hat dieselben Planungsdaten wie der volle
+     * kmy-Modus – nur das Weiterstellen fehlt, das betrifft die Erinnerung selbst nicht.
+     */
+    @Test
+    public void gemischterModusMitEingeschalteterErinnerungPrueft() {
+        SettingsStore settings = new SettingsStore(ctx);
+        settings.setScheduledReminderEnabled(true);
+        settings.setExportMode(SettingsStore.MODE_KMY_CSV);
+
+        assertEquals(true, receiver.shouldCheck(settings));
+    }
 }

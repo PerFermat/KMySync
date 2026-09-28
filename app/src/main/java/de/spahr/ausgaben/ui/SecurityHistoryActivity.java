@@ -93,7 +93,15 @@ public class SecurityHistoryActivity extends LocalizedActivity {
         });
 
         container = findViewById(R.id.historyContainer);
-        findViewById(R.id.fabAddTx).setOnClickListener(v -> openEditor(null));
+        // Manuelle Kauf/Verkauf/Dividende-Erfassung legt eine Wertpapier-Buchung an, die sich nicht per
+        // CSV exportieren lässt (Stückzahl/Kurs kennt nur die .kmy-Datei) – nur anbieten, wenn
+        // tatsächlich dorthin geschrieben werden kann.
+        View fabAddTx = findViewById(R.id.fabAddTx);
+        if (new de.spahr.ausgaben.settings.SettingsStore(this).isKmyMode()) {
+            fabAddTx.setOnClickListener(v -> openEditor(null));
+        } else {
+            fabAddTx.setVisibility(View.GONE);
+        }
 
         androidx.core.widget.NestedScrollView historyScroll = findViewById(R.id.historyScroll);
         com.google.android.material.floatingactionbutton.FloatingActionButton fabScrollTop =

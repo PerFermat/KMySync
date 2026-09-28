@@ -647,6 +647,7 @@
     <string name="nextcloud_folder_hint">Target folder (optional, e.g. Finances)</string>
     <string name="export_mode_hint">Format</string>
     <string name="export_mode_csv">CSV (kMyMoney import)</string>
+    <string name="export_mode_kmy_csv">Read .kmy, export CSV</string>
     <string name="export_mode_kmy">KMyMoney file (.kmy)</string>
     <string name="kmy_path_hint">KMyMoney file (path, e.g. KMyMoney/gdyx.kmy)</string>
     <string name="receipt_folder_hint">Receipt folder</string>

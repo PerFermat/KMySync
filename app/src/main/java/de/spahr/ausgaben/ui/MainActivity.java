@@ -391,9 +391,9 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
 
                     @Override
                     public void onDepotSelect(String depot) {
-                        // Depots funktionieren nur im kmy-Modus; die Schublade blendet sie im CSV-Modus
-                        // schon aus, das hier ist nur die zweite Verteidigungslinie.
-                        if (!settings.isKmyMode()) {
+                        // Depots gibt es nur, wenn aus der .kmy gelesen wird; die Schublade blendet sie
+                        // sonst schon aus, das hier ist nur die zweite Verteidigungslinie.
+                        if (!settings.isKmySource()) {
                             return;
                         }
                         drawerLayout.closeDrawers();
@@ -478,7 +478,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         swipeRefresh.setOnRefreshListener(() -> {
             swipeRefresh.setRefreshing(false);
             // „Alle Konten" (leerer selectedAccount) zieht alles nach: Konten, Depots und Planungen.
-            if (settings.isKmyMode() && settings.hasRemoteConfig() && !settings.getKmyPath().isEmpty()) {
+            if (settings.isKmySource() && settings.hasRemoteConfig() && !settings.getKmyPath().isEmpty()) {
                 runKmyImport(selectedAccount.isEmpty() ? null : selectedAccount);
             } else {
                 refreshBookings();
@@ -1795,16 +1795,17 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
 
     @Override
     public boolean onPrepareOptionsMenu(android.view.Menu menu) {
-        // „Geplante Buchungen" nur im KMyMoney-Modus (aus der .kmy importiert).
+        // „Geplante Buchungen": sichtbar, sobald aus der .kmy gelesen wird (auch im gemischten Modus,
+        // dort ist nur das Weiterstellen gesperrt, siehe BookingEditActivity).
         android.view.MenuItem scheduled = menu.findItem(R.id.action_scheduled);
         if (scheduled != null) {
-            scheduled.setVisible(settings.isKmyMode());
+            scheduled.setVisible(settings.isKmySource());
         }
-        // „Alles importieren" ebenfalls nur dort: Im CSV-Modus gibt es weder Depots noch Planungen,
+        // „Alles importieren" ebenfalls dort: Im reinen CSV-Modus gibt es weder Depots noch Planungen,
         // „alles" hätte also keine Bedeutung – der CSV-Import bleibt, wo er ist.
         android.view.MenuItem importAll = menu.findItem(R.id.action_import_all);
         if (importAll != null) {
-            importAll.setVisible(settings.isKmyMode());
+            importAll.setVisible(settings.isKmySource());
         }
         // „Belege exportieren" bezieht sich auf die gefilterte Auswahl – ohne Filter ergäbe es nichts.
         android.view.MenuItem receipts = menu.findItem(R.id.action_export_receipts);
@@ -1944,7 +1945,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
 
     /** Langer Tipp auf ein Konto (bzw. „Alle Konten") in der Schublade. */
     private void onImportRequested(String account, boolean isAll) {
-        if (!settings.isKmyMode()) {
+        if (!settings.isKmySource()) {
             startCsvImport();
             return;
         }
@@ -1962,7 +1963,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
 
     /** „Neues Konto hinzufügen": lädt die .kmy und zeigt den Konto-Auswahldialog. */
     private void onAddAccountClicked() {
-        if (!settings.isKmyMode()) {
+        if (!settings.isKmySource()) {
             startCsvImport();
             return;
         }
@@ -2133,7 +2134,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
      * mit dem gelben Fortschrittsbanner; die Oberfläche bleibt bedienbar, nur bei Fehlern kommt eine Meldung.
      */
     private void reimportDepot(String depotName) {
-        if (!settings.isKmyMode()) {
+        if (!settings.isKmySource()) {
             Toast.makeText(this, R.string.export_no_config, Toast.LENGTH_LONG).show();
             return;
         }

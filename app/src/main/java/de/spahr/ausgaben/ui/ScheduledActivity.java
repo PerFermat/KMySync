@@ -103,9 +103,11 @@ public class ScheduledActivity extends LocalizedActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Geplante Buchungen funktionieren nur im kmy-Modus; der Menüpunkt ist im CSV-Modus zwar schon
-        // ausgeblendet, aber Benachrichtigung/Deep-Link könnten trotzdem hierher führen.
-        if (!new SettingsStore(this).isKmyMode()) {
+        // Geplante Buchungen gibt es nur, wenn aus der .kmy gelesen wird; der Menüpunkt ist im reinen
+        // CSV-Modus zwar schon ausgeblendet, aber Benachrichtigung/Deep-Link könnten trotzdem
+        // hierher führen. Weiterstellen selbst ist zusätzlich an isKmyMode() gebunden (siehe
+        // BookingEditActivity), hier geht es nur um die Anzeige.
+        if (!new SettingsStore(this).isKmySource()) {
             finish();
             return;
         }

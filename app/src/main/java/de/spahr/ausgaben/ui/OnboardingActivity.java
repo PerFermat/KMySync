@@ -349,23 +349,37 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
 
     private void setupExportMode() {
         String csvLabel = getString(R.string.export_mode_csv);
+        String kmyCsvLabel = getString(R.string.export_mode_kmy_csv);
         String kmyLabel = getString(R.string.export_mode_kmy);
-        PickerAdapters.plain(editExportMode, java.util.Arrays.asList(csvLabel, kmyLabel));
+        PickerAdapters.plain(editExportMode, java.util.Arrays.asList(csvLabel, kmyCsvLabel, kmyLabel));
         selectedExportMode = settings.getExportMode();
-        editExportMode.setText(
-                SettingsStore.MODE_KMY.equals(selectedExportMode) ? kmyLabel : csvLabel, false);
+        editExportMode.setText(exportModeLabel(selectedExportMode, csvLabel, kmyCsvLabel, kmyLabel), false);
         applyExportModeVisibility();
         editExportMode.setOnItemClickListener((parent, view, position, id) -> {
-            selectedExportMode = position == 1 ? SettingsStore.MODE_KMY : SettingsStore.MODE_CSV;
+            selectedExportMode = position == 2 ? SettingsStore.MODE_KMY
+                    : position == 1 ? SettingsStore.MODE_KMY_CSV : SettingsStore.MODE_CSV;
             settings.setExportMode(selectedExportMode);
             applyExportModeVisibility();
         });
     }
 
+    private static String exportModeLabel(String mode, String csvLabel, String kmyCsvLabel,
+                                          String kmyLabel) {
+        if (SettingsStore.MODE_KMY.equals(mode)) {
+            return kmyLabel;
+        }
+        return SettingsStore.MODE_KMY_CSV.equals(mode) ? kmyCsvLabel : csvLabel;
+    }
+
+    /**
+     * Der gemischte Modus ({@link SettingsStore#MODE_KMY_CSV}) braucht beide Blöcke gleichzeitig: den
+     * kmy-Pfad zum Lesen und das CSV-Ziel zum Schreiben.
+     */
     private void applyExportModeVisibility() {
         boolean kmy = SettingsStore.MODE_KMY.equals(selectedExportMode);
+        boolean kmySource = SettingsStore.isKmySourceMode(selectedExportMode);
         findViewById(R.id.csvOptions).setVisibility(kmy ? View.GONE : View.VISIBLE);
-        findViewById(R.id.kmyOptions).setVisibility(kmy ? View.VISIBLE : View.GONE);
+        findViewById(R.id.kmyOptions).setVisibility(kmySource ? View.VISIBLE : View.GONE);
     }
 
     /** Dropdown „CSV-Trennzeichen" (nur im CSV-Block sichtbar): Semikolon (Standard) oder Komma. */
@@ -587,7 +601,7 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
 
     private void importAccounts() {
         saveSettings();
-        if (!settings.isKmyMode()) {
+        if (!settings.isKmySource()) {
             startCsvImport();
             return;
         }

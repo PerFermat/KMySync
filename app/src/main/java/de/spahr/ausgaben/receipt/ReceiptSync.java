@@ -39,7 +39,7 @@ public final class ReceiptSync {
      * zwangsläufig denselben Belegordner.</p>
      */
     public static String remoteBase(SettingsStore settings) {
-        String base = settings.isKmyMode()
+        String base = settings.isKmySource()
                 ? RemotePath.folderOf(settings.getKmyPath())
                 : settings.getFolder();
         return RemotePath.join(base, settings.getReceiptFolder());

@@ -32,7 +32,7 @@ final class BudgetImportFlow {
     /** Führt den Import aus; {@code onDone} läuft auf dem UI-Thread bei Erfolg. */
     static void run(Activity activity, SettingsStore settings, Repository repository,
                     int targetYear, Runnable onDone) {
-        if (!settings.isKmyMode() || !settings.hasRemoteConfig()) {
+        if (!settings.isKmySource() || !settings.hasRemoteConfig()) {
             Toast.makeText(activity, R.string.export_no_config, Toast.LENGTH_LONG).show();
             return;
         }

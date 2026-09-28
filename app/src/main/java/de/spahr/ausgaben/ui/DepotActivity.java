@@ -95,10 +95,13 @@ public class DepotActivity extends LocalizedActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Depot/Wertpapiere funktionieren nur im kmy-Modus; dritte Verteidigungslinie nach Schublade
-        // und MainActivity.onDepotSelect, falls die Activity je über einen anderen Weg (Deep-Link,
-        // Alt-Task) erreicht wird – deckt damit auch den PDF-Kontoauszug-Import ab.
-        if (!new SettingsStore(this).isKmyMode()) {
+        // Depot/Wertpapiere gibt es nur, wenn aus der .kmy gelesen wird (voller kmy-Modus oder
+        // kmy-lesen/CSV-schreiben); dritte Verteidigungslinie nach Schublade und
+        // MainActivity.onDepotSelect, falls die Activity je über einen anderen Weg (Deep-Link,
+        // Alt-Task) erreicht wird. Erfassen (PDF-Import, manuelle Kauf/Verkauf/Dividende) bleibt
+        // trotzdem an isKmyMode() (Schreibziel) gebunden, siehe applyStatementSetting() und
+        // SecurityHistoryActivity – Wertpapier-Buchungen lassen sich nicht per CSV exportieren.
+        if (!new SettingsStore(this).isKmySource()) {
             finish();
             return;
         }
@@ -290,8 +293,10 @@ public class DepotActivity extends LocalizedActivity {
      * sobald jemand die Erkennung erneut einschaltet.</p>
      */
     private void applyStatementSetting() {
+        // PDF-Erkennung legt Wertpapier-Buchungen an, die sich nicht per CSV exportieren lassen –
+        // nur anbieten, wenn tatsächlich in die .kmy geschrieben werden kann.
         findViewById(R.id.fabReadStatement).setVisibility(
-                settings.isStatementEnabled() ? View.VISIBLE : View.GONE);
+                settings.isStatementEnabled() && settings.isKmyMode() ? View.VISIBLE : View.GONE);
         invalidateOptionsMenu();
     }
 
@@ -586,7 +591,7 @@ public class DepotActivity extends LocalizedActivity {
      * @param account einzelnes Konto oder {@code null} für „Alle Konten"
      */
     private void onImportRequested(final String account) {
-        if (!settings.isKmyMode() || !settings.hasRemoteConfig()) {
+        if (!settings.isKmySource() || !settings.hasRemoteConfig()) {
             Toast.makeText(this, R.string.export_no_config, Toast.LENGTH_LONG).show();
             return;
         }
@@ -645,7 +650,7 @@ public class DepotActivity extends LocalizedActivity {
      * (wie im Hauptbildschirm); die Oberfläche bleibt bedienbar, nur bei Fehlern kommt eine Meldung.
      */
     private void reimportDepot(String depotName) {
-        if (!settings.isKmyMode() || !settings.hasRemoteConfig()) {
+        if (!settings.isKmySource() || !settings.hasRemoteConfig()) {
             Toast.makeText(this, R.string.export_no_config, Toast.LENGTH_LONG).show();
             return;
         }

@@ -89,8 +89,8 @@ public class ScheduledChartActivity extends LocalizedActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Geplante Buchungen funktionieren nur im kmy-Modus; siehe ScheduledActivity.onCreate.
-        if (!new SettingsStore(this).isKmyMode()) {
+        // Geplante Buchungen gibt es nur, wenn aus der .kmy gelesen wird; siehe ScheduledActivity.onCreate.
+        if (!new SettingsStore(this).isKmySource()) {
             finish();
             return;
         }
