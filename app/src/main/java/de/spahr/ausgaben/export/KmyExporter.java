@@ -95,6 +95,7 @@ public class KmyExporter {
     private static final Pattern SPLIT_TAG = Pattern.compile("<SPLIT\\b[^>]*>");
     private static final Pattern ACCOUNT_ATTR = Pattern.compile("\\baccount=\"([^\"]*)\"");
     private static final Pattern VALUE_ATTR = Pattern.compile("\\bvalue=\"([^\"]*)\"");
+    private static final Pattern PAYEE_ATTR = Pattern.compile("\\bpayee=\"([^\"]*)\"");
     /** Das {@code memo}-Attribut eines Splits – das einzige, das an einer Wertpapier-Buchung wandert. */
     private static final Pattern MEMO_ATTR = Pattern.compile("\\bmemo=\"[^\"]*\"");
     /** Nummernteil einer Transaktions-id ({@code T000000000000000042}). */
@@ -246,8 +247,9 @@ public class KmyExporter {
      * bekannte id (weder von der App selbst importierte noch am Rechner angelegte Buchungen werden bisher
      * mit ihrer Transaktions-id verknüpft), daher wird stattdessen über den Inhalt gesucht: Konto + Datum
      * (auf den Tag genau) + der vorzeichenbehaftete Betrag des Kontosplits müssen zu {@link KmyPendingDelete}
-     * passen. Trifft eine Vormerkung auf mehrere gleichartige Transaktionen (z. B. zwei identische Beträge
-     * am selben Tag), wird nur die erste noch nicht verbrauchte entfernt – ein bekanntes, seltenes Risiko.
+     * passen, sowie – falls bekannt – der Empfänger. Trifft eine Vormerkung auf mehrere gleichartige
+     * Transaktionen (z. B. zwei identische Beträge am selben Tag mit demselben oder ohne Empfänger), wird
+     * nur die erste noch nicht verbrauchte entfernt – ein bekanntes, seltenes Restrisiko.
      */
     public DeleteResult removeTransactions(String xml, List<KmyPendingDelete> deletes) {
         DeleteResult result = new DeleteResult();
@@ -259,6 +261,7 @@ public class KmyExporter {
         List<String> sigAccountId = new ArrayList<>();
         List<String> sigDate = new ArrayList<>();
         List<Long> sigCents = new ArrayList<>();
+        List<String> sigPayeeId = new ArrayList<>();
         List<Long> sigDeleteId = new ArrayList<>();
         for (KmyPendingDelete d : deletes) {
             String assetId = doc.accountId(d.account);
@@ -268,6 +271,7 @@ public class KmyExporter {
             sigAccountId.add(assetId);
             sigDate.add(dateFor(d.createdAt));
             sigCents.add(d.signedCents);
+            sigPayeeId.add(doc.payeeId(d.payee));
             sigDeleteId.add(d.id);
         }
         if (sigAccountId.isEmpty()) {
@@ -298,7 +302,7 @@ public class KmyExporter {
             if (date != null) {
                 for (int i = 0; i < sigAccountId.size(); i++) {
                     if (!consumed[i] && sigDate.get(i).equals(date)
-                            && hasSplit(tx, sigAccountId.get(i), sigCents.get(i))) {
+                            && hasSplit(tx, sigAccountId.get(i), sigCents.get(i), sigPayeeId.get(i))) {
                         matchIdx = i;
                         break;
                     }
@@ -361,7 +365,8 @@ public class KmyExporter {
         }
         String date = dateFor(de.spahr.ausgaben.db.EditStatus.fileCreatedAt(b));
         long cents = de.spahr.ausgaben.db.EditStatus.fileSignedCents(b);
-        return findTransactionBySignature(xml, accountId, date, cents, replacedTxIds);
+        String payeeId = doc.payeeId(de.spahr.ausgaben.db.EditStatus.filePayee(b));
+        return findTransactionBySignature(xml, accountId, date, cents, payeeId, replacedTxIds);
     }
 
     /**
@@ -369,9 +374,12 @@ public class KmyExporter {
      * {@link Booking} – für den Wiederherstellungs-Abgleich nach einem Absturz
      * ({@link #transactionExists}), wo nur die zum Schreibzeitpunkt vermerkte Signatur vorliegt, nicht
      * mehr das (inzwischen vielleicht geänderte) Buchungsobjekt selbst.
+     *
+     * @param payeeId zusätzliches, optionales Kriterium (siehe {@link #hasSplit}); {@code null}, wenn
+     *                der Empfänger unbekannt ist oder in dieser Datei keine passende {@code PAYEE}-id hat
      */
     private Found findTransactionBySignature(String xml, String accountId, String date, long cents,
-                                              Set<String> replacedTxIds) {
+                                              String payeeId, Set<String> replacedTxIds) {
         // Nur im Hauptbuch suchen: hinter </TRANSACTIONS> stehen u. a. die geplanten Buchungen, deren
         // eingebettete <TRANSACTION> sonst zufällig passen und deren Regel zerstört werden könnte.
         int ledgerIdx = xml.lastIndexOf(LEDGER_END);
@@ -391,7 +399,7 @@ public class KmyExporter {
             }
             Matcher dm = POSTDATE_ATTR.matcher(tx);
             String postdate = dm.find() ? dm.group(1) : null;
-            if (postdate == null || !postdate.equals(date) || !hasSplit(tx, accountId, cents)) {
+            if (postdate == null || !postdate.equals(date) || !hasSplit(tx, accountId, cents, payeeId)) {
                 continue;
             }
             replacedTxIds.add(txId);
@@ -401,22 +409,25 @@ public class KmyExporter {
     }
 
     /**
-     * Steht schon eine Transaktion mit dieser Signatur (Konto, Betrag, Datum) im Hauptbuch? Für die
-     * Wiederherstellung nach einem Absturz zwischen erfolgreichem Schreiben und dem lokalen Markieren
-     * als „exportiert" (siehe {@code KmyExportCoordinator.exportUnexported}): Vor einem erneuten
-     * Schreibversuch wird geprüft, ob der vorherige Versuch die Datei doch schon erreicht hat.
+     * Steht schon eine Transaktion mit dieser Signatur (Konto, Betrag, Datum, optional Empfänger) im
+     * Hauptbuch? Für die Wiederherstellung nach einem Absturz zwischen erfolgreichem Schreiben und dem
+     * lokalen Markieren als „exportiert" (siehe {@code KmyExportCoordinator.exportUnexported}): Vor
+     * einem erneuten Schreibversuch wird geprüft, ob der vorherige Versuch die Datei doch schon erreicht
+     * hat.
      *
+     * @param payeeName Empfänger zum Schreibzeitpunkt, leer/unbekannt = kein zusätzliches Kriterium
      * @param replacedTxIds geteiltes Set über den ganzen Wiederherstellungs-Durchlauf (nicht pro
      *                      Buchung neu!), sonst könnten zwei zufällig gleich signierte Einträge
      *                      denselben einzelnen Transaktionsblock doppelt treffen
      */
     boolean transactionExists(String xml, String accountName, long signedCents, long createdAtMillis,
-                               Set<String> replacedTxIds) {
+                               String payeeName, Set<String> replacedTxIds) {
         String accountId = doc.accountId(accountName);
         if (accountId == null) {
             return false;
         }
-        return findTransactionBySignature(xml, accountId, dateFor(createdAtMillis), signedCents,
+        String payeeId = doc.payeeId(payeeName);
+        return findTransactionBySignature(xml, accountId, dateFor(createdAtMillis), signedCents, payeeId,
                 replacedTxIds) != null;
     }
 
@@ -542,8 +553,15 @@ public class KmyExporter {
         return out.toString();
     }
 
-    /** Trägt die Transaktion einen Split auf diesem Konto mit genau diesem Betrag? */
-    private static boolean hasSplit(String tx, String accountId, long cents) {
+    /**
+     * Trägt die Transaktion einen Split auf diesem Konto mit genau diesem Betrag – und, falls
+     * {@code payeeId} gesetzt ist, auch mit genau diesem Empfänger? Der Empfänger ist ein zusätzliches,
+     * optionales Kriterium: {@code null}/leer bedeutet „unbekannt/keiner", dann entscheidet wie bisher
+     * nur Konto+Betrag. Bei einer mehrteiligen Buchung darf ein Split mit passendem Konto/Betrag aber
+     * falschem Empfänger einen später folgenden, wirklich passenden Split nicht verdecken – deshalb wird
+     * bei einem Empfänger-Fehltreffer weitergesucht statt sofort aufzugeben.
+     */
+    private static boolean hasSplit(String tx, String accountId, long cents, String payeeId) {
         Matcher sm = SPLIT_TAG.matcher(tx);
         while (sm.find()) {
             String splitTagXml = sm.group();
@@ -551,7 +569,13 @@ public class KmyExporter {
             Matcher vm = VALUE_ATTR.matcher(splitTagXml);
             if (am.find() && vm.find() && am.group(1).equals(accountId)
                     && valueToCents(vm.group(1)) == cents) {
-                return true;
+                if (payeeId == null || payeeId.isEmpty()) {
+                    return true;
+                }
+                Matcher pm = PAYEE_ATTR.matcher(splitTagXml);
+                if (pm.find() && payeeId.equals(pm.group(1))) {
+                    return true;
+                }
             }
         }
         return false;

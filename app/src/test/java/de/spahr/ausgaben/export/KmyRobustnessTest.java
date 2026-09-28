@@ -361,7 +361,7 @@ public class KmyRobustnessTest {
         KmyExporter exporter = new KmyExporter(d, ctx);
         long created = KmyDocument.parseKmyDate("2026-01-05");
 
-        assertTrue(exporter.transactionExists(d.xml(), "Bargeld", -250, created,
+        assertTrue(exporter.transactionExists(d.xml(), "Bargeld", -250, created, "",
                 new java.util.HashSet<>()));
     }
 
@@ -372,7 +372,7 @@ public class KmyRobustnessTest {
         KmyExporter exporter = new KmyExporter(d, ctx);
         long created = KmyDocument.parseKmyDate("2026-01-05");
 
-        assertFalse(exporter.transactionExists(d.xml(), "Bargeld", -999, created,
+        assertFalse(exporter.transactionExists(d.xml(), "Bargeld", -999, created, "",
                 new java.util.HashSet<>()));
     }
 
@@ -388,8 +388,92 @@ public class KmyRobustnessTest {
         long created = KmyDocument.parseKmyDate("2026-01-05");
         java.util.Set<String> replaced = new java.util.HashSet<>();
 
-        assertTrue(exporter.transactionExists(d.xml(), "Bargeld", -250, created, replaced));
-        assertFalse(exporter.transactionExists(d.xml(), "Bargeld", -250, created, replaced));
+        assertTrue(exporter.transactionExists(d.xml(), "Bargeld", -250, created, "", replaced));
+        assertFalse(exporter.transactionExists(d.xml(), "Bargeld", -250, created, "", replaced));
+    }
+
+    /**
+     * Der Empfänger als viertes Kriterium: Ein unbekannter Empfängername (existiert in dieser Datei gar
+     * nicht) darf die Suche nicht ins Leere laufen lassen – dann zählt wie bisher nur Konto/Betrag/Datum.
+     */
+    @Test
+    public void transactionExistsWithUnknownPayeeIgnoresIt() throws Exception {
+        KmyDocument d = doc("tagged-split.xml");
+        KmyExporter exporter = new KmyExporter(d, ctx);
+        long created = KmyDocument.parseKmyDate("2026-01-05");
+
+        assertTrue(exporter.transactionExists(d.xml(), "Bargeld", -250, created, "Unbekannt",
+                new java.util.HashSet<>()));
+    }
+
+    /**
+     * Die eigentliche Probe für das Verwechslungsrisiko: Zwei Transaktionen mit identischem
+     * Konto/Datum/Betrag, aber unterschiedlichem Empfänger. Ohne Empfänger als Kriterium träfe das
+     * Bearbeiten immer die erste im Dokument – mit Empfänger die richtige.
+     */
+    @Test
+    public void editingUsesPayeeToDisambiguateSameSignature() throws Exception {
+        KmyDocument d = doc("same-signature-different-payee.xml");
+        Booking b = new Booking();
+        b.id = 9;
+        b.edited = true;
+        b.origAccount = "Bargeld";
+        b.origSignedCents = -250;
+        b.origCreatedAt = KmyDocument.parseKmyDate("2026-01-05");
+        b.origPayee = "Metzger";
+        b.account = "Bargeld";
+        b.amountCents = 250;
+        b.isIncome = false;
+        b.createdAt = KmyDocument.parseKmyDate("2026-01-05");
+        b.category = "Essen";
+        b.payee = "Metzger";
+        b.note = "korrigiert";
+
+        KmyExporter.Result r = new KmyExporter(d, ctx)
+                .build(new ArrayList<>(), Collections.singletonList(b), new HashMap<>());
+
+        assertEquals(Collections.emptyList(), r.skipped);
+        assertEquals(1, r.updated);
+        // Nur die Metzger-Transaktion (T...002) wurde neu gebaut: Kopf und beide Splits tragen die
+        // neue Notiz.
+        assertEquals(3, countOf(r.xml, "memo=\"korrigiert\""));
+        assertTrue(r.xml.contains("id=\"T000000000000000002\""));
+        // … die Bäcker-Transaktion (T...001) bleibt Zeichen für Zeichen unangetastet.
+        assertTrue(r.xml.contains(
+                "<TRANSACTION id=\"T000000000000000001\" postdate=\"2026-01-05\" memo=\"\""
+                        + " entrydate=\"2026-01-05\" commodity=\"EUR\">"));
+    }
+
+    /** Ohne Empfänger als Unterscheidung träfe das Bearbeiten die erste im Dokument – zum Vergleich. */
+    @Test
+    public void editingWithoutPayeeHitsTheFirstMatch() throws Exception {
+        KmyDocument d = doc("same-signature-different-payee.xml");
+        Booking b = new Booking();
+        b.id = 9;
+        b.edited = true;
+        b.origAccount = "Bargeld";
+        b.origSignedCents = -250;
+        b.origCreatedAt = KmyDocument.parseKmyDate("2026-01-05");
+        // origPayee bewusst leer gelassen: kein zusätzliches Kriterium.
+        b.account = "Bargeld";
+        b.amountCents = 250;
+        b.isIncome = false;
+        b.createdAt = KmyDocument.parseKmyDate("2026-01-05");
+        b.category = "Essen";
+        b.payee = "Metzger";
+        b.note = "ohne Empfänger-Kriterium";
+
+        KmyExporter.Result r = new KmyExporter(d, ctx)
+                .build(new ArrayList<>(), Collections.singletonList(b), new HashMap<>());
+
+        assertEquals(1, r.updated);
+        // Trifft die erste Transaktion im Dokument (Bäcker), nicht die eigentlich gemeinte (Metzger).
+        assertEquals(3, countOf(r.xml, "memo=\"ohne Empfänger-Kriterium\""));
+        assertTrue(r.xml.contains("id=\"T000000000000000001\""));
+        // Die Metzger-Transaktion (T...002) bleibt Zeichen für Zeichen unangetastet.
+        assertTrue(r.xml.contains(
+                "<TRANSACTION id=\"T000000000000000002\" postdate=\"2026-01-05\" memo=\"\""
+                        + " entrydate=\"2026-01-05\" commodity=\"EUR\">"));
     }
 
     static int countOf(String haystack, String needle) {

@@ -930,7 +930,7 @@ public class Repository {
         // Bei „bearbeitet" steht in der Datei noch die exportierte Fassung – nur deren Signatur trifft sie.
         kmyPendingDeleteDao.insert(new KmyPendingDelete(EditStatus.fileAccount(old),
                 EditStatus.fileSignedCents(old), EditStatus.fileCreatedAt(old),
-                System.currentTimeMillis()));
+                EditStatus.filePayee(old), System.currentTimeMillis()));
     }
 
     /** Löscht eine Umbuchung: beide Seiten (über {@code group}) oder die einzelne (importierte) Buchung. */

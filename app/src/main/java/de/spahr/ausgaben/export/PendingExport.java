@@ -38,12 +38,15 @@ final class PendingExport {
         final String account;
         final long signedCents;
         final long createdAt;
+        /** Empfänger zum Schreibzeitpunkt, leer = unbekannt/keiner (dann kein zusätzliches Kriterium). */
+        final String payee;
 
-        Entry(long bookingId, String account, long signedCents, long createdAt) {
+        Entry(long bookingId, String account, long signedCents, long createdAt, String payee) {
             this.bookingId = bookingId;
             this.account = account;
             this.signedCents = signedCents;
             this.createdAt = createdAt;
+            this.payee = payee == null ? "" : payee;
         }
     }
 
@@ -57,8 +60,10 @@ final class PendingExport {
             JSONArray arr = new JSONArray(raw);
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.getJSONObject(i);
+                // "payee" fehlt in einem Vermerk aus einer älteren Version – dann wie bisher ohne
+                // zusätzliches Kriterium.
                 result.add(new Entry(o.getLong("id"), o.getString("account"), o.getLong("cents"),
-                        o.getLong("created")));
+                        o.getLong("created"), o.optString("payee", "")));
             }
         } catch (JSONException e) {
             // Beschädigter/fremder Inhalt: lieber so tun, als gäbe es keinen Vermerk, als abzustürzen.
@@ -77,6 +82,7 @@ final class PendingExport {
                 o.put("account", e.account);
                 o.put("cents", e.signedCents);
                 o.put("created", e.createdAt);
+                o.put("payee", e.payee);
                 arr.put(o);
             }
         } catch (JSONException e) {

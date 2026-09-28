@@ -132,7 +132,7 @@ public class KmyExportCoordinator {
                         Booking b = it.next();
                         for (PendingExport.Entry e : pendingFromLastRun) {
                             if (e.bookingId == b.id && exporter.transactionExists(doc.xml(), e.account,
-                                    e.signedCents, e.createdAt, recoveryReplaced)) {
+                                    e.signedCents, e.createdAt, e.payee, recoveryReplaced)) {
                                 recoveredIds.add(b.id);
                                 it.remove();
                                 break;
@@ -207,7 +207,8 @@ public class KmyExportCoordinator {
                         writing.add(new PendingExport.Entry(b.id,
                                 de.spahr.ausgaben.db.EditStatus.fileAccount(b),
                                 de.spahr.ausgaben.db.EditStatus.fileSignedCents(b),
-                                de.spahr.ausgaben.db.EditStatus.fileCreatedAt(b)));
+                                de.spahr.ausgaben.db.EditStatus.fileCreatedAt(b),
+                                de.spahr.ausgaben.db.EditStatus.filePayee(b)));
                     }
                 }
                 PendingExport.write(settings, writing);

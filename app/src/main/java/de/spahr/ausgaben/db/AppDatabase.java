@@ -17,7 +17,7 @@ import de.spahr.ausgaben.settings.ProfileManager;
         AnalysisExtra.class, SecurityTxValueOverride.class, KmyPendingDelete.class, SecurityPrice.class,
         ScheduledAdvance.class, AccountGroup.class, AccountGroupMember.class, AccountKindOrder.class,
         Tag.class, SecurityTxSplit.class},
-        version = 52, exportSchema = true)
+        version = 53, exportSchema = true)
 public abstract class AppDatabase extends RoomDatabase {
 
     /** v1 → v2: Notiz-Spalte ergänzen (bestehende Buchungen bleiben erhalten). */
@@ -715,6 +715,21 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    /**
+     * v52 → v53: Der Empfänger ergänzt die Signatur (Konto+Datum+Betrag), mit der eine bereits
+     * exportierte Buchung in der .kmy-Datei wiedergefunden wird – verkleinert das Risiko, zwei zufällig
+     * gleich signierte Transaktionen zu verwechseln. {@code booking.orig_payee} hält den Empfänger der
+     * exportierten Fassung (analog zu {@code orig_account} etc.), {@code kmy_pending_delete.payee} den
+     * einer zum Löschen vorgemerkten Buchung.
+     */
+    static final Migration MIGRATION_52_53 = new Migration(52, 53) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("ALTER TABLE booking ADD COLUMN orig_payee TEXT NOT NULL DEFAULT ''");
+            db.execSQL("ALTER TABLE kmy_pending_delete ADD COLUMN payee TEXT NOT NULL DEFAULT ''");
+        }
+    };
+
     public abstract BookingDao bookingDao();
 
     public abstract AccountDao accountDao();
@@ -783,7 +798,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                 MIGRATION_41_42, MIGRATION_42_43, MIGRATION_43_44,
                                 MIGRATION_44_45, MIGRATION_45_46, MIGRATION_46_47,
                                 MIGRATION_47_48, MIGRATION_48_49, MIGRATION_49_50,
-                                MIGRATION_50_51, MIGRATION_51_52)
+                                MIGRATION_50_51, MIGRATION_51_52, MIGRATION_52_53)
                         .build();
             }
             return instance;

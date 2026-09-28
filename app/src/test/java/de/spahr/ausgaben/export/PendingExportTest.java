@@ -34,8 +34,8 @@ public class PendingExportTest {
     @Test
     public void schreibenUndLesenRundtrip() {
         List<PendingExport.Entry> entries = new ArrayList<>();
-        entries.add(new PendingExport.Entry(42, "Girokonto", -1234, 5000L));
-        entries.add(new PendingExport.Entry(43, "Bargeld:Konto", 250, 6000L));
+        entries.add(new PendingExport.Entry(42, "Girokonto", -1234, 5000L, "Bäcker"));
+        entries.add(new PendingExport.Entry(43, "Bargeld:Konto", 250, 6000L, ""));
 
         PendingExport.write(settings, entries);
         List<PendingExport.Entry> back = PendingExport.read(settings);
@@ -45,12 +45,26 @@ public class PendingExportTest {
         assertEquals("Girokonto", back.get(0).account);
         assertEquals(-1234, back.get(0).signedCents);
         assertEquals(5000L, back.get(0).createdAt);
+        assertEquals("Bäcker", back.get(0).payee);
         assertEquals("Bargeld:Konto", back.get(1).account);
+        assertEquals("", back.get(1).payee);
+    }
+
+    /** Ein Vermerk aus einer älteren Version ohne „payee"-Schlüssel bleibt lesbar. */
+    @Test
+    public void fehlenderPayeeSchluesselGiltAlsLeer() {
+        settings.setPendingExportRaw("[{\"id\":1,\"account\":\"A\",\"cents\":100,\"created\":1}]");
+
+        List<PendingExport.Entry> back = PendingExport.read(settings);
+
+        assertEquals(1, back.size());
+        assertEquals("", back.get(0).payee);
     }
 
     @Test
     public void clearLoeschtDenVermerk() {
-        PendingExport.write(settings, Collections.singletonList(new PendingExport.Entry(1, "A", 1, 1)));
+        PendingExport.write(settings,
+                Collections.singletonList(new PendingExport.Entry(1, "A", 1, 1, "")));
         PendingExport.clear(settings);
 
         assertTrue(PendingExport.read(settings).isEmpty());

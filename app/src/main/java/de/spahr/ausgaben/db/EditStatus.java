@@ -46,6 +46,7 @@ public final class EditStatus {
         updated.origAccount = old.account;
         updated.origSignedCents = signed(old);
         updated.origCreatedAt = old.createdAt;
+        updated.origPayee = old.payee;
     }
 
     /** Übernimmt „bearbeitet" samt Signatur unverändert auf den neuen Stand. */
@@ -55,6 +56,7 @@ public final class EditStatus {
         updated.origAccount = old.origAccount;
         updated.origSignedCents = old.origSignedCents;
         updated.origCreatedAt = old.origCreatedAt;
+        updated.origPayee = old.origPayee;
     }
 
     /**
@@ -70,6 +72,7 @@ public final class EditStatus {
         to.origAccount = from.origAccount;
         to.origSignedCents = from.origSignedCents;
         to.origCreatedAt = from.origCreatedAt;
+        to.origPayee = from.origPayee;
     }
 
     /** Vorzeichenbehafteter Betrag in Cent ({@code +} = Einnahme), wie im Kontosplit der Transaktion. */
@@ -91,5 +94,10 @@ public final class EditStatus {
 
     public static long fileCreatedAt(Booking b) {
         return b.edited ? b.origCreatedAt : b.createdAt;
+    }
+
+    /** Empfänger der exportierten Fassung, leer = unbekannt/keiner (dann greift kein zusätzliches Kriterium). */
+    public static String filePayee(Booking b) {
+        return b.edited ? b.origPayee : b.payee;
     }
 }

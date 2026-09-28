@@ -113,6 +113,16 @@ public class Booking {
     public long origCreatedAt;
 
     /**
+     * Empfänger der exportierten Fassung – nur gefüllt, solange {@link #edited} gilt. Vervollständigt
+     * die Signatur aus {@link #origAccount}/{@link #origSignedCents}/{@link #origCreatedAt}: verhindert,
+     * dass zwei zufällig gleich signierte Transaktionen (gleiches Konto, Datum, Betrag) verwechselt
+     * werden, solange wenigstens eine von beiden einen Empfänger trägt.
+     */
+    @NonNull
+    @ColumnInfo(name = "orig_payee")
+    public String origPayee = "";
+
+    /**
      * Unbenutzt (Spalte bleibt aus Migrationsgründen bestehen). Die Lösch-Synchronisierung mit der
      * .kmy-Datei ({@code KmyPendingDelete}) identifiziert Transaktionen stattdessen über Konto, Datum
      * und Betrag, da importierte Buchungen keine KMyMoney-Transaktions-id kennen.
