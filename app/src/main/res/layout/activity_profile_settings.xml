@@ -239,26 +239,35 @@
                     android:layout_marginTop="4dp"
                     android:text="@string/folder_browse" />
 
-                <com.google.android.material.textfield.TextInputLayout
+                <!-- Nur in der reinen CSV-Variante: im gemischten Modus (kmy lesen, CSV schreiben)
+                     kommt der Import immer aus der .kmy-Datei, dieser Ordner wäre ohne Bedeutung. -->
+                <LinearLayout
+                    android:id="@+id/importFolderGroup"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:hint="@string/nextcloud_import_folder_hint">
+                    android:orientation="vertical">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/editImportFolder"
+                    <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="text" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_marginTop="8dp"
+                        android:hint="@string/nextcloud_import_folder_hint">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnBrowseImportFolder"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="@string/folder_browse" />
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editImportFolder"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnBrowseImportFolder"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/folder_browse" />
+                </LinearLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
                     style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"

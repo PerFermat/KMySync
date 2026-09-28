@@ -380,6 +380,10 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
         boolean kmySource = SettingsStore.isKmySourceMode(selectedExportMode);
         findViewById(R.id.csvOptions).setVisibility(kmy ? View.GONE : View.VISIBLE);
         findViewById(R.id.kmyOptions).setVisibility(kmySource ? View.VISIBLE : View.GONE);
+        // Import-Ordner nur in der reinen CSV-Variante: im gemischten Modus kommt der Import immer
+        // aus der .kmy-Datei, der Ordner wäre dort ohne Bedeutung.
+        findViewById(R.id.importFolderGroup).setVisibility(
+                SettingsStore.MODE_CSV.equals(selectedExportMode) ? View.VISIBLE : View.GONE);
     }
 
     /** Dropdown „CSV-Trennzeichen" (nur im CSV-Block sichtbar): Semikolon (Standard) oder Komma. */
