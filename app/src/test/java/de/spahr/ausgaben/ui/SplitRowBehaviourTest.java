@@ -47,7 +47,7 @@ public class SplitRowBehaviourTest {
         container = new LinearLayout(activity);
         container.setOrientation(LinearLayout.VERTICAL);
         total = new TextInputEditText(activity);
-        ctl = new SplitRowController(container, total, activity.getLayoutInflater(), false,
+        ctl = new SplitRowController(container, total, activity.getLayoutInflater(), false, false,
                 () -> { });
         // Wie im Editor: jede Änderung des Gesamtbetrags meldet sich beim Controller.
         total.addTextChangedListener(new SimpleWatcher(ctl::onTotalChanged));
@@ -164,6 +164,27 @@ public class SplitRowBehaviourTest {
 
         ctl.ensureTrailingRow();
         assertEquals("keine zweite leere Zeile anhängen", 3, container.getChildCount());
+    }
+
+    /**
+     * Im CSV-Schreibweg (kein kmy-Ziel) darf nie eine zweite Kategorie-Zeile entstehen: KMyMoneys
+     * eigener CSV-Import kann pro Buchung nur eine Kategorie entgegennehmen (siehe CsvModeGuard).
+     */
+    @Test
+    public void splitLockedLaesstNieEineZweiteZeileEntstehen() {
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        activity.setTheme(com.google.android.material.R.style.Theme_Material3_DayNight_NoActionBar);
+        LinearLayout lockedContainer = new LinearLayout(activity);
+        TextInputEditText lockedTotal = new TextInputEditText(activity);
+        SplitRowController locked = new SplitRowController(lockedContainer, lockedTotal,
+                activity.getLayoutInflater(), false, true, () -> { });
+        locked.ensureTrailingRow();
+        assertEquals(1, lockedContainer.getChildCount());
+
+        ((android.widget.AutoCompleteTextView) lockedContainer.getChildAt(0)
+                .findViewById(R.id.splitCategory)).setText("Lebensmittel");
+
+        assertEquals("keine zweite Zeile im CSV-Schreibweg", 1, lockedContainer.getChildCount());
     }
 
     // ---- Gültigkeit ----

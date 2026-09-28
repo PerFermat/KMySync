@@ -46,4 +46,10 @@ public class CsvModeGuardTest {
         assertTrue(CsvModeGuard.depotBlocked(false));
         assertFalse(CsvModeGuard.depotBlocked(true));
     }
+
+    @Test
+    public void splitbuchungenNurImKmyModus() {
+        assertTrue(CsvModeGuard.splitBlocked(false));
+        assertFalse(CsvModeGuard.splitBlocked(true));
+    }
 }

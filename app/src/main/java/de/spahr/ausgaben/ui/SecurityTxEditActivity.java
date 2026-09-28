@@ -794,10 +794,12 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      * angesehen oder bearbeitet wird, steht erst fest, wenn die Bewegung geladen ist.
      */
     private void buildSplitControllers() {
+        // Kein splitLocked hier: diese Maske ist nur im kmy-Modus erreichbar (siehe
+        // SecurityHistoryActivity.fabAddTx), die CSV-Sperre für Splitbuchungen betrifft sie nicht.
         feeSplits = new SplitRowController(findViewById(R.id.feeSplitContainer),
-                numberFields.get(Field.FEE), getLayoutInflater(), readOnly, this::updateSaveEnabled);
+                numberFields.get(Field.FEE), getLayoutInflater(), readOnly, false, this::updateSaveEnabled);
         incomeSplits = new SplitRowController(findViewById(R.id.incomeSplitContainer),
-                numberFields.get(Field.GROSS), getLayoutInflater(), readOnly, this::updateSaveEnabled);
+                numberFields.get(Field.GROSS), getLayoutInflater(), readOnly, false, this::updateSaveEnabled);
         for (SplitRowController ctl : splitControllers()) {
             ctl.setAmountBinder(this::bindCalcSplitField);
             if (categoryAdapter != null) {

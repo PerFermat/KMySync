@@ -338,7 +338,7 @@ public class BookingEditActivity extends LocalizedActivity {
         readOnly = getIntent().getBooleanExtra(EXTRA_READ_ONLY, false)
                 || getIntent().getLongExtra(EXTRA_SCHEDULED_ID, -1) >= 0;
         splitCtl = new SplitRowController(splitContainer, editAmount, getLayoutInflater(),
-                readOnly, this::updateSaveEnabled);
+                readOnly, CsvModeGuard.splitBlocked(settings.isKmyMode()), this::updateSaveEnabled);
         // Teilbeträge an die Rechentastatur; der Feldrahmen wird hier nicht gebraucht (keine PDF-Erkennung).
         splitCtl.setAmountBinder((layout, field) -> wireCalcField(field, null));
         editNote = findViewById(R.id.editNote);

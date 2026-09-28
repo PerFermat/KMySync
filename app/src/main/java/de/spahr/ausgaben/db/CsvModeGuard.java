@@ -33,4 +33,14 @@ public final class CsvModeGuard {
     public static boolean depotBlocked(boolean kmyMode) {
         return !kmyMode;
     }
+
+    /**
+     * Eine neue Splitbuchung (mehrere Kategorien) anzulegen ist im CSV-Modus sinnlos: KMyMoneys eigener
+     * CSV-Import kann pro Buchung nur eine Kategorie entgegennehmen – auch aus seinem eigenen
+     * Export mit mehreren Kategorie-Spalten liest er die zusätzlichen nie zurück. Eine Splitbuchung
+     * käme dort immer als mehrere falsche Einzelbuchungen an.
+     */
+    public static boolean splitBlocked(boolean kmyMode) {
+        return !kmyMode;
+    }
 }

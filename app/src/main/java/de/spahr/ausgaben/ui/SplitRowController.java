@@ -71,6 +71,8 @@ class SplitRowController {
     private final TextInputEditText totalField;
     private final LayoutInflater inflater;
     private final boolean readOnly;
+    /** Im CSV-Schreibweg entsteht nie eine zweite Kategorie-Zeile, siehe {@link #onSplitCategoryChanged}. */
+    private final boolean splitLocked;
     private final Runnable onChanged;
 
     private CategoryFilterAdapter categoryAdapter;
@@ -95,11 +97,12 @@ class SplitRowController {
     }
 
     SplitRowController(LinearLayout container, TextInputEditText totalField, LayoutInflater inflater,
-                       boolean readOnly, Runnable onChanged) {
+                       boolean readOnly, boolean splitLocked, Runnable onChanged) {
         this.container = container;
         this.totalField = totalField;
         this.inflater = inflater;
         this.readOnly = readOnly;
+        this.splitLocked = splitLocked;
         this.onChanged = onChanged;
     }
 
@@ -238,8 +241,9 @@ class SplitRowController {
         if (idx == 0 && !cat.isEmpty() && amtText(row).isEmpty() && currentTotalCents() > 0) {
             autoAmountRow = row;
         }
-        // Kategorie in der letzten Zeile → neue leere Zeile anhängen.
-        if (!cat.isEmpty() && idx == container.getChildCount() - 1) {
+        // Kategorie in der letzten Zeile → neue leere Zeile anhängen. Im CSV-Schreibweg nie: KMyMoneys
+        // eigener CSV-Import kann pro Buchung nur eine Kategorie entgegennehmen (siehe CsvModeGuard).
+        if (!splitLocked && !cat.isEmpty() && idx == container.getChildCount() - 1) {
             addRow(null, null);
         }
         applyCoupling();
