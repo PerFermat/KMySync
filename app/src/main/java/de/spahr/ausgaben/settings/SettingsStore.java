@@ -43,6 +43,7 @@ public class SettingsStore {
     private static final String KEY_NIGHT_MODE = "night_mode";
     private static final String KEY_LOCAL_EXPORT_TREE = "local_export_tree";
     private static final String KEY_EXPORT_MODE = "export_mode";
+    private static final String KEY_PENDING_EXPORT = "pending_export";
     private static final String KEY_KMY_PATH = "kmy_path";
     private static final String KEY_RECEIPT_FOLDER = "receipt_folder";
     private static final String KEY_APP_LOCK = "app_lock";
@@ -454,6 +455,27 @@ public class SettingsStore {
 
     public boolean isKmyMode() {
         return MODE_KMY.equals(getExportMode());
+    }
+
+    /**
+     * Roher JSON-Vermerk (siehe {@code PendingExport}), welche Buchungen gerade/gleich in die .kmy
+     * geschrieben werden – leer, wenn keiner ansteht.
+     */
+    public String getPendingExportRaw() {
+        return prefs.getString(pk(KEY_PENDING_EXPORT), "");
+    }
+
+    /**
+     * Synchron ({@code commit()}), bewusst nicht {@code apply()}: der Vermerk muss auf der Platte
+     * stehen, bevor der eigentliche Schreibvorgang beginnt – sonst könnte der Prozess in der Lücke
+     * sterben, die er eigentlich absichern soll.
+     */
+    public void setPendingExportRaw(String json) {
+        prefs.edit().putString(pk(KEY_PENDING_EXPORT), json).commit();
+    }
+
+    public void clearPendingExportRaw() {
+        prefs.edit().remove(pk(KEY_PENDING_EXPORT)).apply();
     }
 
     /** {@link #SERVER_NEXTCLOUD} (Standard) oder {@link #SERVER_WEBDAV}. */

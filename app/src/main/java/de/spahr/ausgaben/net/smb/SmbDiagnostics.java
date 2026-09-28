@@ -163,6 +163,7 @@ public final class SmbDiagnostics {
                     if (exists) {
                         log.ok(t("vorhanden", "present"));
                         fileWritableStep(disk, join(dir, file), file, log);
+                        encodingStep(disk, join(dir, file), log);
                     } else {
                         log.fail(t("nicht gefunden", "not found"));
                     }
@@ -251,6 +252,60 @@ public final class SmbDiagnostics {
         } catch (Exception e) {
             log.fail(reason(e) + t(" – Rückschreiben wäre nicht möglich",
                     " – writing back would not be possible"));
+        }
+    }
+
+    /** Ab welcher Größe die Kodierungsprüfung übersprungen wird, statt die Datei komplett zu laden. */
+    private static final long MAX_ENCODING_CHECK_BYTES = 50L * 1024 * 1024;
+
+    /**
+     * Deklariert die Datei selbst eine andere Kodierung als UTF-8? Die App liest immer als UTF-8 (siehe
+     * {@code KmyDocument.gunzip}) – eine abweichende Deklaration würde sonst erst beim nächsten Export
+     * auffallen, mit verstümmeltem Text in Notizen/Empfängern/Kontonamen als Folge.
+     */
+    private static void encodingStep(DiskShare disk, String path, Log log) {
+        log.begin(t("Kodierung prüfen", "Check encoding"));
+        long size = -1;
+        try {
+            size = disk.getFileInformation(path).getStandardInformation().getEndOfFile();
+        } catch (Exception ignored) {
+            // Ohne Größe wird einfach versucht; schlägt das Lesen fehl, meldet der catch unten es.
+        }
+        if (size > MAX_ENCODING_CHECK_BYTES) {
+            log.note(t("Kodierung prüfen", "Check encoding"), true,
+                    t("übersprungen – Datei zu groß (" + (size / 1024 / 1024) + " MB)",
+                            "skipped – file too large (" + (size / 1024 / 1024) + " MB)"));
+            return;
+        }
+        try (com.hierynomus.smbj.share.File f = disk.openFile(path,
+                EnumSet.of(AccessMask.GENERIC_READ), null, SMB2ShareAccess.ALL,
+                SMB2CreateDisposition.FILE_OPEN, null);
+             java.io.InputStream is = f.getInputStream()) {
+            java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = is.read(buf)) != -1) {
+                bos.write(buf, 0, n);
+            }
+            checkEncoding(bos.toByteArray(), log);
+        } catch (Exception e) {
+            log.fail(reason(e));
+        }
+    }
+
+    /** Gepackt oder nicht, gemeint ist immer UTF-8 – dieselbe Prüfung wie in {@code WebDavDiagnostics}. */
+    private static void checkEncoding(byte[] raw, Log log) {
+        try {
+            String xml = de.spahr.ausgaben.export.KmyDocument.gunzip(raw);
+            String badEncoding = de.spahr.ausgaben.export.KmyDocument.declaredNonUtf8Encoding(xml);
+            if (badEncoding == null) {
+                log.ok(t("UTF-8", "UTF-8"));
+            } else {
+                log.fail(t("Datei deklariert „" + badEncoding + "“ statt UTF-8",
+                        "File declares \"" + badEncoding + "\" instead of UTF-8"));
+            }
+        } catch (Exception e) {
+            log.fail(reason(e));
         }
     }
 

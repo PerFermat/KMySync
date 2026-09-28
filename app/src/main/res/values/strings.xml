@@ -753,6 +753,7 @@
     <!-- Import/export detail messages -->
     <string name="err_kmy_read">KMyMoney file could not be read</string>
     <string name="err_kmy_not_xml">This is not a KMyMoney XML file. Encrypted (GPG) files and SQL storage are not supported.</string>
+    <string name="err_kmy_wrong_encoding">This file declares the encoding \"%1$s\", but the app only supports UTF-8.</string>
     <string name="err_target_not_writable">Target folder not writable</string>
     <string name="err_file_create">File could not be created</string>
     <string name="err_no_write_access">No write access</string>

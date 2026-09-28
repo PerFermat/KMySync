@@ -114,6 +114,14 @@ public class KmyDocument {
                        de.spahr.ausgaben.util.ProgressListener listener) throws IOException {
         this.ctx = de.spahr.ausgaben.i18n.LocaleManager.localizedContext(context);
         this.xml = gunzip(raw);
+        String badEncoding = declaredNonUtf8Encoding(xml);
+        if (badEncoding != null) {
+            // Gelesen wird immer als UTF-8 (siehe gunzip); eine Datei, die selbst etwas anderes
+            // deklariert, würde sonst still falsch interpretiert statt einen erkennbaren Fehler zu
+            // geben.
+            throw new IOException(ctx.getString(de.spahr.ausgaben.R.string.err_kmy_wrong_encoding,
+                    badEncoding));
+        }
         if (!looksLikeKmyXml(xml)) {
             // Sonst liefe das hier in einen nichtssagenden XML-Parserfehler (bzw. gar keinen, weil der
             // Parser einfach nichts findet). Typische Fälle: GPG-verschlüsselte .kmy und SQL-Ablagen.
@@ -152,6 +160,31 @@ public class KmyDocument {
         }
         String head = content.length() > 4096 ? content.substring(0, 4096) : content;
         return head.contains("<KMYMONEY-FILE");
+    }
+
+    private static final Pattern ENCODING_ATTR =
+            Pattern.compile("<\\?xml\\b[^>]*\\bencoding=\"([^\"]*)\"", Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Deklarierte Kodierung der XML-Deklaration, wenn sie von UTF-8 abweicht – sonst {@code null}.
+     * Gelesen wird ({@code gunzip}) immer als UTF-8; die ASCII-Deklaration selbst liest sich dabei auch
+     * dann richtig, wenn der restliche Text durch die falsche Annahme verstümmelt wäre (Single-Byte-
+     * Kodierungen wie ISO-8859-1 lassen reines ASCII unverändert). Echtes UTF-16/UTF-32 fiele schon vorher
+     * durch {@link #looksLikeKmyXml} auf – hier bewusst nicht gesondert behandelt.
+     *
+     * <p>Ohne {@code Context}, damit auch die Diagnose-Funktion (komplett statisch, siehe
+     * {@code Diagnostics.java}) sie ohne Weiteres nutzen kann.</p>
+     */
+    public static String declaredNonUtf8Encoding(String xml) {
+        if (xml == null || xml.isEmpty()) {
+            return null;
+        }
+        Matcher m = ENCODING_ATTR.matcher(xml.length() > 200 ? xml.substring(0, 200) : xml);
+        if (!m.find()) {
+            return null;
+        }
+        String enc = m.group(1).trim();
+        return enc.isEmpty() || enc.equalsIgnoreCase("UTF-8") ? null : enc;
     }
 
     /** Anzahl der Buchungen im Hauptbuch laut Datei-Kopf; {@code 0} = unbekannt. */

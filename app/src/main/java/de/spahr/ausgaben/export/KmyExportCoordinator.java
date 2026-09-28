@@ -116,6 +116,35 @@ public class KmyExportCoordinator {
                 // Nutzer, die nie zurückimportieren.
                 repository.replaceTags(doc.tagNames());
                 KmyExporter exporter = new KmyExporter(doc, r);
+
+                // Vermerk aus einem evtl. abgebrochenen vorherigen Lauf auflösen, bevor irgendetwas
+                // neu geschrieben wird: stand die vorgemerkte Buchung (Absturz zwischen Schreiben und
+                // lokalem Markieren) schon mit genau dieser Signatur in der Datei, wird sie nur
+                // nachmarkiert statt ein zweites Mal angelegt. Siehe PendingExport.
+                List<PendingExport.Entry> pendingFromLastRun = PendingExport.read(settings);
+                if (!pendingFromLastRun.isEmpty()) {
+                    // Geteiltes Set über den ganzen Durchlauf: zwei zufällig gleich signierte Einträge
+                    // dürfen nicht denselben einzelnen Transaktionsblock doppelt treffen.
+                    java.util.Set<String> recoveryReplaced = new java.util.HashSet<>();
+                    List<Long> recoveredIds = new ArrayList<>();
+                    java.util.Iterator<Booking> it = bookings.iterator();
+                    while (it.hasNext()) {
+                        Booking b = it.next();
+                        for (PendingExport.Entry e : pendingFromLastRun) {
+                            if (e.bookingId == b.id && exporter.transactionExists(doc.xml(), e.account,
+                                    e.signedCents, e.createdAt, recoveryReplaced)) {
+                                recoveredIds.add(b.id);
+                                it.remove();
+                                break;
+                            }
+                        }
+                    }
+                    if (!recoveredIds.isEmpty()) {
+                        repository.bookingDao().markExported(recoveredIds);
+                    }
+                    PendingExport.clear(settings);
+                }
+
                 KmyExporter.Result res = exporter.build(bookings, edited, loadSplits());
 
                 // Bereits vorhandene, lokal inzwischen gelöschte Buchungen aus der XML entfernen (nur im
@@ -168,6 +197,21 @@ public class KmyExportCoordinator {
                 KmyBackups.prune(storage, backupFolder, file, KmyBackups.KEEP);
 
                 progress(listener, r.getString(de.spahr.ausgaben.R.string.kmy_progress_writing));
+                // Vermerken, mit welcher Signatur die gleich neu geschriebenen Buchungen in der Datei
+                // stehen werden – bevor überhaupt geschrieben wird. Stirbt der Prozess gleich danach vor
+                // dem lokalen Markieren weiter unten, löst der nächste Lauf das über PendingExport auf,
+                // statt die Buchungen ein zweites Mal anzulegen.
+                List<PendingExport.Entry> writing = new ArrayList<>();
+                for (Booking b : bookings) {
+                    if (res.writtenIds.contains(b.id)) {
+                        writing.add(new PendingExport.Entry(b.id,
+                                de.spahr.ausgaben.db.EditStatus.fileAccount(b),
+                                de.spahr.ausgaben.db.EditStatus.fileSignedCents(b),
+                                de.spahr.ausgaben.db.EditStatus.fileCreatedAt(b)));
+                    }
+                }
+                PendingExport.write(settings, writing);
+
                 // Nicht über die vorhandene Datei schreiben: erst vollständig in eine Zwischendatei,
                 // dann auf dem Server umbenennen. Ein Abbruch mittendrin (Timeout, Funkloch) läßt sonst
                 // einen unlesbaren Torso zurück – genau so ging schon einmal eine .kmy verloren.
@@ -211,6 +255,8 @@ public class KmyExportCoordinator {
                         repository.scheduledAdvanceDao().deleteByIds(schedRes.resolvedIds);
                     }
                 });
+                // Lokal nachgezogen: der Vermerk von oben hat seinen Zweck erfüllt.
+                PendingExport.clear(settings);
                 complete(listener, buildMessage(r, res, secRes.writtenIds.size(),
                         delRes.resolvedIds.size(), schedRes.writtenIds.size(), file, backup), true);
             } catch (de.spahr.ausgaben.net.RemoteConflictException e) {

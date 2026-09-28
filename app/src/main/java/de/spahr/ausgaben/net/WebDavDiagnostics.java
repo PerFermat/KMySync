@@ -304,6 +304,51 @@ public final class WebDavDiagnostics {
                             "the server supplies none – then the app cannot tell on write-back whether"
                                 + " somebody else changed the file in the meantime")
                         : t("vorhanden", "present"));
+        encodingStep(urls, base, user, password, folder, file, size, log);
+    }
+
+    /** Ab welcher Größe die Kodierungsprüfung übersprungen wird, statt die Datei komplett zu laden. */
+    private static final long MAX_ENCODING_CHECK_BYTES = 50L * 1024 * 1024;
+
+    /**
+     * Deklariert die Datei selbst eine andere Kodierung als UTF-8? Die App liest immer als UTF-8 (siehe
+     * {@code KmyDocument.gunzip}) – eine abweichende Deklaration würde sonst erst beim nächsten Export
+     * auffallen, mit verstümmeltem Text in Notizen/Empfängern/Kontonamen als Folge.
+     */
+    private static void encodingStep(NextcloudUploader urls, String base, String user, String password,
+                                     String folder, String file, String contentLength, Log log) {
+        log.begin(t("Kodierung prüfen", "Check encoding"));
+        long size = -1;
+        try {
+            size = Long.parseLong(contentLength);
+        } catch (NumberFormatException ignored) {
+            // Ohne Größe wird einfach versucht; schlägt das Herunterladen fehl, meldet der catch unten es.
+        }
+        if (size > MAX_ENCODING_CHECK_BYTES) {
+            log.note(t("Kodierung prüfen", "Check encoding"), true,
+                    t("übersprungen – Datei zu groß (" + (size / 1024 / 1024) + " MB)",
+                            "skipped – file too large (" + (size / 1024 / 1024) + " MB)"));
+            return;
+        }
+        byte[] raw;
+        try {
+            raw = urls.downloadBytes(base, user, password, folder, file, null);
+        } catch (Exception e) {
+            log.fail(grundMitDeutung(e, ""));
+            return;
+        }
+        try {
+            String kmyXml = de.spahr.ausgaben.export.KmyDocument.gunzip(raw);
+            String badEncoding = de.spahr.ausgaben.export.KmyDocument.declaredNonUtf8Encoding(kmyXml);
+            if (badEncoding == null) {
+                log.ok(t("UTF-8", "UTF-8"));
+            } else {
+                log.fail(t("Datei deklariert „" + badEncoding + "“ statt UTF-8",
+                        "File declares \"" + badEncoding + "\" instead of UTF-8"));
+            }
+        } catch (Exception e) {
+            log.fail(grundMitDeutung(e, ""));
+        }
     }
 
     // ---- HTTP ----

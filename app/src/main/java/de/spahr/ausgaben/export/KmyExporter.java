@@ -361,7 +361,17 @@ public class KmyExporter {
         }
         String date = dateFor(de.spahr.ausgaben.db.EditStatus.fileCreatedAt(b));
         long cents = de.spahr.ausgaben.db.EditStatus.fileSignedCents(b);
+        return findTransactionBySignature(xml, accountId, date, cents, replacedTxIds);
+    }
 
+    /**
+     * Wie {@link #findTransaction}, aber mit einer schon aufgelösten Signatur statt eines
+     * {@link Booking} – für den Wiederherstellungs-Abgleich nach einem Absturz
+     * ({@link #transactionExists}), wo nur die zum Schreibzeitpunkt vermerkte Signatur vorliegt, nicht
+     * mehr das (inzwischen vielleicht geänderte) Buchungsobjekt selbst.
+     */
+    private Found findTransactionBySignature(String xml, String accountId, String date, long cents,
+                                              Set<String> replacedTxIds) {
         // Nur im Hauptbuch suchen: hinter </TRANSACTIONS> stehen u. a. die geplanten Buchungen, deren
         // eingebettete <TRANSACTION> sonst zufällig passen und deren Regel zerstört werden könnte.
         int ledgerIdx = xml.lastIndexOf(LEDGER_END);
@@ -388,6 +398,26 @@ public class KmyExporter {
             return new Found(txId, tx, head, tail, m.start(), m.end());
         }
         return null;
+    }
+
+    /**
+     * Steht schon eine Transaktion mit dieser Signatur (Konto, Betrag, Datum) im Hauptbuch? Für die
+     * Wiederherstellung nach einem Absturz zwischen erfolgreichem Schreiben und dem lokalen Markieren
+     * als „exportiert" (siehe {@code KmyExportCoordinator.exportUnexported}): Vor einem erneuten
+     * Schreibversuch wird geprüft, ob der vorherige Versuch die Datei doch schon erreicht hat.
+     *
+     * @param replacedTxIds geteiltes Set über den ganzen Wiederherstellungs-Durchlauf (nicht pro
+     *                      Buchung neu!), sonst könnten zwei zufällig gleich signierte Einträge
+     *                      denselben einzelnen Transaktionsblock doppelt treffen
+     */
+    boolean transactionExists(String xml, String accountName, long signedCents, long createdAtMillis,
+                               Set<String> replacedTxIds) {
+        String accountId = doc.accountId(accountName);
+        if (accountId == null) {
+            return false;
+        }
+        return findTransactionBySignature(xml, accountId, dateFor(createdAtMillis), signedCents,
+                replacedTxIds) != null;
     }
 
     /**

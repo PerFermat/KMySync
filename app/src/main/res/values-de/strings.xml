@@ -725,6 +725,7 @@
     <!-- Import-/Export-Detailmeldungen -->
     <string name="err_kmy_read">KMyMoney-Datei konnte nicht gelesen werden</string>
     <string name="err_kmy_not_xml">Das ist keine KMyMoney-XML-Datei. Verschlüsselte (GPG) Dateien und SQL-Ablagen werden nicht unterstützt.</string>
+    <string name="err_kmy_wrong_encoding">Diese Datei deklariert die Kodierung „%1$s“, die App unterstützt aber nur UTF-8.</string>
     <string name="err_target_not_writable">Zielordner nicht beschreibbar</string>
     <string name="err_file_create">Datei konnte nicht angelegt werden</string>
     <string name="err_no_write_access">Kein Schreibzugriff</string>

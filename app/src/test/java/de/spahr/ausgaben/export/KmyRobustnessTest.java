@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.content.Context;
 
@@ -337,6 +338,58 @@ public class KmyRobustnessTest {
     @Test(expected = IOException.class)
     public void nonKmyFileIsRejected() throws Exception {
         new KmyDocument("-----BEGIN PGP MESSAGE-----\nabcdef\n".getBytes(StandardCharsets.UTF_8), ctx);
+    }
+
+    /** Eine Datei, die selbst eine andere Kodierung als UTF-8 deklariert: klare Meldung, nicht stumm falsch gelesen. */
+    @Test
+    public void wrongEncodingIsRejected() throws Exception {
+        try {
+            new KmyDocument(("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>"
+                    + "<KMYMONEY-FILE></KMYMONEY-FILE>").getBytes(StandardCharsets.UTF_8), ctx);
+            fail("hätte werfen müssen");
+        } catch (IOException e) {
+            assertTrue(e.getMessage(), e.getMessage().contains("ISO-8859-1"));
+        }
+    }
+
+    // ---- Wiederherstellung nach Absturz (PendingExport) ----
+
+    /** Genau die Signatur einer schon vorhandenen Transaktion wird gefunden. */
+    @Test
+    public void transactionExistsFindsKnownSignature() throws Exception {
+        KmyDocument d = doc("tagged-split.xml");
+        KmyExporter exporter = new KmyExporter(d, ctx);
+        long created = KmyDocument.parseKmyDate("2026-01-05");
+
+        assertTrue(exporter.transactionExists(d.xml(), "Bargeld", -250, created,
+                new java.util.HashSet<>()));
+    }
+
+    /** Eine abweichende Signatur (falscher Betrag) trifft nichts. */
+    @Test
+    public void transactionExistsMissesWrongAmount() throws Exception {
+        KmyDocument d = doc("tagged-split.xml");
+        KmyExporter exporter = new KmyExporter(d, ctx);
+        long created = KmyDocument.parseKmyDate("2026-01-05");
+
+        assertFalse(exporter.transactionExists(d.xml(), "Bargeld", -999, created,
+                new java.util.HashSet<>()));
+    }
+
+    /**
+     * Ein geteiltes {@code replacedTxIds}-Set über mehrere Abgleiche verhindert, dass zwei zufällig
+     * gleich signierte Pending-Einträge dieselbe einzelne Transaktion doppelt „finden" – sonst würde
+     * die Wiederherstellung nach einem Absturz eine Buchung fälschlich als schon geschrieben ansehen.
+     */
+    @Test
+    public void transactionExistsSharedSetPreventsDoubleMatch() throws Exception {
+        KmyDocument d = doc("tagged-split.xml");
+        KmyExporter exporter = new KmyExporter(d, ctx);
+        long created = KmyDocument.parseKmyDate("2026-01-05");
+        java.util.Set<String> replaced = new java.util.HashSet<>();
+
+        assertTrue(exporter.transactionExists(d.xml(), "Bargeld", -250, created, replaced));
+        assertFalse(exporter.transactionExists(d.xml(), "Bargeld", -250, created, replaced));
     }
 
     static int countOf(String haystack, String needle) {
