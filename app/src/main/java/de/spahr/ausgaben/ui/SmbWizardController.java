@@ -281,7 +281,7 @@ public class SmbWizardController {
         loginTitle.setText(selectedName.isEmpty() ? selectedHost : selectedName);
         // Den per mDNS gemeldeten Port vorbelegen – aber nur, solange das Feld leer ist oder noch die
         // Vorbelegung des zuvor gewählten Servers enthält; eine eigene Eingabe bleibt stehen.
-        String typed = textOf(editPort);
+        String typed = Ui.trimmedText(editPort);
         if (typed.isEmpty() || typed.equals(portText(prefilledPort))) {
             editPort.setText(portText(selectedPort));
             prefilledPort = selectedPort;
@@ -297,7 +297,7 @@ public class SmbWizardController {
      */
     @SuppressLint("SetTextI18n")   // Daten mit Trennzeichen, kein Satz
     private void prefillDomain() {
-        if (selectedWorkgroup.isEmpty() || !textOf(editUser).isEmpty()
+        if (selectedWorkgroup.isEmpty() || !Ui.trimmedText(editUser).isEmpty()
                 || selectedWorkgroup.equalsIgnoreCase("WORKGROUP")) {
             return;
         }
@@ -306,10 +306,10 @@ public class SmbWizardController {
     }
 
     private void connect() {
-        final String user = textOf(editUser);
-        final String password = textOf(editPassword);
+        final String user = Ui.trimmedText(editUser);
+        final String password = Ui.trimmedText(editPassword);
         final String h = selectedHost;
-        int typed = portOf(textOf(editPort));
+        int typed = portOf(Ui.trimmedText(editPort));
         if (typed < 0) {
             showError(activity.getString(R.string.smb_err_port));
             return;
@@ -412,13 +412,13 @@ public class SmbWizardController {
      * „Speichern" aufgerufen – das Feld gewinnt, es kann von Hand überschrieben werden.
      */
     private String apply() {
-        selectedShare = textOf(editShare).isEmpty() ? selectedShare : textOf(editShare);
+        selectedShare = Ui.trimmedText(editShare).isEmpty() ? selectedShare : Ui.trimmedText(editShare);
         if (selectedShare.isEmpty()) {
             return "";
         }
         String address = selectedPort > 0 ? selectedHost + ":" + selectedPort : selectedHost;
         String url = "smb://" + address + "/" + selectedShare;
-        host.onSmbConfigured(url, textOf(editUser), textOf(editPassword));
+        host.onSmbConfigured(url, Ui.trimmedText(editUser), Ui.trimmedText(editPassword));
         return url;
     }
 
@@ -507,7 +507,4 @@ public class SmbWizardController {
         return port > 0 ? String.valueOf(port) : "";
     }
 
-    private static String textOf(TextInputEditText field) {
-        return field.getText() == null ? "" : field.getText().toString().trim();
-    }
 }

@@ -109,7 +109,7 @@ public class BudgetActivity extends LocalizedActivity {
                 }
                 float dx = e2.getX() - e1.getX();
                 if (Math.abs(dx) > Math.abs(e2.getY() - e1.getY())
-                        && Math.abs(dx) > dp(60) && Math.abs(vx) > dp(60)) {
+                        && Math.abs(dx) > Ui.dp(BudgetActivity.this, 60) && Math.abs(vx) > Ui.dp(BudgetActivity.this, 60)) {
                     monthOffset += dx > 0 ? -1 : 1;
                     reload();
                     return true;
@@ -288,7 +288,7 @@ public class BudgetActivity extends LocalizedActivity {
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setPadding(0, dp(4), 0, dp(8));
+        header.setPadding(0, Ui.dp(this, 4), 0, Ui.dp(this, 8));
 
         TextView left = monthLabel(prev, false);
         left.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
@@ -328,7 +328,7 @@ public class BudgetActivity extends LocalizedActivity {
     private void renderEmptyState() {
         TextView hint = new TextView(this);
         hint.setText(R.string.budget_empty);
-        hint.setPadding(0, dp(16), 0, dp(16));
+        hint.setPadding(0, Ui.dp(this, 16), 0, Ui.dp(this, 16));
         container.addView(hint);
 
         MaterialButton compute = new MaterialButton(this);
@@ -345,7 +345,7 @@ public class BudgetActivity extends LocalizedActivity {
                     BudgetImportFlow.run(this, settings, repository, displayYear, this::reload));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            lp.topMargin = dp(8);
+            lp.topMargin = Ui.dp(this, 8);
             container.addView(imp, lp);
         }
     }
@@ -575,7 +575,7 @@ public class BudgetActivity extends LocalizedActivity {
         tv.setText(text);
         tv.setTextSize(20);
         tv.setTypeface(tv.getTypeface(), android.graphics.Typeface.BOLD);
-        tv.setPadding(0, dp(16), 0, dp(4));
+        tv.setPadding(0, Ui.dp(this, 16), 0, Ui.dp(this, 4));
         container.addView(tv);
     }
 
@@ -593,7 +593,7 @@ public class BudgetActivity extends LocalizedActivity {
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.VERTICAL);
-        header.setPadding(main ? 0 : dp(16), dp(6), 0, dp(2));
+        header.setPadding(main ? 0 : Ui.dp(this, 16), Ui.dp(this, 6), 0, Ui.dp(this, 2));
 
         LinearLayout line = new LinearLayout(this);
         line.setOrientation(LinearLayout.HORIZONTAL);
@@ -620,7 +620,7 @@ public class BudgetActivity extends LocalizedActivity {
             caret.setTextColor(0xFF9E9E9E);
             LinearLayout.LayoutParams caretLp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            caretLp.setMarginStart(dp(8));
+            caretLp.setMarginStart(Ui.dp(this, 8));
             caret.setLayoutParams(caretLp);
             caret.setText("▸");
             line.addView(caret);
@@ -639,7 +639,7 @@ public class BudgetActivity extends LocalizedActivity {
             pencil.setTextColor(0xFF9E9E9E);
             LinearLayout.LayoutParams pencilLp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            pencilLp.setMarginStart(dp(8));
+            pencilLp.setMarginStart(Ui.dp(this, 8));
             pencil.setLayoutParams(pencilLp);
             pencil.setContentDescription(getString(R.string.budget_edit_long_press));
             line.addView(pencil, line.indexOfChild(value) + 1);
@@ -653,7 +653,7 @@ public class BudgetActivity extends LocalizedActivity {
         if (expandable) {
             LinearLayout detail = new LinearLayout(this);
             detail.setOrientation(LinearLayout.VERTICAL);
-            detail.setPadding(dp(20), dp(4), 0, dp(6));
+            detail.setPadding(Ui.dp(this, 20), Ui.dp(this, 4), 0, Ui.dp(this, 6));
             detail.setVisibility(View.GONE);
             wrapper.addView(detail);
 
@@ -716,7 +716,7 @@ public class BudgetActivity extends LocalizedActivity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(0, dp(6), 0, dp(6));
+        row.setPadding(0, Ui.dp(this, 6), 0, Ui.dp(this, 6));
 
         LinearLayout text = new LinearLayout(this);
         text.setOrientation(LinearLayout.VERTICAL);
@@ -761,8 +761,8 @@ public class BudgetActivity extends LocalizedActivity {
         LinearLayout bar = new LinearLayout(this);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(6));
-        barLp.topMargin = dp(3);
+                LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(this, 6));
+        barLp.topMargin = Ui.dp(this, 3);
         bar.setLayoutParams(barLp);
 
         View fill = new View(this);
@@ -798,7 +798,7 @@ public class BudgetActivity extends LocalizedActivity {
             input.setText(MoneyFormat.plain(current));
         }
         til.addView(input);
-        int pad = dp(16);
+        int pad = Ui.dp(this, 16);
         box.setPadding(pad, 0, pad, 0);
         box.addView(til);
         // Eigene Rechentastatur statt der System-Tastatur (erscheint bei Fokus des Betragsfelds).
@@ -852,7 +852,4 @@ public class BudgetActivity extends LocalizedActivity {
         return de.spahr.ausgaben.settings.AmountExpression.toCents(s);
     }
 
-    private int dp(int v) {
-        return Math.round(v * getResources().getDisplayMetrics().density);
-    }
 }

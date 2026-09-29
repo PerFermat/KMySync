@@ -43,6 +43,22 @@ public final class Ui {
     private Ui() {
     }
 
+    /** {@code value} dp in Pixel, gerundet – wie überall in der App. */
+    public static int dp(android.content.Context context, int value) {
+        return Math.round(value * context.getResources().getDisplayMetrics().density);
+    }
+
+    /** Inhalt des Feldes, nie {@code null}; ungekürzt. */
+    public static String text(android.widget.TextView view) {
+        CharSequence s = view.getText();
+        return s == null ? "" : s.toString();
+    }
+
+    /** Inhalt des Feldes ohne Leerraum am Anfang und Ende, nie {@code null}. */
+    public static String trimmedText(android.widget.TextView view) {
+        return text(view).trim();
+    }
+
     /**
      * Führt {@code r} auf dem Bedienfaden aus — aber nur, solange es die Maske dort noch gibt.
      *

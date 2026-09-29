@@ -480,8 +480,8 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
                         .create();
         dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
                 .setOnClickListener(v -> {
-                    String p1 = textOf(pw);
-                    if (!p1.equals(textOf(repeat))) {
+                    String p1 = Ui.text(pw);
+                    if (!p1.equals(Ui.text(repeat))) {
                         Toast.makeText(this, R.string.backup_password_mismatch, Toast.LENGTH_LONG).show();
                         return;
                     }
@@ -525,7 +525,4 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
         return new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.GERMANY).format(new Date());
     }
 
-    private String textOf(TextInputEditText e) {
-        return e.getText() == null ? "" : e.getText().toString();
-    }
 }

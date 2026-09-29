@@ -1614,8 +1614,8 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                     // ist leer. Erst die Suche beenden, dann lesen.
                     PickerBehaviour.settleAll(view);
 
-                    filterPayee = textOf(fPayee).trim();
-                    String typedCategory = textOf(fCategory).trim();
+                    filterPayee = Ui.text(fPayee).trim();
+                    String typedCategory = Ui.text(fCategory).trim();
                     if (!typedCategory.equals(catValue[0])) {
                         catValue[0] = typedCategory;
                         catIsMain[0] = isKnownMainCategory(typedCategory);
@@ -1623,7 +1623,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                     }
 
                     // „Alle" heißt: kein Stichwort gewählt.
-                    String tag = textOf(fTag).trim();
+                    String tag = Ui.text(fTag).trim();
                     filterTag = knownTagNames.isEmpty() || tag.equals(getString(R.string.category_all))
                             ? "" : tag;
 
@@ -1723,9 +1723,6 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                         de.spahr.ausgaben.location.RadiusFilter.label(radiusM)));
     }
 
-    private String formatCents(long cents) {
-        return de.spahr.ausgaben.settings.MoneyFormat.plain(cents);
-    }
 
     private Long parseAmountToCents(String raw) {
         if (raw == null) {
@@ -1743,9 +1740,6 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         }
     }
 
-    private String textOf(android.widget.EditText e) {
-        return e.getText() == null ? "" : e.getText().toString();
-    }
     /** True für bekannte Hauptkategorien; frei getippte Unterkategorien bleiben exakte Filter. */
     private boolean isKnownMainCategory(String category) {
         if (category == null || category.trim().isEmpty() || category.contains(":")) {

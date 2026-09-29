@@ -363,7 +363,7 @@ public class ScheduledActivity extends LocalizedActivity {
             // Unterscheiden, ob es wirklich nichts gibt oder nur der Filter zu eng steht – sonst liest man
             // „keine geplanten Buchungen", während vierzig davon existieren.
             hint.setText(isFilterActive() ? R.string.scheduled_no_match : R.string.scheduled_empty);
-            hint.setPadding(0, dp(16), 0, dp(16));
+            hint.setPadding(0, Ui.dp(this, 16), 0, Ui.dp(this, 16));
             container.addView(hint);
             return;
         }
@@ -412,7 +412,7 @@ public class ScheduledActivity extends LocalizedActivity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(0, dp(8), 0, dp(8));
+        row.setPadding(0, Ui.dp(this, 8), 0, Ui.dp(this, 8));
 
         // Farbstrich: grün = Einzahlung, rot = Auszahlung, gelb = Umbuchung.
         View strip = new View(this);
@@ -425,8 +425,8 @@ public class ScheduledActivity extends LocalizedActivity {
             color = R.color.expense_red;
         }
         strip.setBackgroundColor(getColor(color));
-        LinearLayout.LayoutParams stripLp = new LinearLayout.LayoutParams(dp(4), dp(38));
-        stripLp.setMarginEnd(dp(10));
+        LinearLayout.LayoutParams stripLp = new LinearLayout.LayoutParams(Ui.dp(this, 4), Ui.dp(this, 38));
+        stripLp.setMarginEnd(Ui.dp(this, 10));
         row.addView(strip, stripLp);
 
         // Datumsspalte.
@@ -435,8 +435,8 @@ public class ScheduledActivity extends LocalizedActivity {
         date.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout.LayoutParams dateLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        dateLp.setMarginEnd(dp(10));
-        date.setMinWidth(dp(64));
+        dateLp.setMarginEnd(Ui.dp(this, 10));
+        date.setMinWidth(Ui.dp(this, 64));
         row.addView(date, dateLp);
 
         // Titel-Block: Name (fett) + Empfänger dahinter, darunter Kategorie bzw. „Splitbuchung".
@@ -481,7 +481,7 @@ public class ScheduledActivity extends LocalizedActivity {
             bookable.setTextColor(GREY);
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            lp.setMarginStart(dp(8));
+            lp.setMarginStart(Ui.dp(this, 8));
             bookable.setLayoutParams(lp);
             bookable.setContentDescription(getString(R.string.scheduled_book_hint));
             row.addView(bookable);
@@ -642,7 +642,4 @@ public class ScheduledActivity extends LocalizedActivity {
         startActivity(i);
     }
 
-    private int dp(int v) {
-        return Math.round(v * getResources().getDisplayMetrics().density);
-    }
 }

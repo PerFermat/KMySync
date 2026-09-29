@@ -393,6 +393,35 @@ public class KmyRobustnessTest {
     }
 
     /**
+     * Der ganze Wiederherstellungs-Durchlauf: die schon geschriebene Buchung fällt aus der Liste und wird
+     * gemeldet, die nicht geschriebene bleibt – und der Vermerk ist danach weg.
+     */
+    @Test
+    public void recoverNimmtNurDieSchonGeschriebeneBuchung() throws Exception {
+        KmyDocument d = doc("tagged-split.xml");
+        KmyExporter exporter = new KmyExporter(d, ctx);
+        de.spahr.ausgaben.settings.SettingsStore settings = new de.spahr.ausgaben.settings.SettingsStore(ctx);
+        long created = KmyDocument.parseKmyDate("2026-01-05");
+        java.util.List<PendingExport.Entry> vermerk = new java.util.ArrayList<>();
+        vermerk.add(new PendingExport.Entry(1, "Bargeld", -250, created, ""));
+        vermerk.add(new PendingExport.Entry(2, "Bargeld", -999, created, ""));
+        PendingExport.write(settings, vermerk);
+
+        Booking geschrieben = new Booking();
+        geschrieben.id = 1;
+        Booking offen = new Booking();
+        offen.id = 2;
+        java.util.List<Booking> bookings = new java.util.ArrayList<>(java.util.Arrays.asList(geschrieben, offen));
+
+        java.util.List<Long> ids = PendingExport.recover(settings, exporter, d.xml(), bookings);
+
+        assertEquals(java.util.Collections.singletonList(1L), ids);
+        assertEquals(1, bookings.size());
+        assertEquals(2, bookings.get(0).id);
+        assertTrue(PendingExport.read(settings).isEmpty());
+    }
+
+    /**
      * Der Empfänger als viertes Kriterium: Ein unbekannter Empfängername (existiert in dieser Datei gar
      * nicht) darf die Suche nicht ins Leere laufen lassen – dann zählt wie bisher nur Konto/Betrag/Datum.
      */

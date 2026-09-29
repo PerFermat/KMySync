@@ -121,28 +121,9 @@ public class KmyExportCoordinator {
                 // neu geschrieben wird: stand die vorgemerkte Buchung (Absturz zwischen Schreiben und
                 // lokalem Markieren) schon mit genau dieser Signatur in der Datei, wird sie nur
                 // nachmarkiert statt ein zweites Mal angelegt. Siehe PendingExport.
-                List<PendingExport.Entry> pendingFromLastRun = PendingExport.read(settings);
-                if (!pendingFromLastRun.isEmpty()) {
-                    // Geteiltes Set über den ganzen Durchlauf: zwei zufällig gleich signierte Einträge
-                    // dürfen nicht denselben einzelnen Transaktionsblock doppelt treffen.
-                    java.util.Set<String> recoveryReplaced = new java.util.HashSet<>();
-                    List<Long> recoveredIds = new ArrayList<>();
-                    java.util.Iterator<Booking> it = bookings.iterator();
-                    while (it.hasNext()) {
-                        Booking b = it.next();
-                        for (PendingExport.Entry e : pendingFromLastRun) {
-                            if (e.bookingId == b.id && exporter.transactionExists(doc.xml(), e.account,
-                                    e.signedCents, e.createdAt, e.payee, recoveryReplaced)) {
-                                recoveredIds.add(b.id);
-                                it.remove();
-                                break;
-                            }
-                        }
-                    }
-                    if (!recoveredIds.isEmpty()) {
-                        repository.bookingDao().markExported(recoveredIds);
-                    }
-                    PendingExport.clear(settings);
+                List<Long> recoveredIds = PendingExport.recover(settings, exporter, doc.xml(), bookings);
+                if (!recoveredIds.isEmpty()) {
+                    repository.bookingDao().markExported(recoveredIds);
                 }
 
                 KmyExporter.Result res = exporter.build(bookings, edited, loadSplits());
@@ -201,17 +182,7 @@ public class KmyExportCoordinator {
                 // stehen werden – bevor überhaupt geschrieben wird. Stirbt der Prozess gleich danach vor
                 // dem lokalen Markieren weiter unten, löst der nächste Lauf das über PendingExport auf,
                 // statt die Buchungen ein zweites Mal anzulegen.
-                List<PendingExport.Entry> writing = new ArrayList<>();
-                for (Booking b : bookings) {
-                    if (res.writtenIds.contains(b.id)) {
-                        writing.add(new PendingExport.Entry(b.id,
-                                de.spahr.ausgaben.db.EditStatus.fileAccount(b),
-                                de.spahr.ausgaben.db.EditStatus.fileSignedCents(b),
-                                de.spahr.ausgaben.db.EditStatus.fileCreatedAt(b),
-                                de.spahr.ausgaben.db.EditStatus.filePayee(b)));
-                    }
-                }
-                PendingExport.write(settings, writing);
+                PendingExport.write(settings, PendingExport.entriesFor(bookings, res.writtenIds));
 
                 // Nicht über die vorhandene Datei schreiben: erst vollständig in eine Zwischendatei,
                 // dann auf dem Server umbenennen. Ein Abbruch mittendrin (Timeout, Funkloch) läßt sonst
@@ -230,42 +201,8 @@ public class KmyExportCoordinator {
                     throw e;
                 }
 
-                // Die Datei ist geschrieben; jetzt zieht der lokale Stand nach — und zwar als ein
-                // Vorgang. Vorher waren das bis zu fünf einzelne Schreibzugriffe, und ein Abbruch
-                // dazwischen (Absturz, Speicher voll) hinterließ eine halbe Wahrheit: eine Bewegung
-                // bliebe „Vormerkung" und käme beim nächsten Export ein zweites Mal in die Datei, oder
-                // eine Buchung bliebe ungemarkt und käme über BookingDao nie wieder durch.
-                repository.inTransaction(() -> {
-                    repository.bookingDao().markExported(res.writtenIds);
-                    if (!secRes.writtenIds.isEmpty()) {
-                        // Bewegung und ihre Geldbuchung stehen jetzt gemeinsam in der Datei: beide sind
-                        // keine Vormerkung mehr. Beim nächsten Depot-Import wird die Bewegung von dort
-                        // ersetzt.
-                        repository.securityDao().markTxExported(secRes.writtenIds);
-                        List<Long> bookingIds = new java.util.ArrayList<>();
-                        for (de.spahr.ausgaben.db.SecurityTx tx : securityTx) {
-                            if (tx.bookingId > 0 && secRes.writtenIds.contains(tx.id)) {
-                                bookingIds.add(tx.bookingId);
-                            }
-                        }
-                        if (!bookingIds.isEmpty()) {
-                            repository.bookingDao().markExported(bookingIds);
-                        }
-                    }
-                    if (!delRes.resolvedIds.isEmpty()) {
-                        repository.kmyPendingDeleteDao().deleteByIds(delRes.resolvedIds);
-                    }
-                    if (!schedRes.resolvedIds.isEmpty()) {
-                        // Nur wirklich geschriebene Regeln lokal nachziehen, damit die Liste bis zum
-                        // nächsten Import denselben Stand zeigt wie die Datei.
-                        for (de.spahr.ausgaben.db.ScheduledAdvance a : advances) {
-                            if (schedRes.writtenIds.contains(a.id)) {
-                                repository.scheduledTransactionDao().updateNextDue(a.kmyId, a.nextDueMs);
-                            }
-                        }
-                        repository.scheduledAdvanceDao().deleteByIds(schedRes.resolvedIds);
-                    }
-                });
+                // Die Datei ist geschrieben; jetzt zieht der lokale Stand nach.
+                commitLocally(res, secRes, securityTx, delRes, schedRes, advances);
                 // Lokal nachgezogen: der Vermerk von oben hat seinen Zweck erfüllt.
                 PendingExport.clear(settings);
                 complete(listener, buildMessage(r, res, secRes.writtenIds.size(),
@@ -375,6 +312,50 @@ public class KmyExportCoordinator {
 
     private void complete(Listener l, String message, boolean refresh) {
         repository.mainHandler().post(() -> l.onComplete(message, refresh));
+    }
+
+    /**
+     * Die Datei ist geschrieben; jetzt zieht der lokale Stand nach — und zwar als ein Vorgang. Vorher
+     * waren das bis zu fünf einzelne Schreibzugriffe, und ein Abbruch dazwischen (Absturz, Speicher voll)
+     * hinterließ eine halbe Wahrheit: eine Bewegung bliebe „Vormerkung" und käme beim nächsten Export ein
+     * zweites Mal in die Datei, oder eine Buchung bliebe ungemarkt und käme über BookingDao nie wieder
+     * durch. Läuft auf dem Executor-Thread.
+     */
+    private void commitLocally(KmyExporter.Result res, KmyExporter.SecurityResult secRes,
+                               List<de.spahr.ausgaben.db.SecurityTx> securityTx,
+                               KmyExporter.DeleteResult delRes, KmyExporter.ScheduleResult schedRes,
+                               List<de.spahr.ausgaben.db.ScheduledAdvance> advances) {
+        repository.inTransaction(() -> {
+            repository.bookingDao().markExported(res.writtenIds);
+            if (!secRes.writtenIds.isEmpty()) {
+                // Bewegung und ihre Geldbuchung stehen jetzt gemeinsam in der Datei: beide sind
+                // keine Vormerkung mehr. Beim nächsten Depot-Import wird die Bewegung von dort
+                // ersetzt.
+                repository.securityDao().markTxExported(secRes.writtenIds);
+                List<Long> bookingIds = new java.util.ArrayList<>();
+                for (de.spahr.ausgaben.db.SecurityTx tx : securityTx) {
+                    if (tx.bookingId > 0 && secRes.writtenIds.contains(tx.id)) {
+                        bookingIds.add(tx.bookingId);
+                    }
+                }
+                if (!bookingIds.isEmpty()) {
+                    repository.bookingDao().markExported(bookingIds);
+                }
+            }
+            if (!delRes.resolvedIds.isEmpty()) {
+                repository.kmyPendingDeleteDao().deleteByIds(delRes.resolvedIds);
+            }
+            if (!schedRes.resolvedIds.isEmpty()) {
+                // Nur wirklich geschriebene Regeln lokal nachziehen, damit die Liste bis zum
+                // nächsten Import denselben Stand zeigt wie die Datei.
+                for (de.spahr.ausgaben.db.ScheduledAdvance a : advances) {
+                    if (schedRes.writtenIds.contains(a.id)) {
+                        repository.scheduledTransactionDao().updateNextDue(a.kmyId, a.nextDueMs);
+                    }
+                }
+                repository.scheduledAdvanceDao().deleteByIds(schedRes.resolvedIds);
+            }
+        });
     }
 
     /**

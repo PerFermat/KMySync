@@ -1210,7 +1210,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     }
 
     private void hideIfEmpty(TextInputLayout layout, TextInputEditText field) {
-        if (textOf(field).trim().isEmpty()) {
+        if (Ui.text(field).trim().isEmpty()) {
             layout.setVisibility(View.GONE);
         }
     }
@@ -1356,7 +1356,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             if (writingBack) {
                 return;
             }
-            if (textOf(input).trim().isEmpty()) {
+            if (Ui.text(input).trim().isEmpty()) {
                 userSet.remove(field);
                 typedFields.remove(field);
             } else {
@@ -1551,7 +1551,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         if (tx == null) {
             return null;
         }
-        tx.moneyAccount = textOf(editAccount).trim();
+        tx.moneyAccount = Ui.text(editAccount).trim();
         return tx.moneyAccount.isEmpty() ? null : tx;
     }
 
@@ -1615,7 +1615,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             return;
         }
         TextInputEditText input = numberFields.get(field);
-        String now = textOf(input);
+        String now = Ui.text(input);
         String next = text == null ? "" : text;
         if (!now.equals(next)) {
             input.setText(next);
@@ -1649,7 +1649,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     }
 
     private Long money(Field field) {
-        String raw = textOf(numberFields.get(field)).trim();
+        String raw = Ui.text(numberFields.get(field)).trim();
         return raw.isEmpty() ? null : AmountExpression.toCents(raw);
     }
 
@@ -1668,7 +1668,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      * Geld ({@code 1,839801}) und darf nicht auf Cent gerundet werden.</p>
      */
     private Double number(Field field) {
-        java.math.BigDecimal wert = AmountExpression.evaluate(textOf(numberFields.get(field)).trim());
+        java.math.BigDecimal wert = AmountExpression.evaluate(Ui.text(numberFields.get(field)).trim());
         return wert == null ? null : wert.doubleValue();
     }
 
@@ -1744,7 +1744,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         if (value == null || value.isEmpty()) {
             return;
         }
-        if (overwrite || textOf(field).trim().isEmpty()) {
+        if (overwrite || Ui.text(field).trim().isEmpty()) {
             field.setText(value, false);
         }
     }
@@ -1807,7 +1807,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             Toast.makeText(this, R.string.security_tx_need_amounts, Toast.LENGTH_LONG).show();
             return false;
         }
-        if (textOf(editAccount).trim().isEmpty()) {
+        if (Ui.text(editAccount).trim().isEmpty()) {
             Toast.makeText(this, R.string.security_tx_need_account, Toast.LENGTH_LONG).show();
             return false;
         }
@@ -1831,7 +1831,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         tx.date = selectedDate.getTimeInMillis();
         tx.applyAmounts(action, number(Field.SHARES), money(Field.GROSS), money(Field.NET),
                 fee == null ? 0 : Math.abs(fee));
-        tx.moneyAccount = textOf(editAccount).trim();
+        tx.moneyAccount = Ui.text(editAccount).trim();
         tx.parts.clear();
         tx.parts.addAll(splitsOf(feeSplits, false));
         if (DIVIDEND.equals(action)) {
@@ -1941,7 +1941,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         putMoney(out, EXTRA_PREFILL_GROSS, money(Field.GROSS));
         putMoney(out, EXTRA_PREFILL_FEE, money(Field.FEE));
         putMoney(out, EXTRA_PREFILL_NET, money(Field.NET));
-        out.putExtra(EXTRA_PREFILL_ACCOUNT, textOf(editAccount).trim());
+        out.putExtra(EXTRA_PREFILL_ACCOUNT, Ui.text(editAccount).trim());
         putParts(out, EXTRA_PREFILL_FEE_PARTS, collectedParts(feeSplits));
         putParts(out, EXTRA_PREFILL_INCOME_PARTS,
                 DIVIDEND.equals(action) ? collectedParts(incomeSplits)
@@ -2722,7 +2722,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         rowReceipt.setVisibility(View.VISIBLE);
         textReceipt.setText(getString(R.string.receipt_pdf_label, 1));
         android.widget.ImageButton icon = new android.widget.ImageButton(this);
-        icon.setLayoutParams(new LinearLayout.LayoutParams(dp(44), dp(44)));
+        icon.setLayoutParams(new LinearLayout.LayoutParams(Ui.dp(this, 44), Ui.dp(this, 44)));
         icon.setImageResource(R.drawable.ic_pdf);
         android.util.TypedValue tv = new android.util.TypedValue();
         getTheme().resolveAttribute(androidx.appcompat.R.attr.selectableItemBackgroundBorderless,
@@ -2771,9 +2771,6 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         });
     }
 
-    private int dp(int wert) {
-        return Math.round(wert * getResources().getDisplayMetrics().density);
-    }
 
     /**
      * Die Geldbuchung zur Bewegung: eine Umbuchung zwischen dem Geldkonto und dem Wertpapier – genau die
@@ -3028,7 +3025,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         if (readOnly || !fromStatement || !Boolean.TRUE.equals(input.getTag(R.id.splitAmountTyped))) {
             return;
         }
-        final Long cents = SplitRowController.parseCents(textOf(input));
+        final Long cents = SplitRowController.parseCents(Ui.text(input));
         if (cents == null || cents == 0) {
             return;
         }
@@ -3168,7 +3165,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                 .setTitle(getString(R.string.statement_anchor_title, getString(R.string.split_partial_hint)))
                 .setView(view)
                 .setPositiveButton(R.string.statement_anchor_learn, (d, w) -> {
-                    input.setTag(R.id.splitEntschiedenFuer, SplitRowController.parseCents(textOf(input)));
+                    input.setTag(R.id.splitEntschiedenFuer, SplitRowController.parseCents(Ui.text(input)));
                     int gewaehlt = gewaehlterIndex(gruppe);
                     if (gewaehlt < 0 || gewaehlt >= kandidaten.size()) {
                         // „Die App entscheiden lassen": der Lerner sucht beim Speichern selbst
@@ -3180,7 +3177,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                     zeigeErkannteSplitRegel(layout, input, kandidaten.get(gewaehlt), kandidaten);
                 })
                 .setNegativeButton(R.string.statement_anchor_dont_learn, (d, w) -> {
-                    input.setTag(R.id.splitEntschiedenFuer, SplitRowController.parseCents(textOf(input)));
+                    input.setTag(R.id.splitEntschiedenFuer, SplitRowController.parseCents(Ui.text(input)));
                     // „Nicht lernen": die für diese Kategorie gespeicherte Regel bleibt stehen — sie geht
                     // als Wahl in den Lernvorgang, kommt also unverändert wieder heraus. Kennt die Vorlage
                     // für die Zeile noch gar keine, gibt es nichts zu bewahren, und der Lerner sucht wie
@@ -3533,9 +3530,6 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         }
     }
 
-    private static String textOf(android.widget.TextView view) {
-        return view.getText() == null ? "" : view.getText().toString();
-    }
 
     private static String orEmpty(String s) {
         return s == null ? "" : s;

@@ -60,14 +60,14 @@ public final class ProfileSwitchDialog {
         LinearLayout row = new LinearLayout(activity);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dp(activity, 8), dp(activity, 12), dp(activity, 8), dp(activity, 12));
+        row.setPadding(Ui.dp(activity, 8), Ui.dp(activity, 12), Ui.dp(activity, 8), Ui.dp(activity, 12));
         row.setClickable(true);
         row.setFocusable(true);
 
         View swatch = new View(activity);
         swatch.setBackground(swatchDrawable(profile.accentColor));
-        LinearLayout.LayoutParams swLp = new LinearLayout.LayoutParams(dp(activity, 24), dp(activity, 24));
-        swLp.setMarginEnd(dp(activity, 16));
+        LinearLayout.LayoutParams swLp = new LinearLayout.LayoutParams(Ui.dp(activity, 24), Ui.dp(activity, 24));
+        swLp.setMarginEnd(Ui.dp(activity, 16));
         row.addView(swatch, swLp);
 
         TextView name = new TextView(activity);
@@ -136,7 +136,7 @@ public final class ProfileSwitchDialog {
     private static void showRenameDialog(Activity activity, ProfileManager pm, ProfileManager.Profile profile,
                                           AlertDialog[] dialogHolder) {
         TextInputLayout box = new TextInputLayout(activity);
-        int pad = dp(activity, 24);
+        int pad = Ui.dp(activity, 24);
         box.setPadding(pad, pad / 2, pad, 0);
         TextInputEditText field = new TextInputEditText(box.getContext());
         field.setText(profile.name);
@@ -203,9 +203,6 @@ public final class ProfileSwitchDialog {
         return ColorPickerDialog.swatchDrawable(color);
     }
 
-    private static int dp(Activity activity, int v) {
-        return Math.round(v * activity.getResources().getDisplayMetrics().density);
-    }
 
     /** Vordergrundfarbe für normalen Text/Icons: Schwarz im Hell-, Weiß im Dunkelmodus. */
     private static int primaryText(Activity activity) {

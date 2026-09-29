@@ -20,7 +20,7 @@ public final class ColorPickerDialog {
     public static void show(Activity activity, int titleRes, int[] palette, OnColorPicked onPicked) {
         GridLayout grid = new GridLayout(activity);
         grid.setColumnCount(5);
-        int pad = dp(activity, 16);
+        int pad = Ui.dp(activity, 16);
         grid.setPadding(pad, pad, pad, pad);
 
         AlertDialog dialog = new AppDialog(activity)
@@ -33,9 +33,9 @@ public final class ColorPickerDialog {
             View cell = new View(activity);
             cell.setBackground(swatchDrawable(color));
             GridLayout.LayoutParams lp = new GridLayout.LayoutParams();
-            lp.width = dp(activity, 40);
-            lp.height = dp(activity, 40);
-            lp.setMargins(dp(activity, 6), dp(activity, 6), dp(activity, 6), dp(activity, 6));
+            lp.width = Ui.dp(activity, 40);
+            lp.height = Ui.dp(activity, 40);
+            lp.setMargins(Ui.dp(activity, 6), Ui.dp(activity, 6), Ui.dp(activity, 6), Ui.dp(activity, 6));
             cell.setLayoutParams(lp);
             cell.setOnClickListener(v -> {
                 dialog.dismiss();
@@ -55,7 +55,4 @@ public final class ColorPickerDialog {
         return d;
     }
 
-    private static int dp(Activity activity, int v) {
-        return Math.round(v * activity.getResources().getDisplayMetrics().density);
-    }
 }

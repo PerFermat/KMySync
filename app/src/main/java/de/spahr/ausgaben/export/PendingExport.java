@@ -72,6 +72,25 @@ final class PendingExport {
         return result;
     }
 
+    /**
+     * Die Einträge für die gleich neu geschriebenen Buchungen – mit der Signatur, unter der sie in der
+     * Datei stehen werden (die des Schreibzeitpunkts, siehe Klassenbeschreibung).
+     */
+    static List<Entry> entriesFor(List<de.spahr.ausgaben.db.Booking> bookings,
+                                  java.util.Collection<Long> writtenIds) {
+        List<Entry> writing = new ArrayList<>();
+        for (de.spahr.ausgaben.db.Booking b : bookings) {
+            if (writtenIds.contains(b.id)) {
+                writing.add(new Entry(b.id,
+                        de.spahr.ausgaben.db.EditStatus.fileAccount(b),
+                        de.spahr.ausgaben.db.EditStatus.fileSignedCents(b),
+                        de.spahr.ausgaben.db.EditStatus.fileCreatedAt(b),
+                        de.spahr.ausgaben.db.EditStatus.filePayee(b)));
+            }
+        }
+        return writing;
+    }
+
     /** Speichert synchron ({@code commit()}): der Vermerk muss stehen, bevor gleich geschrieben wird. */
     static void write(SettingsStore settings, List<Entry> entries) {
         JSONArray arr = new JSONArray();
@@ -95,5 +114,40 @@ final class PendingExport {
 
     static void clear(SettingsStore settings) {
         settings.clearPendingExportRaw();
+    }
+
+    /**
+     * Löst einen stehengebliebenen Vermerk aus einem abgebrochenen vorherigen Lauf auf, bevor irgendetwas
+     * neu geschrieben wird: Stand die vorgemerkte Buchung schon mit genau dieser Signatur in der Datei,
+     * wird sie aus {@code bookings} genommen und ihre id zurückgegeben – der Aufrufer markiert sie nur
+     * noch als exportiert, statt sie ein zweites Mal anzulegen. Der Vermerk ist danach gelöscht.
+     *
+     * @param bookings die noch nicht exportierten Buchungen dieses Laufs; wiedergefundene werden entfernt
+     * @return ids der wiedergefundenen Buchungen (leer, wenn kein Vermerk da war oder nichts passte)
+     */
+    static List<Long> recover(SettingsStore settings, KmyExporter exporter, String xml,
+                              List<de.spahr.ausgaben.db.Booking> bookings) {
+        List<Long> recoveredIds = new ArrayList<>();
+        List<Entry> pendingFromLastRun = read(settings);
+        if (pendingFromLastRun.isEmpty()) {
+            return recoveredIds;
+        }
+        // Geteiltes Set über den ganzen Durchlauf: zwei zufällig gleich signierte Einträge dürfen nicht
+        // denselben einzelnen Transaktionsblock doppelt treffen.
+        java.util.Set<String> recoveryReplaced = new java.util.HashSet<>();
+        java.util.Iterator<de.spahr.ausgaben.db.Booking> it = bookings.iterator();
+        while (it.hasNext()) {
+            de.spahr.ausgaben.db.Booking b = it.next();
+            for (Entry e : pendingFromLastRun) {
+                if (e.bookingId == b.id && exporter.transactionExists(xml, e.account,
+                        e.signedCents, e.createdAt, e.payee, recoveryReplaced)) {
+                    recoveredIds.add(b.id);
+                    it.remove();
+                    break;
+                }
+            }
+        }
+        clear(settings);
+        return recoveredIds;
     }
 }

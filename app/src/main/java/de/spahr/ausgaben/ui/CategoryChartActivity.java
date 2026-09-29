@@ -140,7 +140,7 @@ public class CategoryChartActivity extends LocalizedActivity {
                 }
                 float dx = e2.getX() - e1.getX();
                 if (Math.abs(dx) > Math.abs(e2.getY() - e1.getY())
-                        && Math.abs(dx) > dp(60) && Math.abs(vx) > dp(60)) {
+                        && Math.abs(dx) > Ui.dp(CategoryChartActivity.this, 60) && Math.abs(vx) > Ui.dp(CategoryChartActivity.this, 60)) {
                     step(dx > 0 ? -1 : 1);
                     return true;
                 }
@@ -514,7 +514,7 @@ public class CategoryChartActivity extends LocalizedActivity {
                 TextView hint = new TextView(this);
                 hint.setText(R.string.category_chart_no_bookings);
                 hint.setTextColor(0xFF9E9E9E);
-                hint.setPadding(0, dp(8), 0, dp(8));
+                hint.setPadding(0, Ui.dp(this, 8), 0, Ui.dp(this, 8));
                 list.addView(hint);
                 return;
             }
@@ -573,7 +573,7 @@ public class CategoryChartActivity extends LocalizedActivity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(0, dp(6), 0, dp(6));
+        row.setPadding(0, Ui.dp(this, 6), 0, Ui.dp(this, 6));
 
         LinearLayout text = new LinearLayout(this);
         text.setOrientation(LinearLayout.VERTICAL);
@@ -606,7 +606,7 @@ public class CategoryChartActivity extends LocalizedActivity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(0, dp(6), 0, dp(6));
+        row.setPadding(0, Ui.dp(this, 6), 0, Ui.dp(this, 6));
 
         LinearLayout text = new LinearLayout(this);
         text.setOrientation(LinearLayout.VERTICAL);
@@ -760,7 +760,7 @@ public class CategoryChartActivity extends LocalizedActivity {
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(0, dp(8), 0, dp(8));
+        header.setPadding(0, Ui.dp(this, 8), 0, Ui.dp(this, 8));
 
         header.addView(dot(base));
 
@@ -774,7 +774,7 @@ public class CategoryChartActivity extends LocalizedActivity {
         pct.setTextColor(0xFF9E9E9E);
         LinearLayout.LayoutParams pctLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        pctLp.setMarginEnd(dp(10));
+        pctLp.setMarginEnd(Ui.dp(this, 10));
         header.addView(pct, pctLp);
 
         TextView amount = new TextView(this);
@@ -788,7 +788,7 @@ public class CategoryChartActivity extends LocalizedActivity {
         caret.setTextColor(0xFF9E9E9E);
         LinearLayout.LayoutParams caretLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        caretLp.setMarginStart(dp(8));
+        caretLp.setMarginStart(Ui.dp(this, 8));
         caret.setLayoutParams(caretLp);
         caret.setText(expandable ? "▸" : "");   // ▸
         header.addView(caret);
@@ -798,7 +798,7 @@ public class CategoryChartActivity extends LocalizedActivity {
         if (expandable) {
             LinearLayout detail = new LinearLayout(this);
             detail.setOrientation(LinearLayout.VERTICAL);
-            detail.setPadding(dp(20), 0, 0, dp(6));
+            detail.setPadding(Ui.dp(this, 20), 0, 0, Ui.dp(this, 6));
             detail.setVisibility(View.GONE);
             detail.addView(detailRow(base, getString(R.string.category_paid), c.actual));
             detail.addView(detailRow(lighten(base), getString(R.string.category_planned), c.planned));
@@ -818,7 +818,7 @@ public class CategoryChartActivity extends LocalizedActivity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(0, dp(4), 0, dp(4));
+        row.setPadding(0, Ui.dp(this, 4), 0, Ui.dp(this, 4));
 
         row.addView(dot(color));
 
@@ -839,8 +839,8 @@ public class CategoryChartActivity extends LocalizedActivity {
     private View dot(int color) {
         View dot = new View(this);
         dot.setBackgroundColor(color);
-        LinearLayout.LayoutParams dotLp = new LinearLayout.LayoutParams(dp(10), dp(10));
-        dotLp.setMarginEnd(dp(10));
+        LinearLayout.LayoutParams dotLp = new LinearLayout.LayoutParams(Ui.dp(this, 10), Ui.dp(this, 10));
+        dotLp.setMarginEnd(Ui.dp(this, 10));
         dot.setLayoutParams(dotLp);
         return dot;
     }
@@ -849,7 +849,4 @@ public class CategoryChartActivity extends LocalizedActivity {
         return MoneyFormat.display(cents, Currencies.getDefault());
     }
 
-    private int dp(int v) {
-        return Math.round(v * getResources().getDisplayMetrics().density);
-    }
 }

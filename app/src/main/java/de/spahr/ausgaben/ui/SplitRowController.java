@@ -285,7 +285,7 @@ class SplitRowController {
         View single = singleCategoryRow();
         if (single != null) {
             syncingAmounts = true;
-            setAmtText(single, formatCents(currentTotalCents()));
+            setAmtText(single, de.spahr.ausgaben.settings.MoneyFormat.plain(currentTotalCents()));
             syncingAmounts = false;
         }
         onChanged.run();
@@ -300,7 +300,7 @@ class SplitRowController {
                 && !catText(autoAmountRow).isEmpty()) {
             long remainder = currentTotalCents() - sumOfPartsExcept(autoAmountRow);
             syncingAmounts = true;
-            setAmtText(autoAmountRow, formatCents(remainder));
+            setAmtText(autoAmountRow, de.spahr.ausgaben.settings.MoneyFormat.plain(remainder));
             syncingAmounts = false;
         } else {
             autoAmountRow = null;
@@ -343,7 +343,7 @@ class SplitRowController {
             return; // keine Kategorie mit Betrag → Gesamtbetrag unverändert lassen
         }
         syncingAmounts = true;
-        totalField.setText(formatCents(sum));
+        totalField.setText(de.spahr.ausgaben.settings.MoneyFormat.plain(sum));
         syncingAmounts = false;
     }
 
@@ -554,9 +554,6 @@ class SplitRowController {
         return e.getText() == null ? "" : e.getText().toString();
     }
 
-    private static String formatCents(long cents) {
-        return de.spahr.ausgaben.settings.MoneyFormat.plain(cents);
-    }
 
     /**
      * Teilbetrag in Cent; akzeptiert wie das Gesamtfeld auch eine kleine Rechnung (z. B. {@code 12,50+3,20}).

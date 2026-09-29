@@ -242,7 +242,7 @@ public class SecurityHistoryActivity extends LocalizedActivity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        int padV = dp(10);
+        int padV = Ui.dp(this, 10);
         row.setPadding(0, padV, 0, padV);
 
         LinearLayout left = new LinearLayout(this);
@@ -376,7 +376,7 @@ public class SecurityHistoryActivity extends LocalizedActivity {
             input.setText(MoneyFormat.plain(tx.amountCents));
         }
         til.addView(input);
-        int pad = dp(16);
+        int pad = Ui.dp(this, 16);
         box.setPadding(pad, 0, pad, 0);
         box.addView(til);
         // Eigene Rechentastatur statt der System-Tastatur (erscheint bei Fokus des Betragsfelds).
@@ -426,9 +426,6 @@ public class SecurityHistoryActivity extends LocalizedActivity {
         return getColor(tv.resourceId);
     }
 
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
-    }
 
     private String actionLabel(String action) {
         switch (action == null ? "" : action) {

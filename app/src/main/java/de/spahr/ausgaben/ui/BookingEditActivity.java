@@ -424,9 +424,9 @@ public class BookingEditActivity extends LocalizedActivity {
         // Danach die Sichtbarkeit aktualisieren (Ortsfeld nur bei Konten mit Orten).
         PickerBehaviour.onCommitted(editAccount, value -> {
             if (isTransferType()) {
-                setupPlaceOptions(editPlace, textOf(editAccount).trim(), false);
+                setupPlaceOptions(editPlace, Ui.text(editAccount).trim(), false);
             } else {
-                setupPlaceDropdown(textOf(editAccount).trim());
+                setupPlaceDropdown(Ui.text(editAccount).trim());
             }
             applyTypeVisibility();
         });
@@ -439,7 +439,7 @@ public class BookingEditActivity extends LocalizedActivity {
         // Bei einer Umbuchung folgt der Nach-Ort dem Nach-Konto.
         PickerBehaviour.onCommitted(editAccountTo, value -> {
             if (isTransferType()) {
-                setupPlaceOptions(editPlaceTo, textOf(editAccountTo).trim(), false);
+                setupPlaceOptions(editPlaceTo, Ui.text(editAccountTo).trim(), false);
             }
             applyTypeVisibility();
         });
@@ -599,7 +599,7 @@ public class BookingEditActivity extends LocalizedActivity {
             }
             prefilledPayee = prefillPayee == null ? "" : prefillPayee;
             if (voiceAmount >= 0) {
-                editAmount.setText(formatCents(voiceAmount));
+                editAmount.setText(de.spahr.ausgaben.settings.MoneyFormat.plain(voiceAmount));
             }
             // Alias-Treffer: bevorzugte Buchungsart setzen und Konto/Kategorien/Von-Bis vorbelegen.
             long aliasId = getIntent().getLongExtra(EXTRA_ALIAS_ID, -1);
@@ -766,12 +766,12 @@ public class BookingEditActivity extends LocalizedActivity {
         a.corrected = corrected;
         a.type = currentTypeConstant();
         if (isTransferType()) {
-            a.fromAccount = textOf(editAccount).trim();
-            a.toAccount = textOf(editAccountTo).trim();
+            a.fromAccount = Ui.text(editAccount).trim();
+            a.toAccount = Ui.text(editAccountTo).trim();
             a.fromPlace = selectedPlace();
             a.toPlace = selectedPlaceTo();
         } else {
-            a.account = textOf(editAccount).trim();
+            a.account = Ui.text(editAccount).trim();
             a.place = selectedPlace();
             List<SplitRowController.Part> parts = splitCtl.collectParts();
             String c1 = parts.size() > 0 ? parts.get(0).category : "";
@@ -1305,18 +1305,18 @@ public class BookingEditActivity extends LocalizedActivity {
                 editAccount.setText(b.account, false);
                 editAccountTo.setText(b.transferAccount, false);
             }
-            editAmount.setText(formatCents(total));
+            editAmount.setText(de.spahr.ausgaben.settings.MoneyFormat.plain(total));
             applyTypeVisibility();
             // Von-/Nach-Ort aus beiden Seiten der Umbuchung vorbelegen.
             if (b.transferGroup != null && !b.transferGroup.isEmpty()) {
                 repository.getTransferGroup(b.transferGroup, pair -> {
                     for (Booking side : pair) {
                         if (side.isIncome) {
-                            String acc = textOf(editAccountTo).trim();
+                            String acc = Ui.text(editAccountTo).trim();
                             setupPlaceOptions(editPlaceTo, acc, false);
                             editPlaceTo.setText(templatePlace(side.place, acc), false);
                         } else {
-                            String acc = textOf(editAccount).trim();
+                            String acc = Ui.text(editAccount).trim();
                             setupPlaceOptions(editPlace, acc, false);
                             editPlace.setText(templatePlace(side.place, acc), false);
                         }
@@ -1377,10 +1377,10 @@ public class BookingEditActivity extends LocalizedActivity {
                 } else {
                     part = total - assigned; // letzte Zeile → exakte Summe = Gesamtbetrag
                 }
-                splitCtl.addRow(s.category, formatCents(part), s.categoryIsIncome);
+                splitCtl.addRow(s.category, de.spahr.ausgaben.settings.MoneyFormat.plain(part), s.categoryIsIncome);
             }
         } else if (!singleCategory.isEmpty()) {
-            splitCtl.addRow(singleCategory, formatCents(total), singleCategoryIsIncome);
+            splitCtl.addRow(singleCategory, de.spahr.ausgaben.settings.MoneyFormat.plain(total), singleCategoryIsIncome);
         }
         splitCtl.setSuppressEvents(false);
         splitCtl.ensureTrailingRow();
@@ -1392,7 +1392,7 @@ public class BookingEditActivity extends LocalizedActivity {
         } else {
             markCategorySource();
         }
-        editAmount.setText(formatCents(total));
+        editAmount.setText(de.spahr.ausgaben.settings.MoneyFormat.plain(total));
         updateSaveEnabled();
     }
 
@@ -1421,8 +1421,8 @@ public class BookingEditActivity extends LocalizedActivity {
         if (transfer) {
             // Umbuchung: Von- und Nach-Ort jeder für sich; die Dropdowns folgen ihrem Konto.
             placeLayout.setHint(getString(R.string.transfer_place_from));
-            setupPlaceOptions(editPlace, textOf(editAccount).trim(), true);
-            setupPlaceOptions(editPlaceTo, textOf(editAccountTo).trim(), true);
+            setupPlaceOptions(editPlace, Ui.text(editAccount).trim(), true);
+            setupPlaceOptions(editPlaceTo, Ui.text(editAccountTo).trim(), true);
             placeLayout.setVisibility(showPlace(editPlace, editAccount) ? View.VISIBLE : View.GONE);
             placeToLayout.setVisibility(
                     showPlace(editPlaceTo, editAccountTo) ? View.VISIBLE : View.GONE);
@@ -1455,11 +1455,11 @@ public class BookingEditActivity extends LocalizedActivity {
         if (!settings.isAmountSuggestEnabled()) {
             return;
         }
-        if (readOnly || !textOf(editPayee).trim().isEmpty()) {
+        if (readOnly || !Ui.text(editPayee).trim().isEmpty()) {
             return;
         }
         double[] hier = de.spahr.ausgaben.location.Geo.parse(gpsRowCoords);
-        Long cents = parseAmountToCents(textOf(editAmount));
+        Long cents = parseAmountToCents(Ui.text(editAmount));
         if (hier == null || cents == null || cents <= 0) {
             return;
         }
@@ -1472,7 +1472,7 @@ public class BookingEditActivity extends LocalizedActivity {
         repository.suggestPayeeByAmount(hier[0], hier[1], cents, type, name -> {
             // Die Antwort kommt später; inzwischen kann der Empfänger von Hand gefüllt sein.
             if (name == null || name.isEmpty() || !key.equals(payeeAmountKey)
-                    || !textOf(editPayee).trim().isEmpty()) {
+                    || !Ui.text(editPayee).trim().isEmpty()) {
                 return;
             }
             editPayee.setText(name, false);
@@ -1500,14 +1500,14 @@ public class BookingEditActivity extends LocalizedActivity {
      * Alias mit zwei Kategorien behält so seine zweite Zeile.
      */
     private void markCategorySource() {
-        categorySourceKey = textOf(editPayee).trim().toLowerCase(Locale.ROOT) + "|" + isIncomeType();
+        categorySourceKey = Ui.text(editPayee).trim().toLowerCase(Locale.ROOT) + "|" + isIncomeType();
     }
 
     private void refreshPayeeCategories() {
         if (readOnly || isTransferType()) {
             return;
         }
-        String payee = textOf(editPayee).trim();
+        String payee = Ui.text(editPayee).trim();
         boolean income = isIncomeType();
         String key = payee.toLowerCase(Locale.ROOT) + "|" + income;
         if (key.equals(payeeCategoryKey)) {
@@ -1542,9 +1542,9 @@ public class BookingEditActivity extends LocalizedActivity {
             // kein Konto ist; genau daran ist das Ändern bisher gescheitert.
             enabled = true;
         } else if (isTransferType()) {
-            String from = textOf(editAccount).trim();
-            String to = textOf(editAccountTo).trim();
-            Long cents = parseAmountToCents(textOf(editAmount));
+            String from = Ui.text(editAccount).trim();
+            String to = Ui.text(editAccountTo).trim();
+            Long cents = parseAmountToCents(Ui.text(editAmount));
             enabled = isKnownAccount(from) && isKnownAccount(to) && !from.equalsIgnoreCase(to)
                     && cents != null && cents > 0;
         } else {
@@ -1610,10 +1610,10 @@ public class BookingEditActivity extends LocalizedActivity {
      */
     private boolean showPlace(android.widget.EditText placeField, android.widget.EditText accountField) {
         if (readOnly) {
-            String place = textOf(placeField).trim();
+            String place = Ui.text(placeField).trim();
             return !place.isEmpty() && !place.equals(PlacesStore.NO_PLACE);
         }
-        return hasPlaces(textOf(accountField));
+        return hasPlaces(Ui.text(accountField));
     }
 
     /** True, wenn das Konto mindestens einen Ort besitzt (steuert die Sichtbarkeit des Ortsfelds). */
@@ -1635,7 +1635,7 @@ public class BookingEditActivity extends LocalizedActivity {
         List<String> options = new ArrayList<>(placesStore.getPlaces(account));
         options.add(PlacesStore.NO_PLACE);
         PickerAdapters.places(field, options);
-        String cur = textOf(field).trim();
+        String cur = Ui.text(field).trim();
         if (keepCurrent && !cur.isEmpty() && options.contains(cur)) {
             return;
         }
@@ -1665,7 +1665,7 @@ public class BookingEditActivity extends LocalizedActivity {
 
     /** Ausgewählter Nach-Ort (Umbuchung), normalisiert: „ohne Ort"/leer → {@code ""}. */
     private String selectedPlaceTo() {
-        String sel = textOf(editPlaceTo);
+        String sel = Ui.text(editPlaceTo);
         return (sel != null && !sel.trim().isEmpty() && !sel.equals(PlacesStore.NO_PLACE))
                 ? sel.trim() : "";
     }
@@ -1685,7 +1685,7 @@ public class BookingEditActivity extends LocalizedActivity {
         final List<SplitRowController.Part> parts = splitCtl.collectParts();
         b.category = parts.isEmpty() ? "" : parts.get(0).category;
         b.categoryIsIncome = parts.isEmpty() ? null : resolvePartType(parts.get(0));
-        final String place = textOf(editPlace);
+        final String place = Ui.text(editPlace);
         maybeAskCorrection(b.payee, () -> maybeDateConfirm(() -> {
             b.createdAt = composeTimestamp();
             persistNew(b, place, parts);
@@ -1693,9 +1693,9 @@ public class BookingEditActivity extends LocalizedActivity {
     }
 
     private void saveTransferNew() {
-        final String from = textOf(editAccount).trim();
-        final String to = textOf(editAccountTo).trim();
-        final Long cents = parseAmountToCents(textOf(editAmount));
+        final String from = Ui.text(editAccount).trim();
+        final String to = Ui.text(editAccountTo).trim();
+        final Long cents = parseAmountToCents(Ui.text(editAmount));
         if (cents == null || cents <= 0) {
             Toast.makeText(this, R.string.error_amount, Toast.LENGTH_SHORT).show();
             return;
@@ -1705,7 +1705,7 @@ public class BookingEditActivity extends LocalizedActivity {
             return;
         }
         final String note = composeNoteForSave(true);
-        final String payee = textOf(editPayee).trim();
+        final String payee = Ui.text(editPayee).trim();
         final String fromPlace = selectedPlace();
         final String toPlace = selectedPlaceTo();
         maybeAskCorrection(payee, () -> maybeDateConfirm(() -> {
@@ -1741,7 +1741,7 @@ public class BookingEditActivity extends LocalizedActivity {
 
     /** Ausgewählter Ort normalisiert: „ohne Ort" bzw. leer → {@code ""}, sonst der echte Ortsname. */
     private String selectedPlace() {
-        String sel = textOf(editPlace);
+        String sel = Ui.text(editPlace);
         return (sel != null && !sel.trim().isEmpty() && !sel.equals(PlacesStore.NO_PLACE))
                 ? sel.trim() : "";
     }
@@ -1895,7 +1895,7 @@ public class BookingEditActivity extends LocalizedActivity {
         // Der Stift nimmt dem Empfängerfeld nicht den Fokus, und ein Feld mitten in der Suche ist leer:
         // ohne dieses settleAll wäre ein nur getippter Empfängername hier noch nicht angekommen.
         PickerBehaviour.settleAll(getWindow().getDecorView());
-        final String payee = textOf(editPayee).trim();
+        final String payee = Ui.text(editPayee).trim();
         if (payee.isEmpty() || knownTagNames.isEmpty()) {
             openTagsDialog(new ArrayList<>());
             return;
@@ -1922,7 +1922,7 @@ public class BookingEditActivity extends LocalizedActivity {
      * anderen Empfänger, gilt dessen Vorbelegung wieder.
      */
     private void noteTagsEdited() {
-        tagsEditedForPayee = textOf(editPayee).trim().toLowerCase(Locale.ROOT);
+        tagsEditedForPayee = Ui.text(editPayee).trim().toLowerCase(Locale.ROOT);
     }
 
     /**
@@ -1934,7 +1934,7 @@ public class BookingEditActivity extends LocalizedActivity {
         if (readOnly || knownTagNames.isEmpty()) {
             return;
         }
-        final String payee = textOf(editPayee).trim();
+        final String payee = Ui.text(editPayee).trim();
         final String key = payee.toLowerCase(Locale.ROOT);
         if (key.equals(payeeTagKey)) {
             return; // derselbe Empfänger – nichts zu tun
@@ -1983,7 +1983,7 @@ public class BookingEditActivity extends LocalizedActivity {
                 return;
             }
             android.widget.ImageButton icon = new android.widget.ImageButton(this);
-            icon.setLayoutParams(new android.widget.LinearLayout.LayoutParams(dp(44), dp(44)));
+            icon.setLayoutParams(new android.widget.LinearLayout.LayoutParams(Ui.dp(this, 44), Ui.dp(this, 44)));
             icon.setImageResource(android.R.drawable.ic_menu_gallery);
             icon.setBackgroundResource(backgroundBorderless());
             icon.setContentDescription(getString(R.string.receipt_view_title));
@@ -2002,7 +2002,7 @@ public class BookingEditActivity extends LocalizedActivity {
                     : (page.pending != null ? R.string.receipt_page_new : R.string.receipt_page_label),
                     i + 1));
             label.setCompoundDrawablesRelativeWithIntrinsicBounds(pdf ? R.drawable.ic_pdf : 0, 0, 0, 0);
-            label.setCompoundDrawablePadding(pdf ? dp(8) : 0);
+            label.setCompoundDrawablePadding(pdf ? Ui.dp(this, 8) : 0);
             if (pdf) {
                 // Ein PDF öffnet der Betrachter des Geräts – auch ein noch nicht gespeichertes Temp.
                 label.setOnClickListener(v -> openPdf(page));
@@ -2074,9 +2074,6 @@ public class BookingEditActivity extends LocalizedActivity {
         }).start();
     }
 
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
-    }
 
     /** Der randlose Tipp-Hintergrund des Themes – wie bei den Knöpfen im Layout. */
     private int backgroundBorderless() {
@@ -2125,7 +2122,7 @@ public class BookingEditActivity extends LocalizedActivity {
 
     /** Freier Text + (je nach Kopie/Update) GPS-Tag. Der BELEG:-Tag kommt in {@link #attachReceipt}. */
     private String composeNoteForSave(boolean asNew) {
-        String free = textOf(editNote).trim();
+        String free = Ui.text(editNote).trim();
         String coords;
         if (asNew) {
             // Neu/Vorlage (booking == null): der Zeilenwert ist bereits die aktuelle Position.
@@ -2696,8 +2693,8 @@ public class BookingEditActivity extends LocalizedActivity {
     }
 
     private void updateTransferInPlace() {
-        final String from = textOf(editAccount).trim();
-        final String to = textOf(editAccountTo).trim();
+        final String from = Ui.text(editAccount).trim();
+        final String to = Ui.text(editAccountTo).trim();
         // Unverändert übernommenes Gegenkonto, das die App nicht als Konto führt (ein Wertpapier des
         // Depots): keine Fehleingabe, sondern eine Buchung, an der nur Notiz, Stichwörter und Beleg zu
         // ändern sind. Ohne diesen Ausweg täte der Knopf gar nichts – die Prüfung unten schlüge fehl.
@@ -2706,7 +2703,7 @@ public class BookingEditActivity extends LocalizedActivity {
             updateNotesOnly();
             return;
         }
-        final Long cents = parseAmountToCents(textOf(editAmount));
+        final Long cents = parseAmountToCents(Ui.text(editAmount));
         if (cents == null || cents <= 0) {
             Toast.makeText(this, R.string.error_amount, Toast.LENGTH_SHORT).show();
             return;
@@ -2716,7 +2713,7 @@ public class BookingEditActivity extends LocalizedActivity {
             return;
         }
         final String note = composeNoteForSave(false);
-        final String payee = textOf(editPayee).trim();
+        final String payee = Ui.text(editPayee).trim();
         final String fromPlace = selectedPlace();
         final String toPlace = selectedPlaceTo();
         // Export-Status aus dem Schalter übernehmen; updateTransferBooking überträgt ihn auf beide Seiten.
@@ -2732,9 +2729,9 @@ public class BookingEditActivity extends LocalizedActivity {
     }
 
     private void convertNormalToTransfer() {
-        final String from = textOf(editAccount).trim();
-        final String to = textOf(editAccountTo).trim();
-        final Long cents = parseAmountToCents(textOf(editAmount));
+        final String from = Ui.text(editAccount).trim();
+        final String to = Ui.text(editAccountTo).trim();
+        final Long cents = parseAmountToCents(Ui.text(editAmount));
         if (cents == null || cents <= 0) {
             Toast.makeText(this, R.string.error_amount, Toast.LENGTH_SHORT).show();
             return;
@@ -2744,7 +2741,7 @@ public class BookingEditActivity extends LocalizedActivity {
             return;
         }
         final String note = composeNoteForSave(true);
-        final String payee = textOf(editPayee).trim();
+        final String payee = Ui.text(editPayee).trim();
         final String fromPlace = selectedPlace();
         final String toPlace = selectedPlaceTo();
         final long oldId = booking.id;
@@ -2770,7 +2767,7 @@ public class BookingEditActivity extends LocalizedActivity {
         final List<SplitRowController.Part> parts = splitCtl.collectParts();
         nb.category = parts.isEmpty() ? "" : parts.get(0).category;
         nb.categoryIsIncome = parts.isEmpty() ? null : resolvePartType(parts.get(0));
-        final String place = textOf(editPlace);
+        final String place = Ui.text(editPlace);
         final String group = origTransferGroup;
         final long oldId = booking.id;
         maybeAskCorrection(nb.payee, () -> {
@@ -2889,7 +2886,7 @@ public class BookingEditActivity extends LocalizedActivity {
 
     /** Validiert die gemeinsamen Felder (ohne Kategorie) und schreibt sie in {@code target}. */
     private Booking readValidFields(Booking target) {
-        Long cents = parseAmountToCents(textOf(editAmount));
+        Long cents = parseAmountToCents(Ui.text(editAmount));
         if (cents == null || cents <= 0) {
             Toast.makeText(this, R.string.error_amount, Toast.LENGTH_SHORT).show();
             return null;
@@ -2898,8 +2895,8 @@ public class BookingEditActivity extends LocalizedActivity {
         // eine Abweisung mit R.string.error_payee; sie war die einzige Stelle der App, die einen leeren
         // Empfänger nicht vertrug (die Umbuchung nebenan ließ ihn seit jeher frei, der Import schreibt
         // ihn durch). Was in den Listen anstelle des Namens steht, entscheidet BookingLabel.title(…).
-        String payee = textOf(editPayee).trim();
-        String account = textOf(editAccount).trim();
+        String payee = Ui.text(editPayee).trim();
+        String account = Ui.text(editAccount).trim();
         if (!isKnownAccount(account)) {
             Toast.makeText(this, kontoMeldung(account), Toast.LENGTH_SHORT).show();
             return null;
@@ -2908,7 +2905,7 @@ public class BookingEditActivity extends LocalizedActivity {
         target.isIncome = toggleType.getCheckedButtonId() == R.id.btnIncome;
         target.payee = payee;
         target.account = account;
-        target.note = textOf(editNote).trim();
+        target.note = Ui.text(editNote).trim();
         target.tags = bookingTags;
         target.createdAt = composeTimestamp();
         return target;
@@ -2967,9 +2964,6 @@ public class BookingEditActivity extends LocalizedActivity {
         return c.getTimeInMillis();
     }
 
-    private String formatCents(long cents) {
-        return de.spahr.ausgaben.settings.MoneyFormat.plain(cents);
-    }
 
     /** Betrag in Cent; akzeptiert auch eine kleine Rechnung wie {@code 12,50+3,20} (nur {@code + *}). */
     private Long parseAmountToCents(String raw) {
@@ -3026,7 +3020,7 @@ public class BookingEditActivity extends LocalizedActivity {
         if (readOnly) {
             return;
         }
-        String raw = textOf(field).trim();
+        String raw = Ui.text(field).trim();
         if (raw.isEmpty()) {
             if (layout != null) {
                 layout.setError(null);
@@ -3043,13 +3037,10 @@ public class BookingEditActivity extends LocalizedActivity {
         if (layout != null) {
             layout.setError(null);
         }
-        String result = formatCents(cents);
+        String result = de.spahr.ausgaben.settings.MoneyFormat.plain(cents);
         if (!result.equals(raw)) {
             field.setText(result);   // Feldinhalt durch das Ergebnis ersetzen
         }
     }
 
-    private String textOf(android.widget.EditText e) {
-        return e.getText() == null ? "" : e.getText().toString();
-    }
 }

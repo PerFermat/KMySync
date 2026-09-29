@@ -49,6 +49,9 @@ public class Repository {
     private final BudgetRepository budgetRepo;
     private final DepotRepository depotRepo;
     private final AccountGroupRepository groupRepo;
+    private final ScheduledRepository scheduledRepo;
+    private final LanguageRepository languageRepo;
+    private final PlaceRepository placeRepo;
     private final AliasResolver aliasResolver;
 
     public Repository(Context context) {
@@ -74,6 +77,10 @@ public class Repository {
         this.budgetRepo = new BudgetRepository(bookingDao, budgetDao, categoryTypeDao, executor, mainHandler);
         this.depotRepo = new DepotRepository(db, securityDao, appContext, executor, mainHandler);
         this.groupRepo = new AccountGroupRepository(accountDao, accountGroupDao, executor, mainHandler);
+        this.scheduledRepo = new ScheduledRepository(scheduledTransactionDao, scheduledSplitDao,
+                scheduledAdvanceDao, securityDao, executor, mainHandler);
+        this.languageRepo = new LanguageRepository(translationDao, executor, mainHandler);
+        this.placeRepo = new PlaceRepository(placeEntryDao, bookingDao, executor, mainHandler);
         this.aliasResolver = new AliasResolver(bookingDao, correctionDao, accountDao, executor, mainHandler);
     }
 
@@ -185,50 +192,22 @@ public class Repository {
      * „sobald ein Konto neu eingelesen wurde" aktualisieren. {@code onDone} optional (Main-Thread).
      */
     public void applyScheduledTransactions(final List<ScheduledTransaction> list, final Runnable onDone) {
-        executor.execute(() -> {
-            scheduledTransactionDao.deleteAll();
-            scheduledSplitDao.deleteAll();
-            if (list != null) {
-                for (ScheduledTransaction st : list) {
-                    if (st != null) {
-                        long id = scheduledTransactionDao.insert(st);
-                        if (st.splitParts != null) {
-                            for (ScheduledSplit part : st.splitParts) {
-                                part.scheduledId = id;
-                                scheduledSplitDao.insert(part);
-                            }
-                        }
-                    }
-                }
-            }
-            if (onDone != null) {
-                mainHandler.post(onDone);
-            }
-        });
+        scheduledRepo.applyScheduledTransactions(list, onDone);
     }
 
     /** Eine geplante Buchung nach id (für die Detail-Maske). */
     public void getScheduledById(final long id, final Callback<ScheduledTransaction> callback) {
-        executor.execute(() -> {
-            final ScheduledTransaction result = scheduledTransactionDao.getById(id);
-            mainHandler.post(() -> callback.onResult(result));
-        });
+        scheduledRepo.getScheduledById(id, callback);
     }
 
     /** Die Kategorie-Teile einer geplanten Splitbuchung (für die Detail-Maske). */
     public void getScheduledSplits(final long scheduledId, final Callback<List<ScheduledSplit>> callback) {
-        executor.execute(() -> {
-            final List<ScheduledSplit> result = scheduledSplitDao.getForScheduled(scheduledId);
-            mainHandler.post(() -> callback.onResult(result));
-        });
+        scheduledRepo.getScheduledSplits(scheduledId, callback);
     }
 
     /** Geplante Buchungen nach nächster Fälligkeit (für die Seite „Geplante Buchungen"). */
     public void getScheduledTransactions(final Callback<List<ScheduledTransaction>> callback) {
-        executor.execute(() -> {
-            final List<ScheduledTransaction> result = scheduledTransactionDao.getAllByDue();
-            mainHandler.post(() -> callback.onResult(result));
-        });
+        scheduledRepo.getScheduledTransactions(callback);
     }
 
     /** Geplante Buchungen samt der noch nicht übertragenen Vorrück-Vormerkungen. */
@@ -245,15 +224,7 @@ public class Repository {
 
     /** Geplante Buchungen + Vormerkungen in einem Zug (für die Seite „Geplante Buchungen"). */
     public void getScheduledTransactionsWithAdvances(final Callback<ScheduledData> callback) {
-        executor.execute(() -> {
-            final List<ScheduledTransaction> list = scheduledTransactionDao.getAllByDue();
-            final java.util.Map<String, Long> advances = new java.util.HashMap<>();
-            for (ScheduledAdvance a : scheduledAdvanceDao.getAll()) {
-                advances.put(a.kmyId, a.nextDueMs);
-            }
-            final ScheduledData result = new ScheduledData(list, advances);
-            mainHandler.post(() -> callback.onResult(result));
-        });
+        scheduledRepo.getScheduledTransactionsWithAdvances(callback);
     }
 
     /**
@@ -263,112 +234,22 @@ public class Repository {
      */
     public void advanceScheduled(final ScheduledTransaction st, final long dueMs, final boolean executed,
                                  final Runnable onDone) {
-        if (st == null || st.kmyId == null || st.kmyId.trim().isEmpty()) {
-            if (onDone != null) {
-                mainHandler.post(onDone);
-            }
-            return;
-        }
-        final long next = ScheduleProjection.nextDue(dueMs, st.occurrence, st.occurrenceMultiplier);
-        executor.execute(() -> {
-            ScheduledAdvance a = scheduledAdvanceDao.getByKmyId(st.kmyId);
-            long lastPayment = a == null ? 0 : a.lastPaymentMs;
-            if (executed) {
-                lastPayment = dueMs;
-            }
-            if (a == null) {
-                scheduledAdvanceDao.insert(new ScheduledAdvance(st.kmyId, dueMs, next, lastPayment,
-                        System.currentTimeMillis()));
-            } else {
-                a.fromDueMs = dueMs;
-                a.nextDueMs = next;
-                a.lastPaymentMs = lastPayment;
-                a.updatedAt = System.currentTimeMillis();
-                scheduledAdvanceDao.update(a);
-            }
-            if (onDone != null) {
-                mainHandler.post(onDone);
-            }
-        });
+        scheduledRepo.advanceScheduled(st, dueMs, executed, onDone);
     }
 
-    /**
-     * Sucht für jede frisch gespeicherte Wertpapier-Bewegung eine passende geplante Umbuchung auf das
-     * Wertpapierkonto (siehe {@link ScheduleMatch}). Läuft erst nach dem Speichern, damit die Bewegung
-     * schon in der DB steht; ändert selbst nichts, meldet nur Treffer zurück – bestätigt werden sie über
-     * {@link #confirmScheduleMatch}.
-     */
+    /** Sucht zu frisch gespeicherten Wertpapier-Bewegungen passende geplante Umbuchungen (ändert nichts). */
     public void findScheduleMatches(final List<SecurityTx> txs, final Callback<List<ScheduleMatch.Result>> callback) {
-        executor.execute(() -> {
-            final List<ScheduleMatch.Result> results = new ArrayList<>();
-            final List<ScheduledTransaction> schedules = scheduledTransactionDao.getAllByDue();
-            for (SecurityTx tx : txs) {
-                Security security = securityDao.getSecurity(tx.depot, tx.securityKmyId);
-                if (security == null) {
-                    continue;
-                }
-                ScheduledTransaction match = ScheduleMatch.findMatch(schedules, tx, security.name);
-                if (match == null || tx.shares == 0) {
-                    continue;
-                }
-                double price = Math.abs(tx.amountCents) / 100.0 / Math.abs(tx.shares);
-                double newShares = ScheduleMatch.newShares(match, price);
-                if (newShares <= 0) {
-                    // Kein Kurs, also keine Stückzahl: Bei einer Bewegung über 0 € (Gratisstücke,
-                    // Berichtigung) käme hier 0 heraus, und genau die stünde später im Split der
-                    // Planung – zusammen mit dem Ersatzkurs „1/1" aus KmyExporter#priceFraction.
-                    // Lieber keinen Treffer melden als die Planung mit einer 0 überschreiben.
-                    continue;
-                }
-                results.add(new ScheduleMatch.Result(tx, match, newShares));
-            }
-            mainHandler.post(() -> callback.onResult(results));
-        });
+        scheduledRepo.findScheduleMatches(txs, callback);
     }
 
-    /**
-     * Übernimmt einen vom Nutzer bestätigten Schedule-Treffer: stellt den Termin erledigt weiter (wie
-     * {@link #advanceScheduled}). Die Stückzahl der Planung selbst wird nicht mehr angefasst – der Export
-     * schreibt an dieser Stelle nichts in die .kmy-Datei zurück.
-     */
+    /** Übernimmt einen bestätigten Schedule-Treffer: stellt den Termin erledigt weiter. */
     public void confirmScheduleMatch(final ScheduleMatch.Result match, final Runnable onDone) {
-        final ScheduledTransaction st = match.schedule;
-        if (st == null || st.kmyId == null || st.kmyId.trim().isEmpty()) {
-            if (onDone != null) {
-                mainHandler.post(onDone);
-            }
-            return;
-        }
-        final long dueMs = st.nextDueMs;
-        final long next = ScheduleProjection.nextDue(dueMs, st.occurrence, st.occurrenceMultiplier);
-        executor.execute(() -> {
-            ScheduledAdvance a = scheduledAdvanceDao.getByKmyId(st.kmyId);
-            boolean isNew = a == null;
-            if (isNew) {
-                a = new ScheduledAdvance(st.kmyId, dueMs, next, dueMs, System.currentTimeMillis());
-            } else {
-                a.fromDueMs = dueMs;
-                a.nextDueMs = next;
-                a.lastPaymentMs = dueMs;
-                a.updatedAt = System.currentTimeMillis();
-            }
-            if (isNew) {
-                scheduledAdvanceDao.insert(a);
-            } else {
-                scheduledAdvanceDao.update(a);
-            }
-            if (onDone != null) {
-                mainHandler.post(onDone);
-            }
-        });
+        scheduledRepo.confirmScheduleMatch(match, onDone);
     }
 
     /** Alle Kategorie-Teile geplanter Splitbuchungen auf einmal (für die Kategorien-Auswertung). */
     public void getAllScheduledSplits(final Callback<List<ScheduledSplit>> callback) {
-        executor.execute(() -> {
-            final List<ScheduledSplit> result = scheduledSplitDao.getAll();
-            mainHandler.post(() -> callback.onResult(result));
-        });
+        scheduledRepo.getAllScheduledSplits(callback);
     }
 
     /** Frühester und spätester Buchungszeitpunkt als {@code {min, max}} (0/0 bei leerer DB). */
@@ -476,10 +357,7 @@ public class Repository {
     }
 
     public void getLanguages(final Callback<List<Language>> callback) {
-        executor.execute(() -> {
-            final List<Language> result = translationDao.getLanguages();
-            mainHandler.post(() -> callback.onResult(result));
-        });
+        languageRepo.getLanguages(callback);
     }
 
     /**
@@ -489,61 +367,18 @@ public class Repository {
     public void buildLanguageTemplate(final String lang,
                                       final Callback<de.spahr.ausgaben.i18n.TranslationIo.Template>
                                               callback) {
-        executor.execute(() -> {
-            de.spahr.ausgaben.i18n.TranslationIo.Template template;
-            try {
-                List<TranslationDao.KeyValue> current = null;
-                Language language = null;
-                if (!de.spahr.ausgaben.i18n.LocaleManager.isBuiltIn(lang)) {
-                    current = translationDao.getPairsOrdered(lang);
-                    for (Language l : translationDao.getLanguages()) {
-                        if (l.code.equals(lang)) {
-                            language = l;
-                            break;
-                        }
-                    }
-                }
-                template = de.spahr.ausgaben.i18n.TranslationIo.buildTemplate(
-                        translationDao.getPairsOrdered("de"), translationDao.getPairsOrdered("en"),
-                        current, language);
-            } catch (Exception e) {
-                template = null;
-            }
-            final de.spahr.ausgaben.i18n.TranslationIo.Template result = template;
-            mainHandler.post(() -> callback.onResult(result));
-        });
+        languageRepo.buildLanguageTemplate(lang, callback);
     }
 
     /** Importiert eine (geparste) Sprache in die DB; ersetzt eine bestehende gleichen Codes. */
     public void importLanguage(final de.spahr.ausgaben.i18n.TranslationIo.Parsed parsed,
                                final Runnable onDone) {
-        executor.execute(() -> {
-            List<Translation> rows = new ArrayList<>();
-            for (Map.Entry<String, String> e : parsed.values.entrySet()) {
-                rows.add(new Translation(parsed.code, e.getKey(), e.getValue()));
-            }
-            translationDao.deleteTranslations(parsed.code);
-            translationDao.insertAll(rows);
-            translationDao.upsertLanguage(
-                    new Language(parsed.code, parsed.name, parsed.defaultCurrency, parsed.numberFormat));
-            if (onDone != null) {
-                mainHandler.post(onDone);
-            }
-        });
+        languageRepo.importLanguage(parsed, onDone);
     }
 
     /** Wear-relevante Texte (Schlüssel „wear_*") der Sprache – für die Übertragung an die Uhr. */
     public void getWearStrings(final String lang, final Callback<Map<String, String>> callback) {
-        executor.execute(() -> {
-            Map<String, String> m = new HashMap<>();
-            for (TranslationDao.KeyValue kv : translationDao.getPairs(lang)) {
-                if (kv.key.startsWith("wear_")) {
-                    m.put(kv.key, kv.value);
-                }
-            }
-            final Map<String, String> result = m;
-            mainHandler.post(() -> callback.onResult(result));
-        });
+        languageRepo.getWearStrings(lang, callback);
     }
 
     /**
@@ -2036,12 +1871,18 @@ public class Repository {
         executor.execute(() -> accountDao.insertIfAbsent(new Account(name.trim())));
     }
 
-    // ---- Bargeld-Orte ----
+    // ---- Bargeld-Orte (reines Journal in PlaceRepository) ----
 
-    private static final String NO_PLACE = de.spahr.ausgaben.settings.PlacesStore.NO_PLACE;
+    private static boolean isRealPlace(String place) {
+        return PlaceRepository.isRealPlace(place);
+    }
 
-    private boolean isRealPlace(String place) {
-        return place != null && !place.trim().isEmpty() && !place.equals(NO_PLACE);
+    private static long signed(Booking b) {
+        return PlaceRepository.signed(b);
+    }
+
+    private void insertBookingMovement(Booking b) {
+        placeRepo.insertBookingMovement(b);
     }
 
     /**
@@ -2064,29 +1905,9 @@ public class Repository {
         });
     }
 
-    /** Vorzeichenbehafteter Betrag einer Buchung (Einnahme = +, Ausgabe = −). */
-    private static long signed(Booking b) {
-        return b.isIncome ? b.amountCents : -b.amountCents;
-    }
-
-    /**
-     * Legt für eine neu angelegte, ort-verknüpfte Buchung die anfängliche Ort-Bewegung an (nur wenn ein
-     * echter Ort hinterlegt ist). Datum = Buchungsdatum. Läuft auf dem Executor-Thread.
-     */
-    private void insertBookingMovement(Booking b) {
-        if (b.placeManaged && isRealPlace(b.place)) {
-            String note = b.payee == null || b.payee.trim().isEmpty()
-                    ? "Buchung" : "Buchung: " + b.payee.trim();
-            placeEntryDao.insert(new PlaceEntry(b.account, b.place, signed(b), b.createdAt, "booking", note));
-        }
-    }
-
     /** Ordnet noch nicht zugeordnete Ort-Bewegungen einmalig dem Standardkonto zu (Migration v4→v5). */
     public void migratePlaceEntryAccounts(final String defaultAccount) {
-        if (defaultAccount == null || defaultAccount.trim().isEmpty()) {
-            return;
-        }
-        executor.execute(() -> placeEntryDao.assignEmptyAccount(defaultAccount.trim()));
+        placeRepo.migratePlaceEntryAccounts(defaultAccount);
     }
 
     public void getTotalBalance(final Callback<Long> callback) {
@@ -2115,51 +1936,27 @@ public class Repository {
 
     /** Ort-Salden eines Kontos aus dem Journal (Σ Bewegungen je Ort). „ohne Ort" ist der berechnete Rest. */
     public void getPlaceBalances(final String account, final Callback<List<PlaceBalance>> callback) {
-        executor.execute(() -> {
-            final List<PlaceBalance> result = placeEntryDao.getBalances(account == null ? "" : account);
-            mainHandler.post(() -> callback.onResult(result));
-        });
+        placeRepo.getPlaceBalances(account, callback);
     }
 
     /** Ort-Salden je (Konto, Ort) über alle Konten aus dem Journal (für die Bestände-Gruppenliste). */
     public void getAllPlaceBalances(final Callback<List<PlaceBalance>> callback) {
-        executor.execute(() -> {
-            final List<PlaceBalance> result = placeEntryDao.getAllBalances();
-            mainHandler.post(() -> callback.onResult(result));
-        });
+        placeRepo.getAllPlaceBalances(callback);
     }
 
     public void getPlaceHistory(final String account, final String place,
                                 final Callback<List<PlaceEntry>> callback) {
-        executor.execute(() -> {
-            final List<PlaceEntry> result = placeEntryDao.getByPlace(
-                    account == null ? "" : account, place);
-            mainHandler.post(() -> callback.onResult(result));
-        });
+        placeRepo.getPlaceHistory(account, place, callback);
     }
 
     public void getAllPlaceEntries(final Callback<List<PlaceEntry>> callback) {
-        executor.execute(() -> {
-            final List<PlaceEntry> result = placeEntryDao.getAll();
-            mainHandler.post(() -> callback.onResult(result));
-        });
+        placeRepo.getAllPlaceEntries(callback);
     }
 
     /** Umbuchen zwischen Orten desselben Kontos (keine Buchung). */
     public void saveTransfer(final String account, final String from, final String to,
                              final long cents, final Runnable onDone) {
-        executor.execute(() -> {
-            long now = System.currentTimeMillis();
-            if (isRealPlace(from)) {
-                placeEntryDao.insert(new PlaceEntry(account, from.trim(), -cents, now, "transfer"));
-            }
-            if (isRealPlace(to)) {
-                placeEntryDao.insert(new PlaceEntry(account, to.trim(), cents, now, "transfer"));
-            }
-            if (onDone != null) {
-                mainHandler.post(onDone);
-            }
-        });
+        placeRepo.saveTransfer(account, from, to, cents, onDone);
     }
 
     /**
@@ -2267,55 +2064,26 @@ public class Repository {
     /** Fügt eine manuelle Ort-Bewegung ins Journal ein. */
     public void addPlaceMovement(final String account, final String place, final long cents,
                                  final long dateMillis, final String note, final Runnable onDone) {
-        executor.execute(() -> {
-            placeEntryDao.insert(new PlaceEntry(account == null ? "" : account,
-                    place == null ? "" : place, cents, dateMillis, "transfer",
-                    note == null ? "" : note));
-            if (onDone != null) {
-                mainHandler.post(onDone);
-            }
-        });
+        placeRepo.addPlaceMovement(account, place, cents, dateMillis, note, onDone);
     }
 
     /** Aktualisiert eine einzelne Ort-Bewegung (Datum/Betrag/Notiz). */
     public void updatePlaceMovement(final PlaceEntry entry, final Runnable onDone) {
-        executor.execute(() -> {
-            placeEntryDao.update(entry);
-            if (onDone != null) {
-                mainHandler.post(onDone);
-            }
-        });
+        placeRepo.updatePlaceMovement(entry, onDone);
     }
 
     /** Löscht eine einzelne Ort-Bewegung. */
     public void deletePlaceMovement(final long id, final Runnable onDone) {
-        executor.execute(() -> {
-            placeEntryDao.delete(id);
-            if (onDone != null) {
-                mainHandler.post(onDone);
-            }
-        });
+        placeRepo.deletePlaceMovement(id, onDone);
     }
 
     public void renamePlaceEntries(final String account, final String oldName, final String newName,
                                    final Runnable onDone) {
-        executor.execute(() -> {
-            String acct = account == null ? "" : account;
-            placeEntryDao.renamePlace(acct, oldName, newName);
-            bookingDao.renamePlace(acct, oldName, newName); // Buchungen folgen dem Umbenennen
-            if (onDone != null) {
-                mainHandler.post(onDone);
-            }
-        });
+        placeRepo.renamePlaceEntries(account, oldName, newName, onDone);
     }
 
     public void deletePlaceEntries(final String account, final String place, final Runnable onDone) {
-        executor.execute(() -> {
-            placeEntryDao.deleteByPlace(account == null ? "" : account, place);
-            if (onDone != null) {
-                mainHandler.post(onDone);
-            }
-        });
+        placeRepo.deletePlaceEntries(account, place, onDone);
     }
 
     /**

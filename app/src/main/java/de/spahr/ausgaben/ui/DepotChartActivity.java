@@ -450,12 +450,12 @@ public class DepotChartActivity extends LocalizedActivity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(0, dp(8), 0, dp(8));
+        row.setPadding(0, Ui.dp(this, 8), 0, Ui.dp(this, 8));
 
         View dot = new View(this);
         dot.setBackgroundColor(CategoryColorStore.defaultColor(r.name));
-        LinearLayout.LayoutParams dotLp = new LinearLayout.LayoutParams(dp(10), dp(10));
-        dotLp.setMarginEnd(dp(10));
+        LinearLayout.LayoutParams dotLp = new LinearLayout.LayoutParams(Ui.dp(this, 10), Ui.dp(this, 10));
+        dotLp.setMarginEnd(Ui.dp(this, 10));
         row.addView(dot, dotLp);
 
         TextView name = new TextView(this);
@@ -468,7 +468,7 @@ public class DepotChartActivity extends LocalizedActivity {
         pct.setTextColor(0xFF9E9E9E);
         LinearLayout.LayoutParams pctLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        pctLp.setMarginEnd(dp(10));
+        pctLp.setMarginEnd(Ui.dp(this, 10));
         row.addView(pct, pctLp);
 
         TextView amount = new TextView(this);
@@ -552,12 +552,12 @@ public class DepotChartActivity extends LocalizedActivity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(0, dp(8), 0, dp(8));
+        row.setPadding(0, Ui.dp(this, 8), 0, Ui.dp(this, 8));
 
         View dot = new View(this);
         dot.setBackgroundColor(CategoryColorStore.defaultColor(r.name));   // Farbpunkt wie im Kreis
-        LinearLayout.LayoutParams dotLp = new LinearLayout.LayoutParams(dp(10), dp(10));
-        dotLp.setMarginEnd(dp(10));
+        LinearLayout.LayoutParams dotLp = new LinearLayout.LayoutParams(Ui.dp(this, 10), Ui.dp(this, 10));
+        dotLp.setMarginEnd(Ui.dp(this, 10));
         row.addView(dot, dotLp);
 
         TextView name = new TextView(this);
@@ -572,7 +572,7 @@ public class DepotChartActivity extends LocalizedActivity {
         pct.setTextColor(signColor);
         LinearLayout.LayoutParams pctLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        pctLp.setMarginEnd(dp(10));
+        pctLp.setMarginEnd(Ui.dp(this, 10));
         row.addView(pct, pctLp);
 
         TextView amount = new TextView(this);
@@ -589,7 +589,4 @@ public class DepotChartActivity extends LocalizedActivity {
         return MoneyFormat.display(cents, Currencies.getDefault());
     }
 
-    private int dp(int v) {
-        return Math.round(v * getResources().getDisplayMetrics().density);
-    }
 }

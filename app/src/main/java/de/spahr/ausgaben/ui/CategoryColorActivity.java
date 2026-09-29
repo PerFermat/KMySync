@@ -56,14 +56,14 @@ public class CategoryColorActivity extends LocalizedActivity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(0, dp(12), 0, dp(12));
+        row.setPadding(0, Ui.dp(this, 12), 0, Ui.dp(this, 12));
         row.setClickable(true);
         row.setFocusable(true);
 
         View swatch = new View(this);
         swatch.setBackground(swatchDrawable(colors.colorFor(category)));
-        LinearLayout.LayoutParams swLp = new LinearLayout.LayoutParams(dp(24), dp(24));
-        swLp.setMarginEnd(dp(16));
+        LinearLayout.LayoutParams swLp = new LinearLayout.LayoutParams(Ui.dp(this, 24), Ui.dp(this, 24));
+        swLp.setMarginEnd(Ui.dp(this, 16));
         row.addView(swatch, swLp);
 
         TextView name = new TextView(this);
@@ -78,7 +78,7 @@ public class CategoryColorActivity extends LocalizedActivity {
     private void showPicker(String category, View swatch) {
         GridLayout grid = new GridLayout(this);
         grid.setColumnCount(5);
-        int pad = dp(16);
+        int pad = Ui.dp(this, 16);
         grid.setPadding(pad, pad, pad, pad);
 
         AlertDialog dialog = new AppDialog(this)
@@ -94,9 +94,9 @@ public class CategoryColorActivity extends LocalizedActivity {
             View cell = new View(this);
             cell.setBackground(swatchDrawable(color));
             GridLayout.LayoutParams lp = new GridLayout.LayoutParams();
-            lp.width = dp(40);
-            lp.height = dp(40);
-            lp.setMargins(dp(6), dp(6), dp(6), dp(6));
+            lp.width = Ui.dp(this, 40);
+            lp.height = Ui.dp(this, 40);
+            lp.setMargins(Ui.dp(this, 6), Ui.dp(this, 6), Ui.dp(this, 6), Ui.dp(this, 6));
             cell.setLayoutParams(lp);
             cell.setOnClickListener(v -> {
                 colors.setColor(category, color);
@@ -113,11 +113,8 @@ public class CategoryColorActivity extends LocalizedActivity {
         GradientDrawable d = new GradientDrawable();
         d.setShape(GradientDrawable.OVAL);
         d.setColor(color);
-        d.setStroke(dp(1), 0x33000000);
+        d.setStroke(Ui.dp(this, 1), 0x33000000);
         return d;
     }
 
-    private int dp(int v) {
-        return Math.round(v * getResources().getDisplayMetrics().density);
-    }
 }

@@ -588,10 +588,10 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
      */
     private String belegPfadAusFeldern() {
         String wurzel = SettingsStore.isKmySourceMode(selectedExportMode)
-                ? de.spahr.ausgaben.net.RemotePath.folderOf(textOf(editKmyPath))
-                : textOf(editFolder);
+                ? de.spahr.ausgaben.net.RemotePath.folderOf(Ui.trimmedText(editKmyPath))
+                : Ui.trimmedText(editFolder);
         return de.spahr.ausgaben.net.RemotePath.join(wurzel,
-                SettingsStore.normalizeReceiptFolder(textOf(editReceiptFolder)));
+                SettingsStore.normalizeReceiptFolder(Ui.trimmedText(editReceiptFolder)));
     }
 
     /**
@@ -640,7 +640,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
      */
     private void belegordnerUebernehmen() {
         final String alt = belegPfadBeimOeffnen;
-        settings.setReceiptFolder(textOf(editReceiptFolder));
+        settings.setReceiptFolder(Ui.trimmedText(editReceiptFolder));
         final String neu = de.spahr.ausgaben.receipt.ReceiptSync.remoteBase(settings);
         if (neu.equals(alt) || alt.isEmpty()) {
             return;
@@ -667,32 +667,32 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
     // ---- Speichern ----
 
     private void saveSettings() {
-        profiles.renameProfile(profiles.getActiveProfileId(), textOf(editProfileName));
+        profiles.renameProfile(profiles.getActiveProfileId(), Ui.trimmedText(editProfileName));
 
         String defaultAccount = editDefaultAccount.getText() == null
                 ? "" : editDefaultAccount.getText().toString().trim();
         settings.save(
-                textOf(editUrl),
-                textOf(editUser),
-                textOf(editPassword),
-                textOf(editFolder),
-                textOf(editImportFolder),
+                Ui.trimmedText(editUrl),
+                Ui.trimmedText(editUser),
+                Ui.trimmedText(editPassword),
+                Ui.trimmedText(editFolder),
+                Ui.trimmedText(editImportFolder),
                 defaultAccount,
                 selectedExportMode,
-                textOf(editKmyPath),
+                Ui.trimmedText(editKmyPath),
                 syncFields.serverType());
         settings.setCsvSeparator(selectedCsvSeparator);
         belegordnerUebernehmen();
 
         repository.ensureAccount(defaultAccount);
-        settings.setCurrency(textOf(editCurrency));
+        settings.setCurrency(Ui.trimmedText(editCurrency));
         settings.setNumberFormat(selectedNumberFormat);
         settings.setCurrencyShown(switchShowCurrency.isChecked());
         settings.setDividendGross(switchDividendGross.isChecked());
         // Der Steuersatz kommt im eingestellten Zahlenformat herein (Komma oder Punkt). Ein unlesbarer
         // Wert lässt den gespeicherten stehen – siehe TextValues.percentOrNull; abgeschaltet wird die Vorbelegung
         // nur durch ein leeres Feld.
-        Double steuersatz = de.spahr.ausgaben.util.TextValues.percentOrNull(textOf(editDividendTaxRate));
+        Double steuersatz = de.spahr.ausgaben.util.TextValues.percentOrNull(Ui.trimmedText(editDividendTaxRate));
         if (steuersatz != null) {
             settings.setDividendTaxPercent(steuersatz);
         }
@@ -713,7 +713,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
      * {@link de.spahr.ausgaben.util.TextValues#percentOrNull}, den gespeicherten Wert stehen zu lassen.
      */
     private boolean steuersatzIstBrauchbar() {
-        if (de.spahr.ausgaben.util.TextValues.percentOrNull(textOf(editDividendTaxRate)) != null) {
+        if (de.spahr.ausgaben.util.TextValues.percentOrNull(Ui.trimmedText(editDividendTaxRate)) != null) {
             dividendTaxLayout.setError(null);
             return true;
         }
@@ -875,19 +875,19 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
      * schnellste Antwort auf „warum geht es nicht?". Welche Kette, hängt an der Serverart.
      */
     private void runDiagnostics() {
-        String pw = textOf(editPassword);
+        String pw = Ui.trimmedText(editPassword);
         // Geprüft wird der Ordner, in den die App wirklich schreibt: im .kmy-Modus der Ordner der
         // Datei (samt Datei), im CSV-Modus der Export-Ordner.
         boolean kmy = SettingsStore.MODE_KMY.equals(selectedExportMode);
-        String path = kmy ? textOf(editKmyPath) : textOf(editFolder);
+        String path = kmy ? Ui.trimmedText(editKmyPath) : Ui.trimmedText(editFolder);
         String folder = kmy ? RemotePath.folderOf(path) : path;
         String file = kmy ? RemotePath.fileOf(path) : "";
         String password = pw.isEmpty() ? settings.getPassword() : pw;
         String type = syncFields.serverType();
         if (SettingsStore.SERVER_SMB.equals(type)) {
-            DiagnosticsDialog.runSmb(this, diagBanner, textOf(editUrl), textOf(editUser), password, folder, file);
+            DiagnosticsDialog.runSmb(this, diagBanner, Ui.trimmedText(editUrl), Ui.trimmedText(editUser), password, folder, file);
         } else {
-            DiagnosticsDialog.runWebDav(this, diagBanner, textOf(editUrl), textOf(editUser), password,
+            DiagnosticsDialog.runWebDav(this, diagBanner, Ui.trimmedText(editUrl), Ui.trimmedText(editUser), password,
                     !SettingsStore.SERVER_WEBDAV.equals(type), folder, file);
         }
     }
@@ -1184,9 +1184,6 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         }
     }
 
-    private String textOf(TextInputEditText field) {
-        return field.getText() == null ? "" : field.getText().toString().trim();
-    }
 
     // ---- Sicherung/Wiederherstellen (nur das aktive Profil) ----
 
@@ -1219,8 +1216,8 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
                         .create();
         dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
                 .setOnClickListener(v -> {
-                    String p1 = textOf(pw);
-                    if (!p1.equals(textOf(repeat))) {
+                    String p1 = Ui.trimmedText(pw);
+                    if (!p1.equals(Ui.trimmedText(repeat))) {
                         Toast.makeText(this, R.string.backup_password_mismatch, Toast.LENGTH_LONG).show();
                         return;
                     }

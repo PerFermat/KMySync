@@ -423,9 +423,9 @@ public class BalanceActivity extends LocalizedActivity {
                     // ist leer. Erst die Suche beenden, dann lesen.
                     PickerBehaviour.settleAll(view);
 
-                    String f = textOf(from);
-                    String t = textOf(to);
-                    Long cents = parseCents(textOf(amount));
+                    String f = Ui.trimmedText(from);
+                    String t = Ui.trimmedText(to);
+                    Long cents = parseCents(Ui.trimmedText(amount));
                     if (cents == null || cents <= 0 || f.equals(t)) {
                         Toast.makeText(this, R.string.transfer_invalid, Toast.LENGTH_SHORT).show();
                         return;
@@ -498,8 +498,8 @@ public class BalanceActivity extends LocalizedActivity {
                             PickerBehaviour.settleAll(view);
 
                             // Ort bleibt frei: Konten ohne angelegte Orte werden als Ganzes abgestimmt.
-                            String p = textOf(place);
-                            Long cents = parseCents(textOf(amount));
+                            String p = Ui.trimmedText(place);
+                            Long cents = parseCents(Ui.trimmedText(amount));
                             if (cents == null) {
                                 Toast.makeText(this, R.string.error_amount, Toast.LENGTH_SHORT).show();
                                 return;
@@ -547,8 +547,8 @@ public class BalanceActivity extends LocalizedActivity {
                     // ist leer. Erst die Suche beenden, dann lesen.
                     PickerBehaviour.settleAll(view);
 
-                    payee[0] = textOf(payeeField);
-                    category[0] = textOf(categoryField);
+                    payee[0] = Ui.trimmedText(payeeField);
+                    category[0] = Ui.trimmedText(categoryField);
                     settings.setReconcileTarget(payee[0], category[0]);
                     showReconcileTarget(button, payee[0], category[0]);
                     onSaved.run();
@@ -582,9 +582,6 @@ public class BalanceActivity extends LocalizedActivity {
         return options;
     }
 
-    private String textOf(android.widget.EditText e) {
-        return e.getText() == null ? "" : e.getText().toString().trim();
-    }
 
     private Long parseCents(String raw) {
         return de.spahr.ausgaben.settings.AmountExpression.toCents(raw);

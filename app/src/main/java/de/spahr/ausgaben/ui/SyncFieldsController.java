@@ -142,7 +142,7 @@ final class SyncFieldsController {
 
     /** Leeres Passwortfeld heißt: das gespeicherte gilt weiter. */
     private String passwordOrSaved() {
-        String pw = textOf(editPassword);
+        String pw = Ui.trimmedText(editPassword);
         return pw.isEmpty() ? settings.getPassword() : pw;
     }
 
@@ -164,13 +164,13 @@ final class SyncFieldsController {
 
     /** Der .kmy-Browser, ausgehend vom Ordner des aktuell eingetragenen Pfades. */
     void browseKmy() {
-        browseKmyAt(RemotePath.folderOf(textOf(editKmyPath)));
+        browseKmyAt(RemotePath.folderOf(Ui.trimmedText(editKmyPath)));
     }
 
     private void browseKmyAt(String folder) {
         final String serverType = selectedServerType;
-        final String url = textOf(editUrl);
-        final String user = textOf(editUser);
+        final String url = Ui.trimmedText(editUrl);
+        final String user = Ui.trimmedText(editUser);
         final String password = passwordOrSaved();
         toast(R.string.loading_files, Toast.LENGTH_SHORT);
         new Thread(() -> {
@@ -241,13 +241,13 @@ final class SyncFieldsController {
      * Nextcloud, WebDAV und SMB.
      */
     void browseFolderInto(TextInputEditText target) {
-        browseFolderAt(textOf(target), target);
+        browseFolderAt(Ui.trimmedText(target), target);
     }
 
     private void browseFolderAt(String folder, TextInputEditText target) {
         final String serverType = selectedServerType;
-        final String url = textOf(editUrl);
-        final String user = textOf(editUser);
+        final String url = Ui.trimmedText(editUrl);
+        final String user = Ui.trimmedText(editUser);
         final String password = passwordOrSaved();
         toast(R.string.loading_files, Toast.LENGTH_SHORT);
         new Thread(() -> {
@@ -342,7 +342,4 @@ final class SyncFieldsController {
         Toast.makeText(activity, text, length).show();
     }
 
-    private String textOf(TextInputEditText field) {
-        return field.getText() == null ? "" : field.getText().toString().trim();
-    }
 }

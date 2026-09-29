@@ -59,7 +59,7 @@ public class AliasActivity extends LocalizedActivity {
         if (empty) {
             return;
         }
-        int pad = dp(12);
+        int pad = Ui.dp(this, 12);
         for (PayeeCorrection a : aliases) {
             TextView row = new TextView(this);
             String prefix = a.preferred ? "★ " : "";
@@ -80,7 +80,4 @@ public class AliasActivity extends LocalizedActivity {
         }
     }
 
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
-    }
 }

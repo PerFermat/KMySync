@@ -516,19 +516,19 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
     // ---- Speichern ----
 
     private void saveSettings() {
-        profiles.renameProfile(profiles.getActiveProfileId(), textOf(editProfileName));
+        profiles.renameProfile(profiles.getActiveProfileId(), Ui.trimmedText(editProfileName));
 
         String defaultAccount = editDefaultAccount.getText() == null
                 ? "" : editDefaultAccount.getText().toString().trim();
         settings.save(
-                textOf(editUrl),
-                textOf(editUser),
-                textOf(editPassword),
-                textOf(editFolder),
-                textOf(editImportFolder),
+                Ui.trimmedText(editUrl),
+                Ui.trimmedText(editUser),
+                Ui.trimmedText(editPassword),
+                Ui.trimmedText(editFolder),
+                Ui.trimmedText(editImportFolder),
                 defaultAccount,
                 selectedExportMode,
-                textOf(editKmyPath),
+                Ui.trimmedText(editKmyPath),
                 syncFields.serverType());
         settings.setCsvSeparator(selectedCsvSeparator);
 
@@ -587,19 +587,19 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
      * Serverart.
      */
     private void runDiagnostics() {
-        String pw = textOf(editPassword);
+        String pw = Ui.trimmedText(editPassword);
         // Geprüft wird der Ordner, in den die App wirklich schreibt: im .kmy-Modus der Ordner der
         // Datei (samt Datei), im CSV-Modus der Export-Ordner.
         boolean kmy = SettingsStore.MODE_KMY.equals(selectedExportMode);
-        String path = kmy ? textOf(editKmyPath) : textOf(editFolder);
+        String path = kmy ? Ui.trimmedText(editKmyPath) : Ui.trimmedText(editFolder);
         String folder = kmy ? RemotePath.folderOf(path) : path;
         String file = kmy ? RemotePath.fileOf(path) : "";
         String password = pw.isEmpty() ? settings.getPassword() : pw;
         String type = syncFields.serverType();
         if (SettingsStore.SERVER_SMB.equals(type)) {
-            DiagnosticsDialog.runSmb(this, diagBanner, textOf(editUrl), textOf(editUser), password, folder, file);
+            DiagnosticsDialog.runSmb(this, diagBanner, Ui.trimmedText(editUrl), Ui.trimmedText(editUser), password, folder, file);
         } else {
-            DiagnosticsDialog.runWebDav(this, diagBanner, textOf(editUrl), textOf(editUser), password,
+            DiagnosticsDialog.runWebDav(this, diagBanner, Ui.trimmedText(editUrl), Ui.trimmedText(editUser), password,
                     !SettingsStore.SERVER_WEBDAV.equals(type), folder, file);
         }
     }
@@ -877,9 +877,6 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
         }
     }
 
-    private String textOf(TextInputEditText field) {
-        return field.getText() == null ? "" : field.getText().toString().trim();
-    }
 
     // ---- Sicherung/Wiederherstellen (nur das aktive Profil) ----
 
