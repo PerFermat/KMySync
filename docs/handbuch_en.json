@@ -189,7 +189,7 @@
           "id": "b-0010",
           "items": [
             "Choose the <b>language</b> (takes effect immediately).",
-            "<b>Import/export format</b>: CSV or KMyMoney file (.kmy).",
+            "<b>Import/export format</b>: CSV, «Read .kmy, export CSV» or KMyMoney file (.kmy).",
             "<b>Synchronisation</b>: server type, URL, user, password – with <b>«Test connection»</b>; in .kmy mode also <b>«Choose .kmy»</b>.",
             "<b>«Import accounts»</b>: the same selection dialog as «Add account», right here in the assistant.",
             "<b>«More settings»</b> opens the full settings; <b>«Done»</b> closes the assistant."
@@ -761,7 +761,7 @@
     {
       "type": "p",
       "id": "b-0059",
-      "text": "In the «Split categories» section you can enter several categories with partial amounts. With one category the total and category amount are linked; with several, the sum must equal the total. Partial amounts may be negative."
+      "text": "In the «Split categories» section you can enter several categories with partial amounts. With one category the total and category amount are linked; with several, the sum must equal the total. Partial amounts may be negative. Split bookings exist <b>only in .kmy mode</b>: KMyMoney's CSV import accepts just one category per booking. When writing via CSV, there is only one category row; templates, schedules or aliases with several categories then prefill no category."
     },
     {
       "type": "h2",
@@ -817,7 +817,7 @@
     {
       "type": "p",
       "id": "b-0062z1a",
-      "text": "The portfolio only exists in <b>.kmy mode</b> – securities only come from reading the KMyMoney file, and CSV export cannot write securities bookings back. In CSV mode, the portfolio section is therefore missing from the account drawer."
+      "text": "The portfolio only exists when the app <b>reads from the KMyMoney file</b> (.kmy mode or «Read .kmy, export CSV») – securities only come from reading the file. Entering buys, sells and dividends (manually or from a PDF) works only in <b>.kmy mode</b>, because CSV export cannot write securities bookings back. In plain CSV mode, the portfolio section is missing from the account drawer."
     },
     {
       "type": "h2",
@@ -1563,7 +1563,7 @@
         {
           "type": "p",
           "id": "b-0116",
-          "text": "The <b>Scheduled transactions</b> page (menu <b>⋮ → Scheduled transactions</b>, shown only in .kmy mode) shows your standing orders from KMyMoney as <b>one chronological list</b> by due date. It refreshes only through the <b>pull-to-refresh</b> gesture on this page, not with the normal account import."
+          "text": "The <b>Scheduled transactions</b> page (menu <b>⋮ → Scheduled transactions</b>, shown whenever the app reads from the .kmy; skipping and advancing only in .kmy mode) shows your standing orders from KMyMoney as <b>one chronological list</b> by due date. It refreshes only through the <b>pull-to-refresh</b> gesture on this page, not with the normal account import."
         },
         {
           "type": "bullets",
@@ -2164,8 +2164,24 @@
       "id": "b-0201",
       "items": [
         "<b>.kmy mode</b>: writes new bookings straight into the KMyMoney file (including splits and transfers) and imports accounts/bookings as well as the portfolio from it. <b>«Choose .kmy»</b> opens a file browser (subfolders, «..» to go back).",
-        "<b>CSV mode</b>: exports one CSV file per account (each booking only once); the target folder and import folder are set here."
+        "<b>CSV mode</b>: exports one CSV file per account (each booking only once); the target folder and import folder are set here.",
+        "<b>Read .kmy, export CSV</b>: accounts, categories, payees, schedules and portfolio come from the KMyMoney file, but the app never writes to it – new bookings go out via CSV and are imported in KMyMoney. For anyone who does not want the app to write their .kmy."
       ]
+    },
+    {
+      "type": "p",
+      "id": "b-0201a",
+      "text": "<b>Restrictions whenever writing via CSV</b> (CSV mode and «Read .kmy, export CSV»): exported bookings can no longer be changed or deleted (only used as a template for a new one), split bookings cannot be created, schedules are not advanced, and nothing can be entered in the portfolio. The corresponding buttons are simply absent – a CSV file can only carry new bookings."
+    },
+    {
+      "type": "p",
+      "id": "b-0201b",
+      "text": "<b>Two quirks of «Read .kmy, export CSV»:</b> bookings exported via CSV disappear from the app on the next .kmy read until you have imported the CSV in KMyMoney and saved the file – they are not lost, they are in the CSV file; please do not enter them a second time. And a payment booked from a schedule leaves the schedule due in the app until you have entered it in KMyMoney."
+    },
+    {
+      "type": "p",
+      "id": "b-0201c",
+      "text": "<b>Switching away from .kmy mode:</b> if deletions, advanced schedules, portfolio entries or changed bookings are still waiting to be transferred, the app asks first. «Discard and switch» removes these pending items (portfolio entries together with their money booking); changed bookings then count as exported so they do not go out twice via CSV. If you do not want that, transfer once more in .kmy mode first."
     },
     {
       "type": "p",
@@ -2272,7 +2288,7 @@
     {
       "type": "p",
       "id": "b-0220",
-      "text": "German locale: column separator «;», decimal separator «,», date DD.MM.YYYY, UTF-8. Split bookings are written as one line per category."
+      "text": "German locale: column separator «;», decimal separator «,», date DD.MM.YYYY, UTF-8. Exactly one category per booking – there are no split bookings when writing via CSV (see chapter «Split booking»)."
     },
     {
       "type": "code",

@@ -356,10 +356,13 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
         editExportMode.setText(exportModeLabel(selectedExportMode, csvLabel, kmyCsvLabel, kmyLabel), false);
         applyExportModeVisibility();
         editExportMode.setOnItemClickListener((parent, view, position, id) -> {
-            selectedExportMode = position == 2 ? SettingsStore.MODE_KMY
+            String chosen = position == 2 ? SettingsStore.MODE_KMY
                     : position == 1 ? SettingsStore.MODE_KMY_CSV : SettingsStore.MODE_CSV;
-            settings.setExportMode(selectedExportMode);
-            applyExportModeVisibility();
+            ExportModeSwitch.request(this, repository, settings, chosen, () -> {
+                selectedExportMode = chosen;
+                applyExportModeVisibility();
+            }, () -> editExportMode.setText(
+                    exportModeLabel(selectedExportMode, csvLabel, kmyCsvLabel, kmyLabel), false));
         });
     }
 

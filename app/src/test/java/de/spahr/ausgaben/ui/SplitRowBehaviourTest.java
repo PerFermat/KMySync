@@ -187,6 +187,48 @@ public class SplitRowBehaviourTest {
         assertEquals("keine zweite Zeile im CSV-Schreibweg", 1, lockedContainer.getChildCount());
     }
 
+    /**
+     * Auch eine geladene Kategorie (Bearbeiten, Vorlage) darf keine leere Abschlusszeile nach sich ziehen –
+     * in die ließe sich sonst die zweite Kategorie eintippen.
+     */
+    @Test
+    public void splitLockedHaengtNachDemLadenKeineLeereZeileAn() {
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        activity.setTheme(com.google.android.material.R.style.Theme_Material3_DayNight_NoActionBar);
+        LinearLayout lockedContainer = new LinearLayout(activity);
+        TextInputEditText lockedTotal = new TextInputEditText(activity);
+        SplitRowController locked = new SplitRowController(lockedContainer, lockedTotal,
+                activity.getLayoutInflater(), false, true, () -> { });
+        locked.setSuppressEvents(true);
+        locked.addRow("Lebensmittel", "10,00");
+        locked.setSuppressEvents(false);
+
+        locked.ensureTrailingRow();
+
+        assertEquals(1, lockedContainer.getChildCount());
+    }
+
+    /** Entfernen der letzten Zeile lässt genau eine leere übrig, nie mehr. */
+    @Test
+    public void splitLockedNachEntfernenGenauEineZeile() {
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        activity.setTheme(com.google.android.material.R.style.Theme_Material3_DayNight_NoActionBar);
+        LinearLayout lockedContainer = new LinearLayout(activity);
+        TextInputEditText lockedTotal = new TextInputEditText(activity);
+        SplitRowController locked = new SplitRowController(lockedContainer, lockedTotal,
+                activity.getLayoutInflater(), false, true, () -> { });
+        locked.setSuppressEvents(true);
+        locked.addRow("Lebensmittel", "10,00");
+        locked.addRow("Getränke", "5,00");
+        locked.setSuppressEvents(false);
+
+        lockedContainer.getChildAt(1).findViewById(R.id.btnRemoveSplit).performClick();
+        assertEquals(1, lockedContainer.getChildCount());
+
+        lockedContainer.getChildAt(0).findViewById(R.id.btnRemoveSplit).performClick();
+        assertEquals("eine leere Zeile bleibt zum Eintragen", 1, lockedContainer.getChildCount());
+    }
+
     // ---- Gültigkeit ----
 
     /** Ohne Kategorie ist es eine einfache Buchung – die ist gültig. */

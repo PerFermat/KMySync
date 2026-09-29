@@ -624,6 +624,13 @@
     <string name="export_mode_csv">CSV (kMyMoney-Import)</string>
     <string name="export_mode_kmy_csv">.kmy lesen, CSV exportieren</string>
     <string name="export_mode_kmy">KMyMoney-Datei (.kmy)</string>
+    <string name="export_mode_discard_title">Offene Übertragungen verwerfen?</string>
+    <string name="export_mode_discard_intro">Diese Vormerkungen kommen nur im .kmy-Modus in die KMyMoney-Datei. Beim Wechsel werden sie verworfen:</string>
+    <string name="export_mode_discard_deletes">Löschungen: %1$d</string>
+    <string name="export_mode_discard_advances">Weitergestellte Planungen: %1$d</string>
+    <string name="export_mode_discard_security">Depot-Bewegungen (werden gelöscht): %1$d</string>
+    <string name="export_mode_discard_edited">Geänderte Buchungen (die Änderung wird nicht übertragen): %1$d</string>
+    <string name="export_mode_discard_confirm">Verwerfen und wechseln</string>
     <string name="kmy_path_hint">KMyMoney-Datei (Pfad, z. B. KMyMoney/gdyx.kmy)</string>
     <string name="receipt_folder_hint">Belegordner</string>
     <string name="receipt_folder_helper">Liegt neben der KMyMoney-Datei. Mehrere Profile mit Datei im selben Ordner brauchen je einen eigenen Namen.</string>

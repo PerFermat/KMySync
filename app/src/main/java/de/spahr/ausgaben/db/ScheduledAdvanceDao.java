@@ -26,4 +26,8 @@ public interface ScheduledAdvanceDao {
 
     @Query("DELETE FROM scheduled_advance WHERE id IN (:ids)")
     void deleteByIds(List<Long> ids);
+
+    /** Alle Vormerkungen verwerfen – beim Wechsel weg vom .kmy-Schreibziel. */
+    @Query("DELETE FROM scheduled_advance")
+    void deleteAll();
 }

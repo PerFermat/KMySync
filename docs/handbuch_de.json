@@ -189,7 +189,7 @@
           "id": "b-0010",
           "items": [
             "<b>Sprache</b> wählen (wirkt sofort).",
-            "<b>Import-/Export-Format</b>: CSV oder KMyMoney-Datei (.kmy).",
+            "<b>Import-/Export-Format</b>: CSV, «.kmy lesen, CSV exportieren» oder KMyMoney-Datei (.kmy).",
             "<b>Synchronisierung</b>: Server-Typ, URL, Benutzer, Passwort – mit <b>«Verbindung testen»</b>; im .kmy-Modus zusätzlich <b>«.kmy auswählen»</b>.",
             "<b>«Konten importieren»</b>: derselbe Auswahldialog wie bei «Konto hinzufügen», direkt hier im Assistenten.",
             "<b>«Weitere Einstellungen»</b> öffnet die vollständigen Einstellungen; <b>«Fertig»</b> schließt den Assistenten."
@@ -761,7 +761,7 @@
     {
       "type": "p",
       "id": "b-0059",
-      "text": "Im Abschnitt «Split-Kategorien» lassen sich mehrere Kategorien mit Teilbeträgen erfassen. Bei einer Kategorie sind Gesamt- und Kategoriebetrag gekoppelt; bei mehreren muss die Summe dem Gesamtbetrag entsprechen. Teilbeträge dürfen negativ sein."
+      "text": "Im Abschnitt «Split-Kategorien» lassen sich mehrere Kategorien mit Teilbeträgen erfassen. Bei einer Kategorie sind Gesamt- und Kategoriebetrag gekoppelt; bei mehreren muss die Summe dem Gesamtbetrag entsprechen. Teilbeträge dürfen negativ sein. Splitbuchungen gibt es <b>nur im .kmy-Modus</b>: KMyMoneys CSV-Import nimmt je Buchung nur eine Kategorie an. Wird per CSV geschrieben, bleibt es bei einer Kategoriezeile; Vorlagen, Planungen oder Aliase mit mehreren Kategorien belegen dann keine Kategorie vor."
     },
     {
       "type": "h2",
@@ -817,7 +817,7 @@
     {
       "type": "p",
       "id": "b-0062z1a",
-      "text": "Das Depot gibt es <b>nur im .kmy-Modus</b> – Wertpapiere entstehen ausschließlich beim Einlesen der KMyMoney-Datei, und der CSV-Export kann Wertpapier-Buchungen nicht zurückschreiben. Im CSV-Modus fehlt der Depot-Bereich deshalb in der Kontenschublade."
+      "text": "Das Depot gibt es nur, wenn die App <b>aus der KMyMoney-Datei liest</b> (.kmy-Modus oder «.kmy lesen, CSV exportieren») – Wertpapiere entstehen ausschließlich beim Einlesen der Datei. Käufe, Verkäufe und Dividenden erfassen (von Hand oder per PDF) geht nur im <b>.kmy-Modus</b>, denn der CSV-Export kann Wertpapier-Buchungen nicht zurückschreiben. Im reinen CSV-Modus fehlt der Depot-Bereich in der Kontenschublade."
     },
     {
       "type": "h2",
@@ -1568,7 +1568,7 @@
         {
           "type": "p",
           "id": "b-0116",
-          "text": "Die Seite <b>Geplante Buchungen</b> (Menü <b>⋮ → Geplante Buchungen</b>, nur im .kmy-Modus sichtbar) zeigt Ihre in KMyMoney angelegten Daueraufträge als <b>eine chronologische Liste</b> nach Fälligkeit. Aktualisiert wird sie nur durch die <b>Wischgeste nach unten</b> auf dieser Seite, nicht beim normalen Konto-Import."
+          "text": "Die Seite <b>Geplante Buchungen</b> (Menü <b>⋮ → Geplante Buchungen</b>, sichtbar, sobald aus der .kmy gelesen wird; Überspringen und Weiterstellen nur im .kmy-Modus) zeigt Ihre in KMyMoney angelegten Daueraufträge als <b>eine chronologische Liste</b> nach Fälligkeit. Aktualisiert wird sie nur durch die <b>Wischgeste nach unten</b> auf dieser Seite, nicht beim normalen Konto-Import."
         },
         {
           "type": "bullets",
@@ -2169,8 +2169,24 @@
       "id": "b-0201",
       "items": [
         "<b>.kmy-Modus</b>: schreibt neue Buchungen direkt in die KMyMoney-Datei (inkl. Splits und Umbuchungen) und importiert Konten/Buchungen sowie das Depot daraus. Über <b>«.kmy auswählen»</b> öffnet sich ein Datei-Browser (Unterordner, «..» zurück).",
-        "<b>CSV-Modus</b>: exportiert je Konto eine CSV-Datei (jede Buchung nur einmal); Zielordner und Import-Ordner werden hier gesetzt."
+        "<b>CSV-Modus</b>: exportiert je Konto eine CSV-Datei (jede Buchung nur einmal); Zielordner und Import-Ordner werden hier gesetzt.",
+        "<b>.kmy lesen, CSV exportieren</b>: Konten, Kategorien, Empfänger, Planungen und Depot kommen aus der KMyMoney-Datei, geschrieben wird aber nie hinein – neue Buchungen gehen per CSV hinaus und werden in KMyMoney importiert. Für alle, die ihre .kmy nicht von der App beschreiben lassen wollen."
       ]
+    },
+    {
+      "type": "p",
+      "id": "b-0201a",
+      "text": "<b>Einschränkungen, sobald per CSV geschrieben wird</b> (CSV-Modus und «.kmy lesen, CSV exportieren»): Bereits exportierte Buchungen lassen sich nicht mehr ändern oder löschen (nur noch als Vorlage für eine neue nutzen), Splitbuchungen lassen sich nicht anlegen, Planungen werden nicht weitergestellt, und im Depot kann nichts erfasst werden. Die zugehörigen Knöpfe fehlen dann einfach – eine CSV-Datei kann nur neue Buchungen transportieren."
+    },
+    {
+      "type": "p",
+      "id": "b-0201b",
+      "text": "<b>Zwei Eigenheiten von «.kmy lesen, CSV exportieren»:</b> Per CSV exportierte Buchungen verschwinden beim nächsten Einlesen der .kmy aus der App, bis Sie die CSV in KMyMoney importiert und die Datei gespeichert haben – verloren sind sie nicht, sie stehen in der CSV-Datei; bitte nicht ein zweites Mal erfassen. Und eine aus einer Planung gebuchte Zahlung lässt die Planung in der App fällig, bis Sie sie in KMyMoney erledigt haben."
+    },
+    {
+      "type": "p",
+      "id": "b-0201c",
+      "text": "<b>Wechsel weg vom .kmy-Modus:</b> Stehen noch Löschungen, weitergestellte Planungen, Depot-Bewegungen oder geänderte Buchungen zur Übertragung an, fragt die App nach. «Verwerfen und wechseln» löscht diese Vormerkungen (Depot-Bewegungen samt Geldbuchung); geänderte Buchungen gelten danach als exportiert, damit sie nicht doppelt per CSV hinausgehen. Wer das nicht will, überträgt vorher noch einmal im .kmy-Modus."
     },
     {
       "type": "p",
@@ -2277,7 +2293,7 @@
     {
       "type": "p",
       "id": "b-0220",
-      "text": "Deutsch: Spaltentrenner «;», Dezimaltrennzeichen «,», Datum TT.MM.JJJJ, UTF-8. Splitbuchungen werden je Kategorie als eigene Zeile geschrieben."
+      "text": "Deutsch: Spaltentrenner «;», Dezimaltrennzeichen «,», Datum TT.MM.JJJJ, UTF-8. Je Buchung genau eine Kategorie – Splitbuchungen gibt es im CSV-Weg nicht (siehe Kapitel «Splitbuchung»)."
     },
     {
       "type": "code",

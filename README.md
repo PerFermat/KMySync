@@ -118,7 +118,7 @@ This list names the main features only. The exact behaviour, every detail and sc
 ## CSV format (export)
 
 Column separator (`;` or `,`) and decimal separator (comma or dot) follow the settings, date
-`DD.MM.YYYY`, UTF-8, CRLF. Split bookings are written as one row per category. Import is
+`DD.MM.YYYY`, UTF-8, CRLF. One category per row – split bookings exist only in .kmy mode; when writing via CSV they cannot be created. Import is
 language-independent: it reads KMyMoney ledger exports in any language (German, English, …) and re-imports
 the app's own export.
 

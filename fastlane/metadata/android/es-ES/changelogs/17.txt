@@ -1,0 +1,7 @@
+Nuevo: modo de sincronización "Leer .kmy, exportar CSV": cuentas, programas y cartera vienen del archivo de KMyMoney; solo se escribe por CSV.
+
+Exportación más segura: se detiene si KMyMoney tiene el archivo abierto; autocomprobación antes de subir; sin apuntes duplicados tras un cierre inesperado; comprobación de la codificación.
+
+Al escribir por CSV quedan bloqueados: editar apuntes exportados, apuntes divididos, avanzar programas y registrar en la cartera.
+
+Reloj: voz más fiable.

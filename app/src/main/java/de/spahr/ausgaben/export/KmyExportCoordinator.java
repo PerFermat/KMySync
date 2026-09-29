@@ -217,8 +217,18 @@ public class KmyExportCoordinator {
                 // dann auf dem Server umbenennen. Ein Abbruch mittendrin (Timeout, Funkloch) läßt sonst
                 // einen unlesbaren Torso zurück – genau so ging schon einmal eine .kmy verloren.
                 de.spahr.ausgaben.net.SafeReplace.cleanUp(storage, folder, file);
-                de.spahr.ausgaben.net.SafeReplace.replace(storage, folder, file, packed, version,
-                        tsFormat.format(new Date()));
+                try {
+                    de.spahr.ausgaben.net.SafeReplace.replace(storage, folder, file, packed, version,
+                            tsFormat.format(new Date()));
+                } catch (java.io.IOException | RuntimeException e) {
+                    // Nachweislich nicht geschrieben: Der Vermerk muss weg, sonst hielte der nächste
+                    // Lauf eine zufällig gleich signierte fremde Transaktion für diese Buchung und
+                    // markierte sie als exportiert, ohne sie je zu schreiben.
+                    if (!keepPendingAfter(e)) {
+                        PendingExport.clear(settings);
+                    }
+                    throw e;
+                }
 
                 // Die Datei ist geschrieben; jetzt zieht der lokale Stand nach — und zwar als ein
                 // Vorgang. Vorher waren das bis zu fünf einzelne Schreibzugriffe, und ein Abbruch
@@ -365,6 +375,16 @@ public class KmyExportCoordinator {
 
     private void complete(Listener l, String message, boolean refresh) {
         repository.mainHandler().post(() -> l.onComplete(message, refresh));
+    }
+
+    /**
+     * Bleibt der {@link PendingExport}-Vermerk nach einem gescheiterten {@code SafeReplace.replace}
+     * stehen? Nur, wenn offen ist, ob die neue Datei an ihrem Platz steht – das meldet allein
+     * {@link de.spahr.ausgaben.net.RemoteReplaceStuckException}. Bei jedem anderen Fehler garantiert
+     * {@code SafeReplace}, dass unter dem Dateinamen nicht die neue Fassung liegt.
+     */
+    static boolean keepPendingAfter(Throwable e) {
+        return e instanceof de.spahr.ausgaben.net.RemoteReplaceStuckException;
     }
 
     private void failed(Listener l, String message) {

@@ -17,4 +17,8 @@ public interface KmyPendingDeleteDao {
 
     @Query("DELETE FROM kmy_pending_delete WHERE id IN (:ids)")
     void deleteByIds(List<Long> ids);
+
+    /** Alle Vormerkungen verwerfen – beim Wechsel weg vom .kmy-Schreibziel. */
+    @Query("DELETE FROM kmy_pending_delete")
+    void deleteAll();
 }

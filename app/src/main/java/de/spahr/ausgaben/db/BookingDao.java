@@ -225,7 +225,7 @@ public interface BookingDao {
 
     /** Setzt geschriebene Buchungen auf „exportiert" und räumt einen etwaigen Status „bearbeitet" ab. */
     @Query("UPDATE booking SET exported = 1, edited = 0, orig_account = '', orig_signed_cents = 0, "
-            + "orig_created_at = 0 WHERE id IN (:ids)")
+            + "orig_created_at = 0, orig_payee = '' WHERE id IN (:ids)")
     void markExported(List<Long> ids);
 
     @Query("DELETE FROM booking")

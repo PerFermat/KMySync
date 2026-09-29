@@ -1,0 +1,7 @@
+Neu: Sync-Modus ".kmy lesen, CSV exportieren" – Konten, Planungen und Depot kommen aus der KMyMoney-Datei, geschrieben wird nur per CSV.
+
+Sicherer Export: Abbruch, wenn KMyMoney die Datei geöffnet hat; Selbstprüfung vor dem Hochladen; keine doppelten Buchungen nach einem Absturz; Prüfung der Dateikodierung.
+
+Im CSV-Weg sind Änderungen exportierter Buchungen, Splitbuchungen, Weiterstellen von Planungen und Depot-Erfassung gesperrt.
+
+Uhr: Spracherkennung zuverlässiger.

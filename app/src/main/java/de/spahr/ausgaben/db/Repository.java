@@ -933,6 +933,65 @@ public class Repository {
                 EditStatus.filePayee(old), System.currentTimeMillis()));
     }
 
+    /**
+     * Was nur über das .kmy-Schreibziel in KMyMoney ankommt und noch aussteht: {@code [Löschungen,
+     * Weiterstellungen, Depot-Bewegungen, bearbeitete Buchungen]}. Grundlage der Warnung beim Wechsel
+     * weg vom kmy-Modus.
+     */
+    public void countKmyPending(final Callback<int[]> callback) {
+        executor.execute(() -> {
+            int[] counts = countKmyPendingNow();
+            mainHandler.post(() -> callback.onResult(counts));
+        });
+    }
+
+    /** Dieselbe Zählung auf dem rufenden Faden – für den Test; nicht vom Hauptfaden rufen. */
+    int[] countKmyPendingNow() {
+        return new int[]{
+                kmyPendingDeleteDao.getAll().size(),
+                scheduledAdvanceDao.getAll().size(),
+                securityDao.getPendingTx().size(),
+                bookingDao.getEdited().size()};
+    }
+
+    /**
+     * Verwirft alles aus {@link #countKmyPending} – der Nutzer wechselt weg vom .kmy-Schreibziel, danach
+     * käme nichts davon je in der Datei an. Depot-Bewegungen verschwinden samt Geldbuchung (sie lassen
+     * sich per CSV nicht exportieren); bearbeitete Buchungen gelten als exportiert, damit ihre neue
+     * Fassung nicht als zweite Buchung per CSV hinausgeht.
+     */
+    public void discardKmyPending(final Runnable onDone) {
+        executor.execute(() -> {
+            discardKmyPendingNow();
+            if (onDone != null) {
+                mainHandler.post(onDone);
+            }
+        });
+    }
+
+    /** Dieselbe Arbeit auf dem rufenden Faden – für den Test; nicht vom Hauptfaden rufen. */
+    void discardKmyPendingNow() {
+        db.runInTransaction(() -> {
+            kmyPendingDeleteDao.deleteAll();
+            scheduledAdvanceDao.deleteAll();
+            // Wie DepotRepository.deleteManualTx, nur in dieser einen Transaktion.
+            for (SecurityTx tx : securityDao.getPendingTx()) {
+                if (tx.bookingId > 0) {
+                    bookingDao.delete(tx.bookingId);
+                }
+                securityDao.deleteSplits(tx.id);
+                securityDao.deleteTxById(tx.id);
+            }
+            List<Long> editedIds = new ArrayList<>();
+            for (Booking b : bookingDao.getEdited()) {
+                editedIds.add(b.id);
+            }
+            if (!editedIds.isEmpty()) {
+                bookingDao.markExported(editedIds);
+            }
+        });
+    }
+
     /** Löscht eine Umbuchung: beide Seiten (über {@code group}) oder die einzelne (importierte) Buchung. */
     public void deleteTransfer(final String group, final long fallbackId, final Runnable onDone) {
         executor.execute(() -> {

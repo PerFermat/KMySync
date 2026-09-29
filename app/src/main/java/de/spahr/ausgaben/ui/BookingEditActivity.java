@@ -102,6 +102,12 @@ public class BookingEditActivity extends LocalizedActivity {
     private boolean readOnly;
     /** true = bereits exportierte Buchung im CSV-Modus: erzwingt {@link #readOnly}, s. {@link CsvModeGuard}. */
     private boolean csvLocked;
+    /**
+     * true = kein .kmy-Schreibziel: keine Splitbuchungen, s. {@link CsvModeGuard#splitBlocked}. Eine
+     * Quelle mit mehreren Kategorien (Vorlage, Planung, Alias, alte Splitbuchung) belegt dann gar keine
+     * Kategorie vor – der Nutzer wählt selbst eine.
+     */
+    private boolean splitLocked;
 
     // Ursprünglicher Typ beim Bearbeiten (für Umbuchung ↔ normale Buchung Umwandlungen).
     private boolean origIsTransfer;
@@ -337,8 +343,9 @@ public class BookingEditActivity extends LocalizedActivity {
         // feststehen, damit auch die Kategorie-Zeilen nicht editierbar sind.
         readOnly = getIntent().getBooleanExtra(EXTRA_READ_ONLY, false)
                 || getIntent().getLongExtra(EXTRA_SCHEDULED_ID, -1) >= 0;
+        splitLocked = CsvModeGuard.splitBlocked(settings.isKmyMode());
         splitCtl = new SplitRowController(splitContainer, editAmount, getLayoutInflater(),
-                readOnly, CsvModeGuard.splitBlocked(settings.isKmyMode()), this::updateSaveEnabled);
+                readOnly, splitLocked, this::updateSaveEnabled);
         // Teilbeträge an die Rechentastatur; der Feldrahmen wird hier nicht gebraucht (keine PDF-Erkennung).
         splitCtl.setAmountBinder((layout, field) -> wireCalcField(field, null));
         editNote = findViewById(R.id.editNote);
@@ -833,11 +840,16 @@ public class BookingEditActivity extends LocalizedActivity {
         String c2 = income ? activeAlias.catIncome2 : activeAlias.catExpense2;
         splitCtl.setSuppressEvents(true);
         splitCtl.clear();
-        if (c1 != null && !c1.trim().isEmpty()) {
-            splitCtl.addRow(c1, null);
-        }
-        if (c2 != null && !c2.trim().isEmpty()) {
-            splitCtl.addRow(c2, null);
+        boolean hasC1 = c1 != null && !c1.trim().isEmpty();
+        boolean hasC2 = c2 != null && !c2.trim().isEmpty();
+        // Ohne .kmy-Schreibziel ergäben zwei Kategorien eine Splitbuchung – dann keine vorbelegen.
+        if (!(splitLocked && hasC1 && hasC2)) {
+            if (hasC1) {
+                splitCtl.addRow(c1, null);
+            }
+            if (hasC2) {
+                splitCtl.addRow(c2, null);
+            }
         }
         splitCtl.setSuppressEvents(false);
         splitCtl.ensureTrailingRow();
@@ -1348,6 +1360,12 @@ public class BookingEditActivity extends LocalizedActivity {
                                String singleCategory, Boolean singleCategoryIsIncome) {
         splitCtl.setSuppressEvents(true);
         splitCtl.clear();
+        if (splitLocked && !readOnly && splits != null && splits.size() > 1) {
+            // Ohne .kmy-Schreibziel keine Splitbuchung: Aus mehreren Kategorien wird keine vorbelegt,
+            // der Gesamtbetrag bleibt. Die reine Ansicht zeigt die Teile dagegen weiterhin.
+            splits = null;
+            singleCategory = "";
+        }
         if (splits != null && !splits.isEmpty()) {
             long assigned = 0;
             for (int idx = 0; idx < splits.size(); idx++) {

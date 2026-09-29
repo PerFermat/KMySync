@@ -120,7 +120,7 @@ stehen im **[Benutzerhandbuch](docs/Handbuch-KMySync-de.pdf)**.
 ## CSV-Format (Export)
 
 Spaltentrenner (`;` oder `,`) und Dezimaltrennzeichen (Komma oder Punkt) folgen den Einstellungen, Datum
-`TT.MM.JJJJ`, UTF-8, CRLF. Splitbuchungen werden je Kategorie als eigene Zeile geschrieben. Der Import ist
+`TT.MM.JJJJ`, UTF-8, CRLF. Eine Kategorie je Zeile – Splitbuchungen gibt es nur im .kmy-Modus; im CSV-Weg lassen sie sich nicht anlegen. Der Import ist
 sprachunabhängig: Er liest KMyMoney-Ledger-Exporte in jeder Sprache (Deutsch, Englisch, …) und
 re-importiert den App-eigenen Export.
 

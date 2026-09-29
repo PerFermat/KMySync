@@ -440,6 +440,9 @@ class SplitRowController {
             addRow(null, null);
             return;
         }
+        if (splitLocked) {
+            return; // CSV-Schreibweg: nie eine zweite Zeile, auch nicht als leere Abschlusszeile.
+        }
         if (!catText(container.getChildAt(n - 1)).isEmpty()) {
             addRow(null, null);
         }
