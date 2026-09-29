@@ -126,8 +126,6 @@ public class BookingEditActivity extends LocalizedActivity {
     private android.widget.TextView typeHeading;
     private android.widget.TextView textBalanceBefore;
     private android.widget.TextView textBalanceAfter;
-    private android.widget.ImageButton btnNoteMap;
-    private android.widget.ImageButton btnGpsClear;
     private TextInputEditText editAmount;
     private TextInputLayout amountLayout;
     private CalcKeyboardView calcKeyboard;
@@ -160,13 +158,7 @@ public class BookingEditActivity extends LocalizedActivity {
     private ActivityResultLauncher<String> locationPermissionLauncher;
 
     // ---- GPS-/Stichwort-/Beleg-Ausgabezeilen ----
-    private android.view.View rowGps;
-    private android.view.View rowTags;
     private android.view.View rowReceipt;
-    private android.widget.TextView textGps;
-    private android.widget.TextView textTags;
-    private android.widget.ImageButton btnTagsEdit;
-    private android.widget.ImageButton btnTagsClear;
     private android.widget.TextView textReceipt;
     private android.widget.ImageButton btnReceipt;   // btnNoteMap ist ein eigenes Feld
     private android.widget.LinearLayout receiptPagesView;
@@ -174,14 +166,10 @@ public class BookingEditActivity extends LocalizedActivity {
     /** Die Belegseiten dieser Buchung, siehe {@link ReceiptPagesController}. */
     private ReceiptPagesController receipts;
     private boolean receiptEnabled;
-    /** Zu speichernde Koordinaten „lat, lon" (aus Standort bzw. bestehender Buchung); null = keine. */
-    private String gpsRowCoords;
-    /** Stichwörter dieser Buchung, so wie sie gespeichert werden (siehe {@link BookingTags}). */
-    private String bookingTags = "";
-    /** Die in KMyMoney vorhandenen Stichwörter – nur daraus lässt sich wählen; leer = Zeile aus. */
-    private java.util.List<String> knownTagNames = new ArrayList<>();
-    /** Zu welchem Empfänger schon vorbelegt wurde – spart die Abfrage bei jedem Tastendruck. */
-    private String payeeTagKey;
+    /** Die Standort-Zeile, siehe {@link GpsRowController}. */
+    private GpsRowController gps;
+    /** Die Stichwort-Zeile, siehe {@link TagsRowController}. */
+    private TagsRowController tags;
     /**
      * Wertpapier-Buchung: nur Notiz, Stichwörter und Beleg sind änderbar, Löschen entfällt.
      * Siehe {@link #applyNotesOnlyIfNeeded()}.
@@ -209,17 +197,6 @@ public class BookingEditActivity extends LocalizedActivity {
         return (knownSecurityNames != null && knownSecurityNames.contains(key))
                 || !knownAccountNames.contains(key);
     }
-    /**
-     * Empfänger (klein), bei dem die Stichwörter von Hand gesetzt wurden. Für ihn schlägt die App
-     * nichts mehr vor – sonst käme ein gelöschtes Stichwort beim nächsten Öffnen des Fensters wieder.
-     */
-    private String tagsEditedForPayee;
-    /** True, sobald der Standort auf der Karte manuell gewählt wurde – dann kein Überschreiben per Live-GPS. */
-    private boolean gpsEditedByUser;
-    /** Karten-Auswahl (OpenStreetMap) für den Standort der Buchung. */
-    private ActivityResultLauncher<Intent> gpsMapLauncher;
-    private static final java.util.regex.Pattern GPS_PAIR = java.util.regex.Pattern.compile(
-            "GPS:\\s*(-?\\d+(?:\\.\\d+)?\\s*,\\s*-?\\d+(?:\\.\\d+)?)", java.util.regex.Pattern.CASE_INSENSITIVE);
 
     /** Ursprünglich gesprochener Empfänger (aus der Sprach-Erfassung) – für die Korrektur-Nachfrage. */
     private String voiceSpokenPayee;
@@ -249,13 +226,37 @@ public class BookingEditActivity extends LocalizedActivity {
     private String payeeAmountKey;
     /** So weit muß der Standort wandern, damit der Vorspann neu gerechnet wird (Meter). */
     private static final int NEARBY_AGAIN_M = 100;
-    /** Bis hierhin nennt die Stichwort-Zeile die Namen; darüber nur noch ihre Anzahl. */
-    private static final int TAGS_LABEL_MAX = 40;
 
     /** Verwaltet die dynamische Kategorie-/Teilbetrag-Liste (Splitbuchung). */
     private SplitRowController splitCtl;
 
     private final Calendar selectedDate = Calendar.getInstance();
+
+    /** Was die Standort-Zeile von dieser Maske braucht. */
+    private GpsRowController.Host gpsHost() {
+        return new GpsRowController.Host() {
+            @Override
+            public boolean isReadOnly() {
+                return readOnly;
+            }
+
+            @Override
+            public boolean isTransferType() {
+                return BookingEditActivity.this.isTransferType();
+            }
+
+            @Override
+            public boolean isGpsEnabled() {
+                return settings.isGpsEnabled();
+            }
+
+            @Override
+            public void onGpsChanged() {
+                updateNoteTagRows();
+            }
+
+        };
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -273,8 +274,6 @@ public class BookingEditActivity extends LocalizedActivity {
         typeHeading = findViewById(R.id.typeHeading);
         textBalanceBefore = findViewById(R.id.textBalanceBefore);
         textBalanceAfter = findViewById(R.id.textBalanceAfter);
-        btnNoteMap = findViewById(R.id.btnNoteMap);
-        btnGpsClear = findViewById(R.id.btnGpsClear);
         editAmount = findViewById(R.id.editAmount);
         amountLayout = findViewById(R.id.amountLayout);
         calcKeyboard = findViewById(R.id.calcKeyboard);
@@ -287,6 +286,9 @@ public class BookingEditActivity extends LocalizedActivity {
         wireCalcField(editAmount, amountLayout, this::suggestPayeeFromAmount);
         payeeLayout = findViewById(R.id.payeeLayout);
         editPayee = findViewById(R.id.editPayee);
+        // Standort- und Stichwort-Zeile; der Standort registriert seine Karten-Auswahl selbst (vor STARTED).
+        gps = new GpsRowController(this, gpsHost());
+        tags = new TagsRowController(this, repository, editPayee, () -> readOnly);
         accountLayout = findViewById(R.id.accountLayout);
         editAccount = findViewById(R.id.editAccount);
         accountToLayout = findViewById(R.id.accountToLayout);
@@ -338,12 +340,12 @@ public class BookingEditActivity extends LocalizedActivity {
         });
         repository.getTagNames(names -> {
             // Kennt die App keine Stichwörter (CSV-Betrieb, noch kein Abgleich), bleibt die Zeile weg.
-            knownTagNames = names == null ? new ArrayList<>() : names;
+            tags.setKnownTags(names);
             updateNoteTagRows();
             // Die Liste kommt aus der Datenbank und damit womöglich später als der vorbelegte
             // Empfänger – dann ist sein Vorspann noch nirgends angekommen. Also noch einmal fragen.
-            payeeTagKey = null;
-            refreshPayeeTags();
+            tags.forgetPayee();
+            tags.refreshForPayee();
         });
         repository.getAccountNames(names -> {
             knownAccountNames.clear();
@@ -392,7 +394,7 @@ public class BookingEditActivity extends LocalizedActivity {
         // Vorbelegung der ersten Zeile.
         PickerBehaviour.onCommitted(editPayee, value -> {
             refreshPayeeCategories();
-            refreshPayeeTags();
+            tags.refreshForPayee();
         });
         // Bei einer Umbuchung folgt der Nach-Ort dem Nach-Konto.
         PickerBehaviour.onCommitted(editAccountTo, value -> {
@@ -426,25 +428,7 @@ public class BookingEditActivity extends LocalizedActivity {
         });
         btnDelete.setOnClickListener(v -> confirmDelete());
 
-        // Standort auf der Karte (OpenStreetMap) wählen/ändern – wie beim Alias. Die manuelle Wahl gewinnt
-        // ab jetzt gegen den Live-GPS-Wert (siehe gpsEditedByUser).
-        gpsMapLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(), result -> {
-                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                        double lat = result.getData().getDoubleExtra(MapPickerActivity.EXTRA_LAT, 0);
-                        double lon = result.getData().getDoubleExtra(MapPickerActivity.EXTRA_LON, 0);
-                        gpsRowCoords = formatCoords(lat, lon);
-                        gpsEditedByUser = true;
-                        updateNoteTagRows();
-                    }
-                });
-        rowGps = findViewById(R.id.rowGps);
-        rowTags = findViewById(R.id.rowTags);
         rowReceipt = findViewById(R.id.rowReceipt);
-        textGps = findViewById(R.id.textGps);
-        textTags = findViewById(R.id.textTags);
-        btnTagsEdit = findViewById(R.id.btnTagsEdit);
-        btnTagsClear = findViewById(R.id.btnTagsClear);
         textReceipt = findViewById(R.id.textReceipt);
         btnReceipt = findViewById(R.id.btnReceipt);
         receiptPagesView = findViewById(R.id.receiptPages);
@@ -578,14 +562,14 @@ public class BookingEditActivity extends LocalizedActivity {
         // Nur im Neu-/Vorlage-Modus (booking == null) die GPS-Zeile live mit der aktuellen Position füllen;
         // beim Bearbeiten bleiben die gespeicherten Koordinaten stehen (der Tagger läuft nur, damit „Als neue
         // speichern" aktuelle Koordinaten holen kann).
-        if (locationTagger == null || booking != null || gpsEditedByUser) {
+        if (locationTagger == null || booking != null || gps.editedByUser()) {
             return;
         }
         String coords = locationTagger.currentCoordinates();
         if (coords == null) {
             return;
         }
-        gpsRowCoords = coords;
+        gps.setCoords(coords);
         updateNoteTagRows();
     }
 
@@ -601,7 +585,7 @@ public class BookingEditActivity extends LocalizedActivity {
      * kommen.</p>
      */
     private void refreshNearbyPayees() {
-        double[] hier = readOnly ? null : de.spahr.ausgaben.location.Geo.parse(gpsRowCoords);
+        double[] hier = readOnly ? null : de.spahr.ausgaben.location.Geo.parse(gps.coords());
         if (hier == null) {
             if (nearbyCenter != null) {
                 nearbyCenter = null;
@@ -709,7 +693,7 @@ public class BookingEditActivity extends LocalizedActivity {
             }
         }
         // Standort der Buchung (aus der GPS-Zeile) übernehmen → Alias per GPS auffindbar (Betrag-only).
-        double[] ll = de.spahr.ausgaben.location.Geo.parse(gpsRowCoords);
+        double[] ll = de.spahr.ausgaben.location.Geo.parse(gps.coords());
         if (ll != null) {
             a.lat = ll[0];
             a.lon = ll[1];
@@ -789,7 +773,7 @@ public class BookingEditActivity extends LocalizedActivity {
 
     private void setupNewMode() {
         booking = null;
-        gpsRowCoords = null;
+        gps.setCoords(null);
         receipts.clear();
         origIsTransfer = false;
         origTransferGroup = "";
@@ -846,7 +830,7 @@ public class BookingEditActivity extends LocalizedActivity {
         btnDelete.setVisibility(csvLocked ? View.GONE : View.VISIBLE);
         emphasizeUpdate();
         // Bestehende Buchung: GPS/Beleg aus der Notiz in die zwei Zeilen (bleiben beim Aktualisieren erhalten).
-        gpsRowCoords = parseGpsCoords(b.note);
+        gps.setFromNote(b.note);
         receipts.load(b.note, ReceiptPagesController.yearOf(b.createdAt));
         populateFrom(b, null);
         updateNoteTagRows();
@@ -1098,7 +1082,7 @@ public class BookingEditActivity extends LocalizedActivity {
         showBalances();
 
         // GPS-/Beleg-Ausgabezeilen (Werte aus der Notiz; nicht editierbar, mit Karten- bzw. Bild-Icon).
-        gpsRowCoords = parseGpsCoords(booking.note);
+        gps.setFromNote(booking.note);
         receipts.load(booking.note, ReceiptPagesController.yearOf(booking.createdAt));
         updateNoteTagRows();
         showEditAction();
@@ -1188,7 +1172,7 @@ public class BookingEditActivity extends LocalizedActivity {
         }
         booking = null; // Neu-Modus → Speichern legt eine neue Buchung an
         // Kopie aus einer Vorlage: GPS/Beleg NICHT übernehmen (GPS wird frisch bestimmt, Beleg nur bei neuem Bild).
-        gpsRowCoords = null;
+        gps.setCoords(null);
         receipts.clear();
         origIsTransfer = false;
         origTransferGroup = "";
@@ -1215,8 +1199,7 @@ public class BookingEditActivity extends LocalizedActivity {
         editNote.setText(stripTags(b.note));
         // Die Stichwörter stehen an der Buchung, nicht in der Notiz; bei einer Umbuchung tragen beide
         // Zeilen dieselben.
-        bookingTags = b.tags == null ? "" : b.tags;
-        updateTagsRow();
+        tags.set(b.tags);
 
         if (b.isTransfer) {
             toggleType.check(R.id.btnTransfer);
@@ -1382,13 +1365,13 @@ public class BookingEditActivity extends LocalizedActivity {
         if (readOnly || !Ui.text(editPayee).trim().isEmpty()) {
             return;
         }
-        double[] hier = de.spahr.ausgaben.location.Geo.parse(gpsRowCoords);
+        double[] hier = de.spahr.ausgaben.location.Geo.parse(gps.coords());
         Long cents = parseAmountToCents(Ui.text(editAmount));
         if (hier == null || cents == null || cents <= 0) {
             return;
         }
         String type = currentVoiceType();
-        String key = cents + "|" + type + "|" + gpsRowCoords;
+        String key = cents + "|" + type + "|" + gps.coords();
         if (key.equals(payeeAmountKey)) {
             return;
         }
@@ -1638,7 +1621,7 @@ public class BookingEditActivity extends LocalizedActivity {
             // Beide Seiten bekommen dieselbe Notiz und damit denselben BELEG:-Tag – und dieselben
             // Stichwörter, denn in der .kmy-Datei ist die Umbuchung eine einzige Transaktion.
             repository.saveTransferBooking(from, to, cents, payee, receipts.withReceiptTag(note, ts, true),
-                bookingTags, ts, fromPlace, toPlace, () -> {
+                tags.tags(), ts, fromPlace, toPlace, () -> {
                     Toast.makeText(this, R.string.transfer_saved, Toast.LENGTH_SHORT).show();
                     finishAfterSave();
                 });
@@ -1711,54 +1694,16 @@ public class BookingEditActivity extends LocalizedActivity {
         return s.trim();
     }
 
-    /** Die „lat, lon" hinter einem {@code GPS:}-Tag (exakt wie gespeichert), sonst {@code null}. */
-    private String parseGpsCoords(String note) {
-        if (note == null) {
-            return null;
-        }
-        java.util.regex.Matcher m = GPS_PAIR.matcher(note);
-        return m.find() ? m.group(1).replaceAll("\\s+", "") : null;
-    }
-
     /** Aktualisiert die drei Ausgabezeilen (GPS, Stichwörter, Beleg) je nach Ansicht-/Bearbeiten-Modus. */
     private void updateNoteTagRows() {
-        if (rowGps == null) {
+        if (receipts == null) {
             return; // Views noch nicht gebunden
         }
         // GPS-Zeile. Hier läuft jede Änderung des Buchungs-Standorts zusammen – neue Buchung, geladene
         // Buchung, Kartenwahl –, deshalb hängt der Vorspann der Empfängerliste an dieser einen Stelle.
         refreshNearbyPayees();
-        double[] ll = de.spahr.ausgaben.location.Geo.parse(gpsRowCoords);
-        if (ll != null) {
-            textGps.setText(getString(R.string.gps_row_label, gpsDisplay(gpsRowCoords)));
-            final double lat = ll[0];
-            final double lon = ll[1];
-            // Ansicht: nur Karte zeigen. Bearbeiten/Neu: Standort auf der Karte ändern bzw. löschen.
-            if (readOnly) {
-                btnNoteMap.setOnClickListener(v -> openMapAt(lat, lon));
-                btnGpsClear.setVisibility(View.GONE);
-            } else {
-                btnNoteMap.setOnClickListener(v -> openMapForEdit(lat, lon));
-                btnGpsClear.setVisibility(View.VISIBLE);
-                btnGpsClear.setOnClickListener(v -> {
-                    // Ohne Rückfrage – wie das Löschkreuz der Stichwörter; rückgängig durch Verlassen
-                    // der Maske, ohne zu speichern.
-                    gpsRowCoords = null;
-                    gpsEditedByUser = true;
-                    updateNoteTagRows();
-                });
-            }
-            rowGps.setVisibility(View.VISIBLE);
-        } else if (!readOnly && settings.isGpsEnabled() && !isTransferType()) {
-            // Noch kein Standort: Zeile zum Setzen eines Standorts anbieten.
-            textGps.setText(R.string.gps_row_none);
-            btnNoteMap.setOnClickListener(v -> openMapForEdit(null, null));
-            btnGpsClear.setVisibility(View.GONE);
-            rowGps.setVisibility(View.VISIBLE);
-        } else {
-            rowGps.setVisibility(View.GONE);
-        }
-        updateTagsRow();
+        gps.update();
+        tags.update();
         // Beleg-Kopfzeile + eine Zeile je Seite
         if (readOnly) {
             rowReceipt.setVisibility(receipts.isEmpty() ? View.GONE : View.VISIBLE);
@@ -1780,148 +1725,7 @@ public class BookingEditActivity extends LocalizedActivity {
         receipts.fill();
     }
 
-    /**
-     * Die Stichwort-Zeile. Sie erscheint nur, wenn die App überhaupt Stichwörter aus einer
-     * {@code .kmy}-Datei kennt – ohne sie gäbe es nichts zu wählen. In der Ansicht bleibt der Text
-     * stehen, die beiden Symbole verschwinden.
-     */
-    private void updateTagsRow() {
-        if (rowTags == null) {
-            return; // Views noch nicht gebunden
-        }
-        boolean show = !knownTagNames.isEmpty() && (!readOnly || !bookingTags.isEmpty());
-        rowTags.setVisibility(show ? View.VISIBLE : View.GONE);
-        if (!show) {
-            return;
-        }
-        String label = BookingTags.label(bookingTags, TAGS_LABEL_MAX);
-        textTags.setText(getString(R.string.tags_row,
-                label.isEmpty() ? getString(R.string.tags_none) : label));
-        btnTagsEdit.setVisibility(readOnly ? View.GONE : View.VISIBLE);
-        btnTagsClear.setVisibility(readOnly || bookingTags.isEmpty() ? View.GONE : View.VISIBLE);
-        btnTagsEdit.setOnClickListener(v -> showTagsDialog());
-        btnTagsClear.setOnClickListener(v -> {
-            // Ohne Rückfrage – wie das Löschkreuz einer Belegseite; rückgängig durch Verlassen
-            // der Maske, ohne zu speichern.
-            bookingTags = "";
-            noteTagsEdited();
-            updateTagsRow();
-        });
-    }
 
-    /**
-     * Das Pop-Up zu den Stichwörtern: oben die vergebenen, jedes einzeln zu löschen, darunter ein
-     * Feld zum Hinzufügen. Es verhält sich wie das Konto- und das Kategoriefeld – gesucht wird über
-     * Teiltreffer, und was auf keinen Eintrag paßt, wird verworfen: eingebbar ist nur, was es in
-     * KMyMoney gibt.
-     */
-    private void showTagsDialog() {
-        // Der Stift nimmt dem Empfängerfeld nicht den Fokus, und ein Feld mitten in der Suche ist leer:
-        // ohne dieses settleAll wäre ein nur getippter Empfängername hier noch nicht angekommen.
-        PickerBehaviour.settleAll(getWindow().getDecorView());
-        final String payee = Ui.text(editPayee).trim();
-        if (payee.isEmpty() || knownTagNames.isEmpty()) {
-            openTagsDialog(new ArrayList<>());
-            return;
-        }
-        // Erst fragen, dann öffnen. Andersherum stünde das Fenster schon da, wenn die Antwort eintrifft –
-        // dann bliebe der Vorspann leer und eine Vorbelegung ginge beim „Fertig" wieder verloren.
-        repository.getPayeeTags(payee, suggestion -> {
-            applyTagPreset(payee, suggestion);
-            openTagsDialog(suggestion.ranked);
-        });
-    }
-
-    private void openTagsDialog(java.util.List<String> lead) {
-        TagsDialog.show(this, knownTagNames, lead, bookingTags, tags -> {
-            bookingTags = tags;
-            noteTagsEdited();
-            updateTagsRow();
-        });
-    }
-
-    /**
-     * Merkt sich, dass die Stichwörter von Hand gesetzt wurden – für <b>diesen</b> Empfänger schlägt
-     * die App dann nichts mehr vor. Was gelöscht wurde, bleibt gelöscht; wählen Sie dagegen einen
-     * anderen Empfänger, gilt dessen Vorbelegung wieder.
-     */
-    private void noteTagsEdited() {
-        tagsEditedForPayee = Ui.text(editPayee).trim().toLowerCase(Locale.ROOT);
-    }
-
-    /**
-     * Holt die Stichwörter des gewählten Empfängers und belegt eine <b>neue</b> Buchung damit vor.
-     * Gegenstück zu {@link #refreshPayeeCategories()} und am selben Faden aufgehängt – jedem
-     * bestätigten Empfänger folgt beides.
-     */
-    private void refreshPayeeTags() {
-        if (readOnly || knownTagNames.isEmpty()) {
-            return;
-        }
-        final String payee = Ui.text(editPayee).trim();
-        final String key = payee.toLowerCase(Locale.ROOT);
-        if (key.equals(payeeTagKey)) {
-            return; // derselbe Empfänger – nichts zu tun
-        }
-        payeeTagKey = key;
-        if (payee.isEmpty()) {
-            return;
-        }
-        repository.getPayeeTags(payee, suggestion -> applyTagPreset(payee, suggestion));
-    }
-
-    /**
-     * Übernimmt die Stichwörter des Empfängers in die Buchung – aber nur, wenn dort noch keine stehen:
-     * eine geöffnete Buchung und eine Planung bringen ihre eigenen mit, und die soll ein
-     * Empfängerwechsel nicht wegräumen.
-     */
-    private void applyTagPreset(String payee, de.spahr.ausgaben.db.PayeeTagSuggestion suggestion) {
-        if (payee.toLowerCase(Locale.ROOT).equals(tagsEditedForPayee)) {
-            return; // hier hat der Nutzer selbst entschieden – auch, wenn er alles gelöscht hat
-        }
-        if (bookingTags.isEmpty() && !suggestion.preset.isEmpty()) {
-            bookingTags = suggestion.preset;
-            updateTagsRow();
-        }
-    }
-
-    /** Anzeigeform der Koordinaten, z. B. „50.1109° N, 8.6821° O". */
-    private String gpsDisplay(String coords) {
-        double[] ll = de.spahr.ausgaben.location.Geo.parse(coords);
-        if (ll == null) {
-            return coords == null ? "" : coords;
-        }
-        String ns = getString(ll[0] >= 0 ? R.string.compass_n : R.string.compass_s);
-        String ew = getString(ll[1] >= 0 ? R.string.compass_e : R.string.compass_w);
-        return String.format(java.util.Locale.US, "%.4f° %s, %.4f° %s",
-                Math.abs(ll[0]), ns, Math.abs(ll[1]), ew);
-    }
-
-    private void openMapAt(double lat, double lon) {
-        Intent i = new Intent(this, MapPickerActivity.class);
-        i.putExtra(MapPickerActivity.EXTRA_LAT, lat);
-        i.putExtra(MapPickerActivity.EXTRA_LON, lon);
-        i.putExtra(MapPickerActivity.EXTRA_VIEW_ONLY, true);
-        startActivity(i);
-    }
-
-    /**
-     * Öffnet die Karten-Auswahl (wählbar, wie im Alias), zentriert auf die aktuellen Koordinaten (falls
-     * vorhanden – sonst letzte bekannte Position/Standard). Das Ergebnis übernimmt {@link #gpsMapLauncher}.
-     */
-    private void openMapForEdit(Double lat, Double lon) {
-        Intent i = new Intent(this, MapPickerActivity.class);
-        if (lat != null && lon != null) {
-            i.putExtra(MapPickerActivity.EXTRA_LAT, (double) lat);
-            i.putExtra(MapPickerActivity.EXTRA_LON, (double) lon);
-        }
-        gpsMapLauncher.launch(i);
-    }
-
-    /** Koordinaten als „lat,lon" mit sechs Nachkommastellen (wie die Karten-Auswahl liefert). */
-    private static String formatCoords(double lat, double lon) {
-        return String.format(java.util.Locale.US, "%.6f,%.6f", lat, lon);
-    }
 
     /** Freier Text + (je nach Kopie/Update) GPS-Tag. Der BELEG:-Tag kommt in {@link #attachReceipt}. */
     private String composeNoteForSave(boolean asNew) {
@@ -1931,10 +1735,10 @@ public class BookingEditActivity extends LocalizedActivity {
             // Neu/Vorlage (booking == null): der Zeilenwert ist bereits die aktuelle Position.
             // „Als neue speichern" aus einer bestehenden Buchung: frische Position vom Tagger holen –
             // außer der Nutzer hat den Standort manuell auf der Karte gewählt (dann gilt dieser).
-            coords = (booking == null || gpsEditedByUser) ? gpsRowCoords
+            coords = (booking == null || gps.editedByUser()) ? gps.coords()
                     : (locationTagger != null ? locationTagger.currentCoordinates() : null);
         } else {
-            coords = gpsRowCoords;
+            coords = gps.coords();
         }
         if (coords != null && !coords.trim().isEmpty()) {
             free = free.isEmpty() ? "GPS: " + coords : free + " GPS: " + coords;
@@ -2012,7 +1816,7 @@ public class BookingEditActivity extends LocalizedActivity {
      * <p>Zu prüfen gibt es nichts: es gibt kein Feld, in das sich ein ungültiger Wert schreiben ließe.</p>
      */
     private void updateNotesOnly() {
-        booking.tags = bookingTags;
+        booking.tags = tags.tags();
         booking.note = composeNoteForSave(false);
         attachReceipt(booking, false, () -> repository.updateNotesAndTags(booking, () -> {
             Toast.makeText(this, R.string.booking_updated, Toast.LENGTH_SHORT).show();
@@ -2084,7 +1888,7 @@ public class BookingEditActivity extends LocalizedActivity {
         maybeAskCorrection(payee, () -> {
             long ts = composeTimestamp();
             repository.updateTransferBooking(booking, from, to, cents, payee,
-                receipts.withReceiptTag(note, ts, false), bookingTags, ts, fromPlace, toPlace, () -> {
+                receipts.withReceiptTag(note, ts, false), tags.tags(), ts, fromPlace, toPlace, () -> {
                     Toast.makeText(this, R.string.booking_updated, Toast.LENGTH_SHORT).show();
                     finish();
                 });
@@ -2114,7 +1918,7 @@ public class BookingEditActivity extends LocalizedActivity {
             // Umwandeln heißt löschen und neu anlegen – der Beleg gehört aber weiter zu dieser Buchung
             // (asNew = false), sonst bliebe er nach dem Wechsel der Buchungsart herrenlos liegen.
             repository.saveTransferBooking(from, to, cents, payee,
-                    receipts.withReceiptTag(note, ts, false), bookingTags, ts, fromPlace, toPlace, () -> {
+                    receipts.withReceiptTag(note, ts, false), tags.tags(), ts, fromPlace, toPlace, () -> {
                 Toast.makeText(this, R.string.booking_updated, Toast.LENGTH_SHORT).show();
                 finish();
             });
@@ -2269,7 +2073,7 @@ public class BookingEditActivity extends LocalizedActivity {
         target.payee = payee;
         target.account = account;
         target.note = Ui.text(editNote).trim();
-        target.tags = bookingTags;
+        target.tags = tags.tags();
         target.createdAt = composeTimestamp();
         return target;
     }

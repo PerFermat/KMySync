@@ -86,14 +86,14 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      */
     public static final String EXTRA_BATCH = "batch";
     /** Zurück an die Liste: Brutto, Steuer und Netto gehen nicht auf. */
-    public static final String EXTRA_CONFLICT = "conflict";
+    public static final String EXTRA_CONFLICT = "st.conflict";
     /**
      * Der Doppelungs-Hinweis, den die Erkennungsliste schon kennt (Textbaustein, 0 = keiner). Die
      * Doppelung <b>innerhalb der Auswahl</b> sieht nur die Liste – die Maske kennt immer nur einen Beleg.
      */
     public static final String EXTRA_DUPLICATE = "duplicate";
     /** Zurück an die Liste: diese Bewegung steht schon im Depot. */
-    public static final String EXTRA_DUP_BOOKED = "dupBooked";
+    public static final String EXTRA_DUP_BOOKED = "st.dupBooked";
     /**
      * Zurück an die Liste: ein erkannter Schedule-Treffer wurde aktiv abgewählt (siehe
      * {@link #cbScheduleMatch}). Fehlt das Extra oder steht es auf {@code false}, bleibt die Zuordnung
@@ -121,18 +121,12 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     /** Die geladene Bewegung; {@code null} im Neu-Modus. */
     private SecurityTx loaded;
     private boolean readOnly;
+    /** Was eine Drehung überleben muss, siehe {@link SecurityTxEditState}. */
+    private final SecurityTxEditState st = new SecurityTxEditState();
     /** Berichtigen für die Erkennungsliste statt Speichern (siehe {@link #EXTRA_BATCH}). */
     private boolean batchMode;
     /** Die Maske kam aus einer eingelesenen Abrechnung — dann gilt: nicht gefunden heißt leer. */
     private boolean fromStatement;
-    /**
-     * Steht das Datum fest? {@code selectedDate} allein sagt das nicht: es trägt immer einen Wert, damit
-     * der Kalender irgendwo aufschlägt. Ohne diese Unterscheidung würde ein nicht erkanntes Datum als das
-     * heutige gebucht, ohne dass es jemand merkt.
-     */
-    private boolean dateKnown;
-    /** Dasselbe für Kauf/Verkauf/Dividende: ohne erkannte Art ist kein Knopf vorgewählt. */
-    private boolean actionKnown;
 
     /**
      * Das Zahlenfeld, in dem der Nutzer gerade steht — dort schreibt die Rechnung nicht hinein.
@@ -144,17 +138,6 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      */
     private Field focusedField;
 
-    /** Diese Bewegung steht schon im Depot — geht so an die Erkennungsliste zurück. */
-    private boolean dupBooked;
-    /**
-     * Der Stand, für den zuletzt nach einer Doppelung gefragt wurde ({@code null} = noch nie). Solange
-     * er sich nicht ändert, wird die Datenbank nicht erneut befragt — sonst liefe bei jedem Tastendruck
-     * eine Abfrage.
-     */
-    private String lastDupKey;
-    /** Der Hinweis, den die Erkennungsliste mitgab, und der Stand, für den er galt. */
-    private int listHint;
-    private String listHintKey;
 
     private MaterialToolbar toolbar;
     private MaterialButtonToggleGroup toggleAction;
@@ -199,8 +182,6 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     /** Die Kategorien der letzten Buchung derselben Art; sie sagen, wohin die Beträge gehören. */
     private final List<CategorySplits.Part> knownFeeParts = new ArrayList<>();
     private final List<CategorySplits.Part> knownIncomeParts = new ArrayList<>();
-    /** Kategorie einer festen Gebühr aus der Regel; sie schlägt die erschlossene (siehe Extra). */
-    private String fixedFeeCategory = "";
     /** Kategorieliste nach Ausgabe/Einnahme gruppiert – dieselbe wie in der Buchungsmaske. */
     private CategoryFilterAdapter categoryAdapter;
     private MaterialButton btnSave;
@@ -216,37 +197,16 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     private CalcKeyboardView calcKeyboard;
 
     private final Map<Field, TextInputEditText> numberFields = new EnumMap<>(Field.class);
-    /** Felder, die der Nutzer selbst gefüllt hat – nur die übrigen darf die Rechnung überschreiben. */
-    private final Set<Field> userSet = EnumSet.noneOf(Field.class);
-    private Field lastComputed;
     private Field justEdited;
     /** Schützt vor Rückkopplung, während die Rechnung Felder beschreibt. */
     private boolean writingBack;
     /** Läuft gerade die Vorbelegung aus einer Abrechnung? Dann verdrängt kein Wert den anderen. */
     private boolean prefilling;
-    private boolean conflict;
     /** Abrechnungstext der Sitzung; gesetzt, wenn die Maske aus einem eingelesenen PDF kam. */
     private String statementTextPath;
     private String statementIsin;
     /** Die noch nicht endgültig abgelegte Abrechnung; beim Speichern wird sie zum Beleg. */
     private java.io.File pendingStatement;
-    /** Beleg-Tag einer bereits gespeicherten Abrechnung (aus der Notiz der Gegenbuchung). */
-    private String savedStatementTag;
-    /** Beschriftung des aus der Abrechnung gewählten Datums; sie wird zum Anker. */
-    private String chosenDateLabel;
-    /**
-     * Die Regel hinter der Wahl. Zu einem Datum gibt es zwei Lesarten — die Beschriftung daneben und
-     * die Spaltenüberschrift darüber —, und die Beschriftung allein sagt nicht, welche gemeint war.
-     */
-    private de.spahr.ausgaben.statement.AnchorRule chosenDateRule;
-    /**
-     * Dasselbe für die Wertfelder: die beim Verlassen des Feldes gewählte Beschriftung.
-     *
-     * <p>Gefragt wird nur beim <b>ersten</b> Beleg einer Bank — danach steht die Vorlage, und die
-     * kennt die Antwort schon. Siehe {@link #ankerAuswahlAnbieten}.</p>
-     */
-    private final Map<Field, de.spahr.ausgaben.statement.AnchorRule> chosenValueRules =
-            new EnumMap<>(Field.class);
     /**
      * Ob für diesen Beleg überhaupt zu fragen ist: {@code null} heißt „noch nicht nachgesehen".
      *
@@ -280,12 +240,6 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      */
     private final Map<Field, CharSequence> originalHints = new EnumMap<>(Field.class);
     /**
-     * Ob die Einführung ins Lernen (siehe {@link #DLG_LEARN_INTRO}) schon einmal aufging — sonst käme
-     * sie nach jeder Drehung noch einmal, obwohl der Nutzer sie längst weggetippt hat.
-     */
-    private boolean learnIntroShown;
-    private static final String STATE_LEARN_INTRO_SHOWN = "s_learnIntroShown";
-    /**
      * Die einmal gelesene Abrechnung. Ohne sie läse jeder Tipp aufs Datumsfeld das PDF neu ein.
      *
      * <p>{@code volatile}, weil geschrieben und gelesen wird das Feld auf zwei Fäden: das Einlesen läuft
@@ -300,53 +254,6 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      * Datumsfeldes neu – auch dann, wenn {@link #statementText} längst feststeht.
      */
     private volatile java.util.List<de.spahr.ausgaben.statement.StatementScan.DateCandidate> statementDates;
-    /**
-     * Die Felder, in die der Nutzer <b>selbst</b> geschrieben hat — nur aus ihnen wird gelernt.
-     *
-     * <p>Nicht zu verwechseln mit {@code userSet}: dort stehen auch die Werte, welche die Maske aus der
-     * Abrechnung vorbelegt hat. Hier landet nur, was durch den Beobachter kam, und der schweigt bei jedem
-     * programmatischen Schreiben ({@code writingBack}). Genau diese Unterscheidung ist der Punkt: die App
-     * soll die Beschriftung zu einer Zahl suchen, die der Nutzer abgetippt hat — nicht zu einer, die sie
-     * sich selbst vorgelegt hat.</p>
-     */
-    private final Set<Field> typedFields = EnumSet.noneOf(Field.class);
-    /**
-     * Felder, deren live gefundene Beschriftung einer schon in der Bank-Vorlage stehenden, ANDEREN Regel
-     * widerspricht — dort lernt {@link #lernen} nur, wenn das Feld auch in {@link #ersetzteRegeln} steht.
-     */
-    private final Set<Field> konfliktFelder = EnumSet.noneOf(Field.class);
-    /**
-     * Felder, für die der Nutzer übers Stift-Symbol ausdrücklich eine Beschriftung bestätigt hat — nur
-     * dann darf eine in {@link #konfliktFelder} stehende Korrektur die Bank-Vorlage wirklich ersetzen.
-     */
-    private final Set<Field> ersetzteRegeln = EnumSet.noneOf(Field.class);
-    /**
-     * Teilmenge von {@link #ersetzteRegeln}: Felder, bei denen der Schalter im Stift-Dialog auf
-     * „hinzufügen" stand. Dort soll die neue Beschriftung die alte Regel nicht ablösen, sondern als
-     * weitere Möglichkeit in deren Kette stehen — siehe {@link StatementTemplate#appendedTo}.
-     */
-    private final Set<Field> anhaengenFelder = EnumSet.noneOf(Field.class);
-    /**
-     * Felder, für die der Nutzer im Stift-Dialog „Nicht lernen" gewählt hat: der gefundene Wert gilt für
-     * diese eine Buchung, die Bank-Vorlage bleibt unangetastet. Nötig neben {@link #ersetzteRegeln},
-     * weil ohne Widerspruch ({@link #konfliktFelder}) sonst stillschweigend gelernt würde.
-     */
-    private final Set<Field> nichtLernenFelder = EnumSet.noneOf(Field.class);
-    /**
-     * Der Wert, für den der Nutzer im Stift-Dialog entschieden hat — je Feld, das dort war.
-     *
-     * <p>Die Entscheidung hängt am <b>Wert</b>, nicht an einem Merker, den irgendein Textereignis
-     * wieder löscht. Genau daran scheiterte es zuvor: zwischen Wahl und Speichern lief die Suche noch
-     * einmal (das Feld bekommt beim Schließen des Fensters wieder den Fokus, die Maske rechnet und
-     * schreibt zurück) und nahm die Bestätigung wieder heraus — unsichtbar, und beim Speichern war
-     * dann „nichts Neues" zu lernen. Ändert der Nutzer den Wert wirklich, stimmt der Vergleich nicht
-     * mehr und die Entscheidung verfällt von selbst; siehe {@link #entscheidungGilt}.</p>
-     */
-    private final Map<Field, Double> entschiedenFuer = new EnumMap<>(Field.class);
-    /** Hat der Nutzer das Datum selbst gewählt? Dann gehört auch dessen Beschriftung gelernt. */
-    private boolean dateTyped;
-    /** Das Speichern läuft schon — siehe {@link #save()}. */
-    private boolean saving;
 
     /**
      * Schlüssel für {@link #onSaveInstanceState}.
@@ -356,31 +263,12 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      * zwar nach {@code onCreate} — die Vorbelegung aus dem Intent überschreibt sie also nicht.</p>
      *
      * <p>Ohne diese Sicherung war die Maske nach einer Drehung nicht mehr zu bedienen: Das Datum stand
-     * sichtbar im Feld, {@code dateKnown} war aber wieder {@code false}, und Speichern meldete „Datum
-     * fehlt", ohne dass der Nutzer etwas dagegen tun konnte. Zugleich waren {@code typedFields} und
-     * {@code dateTyped} leer, sodass {@code offerToLearn} wortlos abbrach — die Bank-Vorlage wurde nicht
+     * sichtbar im Feld, {@code st.dateKnown} war aber wieder {@code false}, und Speichern meldete „Datum
+     * fehlt", ohne dass der Nutzer etwas dagegen tun konnte. Zugleich waren {@code st.typedFields} und
+     * {@code st.dateTyped} leer, sodass {@code offerToLearn} wortlos abbrach — die Bank-Vorlage wurde nicht
      * gelernt, obwohl der Nutzer alles abgetippt hatte.</p>
      */
     private static final String STATE_DATE_MILLIS = "s_dateMillis";
-    private static final String STATE_DATE_KNOWN = "s_dateKnown";
-    private static final String STATE_ACTION_KNOWN = "s_actionKnown";
-    private static final String STATE_DATE_TYPED = "s_dateTyped";
-    private static final String STATE_DUP_BOOKED = "s_dupBooked";
-    private static final String STATE_CONFLICT = "s_conflict";
-    private static final String STATE_SAVING = "s_saving";
-    private static final String STATE_USER_SET = "s_userSet";
-    private static final String STATE_TYPED_FIELDS = "s_typedFields";
-    private static final String STATE_KONFLIKT_FELDER = "s_konfliktFelder";
-    private static final String STATE_ERSETZTE_REGELN = "s_ersetzteRegeln";
-    private static final String STATE_ANHAENGEN_FELDER = "s_anhaengenFelder";
-    private static final String STATE_NICHT_LERNEN_FELDER = "s_nichtLernenFelder";
-    private static final String STATE_GEWAEHLTE_FELDER = "s_gewaehlteFelder";
-    private static final String STATE_LAST_COMPUTED = "s_lastComputed";
-    private static final String STATE_DATE_LABEL = "s_dateLabel";
-    private static final String STATE_DATE_RULE = "s_dateRule";
-    private static final String STATE_STATEMENT_TAG = "s_statementTag";
-    private static final String STATE_FIXED_FEE_CATEGORY = "s_fixedFeeCategory";
-    private static final String STATE_VALUE_RULES = "s_valueRules";
 
     /** Schlüssel der Dialoge dieser Maske – siehe {@link HostedDialog}. */
     private static final String DLG_DATE_CHOICE = "dlg_dateChoice";
@@ -404,22 +292,6 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      */
     private LernAngebot lernAngebot;
     private PruefErgebnis pruefErgebnis;
-    /** Die Angaben, mit denen sich die Lern-Rückfrage nach einer Drehung neu aufsetzen lässt. */
-    private String learnAction;
-    private Double learnShares;
-    private Double learnPrice;
-    private Long learnFeeCents;
-    private Long learnNetCents;
-    private Long learnGrossCents;
-    private static final String STATE_LEARN_ACTION = "s_learnAction";
-    private static final String STATE_LEARN_SHARES = "s_learnShares";
-    private static final String STATE_LEARN_PRICE = "s_learnPrice";
-    private static final String STATE_LEARN_FEE = "s_learnFee";
-    private static final String STATE_LEARN_NET = "s_learnNet";
-    private static final String STATE_LEARN_GROSS = "s_learnGross";
-    private static final String STATE_LIST_HINT = "s_listHint";
-    private static final String STATE_LIST_HINT_KEY = "s_listHintKey";
-    private static final String STATE_LAST_DUP_KEY = "s_lastDupKey";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -541,7 +413,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     private void setupActionToggle() {
         toggleAction.addOnButtonCheckedListener((group, id, checked) -> {
             if (checked) {
-                actionKnown = true;
+                st.actionKnown = true;
                 actionHint.setVisibility(View.GONE);
                 applyAction();
                 loadCategoryFavorites();
@@ -594,10 +466,10 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      * erschließt.
      */
     private void zeigeLernEinfuehrungFallsNoetig() {
-        if (learnIntroShown || isFinishing() || isDestroyed()) {
+        if (st.learnIntroShown || isFinishing() || isDestroyed()) {
             return;
         }
-        learnIntroShown = true;
+        st.learnIntroShown = true;
         HostedDialog.show(this, DLG_LEARN_INTRO, null);
     }
 
@@ -624,46 +496,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     protected void onSaveInstanceState(@androidx.annotation.NonNull Bundle out) {
         super.onSaveInstanceState(out);
         out.putLong(STATE_DATE_MILLIS, selectedDate.getTimeInMillis());
-        out.putBoolean(STATE_DATE_KNOWN, dateKnown);
-        out.putBoolean(STATE_ACTION_KNOWN, actionKnown);
-        out.putBoolean(STATE_DATE_TYPED, dateTyped);
-        out.putBoolean(STATE_DUP_BOOKED, dupBooked);
-        out.putBoolean(STATE_CONFLICT, conflict);
-        out.putBoolean(STATE_SAVING, saving);
-        out.putBoolean(STATE_LEARN_INTRO_SHOWN, learnIntroShown);
-        out.putStringArray(STATE_USER_SET, namesOf(userSet));
-        out.putStringArray(STATE_TYPED_FIELDS, namesOf(typedFields));
-        out.putStringArray(STATE_KONFLIKT_FELDER, namesOf(konfliktFelder));
-        out.putStringArray(STATE_ERSETZTE_REGELN, namesOf(ersetzteRegeln));
-        out.putStringArray(STATE_ANHAENGEN_FELDER, namesOf(anhaengenFelder));
-        out.putStringArray(STATE_NICHT_LERNEN_FELDER, namesOf(nichtLernenFelder));
-        java.util.HashMap<String, Double> entschieden = new java.util.HashMap<>();
-        for (Map.Entry<Field, Double> e : entschiedenFuer.entrySet()) {
-            entschieden.put(e.getKey().name(), e.getValue());
-        }
-        out.putSerializable(STATE_GEWAEHLTE_FELDER, entschieden);
-        out.putString(STATE_LAST_COMPUTED, lastComputed == null ? null : lastComputed.name());
-        out.putString(STATE_DATE_LABEL, chosenDateLabel);
-        out.putSerializable(STATE_DATE_RULE, chosenDateRule);
-        // Als HashMap mit den Feldnamen als Schlüssel: ein EnumMap ist zwar serialisierbar, aber die
-        // Karte geht durch ein Bundle, und dort ist die schlichtere Form die haltbarere.
-        java.util.HashMap<String, de.spahr.ausgaben.statement.AnchorRule> regeln =
-                new java.util.HashMap<>();
-        for (Map.Entry<Field, de.spahr.ausgaben.statement.AnchorRule> e : chosenValueRules.entrySet()) {
-            regeln.put(e.getKey().name(), e.getValue());
-        }
-        out.putSerializable(STATE_VALUE_RULES, regeln);
-        out.putString(STATE_STATEMENT_TAG, savedStatementTag);
-        out.putString(STATE_FIXED_FEE_CATEGORY, fixedFeeCategory);
-        out.putInt(STATE_LIST_HINT, listHint);
-        out.putString(STATE_LIST_HINT_KEY, listHintKey);
-        out.putString(STATE_LAST_DUP_KEY, lastDupKey);
-        out.putString(STATE_LEARN_ACTION, learnAction);
-        putBoxed(out, STATE_LEARN_SHARES, learnShares);
-        putBoxed(out, STATE_LEARN_PRICE, learnPrice);
-        putBoxed(out, STATE_LEARN_FEE, learnFeeCents);
-        putBoxed(out, STATE_LEARN_NET, learnNetCents);
-        putBoxed(out, STATE_LEARN_GROSS, learnGrossCents);
+        st.save(out);
     }
 
     private void restoreState(Bundle in) {
@@ -671,72 +504,14 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             return;
         }
         selectedDate.setTimeInMillis(in.getLong(STATE_DATE_MILLIS, selectedDate.getTimeInMillis()));
-        dateKnown = in.getBoolean(STATE_DATE_KNOWN, dateKnown);
-        actionKnown = in.getBoolean(STATE_ACTION_KNOWN, actionKnown);
-        dateTyped = in.getBoolean(STATE_DATE_TYPED, dateTyped);
-        dupBooked = in.getBoolean(STATE_DUP_BOOKED, dupBooked);
-        conflict = in.getBoolean(STATE_CONFLICT, conflict);
-        saving = in.getBoolean(STATE_SAVING, false);
-        learnIntroShown = in.getBoolean(STATE_LEARN_INTRO_SHOWN, learnIntroShown);
-        readFields(in.getStringArray(STATE_USER_SET), userSet);
-        readFields(in.getStringArray(STATE_TYPED_FIELDS), typedFields);
-        readFields(in.getStringArray(STATE_KONFLIKT_FELDER), konfliktFelder);
-        readFields(in.getStringArray(STATE_ERSETZTE_REGELN), ersetzteRegeln);
-        readFields(in.getStringArray(STATE_ANHAENGEN_FELDER), anhaengenFelder);
-        readFields(in.getStringArray(STATE_NICHT_LERNEN_FELDER), nichtLernenFelder);
-        entschiedenFuer.clear();
-        Object entschieden = in.getSerializable(STATE_GEWAEHLTE_FELDER);
-        if (entschieden instanceof java.util.Map) {
-            for (Map.Entry<?, ?> e : ((java.util.Map<?, ?>) entschieden).entrySet()) {
-                Field f = fieldOf(String.valueOf(e.getKey()));
-                if (f != null && e.getValue() instanceof Double) {
-                    entschiedenFuer.put(f, (Double) e.getValue());
-                }
-            }
-        }
-        lastComputed = fieldOf(in.getString(STATE_LAST_COMPUTED));
-        chosenDateLabel = in.getString(STATE_DATE_LABEL);
-        Object rule = in.getSerializable(STATE_DATE_RULE);
-        chosenDateRule = rule instanceof de.spahr.ausgaben.statement.AnchorRule
-                ? (de.spahr.ausgaben.statement.AnchorRule) rule : null;
-        chosenValueRules.clear();
-        Object regeln = in.getSerializable(STATE_VALUE_RULES);
-        if (regeln instanceof java.util.Map) {
-            for (Map.Entry<?, ?> e : ((java.util.Map<?, ?>) regeln).entrySet()) {
-                Field f = fieldOf(String.valueOf(e.getKey()));
-                if (f != null && e.getValue() instanceof de.spahr.ausgaben.statement.AnchorRule) {
-                    chosenValueRules.put(f, (de.spahr.ausgaben.statement.AnchorRule) e.getValue());
-                }
-            }
-        }
-        savedStatementTag = in.getString(STATE_STATEMENT_TAG);
-        fixedFeeCategory = orEmpty(in.getString(STATE_FIXED_FEE_CATEGORY));
-        listHint = in.getInt(STATE_LIST_HINT, 0);
-        listHintKey = in.getString(STATE_LIST_HINT_KEY);
-        lastDupKey = in.getString(STATE_LAST_DUP_KEY);
-        learnAction = in.getString(STATE_LEARN_ACTION);
-        learnShares = in.containsKey(STATE_LEARN_SHARES) ? in.getDouble(STATE_LEARN_SHARES) : null;
-        learnPrice = in.containsKey(STATE_LEARN_PRICE) ? in.getDouble(STATE_LEARN_PRICE) : null;
-        learnFeeCents = in.containsKey(STATE_LEARN_FEE) ? in.getLong(STATE_LEARN_FEE) : null;
-        learnNetCents = in.containsKey(STATE_LEARN_NET) ? in.getLong(STATE_LEARN_NET) : null;
-        learnGrossCents = in.containsKey(STATE_LEARN_GROSS) ? in.getLong(STATE_LEARN_GROSS) : null;
-        if (saving) {
+        st.restore(in);
+        if (st.saving) {
             btnSave.setEnabled(false);
             wiederaufnahme();
         }
     }
 
-    private static void putBoxed(Bundle out, String key, Double value) {
-        if (value != null) {
-            out.putDouble(key, value);
-        }
-    }
 
-    private static void putBoxed(Bundle out, String key, Long value) {
-        if (value != null) {
-            out.putLong(key, value);
-        }
-    }
 
     /**
      * Nach einer Drehung mitten in der Lern-Rückfrage: die Bewegung ist gebucht, der Dialog ist neu zu
@@ -748,46 +523,15 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      * überhaupt noch offen war; die Bank-Vorlage wäre verloren.</p>
      */
     private void wiederaufnahme() {
-        if (learnAction == null) {
+        if (st.learnAction == null) {
             return;
         }
-        offerToLearn(learnAction, learnShares, learnPrice, learnFeeCents, learnNetCents,
-                learnGrossCents);
+        offerToLearn(st.learnAction, st.learnShares, st.learnPrice, st.learnFeeCents, st.learnNetCents,
+                st.learnGrossCents);
     }
 
-    private static String[] namesOf(Set<Field> fields) {
-        String[] out = new String[fields.size()];
-        int i = 0;
-        for (Field f : fields) {
-            out[i++] = f.name();
-        }
-        return out;
-    }
 
-    private static void readFields(String[] names, Set<Field> into) {
-        if (names == null) {
-            return;
-        }
-        into.clear();
-        for (String name : names) {
-            Field f = fieldOf(name);
-            if (f != null) {
-                into.add(f);
-            }
-        }
-    }
 
-    /** {@code null} statt einer Ausnahme: ein Bundle aus einer anderen Fassung darf nicht abstürzen. */
-    private static Field fieldOf(String name) {
-        if (name == null) {
-            return null;
-        }
-        try {
-            return Field.valueOf(name);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
 
     /**
      * Legt die beiden Kategorielisten an. Erst hier und nicht schon beim Aufbau der Maske: ob nur
@@ -884,7 +628,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     private void updateSaveEnabled() {
         // Läuft das Speichern bereits, bleibt der Knopf aus: die Kategoriezeilen melden sich beim
         // Schreiben noch einmal und würden ihn sonst wieder freigeben.
-        btnSave.setEnabled(!saving
+        btnSave.setEnabled(!st.saving
                 && splitsOk(feeSplits, Field.FEE) && splitsOk(incomeSplits, Field.GROSS));
     }
 
@@ -957,13 +701,13 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         prefillMoney(Field.NET, in.hasExtra(EXTRA_PREFILL_NET)
                 ? in.getLongExtra(EXTRA_PREFILL_NET, 0) : null);
         // Nichts vorgewählt und nichts erkannt: dann fehlt die Art, und das gehört gesagt.
-        actionHint.setVisibility(actionKnown ? View.GONE : View.VISIBLE);
+        actionHint.setVisibility(st.actionKnown ? View.GONE : View.VISIBLE);
         // Was die Liste schon weiß, sagt die Maske sofort mit – die eigene Prüfung braucht eine Runde
         // über die Datenbank, und so lange stünde hier sonst nichts.
-        listHint = in.getIntExtra(EXTRA_DUPLICATE, 0);
-        dupBooked = listHint == R.string.statement_dup_booked;
+        st.listHint = in.getIntExtra(EXTRA_DUPLICATE, 0);
+        st.dupBooked = st.listHint == R.string.statement_dup_booked;
         prefillPicker(editAccount, in.getStringExtra(EXTRA_PREFILL_ACCOUNT));
-        fixedFeeCategory = orEmptyText(in.getStringExtra(EXTRA_PREFILL_FIXED_FEE_CATEGORY));
+        st.fixedFeeCategory = orEmptyText(in.getStringExtra(EXTRA_PREFILL_FIXED_FEE_CATEGORY));
         foundFeeParts.clear();
         foundFeeParts.addAll(readParts(in, EXTRA_PREFILL_FEE_PARTS));
         foundIncomeParts.clear();
@@ -1028,9 +772,9 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         boolean dividend = DIVIDEND.equals(currentAction());
         List<CategorySplits.Part> gebuehr =
                 CategorySplits.rows(foundFeeParts, orZero(money(Field.FEE)), knownFeeParts);
-        if (!fixedFeeCategory.isEmpty() && !gebuehr.isEmpty()) {
+        if (!st.fixedFeeCategory.isEmpty() && !gebuehr.isEmpty()) {
             CategorySplits.Part erste = gebuehr.get(0);
-            gebuehr.set(0, new CategorySplits.Part(fixedFeeCategory, erste.cents, erste.label));
+            gebuehr.set(0, new CategorySplits.Part(st.fixedFeeCategory, erste.cents, erste.label));
         }
         fillMatched(feeSplits, gebuehr);
         fillMatched(incomeSplits, dividend
@@ -1072,7 +816,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             numberFields.get(field).setText(field == Field.SHARES
                     ? MoneyFormat.shares(value) : MoneyFormat.decimal(value, 0, 4));
             writingBack = false;
-            userSet.add(field);
+            st.userSet.add(field);
         }
     }
 
@@ -1088,7 +832,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             writingBack = true;
             numberFields.get(field).setText(MoneyFormat.plain(cents));
             writingBack = false;
-            userSet.add(field);
+            st.userSet.add(field);
         }
     }
 
@@ -1141,7 +885,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             toolbar.setTitle(R.string.security_tx_edit_title);
             btnDelete.setVisibility(View.VISIBLE);
             // Alles Geladene gilt als gesetzt – sonst würde die erste Rechnung es überschreiben.
-            userSet.addAll(numberFields.keySet());
+            st.userSet.addAll(numberFields.keySet());
             wireNumberFields();
         }
         updateSaveEnabled();
@@ -1254,12 +998,12 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         sharesRow.setVisibility(dividend ? View.GONE : View.VISIBLE);
         moveTotalField(dividend);
         if (dividend) {
-            userSet.remove(Field.SHARES);
-            userSet.remove(Field.PRICE);
+            st.userSet.remove(Field.SHARES);
+            st.userSet.remove(Field.PRICE);
             clearField(Field.SHARES);
             clearField(Field.PRICE);
         } else {
-            userSet.remove(Field.GROSS);
+            st.userSet.remove(Field.GROSS);
         }
     }
 
@@ -1357,13 +1101,13 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                 return;
             }
             if (Ui.text(input).trim().isEmpty()) {
-                userSet.remove(field);
-                typedFields.remove(field);
+                st.userSet.remove(field);
+                st.typedFields.remove(field);
             } else {
-                userSet.add(field);
+                st.userSet.add(field);
                 // Hierher kommt nur, was der Nutzer wirklich getippt hat – programmatisches Schreiben
                 // hat oben schon abgedreht.
-                typedFields.add(field);
+                st.typedFields.add(field);
             }
             // Der Wert hat sich geändert: eine schon gezeigte Regel galt dem alten Wert und ist jetzt
             // hinfällig – Titel und Symbol verschwinden, bis die Suche (unten) einen neuen Treffer meldet.
@@ -1371,8 +1115,8 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             if (layout != null && layout.getEndIconMode() == TextInputLayout.END_ICON_CUSTOM) {
                 layout.setEndIconMode(TextInputLayout.END_ICON_NONE);
                 layout.setHint(originalHints.get(field));
-                chosenValueRules.remove(field);
-                konfliktFelder.remove(field);
+                st.chosenValueRules.remove(field);
+                st.konfliktFelder.remove(field);
             }
             // Die im Stift-Fenster getroffene Entscheidung wird hier bewusst NICHT angerührt: dieser
             // Beobachter meldet sich auch, wenn sich der Wert gar nicht wirklich geändert hat, und
@@ -1415,19 +1159,19 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         // die falsche Quelle: dort hat die Regel gesucht, und was sie nicht fand, wurde nicht abgezogen.
         // Sonst zeigt eine Dividende innerhalb des Freibetrags eine gerechnete Steuer, die nirgends steht.
         in.taxRate = fromStatement ? 0 : taxRate;
-        in.lastComputed = lastComputed;
+        in.lastComputed = st.lastComputed;
         in.justEdited = justEdited;
         in.keepGiven = prefilling;
-        in.shares = userSet.contains(Field.SHARES) ? number(Field.SHARES) : null;
-        in.price = userSet.contains(Field.PRICE) ? number(Field.PRICE) : null;
-        in.grossCents = userSet.contains(Field.GROSS) ? money(Field.GROSS) : null;
-        in.feeCents = userSet.contains(Field.FEE) ? money(Field.FEE) : null;
-        in.netCents = userSet.contains(Field.NET) ? money(Field.NET) : null;
+        in.shares = st.userSet.contains(Field.SHARES) ? number(Field.SHARES) : null;
+        in.price = st.userSet.contains(Field.PRICE) ? number(Field.PRICE) : null;
+        in.grossCents = st.userSet.contains(Field.GROSS) ? money(Field.GROSS) : null;
+        in.feeCents = st.userSet.contains(Field.FEE) ? money(Field.FEE) : null;
+        in.netCents = st.userSet.contains(Field.NET) ? money(Field.NET) : null;
 
         SecurityAmounts.Result r = SecurityAmounts.solve(in);
-        conflict = r.conflict;
-        netLayout.setError(conflict ? getString(R.string.security_tx_conflict) : null);
-        if (conflict) {
+        st.conflict = r.conflict;
+        netLayout.setError(st.conflict ? getString(R.string.security_tx_conflict) : null);
+        if (st.conflict) {
             // Auch hier prüfen: an einem widersprüchlichen Stand ist keine Doppelung zu erkennen, und
             // ein noch stehender Hinweis von vorhin verschwindet damit.
             checkDuplicate();
@@ -1435,9 +1179,9 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             return;
         }
         if (r.computed != null) {
-            lastComputed = r.computed;
+            st.lastComputed = r.computed;
             // Das nachgebende Feld ist keine Nutzereingabe mehr, sonst bliebe es für immer stehen.
-            userSet.remove(r.computed);
+            st.userSet.remove(r.computed);
         }
         writingBack = true;
         writeUnset(Field.SHARES, r.shares == null ? null : MoneyFormat.shares(r.shares));
@@ -1446,7 +1190,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         // Die stillschweigende 0 bei Kauf/Verkauf bleibt ungeschrieben: stünde „0,00" im Feld, verdeckte
         // sie die Beschriftung, und wer dann hineintippt, schreibt vor oder hinter die Null statt sie zu
         // ersetzen. Bei einer Dividende ist die berechnete Steuer dagegen eine echte Auskunft.
-        if (DIVIDEND.equals(in.action) || userSet.contains(Field.FEE)) {
+        if (DIVIDEND.equals(in.action) || st.userSet.contains(Field.FEE)) {
             writeUnset(Field.FEE, r.feeCents == null ? null : MoneyFormat.plain(r.feeCents));
         }
         writeUnset(Field.NET, r.netCents == null ? null : MoneyFormat.plain(r.netCents));
@@ -1477,32 +1221,32 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         String key = candidate == null ? "" : candidate.depot + "|" + candidate.securityKmyId + "|"
                 + candidate.action + "|" + candidate.date + "|" + candidate.shares + "|"
                 + candidate.amountCents + "|" + candidate.netCents + "|" + candidate.feeCents;
-        if (key.equals(lastDupKey)) {
+        if (key.equals(st.lastDupKey)) {
             return;
         }
-        lastDupKey = key;
-        if (listHintKey == null) {
+        st.lastDupKey = key;
+        if (st.listHintKey == null) {
             // Der erste Stand ist der, für den der Hinweis der Liste galt.
-            listHintKey = key;
-            showDuplicate(listHint);
+            st.listHintKey = key;
+            showDuplicate(st.listHint);
         }
         if (candidate == null) {
-            dupBooked = false;
-            showDuplicate(key.equals(listHintKey) ? listHint : 0);
+            st.dupBooked = false;
+            showDuplicate(key.equals(st.listHintKey) ? st.listHint : 0);
             return;
         }
         repository.findExistingSecurityTx(java.util.Collections.singletonList(candidate),
                 loaded == null ? 0 : loaded.id, found -> {
-                    if (!key.equals(lastDupKey)) {
+                    if (!key.equals(st.lastDupKey)) {
                         return; // Zwischenzeitlich weitergetippt; die spätere Antwort gilt.
                     }
-                    dupBooked = found[0];
-                    if (dupBooked) {
+                    st.dupBooked = found[0];
+                    if (st.dupBooked) {
                         showDuplicate(R.string.statement_dup_booked);
                     } else {
                         // Die Doppelung innerhalb der Auswahl kennt nur die Liste; sie gilt weiter,
                         // solange an den Werten nichts geändert wurde.
-                        showDuplicate(key.equals(listHintKey) ? listHint : 0);
+                        showDuplicate(key.equals(st.listHintKey) ? st.listHint : 0);
                     }
                 });
     }
@@ -1521,7 +1265,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      */
     private SecurityTx duplicateCandidate() {
         String action = currentAction();
-        if (!actionKnown || !dateKnown || action == null || conflict || kmyId.isEmpty()) {
+        if (!st.actionKnown || !st.dateKnown || action == null || st.conflict || kmyId.isEmpty()) {
             return null;
         }
         Long gross = money(Field.GROSS);
@@ -1611,7 +1355,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      * nie in das, in dem er gerade steht.
      */
     private void writeUnset(Field field, String text) {
-        if (userSet.contains(field) || field == focusedField) {
+        if (st.userSet.contains(field) || field == focusedField) {
             return;
         }
         TextInputEditText input = numberFields.get(field);
@@ -1758,7 +1502,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      * in denen Prüfungen, Vorzeichenregeln, Belegablage und Datenbankaufruf ineinanderliefen.</p>
      */
     private void save() {
-        if (saving) {
+        if (st.saving) {
             // Zwischen dem Tipp und dem finish() aus offerToLearn liegen eine Datenbankschreibung und
             // womöglich zwei Rückfragen – die Maske steht so lange sichtbar offen. Ohne diese Sperre
             // legt ein zweiter Tipp Bewegung und Gegenbuchung ein zweites Mal an, und weil
@@ -1782,15 +1526,15 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      * @return {@code false}, wenn nicht gespeichert werden kann; die Meldung steht dann schon
      */
     private boolean eingabenSindVollstaendig() {
-        if (conflict) {
+        if (st.conflict) {
             Toast.makeText(this, R.string.security_tx_conflict, Toast.LENGTH_LONG).show();
             return false;
         }
-        if (!actionKnown) {
+        if (!st.actionKnown) {
             Toast.makeText(this, R.string.security_tx_need_action, Toast.LENGTH_LONG).show();
             return false;
         }
-        if (!dateKnown) {
+        if (!st.dateKnown) {
             Toast.makeText(this, R.string.security_tx_need_date, Toast.LENGTH_LONG).show();
             return false;
         }
@@ -1857,7 +1601,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             booking.note = beleg.note;
             // Wohin die Datei wandern wird, steht jetzt in der Notiz. Der Tag wird gebraucht: gleich
             // danach wird aus dieser Abrechnung gelernt und an ihr nachgeprüft.
-            savedStatementTag = de.spahr.ausgaben.receipt.NoteReceipt.pdfName(booking.note);
+            st.savedStatementTag = de.spahr.ausgaben.receipt.NoteReceipt.pdfName(booking.note);
         }
         // Dieselbe Notiz auch an der Bewegung: Nur so übersteht der Beleg-Tag den Rundlauf durch die
         // KMyMoney-Datei. Der Weg über booking_id tut es nicht – importDepot stellt die Verknüpfung
@@ -1891,7 +1635,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         };
         // Ab hier ist geschrieben; erst jetzt sperren, damit eine abgebrochene Prüfung oben den Knopf
         // nicht für immer stilllegt.
-        saving = true;
+        st.saving = true;
         btnSave.setEnabled(false);
         if (loaded != null) {
             repository.updateManualSecurityTx(tx, booking, done);
@@ -1930,10 +1674,10 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         android.content.Intent out = new android.content.Intent();
         // Was hier nicht feststeht, wird auch nicht übergeben: der Eintrag bleibt in der Liste rot,
         // statt über den Umweg durch die Maske stillschweigend das heutige Datum zu erben.
-        if (actionKnown) {
+        if (st.actionKnown) {
             out.putExtra(EXTRA_PREFILL_ACTION, action);
         }
-        if (dateKnown) {
+        if (st.dateKnown) {
             out.putExtra(EXTRA_PREFILL_DATE, selectedDate.getTimeInMillis());
         }
         putNumber(out, EXTRA_PREFILL_SHARES, number(Field.SHARES));
@@ -1946,8 +1690,8 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         putParts(out, EXTRA_PREFILL_INCOME_PARTS,
                 DIVIDEND.equals(action) ? collectedParts(incomeSplits)
                         : new ArrayList<>());
-        out.putExtra(EXTRA_CONFLICT, conflict);
-        out.putExtra(EXTRA_DUP_BOOKED, dupBooked);
+        out.putExtra(EXTRA_CONFLICT, st.conflict);
+        out.putExtra(EXTRA_DUP_BOOKED, st.dupBooked);
         out.putExtra(EXTRA_SCHEDULE_MATCH_OPT_OUT,
                 cbScheduleMatch.getVisibility() == View.VISIBLE && !cbScheduleMatch.isChecked());
         setResult(RESULT_OK, out);
@@ -2038,19 +1782,19 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      */
     private void offerToLearn(String action, Double shares, Double price, Long feeCents, Long netCents,
                               Long grossCents) {
-        learnAction = action;
-        learnShares = shares;
-        learnPrice = price;
-        learnFeeCents = feeCents;
-        learnNetCents = netCents;
-        learnGrossCents = grossCents;
+        st.learnAction = action;
+        st.learnShares = shares;
+        st.learnPrice = price;
+        st.learnFeeCents = feeCents;
+        st.learnNetCents = netCents;
+        st.learnGrossCents = grossCents;
         if (statementTextPath == null && statementPdf() == null) {
             finish();
             return;
         }
         // Wer nichts angefasst hat, hat der App nichts beizubringen – dann bleibt die Rückfrage aus.
         // Das steht vor dem Einlesen: sonst läge das PDF umsonst auf dem Tisch.
-        if (typedFields.isEmpty() && !dateTyped) {
+        if (st.typedFields.isEmpty() && !st.dateTyped) {
             finish();
             return;
         }
@@ -2111,13 +1855,13 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         // Beim Datum zählt die eigene Wahl: hat der Nutzer sie nicht getroffen, bleibt die schon gelernte
         // Beschriftung gültig. Ohne das würde bei zwei Zeilen mit demselben Datum („Zahltag" und
         // „Valuta") jedes Mal die unterste neu gelernt.
-        known.dateMillis = ersteVorlage || dateTyped ? selectedDate.getTimeInMillis() : -1;
-        known.dateAnchor = chosenDateLabel;
-        known.dateRule = chosenDateRule;
+        known.dateMillis = ersteVorlage || st.dateTyped ? selectedDate.getTimeInMillis() : -1;
+        known.dateAnchor = st.chosenDateLabel;
+        known.dateRule = st.chosenDateRule;
         // Und die Beschriftungen, die der Nutzer beim Verlassen der Wertfelder ausgewählt hat. Sie
         // gelten nur für die Felder, aus denen hier überhaupt gelernt wird — was oben auf null gesetzt
         // wurde, bekommt auch keine Regel.
-        for (Map.Entry<Field, de.spahr.ausgaben.statement.AnchorRule> e : chosenValueRules.entrySet()) {
+        for (Map.Entry<Field, de.spahr.ausgaben.statement.AnchorRule> e : st.chosenValueRules.entrySet()) {
             StatementTemplate.Field lernfeld = lernfeldVon(e.getKey());
             if (lernfeld != null) {
                 known.chosenRules.put(lernfeld, e.getValue());
@@ -2145,8 +1889,8 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         // siehe StatementTemplate#isExcerptOf). Gegen eine unvollständige Abrechnung ist das richtig,
         // gegen eine ausdrückliche Wahl im Stift-Dialog wäre es ein stilles Verwerfen: wer eine
         // Beschriftung antippt, die schon in der Kette steht, bekäme seine Entscheidung nicht gelernt.
-        Set<StatementTemplate.Field> anhaengen = lernfelder(anhaengenFelder, true);
-        Set<StatementTemplate.Field> ersetzen = lernfelder(ersetzteRegeln, false);
+        Set<StatementTemplate.Field> anhaengen = lernfelder(st.anhaengenFelder, true);
+        Set<StatementTemplate.Field> ersetzen = lernfelder(st.ersetzteRegeln, false);
         final StatementTemplate replaced = raw.mergedOver(existing).withRulesFrom(raw, ersetzen);
         final StatementTemplate appended = raw.appendedTo(existing, text);
         final StatementTemplate replacedMix = replaced.withRulesFrom(appended, anhaengen);
@@ -2158,7 +1902,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             // Wer im Stift-Fenster ausdrücklich „Lernen" gedrückt hat, darf hier nicht ins Leere laufen:
             // dass dabei nichts herauskam, ist dann eine Nachricht wert. Ohne eigene Entscheidung ist es
             // dagegen der Normalfall (nichts korrigiert) und bliebe besser still.
-            if (!entschiedenFuer.isEmpty()) {
+            if (!st.entschiedenFuer.isEmpty()) {
                 Toast.makeText(this, R.string.statement_learn_nothing_new, Toast.LENGTH_LONG).show();
             }
             finish();
@@ -2322,24 +2066,24 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     /**
      * Ob dieses Feld in den Lernvorgang geht (siehe {@code offerToLearn}).
      *
-     * <p>Stand für dieses Feld schon eine ANDERE Regel in der Bank-Vorlage ({@link #konfliktFelder}),
+     * <p>Stand für dieses Feld schon eine ANDERE Regel in der Bank-Vorlage ({@link SecurityTxEditState#konfliktFelder}),
      * zählt die Korrektur nur, wenn der Nutzer sie übers Stift-Symbol ausdrücklich bestätigt hat
-     * ({@link #ersetzteRegeln}) — sonst bucht sie nur diese eine Bewegung richtig, ohne die für künftige
+     * ({@link SecurityTxEditState#ersetzteRegeln}) — sonst bucht sie nur diese eine Bewegung richtig, ohne die für künftige
      * Belege dieser Bank gespeicherte Regel anzutasten. Und wer dort „Nicht lernen" gewählt hat
-     * ({@link #nichtLernenFelder}), bekommt dasselbe auch ohne Widerspruch.</p>
+     * ({@link SecurityTxEditState#nichtLernenFelder}), bekommt dasselbe auch ohne Widerspruch.</p>
      */
     private boolean lernen(boolean ersteVorlage, Field field) {
         // Selbst getippt, erster Beleg dieser Bank — oder im Stift-Fenster ausdrücklich entschieden.
         // Letzteres zählt auch für ein gerechnetes Feld: Bei einer Dividende fällt eine der drei Zahlen
         // aus den beiden anderen heraus, und wer für sie eine Beschriftung antippt, meint sie.
-        if (!(ersteVorlage || typedFields.contains(field) || entscheidungGilt(field))) {
+        if (!(ersteVorlage || st.typedFields.contains(field) || entscheidungGilt(field))) {
             return false;
         }
-        if (nichtLernenFelder.contains(field) && entscheidungGilt(field)) {
+        if (st.nichtLernenFelder.contains(field) && entscheidungGilt(field)) {
             return false;
         }
-        return !konfliktFelder.contains(field)
-                || (ersetzteRegeln.contains(field) && entscheidungGilt(field));
+        return !st.konfliktFelder.contains(field)
+                || (st.ersetzteRegeln.contains(field) && entscheidungGilt(field));
     }
 
     /**
@@ -2347,10 +2091,10 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      *
      * <p>Ein Feld, dessen Wert sich seither wirklich geändert hat, braucht eine neue Entscheidung — die
      * alte galt einer anderen Zahl. Umgekehrt darf sie nicht verfallen, bloß weil die Maske
-     * zwischendurch etwas in das Feld zurückgeschrieben hat: siehe {@link #entschiedenFuer}.</p>
+     * zwischendurch etwas in das Feld zurückgeschrieben hat: siehe {@link SecurityTxEditState#entschiedenFuer}.</p>
      */
     private boolean entscheidungGilt(Field field) {
-        Double entschieden = entschiedenFuer.get(field);
+        Double entschieden = st.entschiedenFuer.get(field);
         return entschieden != null && entschieden.equals(wertVon(field));
     }
 
@@ -2358,7 +2102,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      * Die Vorlagenfelder zu einer im Stift-Dialog getroffenen Entscheidung — siehe {@link #learnFrom}.
      *
      * <p>Es zählt allein, dass der Nutzer im Stift-Fenster für den Wert entschieden hat, der jetzt im
-     * Feld steht ({@link #entscheidungGilt}). Bewusst <b>nicht</b> zusätzlich {@link #konfliktFelder}:
+     * Feld steht ({@link #entscheidungGilt}). Bewusst <b>nicht</b> zusätzlich {@link SecurityTxEditState#konfliktFelder}:
      * dieser Merker wird von jedem Textereignis im Feld geleert und danach nur von der Suche wieder
      * nachgetragen — die aber hält sich hinter einer gültigen Entscheidung heraus. Die Frage wäre
      * dadurch beim Speichern ein zweites Mal gestellt worden, obwohl sie längst beantwortet war.</p>
@@ -2369,7 +2113,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     private Set<StatementTemplate.Field> lernfelder(Set<Field> quelle, boolean anhaengen) {
         Set<StatementTemplate.Field> out = EnumSet.noneOf(StatementTemplate.Field.class);
         for (Field f : quelle) {
-            if (!entscheidungGilt(f) || (!anhaengen && anhaengenFelder.contains(f))) {
+            if (!entscheidungGilt(f) || (!anhaengen && st.anhaengenFelder.contains(f))) {
                 continue;
             }
             StatementTemplate.Field lernfeld = lernfeldVon(f);
@@ -2467,10 +2211,10 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         if (DIVIDEND.equals(action)) {
             soll.incomeParts.addAll(partAmounts(incomeSplits));
         }
-        for (Field field : typedFields) {
+        for (Field field : st.typedFields) {
             soll.typed.add(StatementTemplate.Field.valueOf(field.name()));
         }
-        if (dateTyped) {
+        if (st.dateTyped) {
             soll.typed.add(StatementTemplate.Field.DATE);
         }
         return soll;
@@ -2617,10 +2361,10 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         if (pendingStatement != null && pendingStatement.exists()) {
             return pendingStatement;
         }
-        if (savedStatementTag == null) {
+        if (st.savedStatementTag == null) {
             return null;
         }
-        java.io.File file = statementFile(savedStatementTag, yearOf(selectedDate.getTimeInMillis()));
+        java.io.File file = statementFile(st.savedStatementTag, yearOf(selectedDate.getTimeInMillis()));
         return file != null && file.exists() ? file : null;
     }
 
@@ -2682,7 +2426,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
 
     /** Beleg-Tag und Anzeige aus einer Notiz ableiten. */
     private void uebernehmeNotiz(String note) {
-        savedStatementTag = de.spahr.ausgaben.receipt.NoteReceipt.pdfName(note);
+        st.savedStatementTag = de.spahr.ausgaben.receipt.NoteReceipt.pdfName(note);
         updateStatementButton();
         zeigeNotiz(note);
     }
@@ -2714,7 +2458,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         // vorliegt oder erst vom Netzlaufwerk zu holen ist, darf man der Zeile nicht ansehen. Und
         // nachsehen dürfte man hier ohnehin nicht — ReceiptPages.find lädt bei Bedarf selbst nach,
         // und das ist Netzverkehr auf dem Bedienfaden.
-        boolean vorhanden = pendingStatement != null || savedStatementTag != null;
+        boolean vorhanden = pendingStatement != null || st.savedStatementTag != null;
         if (!vorhanden) {
             rowReceipt.setVisibility(View.GONE);
             return;
@@ -2748,7 +2492,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             return;
         }
         final int jahr = yearOf(selectedDate.getTimeInMillis());
-        final String tag = savedStatementTag;
+        final String tag = st.savedStatementTag;
         // Das Holen vom Netzlaufwerk kann dauern – dieselbe gelbe Statuszeile wie im Konto.
         receiptBanner.start(getString(R.string.receipt_loading_wait));
         repository.executor().execute(() -> {
@@ -2890,9 +2634,9 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                         return;
                     }
                     selectedDate.setTimeInMillis(millis[which]);
-                    chosenDateLabel = anker[which];
-                    chosenDateRule = rules == null ? null : rules.get(which);
-                    dateTyped = true;
+                    st.chosenDateLabel = anker[which];
+                    st.chosenDateRule = rules == null ? null : rules.get(which);
+                    st.dateTyped = true;
                     updateDateField();
                 })
                 .create();
@@ -2961,15 +2705,15 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                 }
                 // Der erste Kandidat ist in derselben Reihenfolge gesucht wie der automatische Lerner
                 // selbst sucht (siehe TemplateLearner.kandidaten). Der Feldtitel zeigt ihn sofort, egal
-                // ob es ein Widerspruch ist – nur ob er auch gelernt wird, hängt von ersetzteRegeln ab.
+                // ob es ein Widerspruch ist – nur ob er auch gelernt wird, hängt von st.ersetzteRegeln ab.
                 de.spahr.ausgaben.statement.AnchorRule top = kandidaten.get(0);
                 boolean widerspruch = alt != null && !alt.equals(top);
                 // Der Widerspruch wird auch dann festgehalten, wenn gleich abgebrochen wird: sonst stünde
                 // beim erneuten Öffnen des Stift-Fensters der Ersetzen/Hinzufügen-Schalter nicht mehr da.
                 if (widerspruch) {
-                    konfliktFelder.add(field);
+                    st.konfliktFelder.add(field);
                 } else {
-                    konfliktFelder.remove(field);
+                    st.konfliktFelder.remove(field);
                 }
                 if (entscheidungGilt(field)) {
                     // Der Nutzer hat für genau diesen Wert schon selbst entschieden. Diese Suche läuft
@@ -2978,11 +2722,11 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                     return;
                 }
                 if (widerspruch) {
-                    ersetzteRegeln.remove(field);
+                    st.ersetzteRegeln.remove(field);
                 } else {
-                    ersetzteRegeln.add(field);
+                    st.ersetzteRegeln.add(field);
                 }
-                chosenValueRules.put(field, top);
+                st.chosenValueRules.put(field, top);
                 zeigeErkannteRegel(field, layout, top, kandidaten);
             });
         });
@@ -3111,7 +2855,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      *
      * <p>Was die Vorlage selbst vorgelegt hat, bleibt dagegen außen vor: dort fände die Suche nur den
      * eigenen Vorschlag wieder und hielte ihn für eine Bestätigung. Vorbelegte Werte stehen in
-     * {@code userSet} (siehe {@code prefillMoney}), gerechnete nimmt {@link #recompute} dort heraus.</p>
+     * {@code st.userSet} (siehe {@code prefillMoney}), gerechnete nimmt {@link #recompute} dort heraus.</p>
      *
      * <p>Und ein ausgeblendetes Feld gar nicht: bei Kauf und Verkauf ist das Brutto die gerechnete
      * dritte Zahl und steht nicht in der Maske — eine Regel dafür füllte nur etwas Unsichtbares.</p>
@@ -3121,10 +2865,10 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         if (layout == null || layout.getVisibility() != View.VISIBLE) {
             return false;
         }
-        return typedFields.contains(field) || !userSet.contains(field);
+        return st.typedFields.contains(field) || !st.userSet.contains(field);
     }
 
-    /** Wie {@link #zeigeErkannteRegel}, aber der Merkposten geht ins Tag der Zeile statt in {@code chosenValueRules}. */
+    /** Wie {@link #zeigeErkannteRegel}, aber der Merkposten geht ins Tag der Zeile statt in {@code st.chosenValueRules}. */
     private void zeigeErkannteSplitRegel(TextInputLayout layout, TextInputEditText input,
                                          de.spahr.ausgaben.statement.AnchorRule regel,
                                          java.util.List<de.spahr.ausgaben.statement.AnchorRule> kandidaten) {
@@ -3337,7 +3081,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
 
     @SuppressWarnings("unchecked")
     private android.app.Dialog buildAnchorChoiceDialog(Bundle args) {
-        final Field field = fieldOf(args.getString(ARG_ANCHOR_FIELD));
+        final Field field = SecurityTxEditState.fieldOf(args.getString(ARG_ANCHOR_FIELD));
         CharSequence[] labels = args.getCharSequenceArray(ARG_ANCHOR_LABELS);
         final java.util.List<de.spahr.ausgaben.statement.AnchorRule> rules =
                 (java.util.List<de.spahr.ausgaben.statement.AnchorRule>)
@@ -3346,11 +3090,11 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             return null;
         }
         StatementTemplate.Field lernfeld = lernfeldVon(field);
-        // Stand für dieses Feld schon eine andere Regel in der Bank-Vorlage (siehe konfliktFelder), fällt
+        // Stand für dieses Feld schon eine andere Regel in der Bank-Vorlage (siehe st.konfliktFelder), fällt
         // hier – genau dort, wo die Beschriftung gewählt wird – auch die Entscheidung, was mit der alten
         // Regel geschieht: der Schalter wählt zwischen ersetzen und hinzufügen, „Nicht lernen" lässt sie
         // ganz in Ruhe. Ohne Widerspruch gibt es nichts zu entscheiden, dann bleibt der Schalter weg.
-        final boolean konflikt = konfliktFelder.contains(field);
+        final boolean konflikt = st.konfliktFelder.contains(field);
         View view = getLayoutInflater().inflate(R.layout.dialog_anchor_choice, null);
         final android.widget.RadioGroup gruppe = view.findViewById(R.id.anchorChoices);
         for (int i = 0; i < labels.length; i++) {
@@ -3362,13 +3106,13 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         }
         // Vorausgewählt ist, was schon gilt – so steht nach einer Drehung wieder dasselbe da, ohne dass
         // die Auswahl eigens durchs Bundle müsste.
-        int vorwahl = rules.indexOf(chosenValueRules.get(field));
+        int vorwahl = rules.indexOf(st.chosenValueRules.get(field));
         gruppe.check((vorwahl < 0 ? 0 : vorwahl) + 1);
         final com.google.android.material.materialswitch.MaterialSwitch schalter =
                 view.findViewById(R.id.anchorReplace);
         if (konflikt) {
             view.findViewById(R.id.anchorReplaceRow).setVisibility(View.VISIBLE);
-            schalter.setChecked(!anhaengenFelder.contains(field));
+            schalter.setChecked(!st.anhaengenFelder.contains(field));
             schalter.setText(schalter.isChecked()
                     ? R.string.statement_anchor_replace_on : R.string.statement_anchor_replace_off);
             schalter.setOnCheckedChangeListener((b, an) -> schalter.setText(an
@@ -3386,32 +3130,32 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                         // Lerner sucht beim Speichern selbst (der berücksichtigt dann auch, was die
                         // anderen Felder inzwischen belegt haben). Der Feldtitel bekommt seinen
                         // ursprünglichen Namen zurück, das Symbol bleibt stehen.
-                        chosenValueRules.remove(field);
+                        st.chosenValueRules.remove(field);
                         if (layout != null) {
                             layout.setHint(originalHints.get(field));
                         }
                     } else {
-                        chosenValueRules.put(field, rules.get(gewaehlt));
+                        st.chosenValueRules.put(field, rules.get(gewaehlt));
                         zeigeErkannteRegel(field, layout, rules.get(gewaehlt), rules);
                     }
                     // Erst dieser Knopf ist die Bestätigung: bestand für dieses Feld ein Widerspruch zur
                     // Bank-Vorlage, darf jetzt auch tatsächlich gelernt werden (siehe lernen()).
-                    ersetzteRegeln.add(field);
-                    nichtLernenFelder.remove(field);
-                    entschiedenFuer.put(field, wertVon(field));
+                    st.ersetzteRegeln.add(field);
+                    st.nichtLernenFelder.remove(field);
+                    st.entschiedenFuer.put(field, wertVon(field));
                     if (konflikt && !schalter.isChecked()) {
-                        anhaengenFelder.add(field);
+                        st.anhaengenFelder.add(field);
                     } else {
-                        anhaengenFelder.remove(field);
+                        st.anhaengenFelder.remove(field);
                     }
                 })
                 .setNegativeButton(R.string.statement_anchor_dont_learn, (d, w) -> {
                     // Nur diese Buchung bekommt den gefundenen Wert, die für diese Bank gespeicherte
                     // Regel bleibt unangetastet.
-                    ersetzteRegeln.remove(field);
-                    anhaengenFelder.remove(field);
-                    nichtLernenFelder.add(field);
-                    entschiedenFuer.put(field, wertVon(field));
+                    st.ersetzteRegeln.remove(field);
+                    st.anhaengenFelder.remove(field);
+                    st.nichtLernenFelder.add(field);
+                    st.entschiedenFuer.put(field, wertVon(field));
                 })
                 .create();
     }
@@ -3468,9 +3212,9 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
             selectedDate.set(Calendar.MONTH, month);
             selectedDate.set(Calendar.DAY_OF_MONTH, day);
             // Von Hand gewählt: eine vorher angetippte Beschriftung meint jetzt ein anderes Datum.
-            chosenDateLabel = null;
-            chosenDateRule = null;
-            dateTyped = true;
+            st.chosenDateLabel = null;
+            st.chosenDateRule = null;
+            st.dateTyped = true;
             updateDateField();
         }, selectedDate.get(Calendar.YEAR), selectedDate.get(Calendar.MONTH),
                 selectedDate.get(Calendar.DAY_OF_MONTH));
@@ -3478,7 +3222,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
 
     /** Schreibt das gewählte Datum ins Feld – damit steht es fest. */
     private void updateDateField() {
-        dateKnown = true;
+        st.dateKnown = true;
         editDate.setText(DateFormats.date(selectedDate.getTimeInMillis()));
         dateLayout.setError(null);
         planeScheduleMatchCheck();
@@ -3489,7 +3233,7 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      * ein Tipp legt die im Dokument gefundenen Angaben vor.
      */
     private void clearDateField() {
-        dateKnown = false;
+        st.dateKnown = false;
         editDate.setText("");
         dateLayout.setError(getString(R.string.statement_date_missing));
     }

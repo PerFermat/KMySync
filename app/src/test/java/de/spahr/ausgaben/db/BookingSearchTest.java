@@ -97,15 +97,15 @@ public class BookingSearchTest {
 
         int treffer = 0;
         java.util.regex.Matcher m = java.util.regex.Pattern
-                .compile("BookingSearch\\.matches\\(\\s*b\\s*,\\s*(\\w+)\\s*\\)").matcher(rumpf);
+                .compile("BookingSearch\\.matches\\(\\s*b\\s*,\\s*([\\w.]+)\\s*\\)").matcher(rumpf);
         java.util.List<String> argumente = new java.util.ArrayList<>();
         while (m.find()) {
             argumente.add(m.group(1));
             treffer++;
         }
-        assertEquals("matchesFilter muss filterPayee UND searchQuery prüfen, gefunden: " + argumente,
+        assertEquals("matchesFilter muss filter.payee UND searchQuery prüfen, gefunden: " + argumente,
                 2, treffer);
-        assertTrue("der Trichter fehlt: " + argumente, argumente.contains("filterPayee"));
+        assertTrue("der Trichter fehlt: " + argumente, argumente.contains("filter.payee"));
         assertTrue("die Live-Suche fehlt: " + argumente, argumente.contains("searchQuery"));
     }
 

@@ -1,6 +1,5 @@
 package de.spahr.ausgaben.ui;
 
-import de.spahr.ausgaben.net.RemotePath;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -18,14 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.textfield.MaterialAutoCompleteTextView;
-import com.google.android.material.textfield.TextInputEditText;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -35,12 +27,8 @@ import de.spahr.ausgaben.db.Booking;
 import de.spahr.ausgaben.db.BookingSplit;
 import de.spahr.ausgaben.db.PlaceBalance;
 import de.spahr.ausgaben.db.Repository;
-import de.spahr.ausgaben.export.CsvImporter;
 import de.spahr.ausgaben.export.ExportCoordinator;
-import de.spahr.ausgaben.export.KmyDocument;
 import de.spahr.ausgaben.export.KmyExportCoordinator;
-import de.spahr.ausgaben.export.KmyImporter;
-import de.spahr.ausgaben.net.RemoteStorage;
 import de.spahr.ausgaben.settings.PlacesStore;
 import de.spahr.ausgaben.settings.SettingsStore;
 import de.spahr.ausgaben.voice.VoiceRecognizer;
@@ -48,22 +36,9 @@ import de.spahr.ausgaben.voice.VoiceRecognizer;
 public class MainActivity extends LocalizedActivity implements HostedDialog.Host {
 
     /** Schlüssel und Angaben der Dialoge dieser Maske – siehe {@link HostedDialog}. */
-    private static final String DLG_CSV_PICK = "dlg_csvPick";
-    private static final String DLG_NUMBER_ENTRY = "dlg_numberEntry";
 
-    /**
-     * Der Stand der stillen Zifferneingabe: eingetippter Betrag und Stelle im Empfänger-Rundlauf.
-     *
-     * <p>Die Felder dieses Dialogs entstehen im Code und tragen keine ids — das Fenstersystem kann sie
-     * deshalb nicht selbst wiederherstellen. Ohne diese drei Werte begänne man nach jeder Drehung von
-     * vorn.</p>
-     */
-    private String numberEntryAmount = "";
-    private int numberEntryPick;
-    private boolean numberEntryTapped;
-    private static final String STATE_NUMBER_AMOUNT = "s_numberAmount";
-    private static final String STATE_NUMBER_PICK = "s_numberPick";
-    private static final String STATE_NUMBER_TAPPED = "s_numberTapped";
+    /** Die stille Zifferneingabe samt ihrem über die Drehung geretteten Stand. */
+    private NumberEntryController numberEntry;
     private static final String STATE_SEARCH_QUERY = "s_searchQuery";
     private static final String STATE_SEARCH_OPEN = "s_searchOpen";
 
@@ -85,49 +60,27 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     @Override
     protected void onSaveInstanceState(android.os.Bundle out) {
         super.onSaveInstanceState(out);
-        out.putString(STATE_NUMBER_AMOUNT, numberEntryAmount);
-        out.putInt(STATE_NUMBER_PICK, numberEntryPick);
-        out.putBoolean(STATE_NUMBER_TAPPED, numberEntryTapped);
+        numberEntry.save(out);
         // Die Kontenschublade rettet ihre Suche nicht – dort ist der Begriff zwei Wörter. Hier hat man
         // womöglich gerade eine Buchung von 2019 eingekreist; die Drehung dürfte das nicht wegwerfen.
         out.putString(STATE_SEARCH_QUERY, searchQuery);
         out.putBoolean(STATE_SEARCH_OPEN, searchBar != null && searchBar.istOffen());
     }
 
-    /**
-     * Den Stand der Zifferneingabe zurücklesen — <b>in {@code onCreate}</b> und nicht in
-     * {@code onRestoreInstanceState}.
-     *
-     * <p>Die Reihenfolge entscheidet: Das Fenstersystem stellt den Dialog beim Wechsel nach
-     * {@code onStart} wieder her und ruft dabei {@code buildNumberEntry}; {@code onRestoreInstanceState}
-     * kommt erst danach. Der Dialog läse dann noch den leeren Anfangswert — was genau der Fehler war,
-     * den ein Test hier zutage gefördert hat.</p>
-     */
-    private void restoreNumberEntryState(android.os.Bundle in) {
-        if (in == null) {
-            return;
-        }
-        numberEntryAmount = in.getString(STATE_NUMBER_AMOUNT, "");
-        numberEntryPick = in.getInt(STATE_NUMBER_PICK, 0);
-        numberEntryTapped = in.getBoolean(STATE_NUMBER_TAPPED, false);
-    }
-    private static final String ARG_CSV_FOLDER = "a_csvFolder";
-    private static final String ARG_CSV_FOLDERS = "a_csvFolders";
-    private static final String ARG_CSV_FILES = "a_csvFiles";
 
     @Override
     public android.app.Dialog buildDialog(String key, Bundle args) {
-        if (DLG_CSV_PICK.equals(key)) {
-            return buildCsvPick(args);
+        if (MainImportFlow.DLG_CSV_PICK.equals(key)) {
+            return importFlow.buildCsvPick(args);
         }
-        return DLG_NUMBER_ENTRY.equals(key) ? buildNumberEntry() : null;
+        return NumberEntryController.DLG_NUMBER_ENTRY.equals(key) ? numberEntry.buildDialog() : null;
     }
 
     @Override
     public void onDialogCancelled(String key, Bundle args) {
-        if (DLG_NUMBER_ENTRY.equals(key)) {
+        if (NumberEntryController.DLG_NUMBER_ENTRY.equals(key)) {
             // Weggetippt heißt verworfen – beim nächsten Öffnen soll nicht der alte Betrag dastehen.
-            vergissZifferneingabe();
+            numberEntry.forget();
         }
         // Der Datei-Browser darf ebenso weggetippt werden; es folgt nichts daraus.
     }
@@ -174,31 +127,17 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     private int saldoIndex = 0;
 
     /**
-     * Der Suchtext aus der <b>Live-Suche in der Titelzeile</b> – bewusst neben {@link #filterPayee}
+     * Der Suchtext aus der <b>Live-Suche in der Titelzeile</b> – bewusst neben {@link BookingFilterState#payee}
      * und nicht an seiner Stelle: Beide gelten zusammen, damit man innerhalb eines gesetzten Filters
      * weitersuchen kann. Gehalten wird er hier und nicht nur im Feld, weil das Feld eingeklappt wird,
      * ohne daß die Suche endet.
      */
     private String searchQuery = "";
 
-    private String filterPayee = "";
-    private String filterCategory = "";
-    private boolean filterCategoryIsMain = false;
-    /** Typ der gefilterten Kategorie (Einnahme/Ausgabe), {@code null} = kein Typ gewählt ("Alle"). */
-    private Boolean filterCategoryIsIncome = null;
-    /** Gefiltertes Stichwort (leer = alle); die Buchung muß es tragen. */
-    private String filterTag = "";
+    /** Die Kriterien des Filtertrichters, siehe {@link FilterDialog}. */
+    private final BookingFilterState filter = new BookingFilterState();
     /** Die in KMyMoney vorhandenen Stichwörter; leer = das Filterfeld erscheint gar nicht. */
     private List<String> knownTagNames = new ArrayList<>();
-    private Long filterAmountFrom = null;
-    private Long filterAmountTo = null;
-    private Long filterDateFrom = null;
-    private Long filterDateTo = null;
-    /** Umkreis in Metern um {@link #filterCenter}; 0 = aus (siehe
-     * {@link de.spahr.ausgaben.location.RadiusFilter}). */
-    private int filterRadiusM = 0;
-    /** Eigene Position „lat, lon" im Moment des Anwendens – eingefroren, damit die Liste ruhig bleibt. */
-    private double[] filterCenter = null;
     /** Empfänger (klein) → gelernte Standorte seines Alias; Rückfall für Buchungen ohne eigenes GPS. */
     private final java.util.Map<String, java.util.List<double[]>> aliasPoints = new java.util.HashMap<>();
 
@@ -275,7 +214,8 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     public static final String VIEW_ACCOUNT_PREFIX = "ACCOUNT:";
 
     private ActivityResultLauncher<Uri> exportTreeLauncher;
-    private ActivityResultLauncher<String[]> importLauncher;
+    /** Konten/Depots/Planungen aus der .kmy und CSV-Import, siehe {@link MainImportFlow}. */
+    private MainImportFlow importFlow;
     /** Speicherdialog für die ZIP-Datei mit den Belegen der gefilterten Buchungen. */
     private ActivityResultLauncher<String> receiptZipLauncher;
     /** Sammeln, fragen, packen, melden – siehe {@link ReceiptExportController}. */
@@ -288,12 +228,75 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     /** Aktueller Standort für die Betrag-only-Auflösung (rein lokal, nur Koordinaten). */
     private de.spahr.ausgaben.location.LocationTagger locationTagger;
 
+    /** Was die Zifferneingabe von dieser Maske braucht – erst beim Bauen des Dialogs gefragt. */
+    private NumberEntryController.Host numberEntryHost() {
+        return new NumberEntryController.Host() {
+            @Override
+            public Repository repository() {
+                return repository;
+            }
+
+            @Override
+            public SettingsStore settings() {
+                return settings;
+            }
+
+            @Override
+            public de.spahr.ausgaben.location.LocationTagger locationTagger() {
+                return locationTagger;
+            }
+
+            @Override
+            public boolean hasLocationPermission() {
+                return MainActivity.this.hasLocationPermission();
+            }
+
+            @Override
+            public void requestLocationPermission() {
+                locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION);
+            }
+
+            @Override
+            public java.util.Set<String> visibleAccounts() {
+                return MainActivity.this.visibleAccounts();
+            }
+
+            @Override
+            public VoiceEntryController voiceEntry() {
+                return voiceEntry;
+            }
+
+        };
+    }
+
+    /** Was der Import-Ablauf von dieser Maske braucht. */
+    private MainImportFlow.Host importHost() {
+        return new MainImportFlow.Host() {
+            @Override
+            public void showProgress(String text) {
+                MainActivity.this.showProgress(text);
+            }
+
+            @Override
+            public void dismissProgress() {
+                MainActivity.this.dismissProgress();
+            }
+
+            @Override
+            public void refreshBookings() {
+                MainActivity.this.refreshBookings();
+            }
+
+        };
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // Vor allem anderen: der Dialog der Zifferneingabe wird gleich mit der Activity wiederhergestellt
-        // und liest diese Werte (siehe restoreNumberEntryState).
-        restoreNumberEntryState(savedInstanceState);
+        // und liest diese Werte (siehe NumberEntryController.restore).
+        numberEntry = new NumberEntryController(this, numberEntryHost());
+        numberEntry.restore(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         com.google.android.material.appbar.MaterialToolbar toolbar = findViewById(R.id.toolbar);
@@ -386,7 +389,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                     @Override
                     public void onImport(String account, boolean isAll) {
                         // Schublade offen lassen; Import-Dialog/Datei-Browser erscheint darüber.
-                        onImportRequested(account, isAll);
+                        importFlow.onImportRequested(account, isAll);
                     }
 
                     @Override
@@ -412,7 +415,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                     @Override
                     public void onDepotImport(String depot) {
                         // Schublade offen lassen; Bestätigungsdialog erscheint darüber.
-                        reimportDepot(depot);
+                        importFlow.reimportDepot(depot);
                     }
                 });
         accountList.setAdapter(accountAdapter);
@@ -425,7 +428,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                 drawerHeader.clearSearch();
             }
         });
-        findViewById(R.id.addAccount).setOnClickListener(v -> onAddAccountClicked());
+        findViewById(R.id.addAccount).setOnClickListener(v -> importFlow.onAddAccountClicked());
 
         textBalance = findViewById(R.id.textBalance);
         textSaldoLabel = findViewById(R.id.textSaldoLabel);
@@ -479,7 +482,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
             swipeRefresh.setRefreshing(false);
             // „Alle Konten" (leerer selectedAccount) zieht alles nach: Konten, Depots und Planungen.
             if (settings.isKmySource() && settings.hasRemoteConfig() && !settings.getKmyPath().isEmpty()) {
-                runKmyImport(selectedAccount.isEmpty() ? null : selectedAccount);
+                importFlow.runKmyImport(selectedAccount.isEmpty() ? null : selectedAccount);
             } else {
                 refreshBookings();
             }
@@ -501,7 +504,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         });
 
         // Ziffern-Symbol: stille Betrag-Eingabe (ohne Mikrofon) → Auflösung per Standort.
-        findViewById(R.id.fabNumber).setOnClickListener(v -> showNumberEntry());
+        findViewById(R.id.fabNumber).setOnClickListener(v -> numberEntry.show());
 
         // Standort für die Betrag-only-Auflösung (nur Koordinaten, rein lokal – wie im Editor).
         locationTagger = new de.spahr.ausgaben.location.LocationTagger(this);
@@ -522,12 +525,8 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                         runExport();
                     }
                 });
-        importLauncher = registerForActivityResult(
-                new ActivityResultContracts.OpenDocument(), uri -> {
-                    if (uri != null) {
-                        doImportLocal(uri);
-                    }
-                });
+        importFlow = new MainImportFlow(this, settings, repository, importBanner, appAccounts,
+                importedAccounts, appDepots, importHost());
         receiptZipLauncher = registerForActivityResult(
                 new ActivityResultContracts.CreateDocument("application/zip"), uri -> {
                     if (uri != null) {
@@ -747,7 +746,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                 voiceEntry.startVoiceEntry();
                 break;
             case WIDGET_ACTION_DIGITS:
-                showNumberEntry();
+                numberEntry.show();
                 break;
             case WIDGET_ACTION_BALANCES:
                 startActivity(new Intent(this, BalanceActivity.class));
@@ -781,227 +780,6 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     }
 
     // ---- Buchung per Sprache: ausgelagert in VoiceEntryController ----
-
-    /** Der eingetippte Betrag in Cent, {@code 0} bei leerem oder unfertigem Feld. */
-    private static long amountOf(android.widget.EditText field) {
-        String raw = field.getText() == null ? "" : field.getText().toString().trim();
-        Long cents = raw.isEmpty() ? null : de.spahr.ausgaben.settings.AmountExpression.toCents(raw);
-        return cents == null || cents < 0 ? 0 : cents;
-    }
-
-    private static boolean hasAmount(android.widget.EditText field) {
-        return amountOf(field) > 0;
-    }
-
-    /** Die Empfängernamen in ihrer Reihenfolge – daran erkennt man, ob sich der Vorschlag geändert hat. */
-    private static List<String> payeeNames(List<Repository.VoiceResolution> list) {
-        List<String> namen = new ArrayList<>();
-        for (Repository.VoiceResolution r : list) {
-            namen.add(r.payee);
-        }
-        return namen;
-    }
-
-    /**
-     * Stille Zifferneingabe: Betrag eintippen → Betrag-only-Pfad (Auflösung per Standort). Unter dem
-     * Betrag steht, wer in Frage kommt – vor der Eingabe die Anzahl, beim Tippen der zum Betrag
-     * passende Empfänger. Antippen läuft im Kreis durch die Kandidaten; was dasteht, wird gebucht.
-     *
-     * <p>Ist der Betragsvorschlag abgeschaltet (Standard), steht sofort der nächstgelegene Empfänger
-     * da und bleibt beim Tippen stehen – gewählt wird dann allein durch Antippen.
-     */
-    private void showNumberEntry() {
-        HostedDialog.show(this, DLG_NUMBER_ENTRY, null);
-    }
-
-    /**
-     * Baut die stille Zifferneingabe — beim ersten Mal und nach jeder Drehung erneut (siehe
-     * {@link HostedDialog}).
-     *
-     * <p>Der Dialog hing bis 1.12 am Fenster der Maske. Beim Drehen war er weg und der eingetippte
-     * Betrag mit ihm — man fing von vorn an. Die Felder tragen keine ids (sie entstehen hier im Code),
-     * das Fenstersystem kann sie also nicht selbst wiederherstellen; deshalb merkt sich die Maske den
-     * Betrag und die Stelle im Empfänger-Rundlauf selbst.</p>
-     */
-    private android.app.Dialog buildNumberEntry() {
-        final boolean betragZaehlt = settings.isAmountSuggestEnabled();
-        if (locationTagger != null && !hasLocationPermission()) {
-            locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION);
-        }
-        final com.google.android.material.textfield.TextInputEditText field =
-                new com.google.android.material.textfield.TextInputEditText(this);
-        field.setHint(R.string.amount_hint);
-        // Ziffern, das eingestellte Dezimalzeichen und + - * (kleine Rechnung wie 10+20*3); Struktur
-        // regelt der CalcInputFilter. Ausgewertet wird beim Speichern über AmountExpression.
-        AmountField.prepareCalc(field);
-
-        // Was vor der Drehung dastand, steht wieder da.
-        field.setText(numberEntryAmount);
-        field.setSelection(field.getText() == null ? 0 : field.getText().length());
-        field.addTextChangedListener(new SimpleWatcher(
-                () -> numberEntryAmount = field.getText() == null ? "" : field.getText().toString()));
-
-        final android.widget.TextView payeeView = new android.widget.TextView(this);
-        payeeView.setText(getString(R.string.voice_payee_resolved, "—"));
-
-        int pad = Math.round(16 * getResources().getDisplayMetrics().density);
-        // Der Betrag ist das Einzige, was hier eingegeben wird – er darf größer stehen als sonstiger Text.
-        field.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 22);
-        android.widget.LinearLayout box = new android.widget.LinearLayout(this);
-        box.setOrientation(android.widget.LinearLayout.VERTICAL);
-        // Oben Luft zum grünen Band, unten unter der OK-Taste – sonst klebt der Inhalt an beiden Rändern.
-        box.setPadding(pad, pad + pad / 4, pad, pad);
-        box.addView(field);
-        // Unten Luft, damit der ermittelte Empfänger nicht auf der Rechentastatur sitzt.
-        payeeView.setPadding(0, pad / 2, 0, pad);
-        box.addView(payeeView);
-
-        // Empfänger anhand von Position und Betrag ermitteln. Vor der Eingabe steht die Anzahl da,
-        // beim Tippen der passende Name – 8 € sind die Waschanlage, 80 € die Tankstelle.
-        final List<Repository.VoiceResolution> candidates = new ArrayList<>();
-        final int[] pick = {numberEntryPick};          // Stelle im Rundlauf; hinter dem Ende: ohne Empfänger
-        final boolean[] angetippt = {numberEntryTapped};   // ab dem ersten Tipp stehen Namen statt der Anzahl
-        final boolean[] zeigtAnzahl = {false};        // steht gerade die Anzahl statt eines Namens da?
-        final Runnable showPick = () -> {
-            String name;
-            zeigtAnzahl[0] = false;
-            if (candidates.isEmpty()) {
-                name = "—";
-            } else if (pick[0] >= candidates.size()) {
-                name = getString(R.string.nearby_payee_none);
-            } else if (betragZaehlt && pick[0] == 0 && candidates.size() > 1
-                    && !angetippt[0] && !hasAmount(field)) {
-                zeigtAnzahl[0] = true;
-                // Ohne Betrag ist noch nichts entschieden – dann nur sagen, wie viele in Frage kommen.
-                // Nur solange nicht getippt wurde: sonst verdeckte die Anzahl den ersten Namen und der
-                // Rundlauf zeigte ihn nie.
-                name = getString(R.string.nearby_payee_count, candidates.size());
-            } else {
-                name = candidates.get(pick[0]).payee;
-            }
-            payeeView.setText(getString(R.string.voice_payee_resolved, name));
-        };
-        final Runnable resolveShow = () -> {
-            String coords = settings.isGpsEnabled() && locationTagger != null
-                    ? locationTagger.currentCoordinates() : null;
-            if (coords == null) {
-                return;
-            }
-            // Ohne Betrag (0) urteilt niemand: alle Nachbarn bleiben stehen, geordnet nach Nähe.
-            long cents = betragZaehlt ? amountOf(field) : 0;
-            repository.resolveNearby(coords, cents, Repository.VOICE_TYPE_EXPENSE, visibleAccounts(),
-                    list -> {
-                        if (!payeeNames(list).equals(payeeNames(candidates))) {
-                            // Andere Reihenfolge (neuer Betrag, neuer Fix) → wieder der beste Vorschlag.
-                            // Bei gleicher Liste bleibt stehen, was der Nutzer angetippt hat.
-                            pick[0] = 0;
-                            angetippt[0] = false;
-                            numberEntryPick = 0;
-                            numberEntryTapped = false;
-                        }
-                        candidates.clear();
-                        candidates.addAll(list);
-                        showPick.run();
-                    });
-        };
-        showPick.run();
-        resolveShow.run();
-        if (locationTagger != null) {
-            locationTagger.setOnLocationUpdate(resolveShow::run);
-        }
-        if (betragZaehlt) {
-            // Jede Ziffer ändert das Bild – aber erst, wenn die Eingabe kurz ruht (sonst zählt „8" von „80" mit).
-            final android.os.Handler typed = new android.os.Handler(android.os.Looper.getMainLooper());
-            field.addTextChangedListener(new SimpleWatcher(() -> {
-                typed.removeCallbacksAndMessages(null);
-                typed.postDelayed(resolveShow, 250L);
-            }));
-        }
-        // Antippen läuft im Kreis durch die Kandidaten und zuletzt über „ohne Empfänger“.
-        android.util.TypedValue ripple = new android.util.TypedValue();
-        if (getTheme().resolveAttribute(android.R.attr.selectableItemBackground, ripple, true)) {
-            payeeView.setBackgroundResource(ripple.resourceId);   // sichtbar machen, daß man tippen darf
-        }
-        payeeView.setOnClickListener(v -> {
-            if (candidates.isEmpty()) {
-                return;
-            }
-            if (zeigtAnzahl[0]) {
-                // Hinter der Anzahl steckt der erste Kandidat – der erste Tipp deckt ihn auf,
-                // sonst käme er im Rundlauf nie zum Vorschein.
-                angetippt[0] = true;
-            } else {
-                pick[0] = pick[0] >= candidates.size() ? 0 : pick[0] + 1;
-            }
-            numberEntryPick = pick[0];
-            numberEntryTapped = angetippt[0];
-            showPick.run();
-        });
-
-        // Einziges Feld im Dialog: OK auf der Rechentastatur übernimmt direkt (kein separater
-        // Speichern-Knopf nötig) – Rechnung ist bereits ausgewertet, wenn valid == true.
-        final androidx.appcompat.app.AlertDialog[] dialogRef = new androidx.appcompat.app.AlertDialog[1];
-        final CalcKeyboardView calc = new CalcKeyboardView(this);
-        calc.attachTo(field);
-        calc.setOnOk(valid -> {
-            if (!valid) {
-                Toast.makeText(this, R.string.error_amount_calc, Toast.LENGTH_SHORT).show();
-                return;
-            }
-            String raw = field.getText() == null ? "" : field.getText().toString().trim();
-            if (raw.isEmpty()) {
-                return;
-            }
-            Long cents = de.spahr.ausgaben.settings.AmountExpression.toCents(raw);
-            if (cents == null || cents <= 0) {
-                Toast.makeText(this, R.string.error_amount_calc, Toast.LENGTH_SHORT).show();
-                return;
-            }
-            String amt = de.spahr.ausgaben.settings.MoneyFormat.plain(cents);
-            if (pick[0] != 0 || (!betragZaehlt && !candidates.isEmpty())) {
-                // Genau das gilt, was dasteht (auch „ohne Empfänger"). Bei abgeschaltetem
-                // Betragsvorschlag auch ohne Antippen – sonst zöge das erneute Auflösen doch wieder
-                // das Betragssieb der Spracheingabe und buchte einen anderen als den angezeigten.
-                voiceEntry.openVoiceEditor(
-                        pick[0] >= candidates.size() ? VoiceEntryController.NO_PAYEE
-                                : candidates.get(pick[0]), cents, "");
-            } else {
-                // Nichts angetippt → mit dem endgültigen Betrag noch einmal auflösen; die Anzeige
-                // hinkt sonst um die Entprellung hinterher, wenn OK gleich nach der letzten Ziffer kommt.
-                voiceEntry.handleVoiceResult(amt); // payee leer + Betrag → Betrag-only-Pfad
-            }
-            vergissZifferneingabe();
-            if (dialogRef[0] != null) {
-                dialogRef[0].dismiss();
-            }
-        });
-        field.requestFocus();
-        box.addView(calc);
-
-        androidx.appcompat.app.AlertDialog dialog = new AppDialog(this)
-                .setTitle(R.string.new_booking)
-                .setView(AppDialog.scrollable(box))
-                .setOnDismissListener(d -> {
-                    if (locationTagger != null) {
-                        locationTagger.setOnLocationUpdate(null);
-                    }
-                })
-                .create();
-        dialogRef[0] = dialog;
-        // Nur die eigene Rechentastatur zeigen – die System-Tastatur des Dialogs unterdrücken.
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setSoftInputMode(
-                    android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-        }
-        return dialog;
-    }
-
-    /** Der eingetippte Stand ist gebucht (oder verworfen) – beim nächsten Öffnen wieder leer. */
-    private void vergissZifferneingabe() {
-        numberEntryAmount = "";
-        numberEntryPick = 0;
-        numberEntryTapped = false;
-    }
 
     private boolean hasLocationPermission() {
         return androidx.core.content.ContextCompat.checkSelfPermission(this,
@@ -1257,35 +1035,35 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         // Zwei Suchtexte, beide über dieselbe Logik (Empfänger, Notiz oder Kategorie) – und beide
         // müssen zutreffen. Wer im Trichter „Netto" gesetzt hat und oben „Benzin" tippt, sucht
         // innerhalb der Netto-Buchungen weiter: Das Angezeigte ist die Grundlage der nächsten Suche.
-        if (!de.spahr.ausgaben.db.BookingSearch.matches(b, filterPayee)) {
+        if (!de.spahr.ausgaben.db.BookingSearch.matches(b, filter.payee)) {
             return false;   // aus dem Trichter
         }
         if (!de.spahr.ausgaben.db.BookingSearch.matches(b, searchQuery)) {
             return false;   // aus der Live-Suche in der Titelzeile
         }
-        if (!filterCategory.isEmpty() && !categoryMatchesBooking(b)) {
+        if (!filter.category.isEmpty() && !categoryMatchesBooking(b)) {
             return false;
         }
-        if (!de.spahr.ausgaben.db.BookingTags.contains(b.tags, filterTag)) {
+        if (!de.spahr.ausgaben.db.BookingTags.contains(b.tags, filter.tag)) {
             return false;
         }
         // Betragsgrenzen sind vorzeichenbehaftet: −50 … −10 meint Ausgaben zwischen 10 und 50.
         long signed = signedOf(b);
-        if (filterAmountFrom != null && signed < filterAmountFrom) {
+        if (filter.amountFrom != null && signed < filter.amountFrom) {
             return false;
         }
-        if (filterAmountTo != null && signed > filterAmountTo) {
+        if (filter.amountTo != null && signed > filter.amountTo) {
             return false;
         }
-        if (filterDateFrom != null && b.createdAt < filterDateFrom) {
+        if (filter.dateFrom != null && b.createdAt < filter.dateFrom) {
             return false;
         }
-        if (filterDateTo != null && b.createdAt > filterDateTo) {
+        if (filter.dateTo != null && b.createdAt > filter.dateTo) {
             return false;
         }
         // Umkreis um die beim Anwenden eingefrorene Position; ohne Position bleibt nichts übrig.
         return de.spahr.ausgaben.location.RadiusFilter.matches(
-                filterCenter, filterRadiusM, b.note, aliasPointsFor(b.payee));
+                filter.center, filter.radiusM, b.note, aliasPointsFor(b.payee));
     }
 
     /**
@@ -1294,22 +1072,22 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
      * Ausgabe, siehe {@link #categoryMatchesBooking}) für gleichnamige Kategorien unterschiedlichen Typs.
      */
     private long displaySignedForFilter(Booking b, long full) {
-        if (filterCategory.isEmpty()) {
+        if (filter.category.isEmpty()) {
             return full;
         }
         return de.spahr.ausgaben.db.CategoryBookingFilter.displaySigned(b, splitsByBooking,
-                filterCategory, filterCategoryIsMain, full, categoryTypes, filterCategoryIsIncome);
+                filter.category, filter.categoryIsMain, full, categoryTypes, filter.categoryIsIncome);
     }
 
     /**
      * Treffer, wenn die (Haupt-)Kategorie oder eine Teilkategorie einer Splitbuchung passt – zusätzlich
-     * typgeprüft ({@link #filterCategoryIsIncome}): kMyMoney erlaubt dieselbe Kategorie-Bezeichnung
+     * typgeprüft ({@link BookingFilterState#categoryIsIncome}): kMyMoney erlaubt dieselbe Kategorie-Bezeichnung
      * unabhängig im Einnahme- und im Ausgabe-Baum (z. B. „Versicherung:Krankenzusatz"), maßgeblich ist
      * dabei der Typ der jeweiligen Buchungs-/Split-Zeile selbst (siehe {@link Booking#categoryIsIncome}).
      */
     private boolean categoryMatchesBooking(Booking b) {
         return de.spahr.ausgaben.db.CategoryBookingFilter.matchesBooking(b, splitsByBooking,
-                filterCategory, filterCategoryIsMain, categoryTypes, filterCategoryIsIncome);
+                filter.category, filter.categoryIsMain, categoryTypes, filter.categoryIsIncome);
     }
 
     /**
@@ -1334,11 +1112,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     private boolean isFilterActive() {
         // Die Live-Suche zählt mit: Sonst verschwiege der Untertitel, daß die Liste eingeengt ist –
         // und das gerade dann, wenn das Feld eingeklappt ist und man es nicht mehr sieht.
-        return !searchQuery.isEmpty()
-                || !filterPayee.isEmpty() || !filterCategory.isEmpty() || !filterTag.isEmpty()
-                || filterAmountFrom != null || filterAmountTo != null
-                || filterDateFrom != null || filterDateTo != null
-                || filterRadiusM > 0;
+        return !searchQuery.isEmpty() || filter.isActive();
     }
 
     // ---- Belege der gefilterten Buchungen ausgeben ----
@@ -1487,203 +1261,83 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     }
 
     private void showFilterDialog() {
-        View view = LayoutInflater.from(this).inflate(R.layout.dialog_filter, null, false);
-        TextInputEditText fPayee = view.findViewById(R.id.filterPayee);
-        MaterialAutoCompleteTextView fCategory = view.findViewById(R.id.filterCategory);
-        ZeroMarkSlider slider = view.findViewById(R.id.filterAmountSlider);
-        TextInputEditText fFrom = view.findViewById(R.id.filterAmountFrom);
-        TextInputEditText fTo = view.findViewById(R.id.filterAmountTo);
-        AmountField.prepareNumber(fFrom);
-        AmountField.prepareNumber(fTo);
+        FilterDialog.show(this, filter, new FilterDialog.Host() {
+            @Override
+            public List<String> expenseCategories() {
+                return catExpense;
+            }
 
-        fPayee.setText(filterPayee);
+            @Override
+            public List<String> incomeCategories() {
+                return catIncome;
+            }
 
-        // Kategorie-Baum
-        final String[] catValue = {filterCategory};
-        final boolean[] catIsMain = {filterCategoryIsMain};
-        // "Alle" (leerer Wert) setzt bewusst keinen Typ – kein Ausschluss.
-        final Boolean[] catIsIncome = {filterCategory.isEmpty() ? null : filterCategoryIsIncome};
-        CategoryFilterAdapter catAdapter = new CategoryFilterAdapter(this,
-                getString(R.string.category_all),
-                getString(R.string.category_group_expense), catExpense,
-                getString(R.string.category_group_income), catIncome);
-        PickerAdapters.categories(fCategory, catAdapter);
-        fCategory.setText(filterCategory, false);
-        // Über PickerBehaviour: die Kategorie kann auch getippt und stehengelassen werden, dann fällt
-        // kein Antippen eines Listeneintrags an. Den Text setzt PickerBehaviour selbst.
-        PickerBehaviour.onCommitted(fCategory, value -> {
-            CategoryFilterAdapter.CatItem it = catAdapter.itemFor(value);
-            if (it != null) {
-                catValue[0] = it.value;
-                catIsMain[0] = it.isMain;
-                catIsIncome[0] = it.value.isEmpty() ? null : it.groupIsIncome;
+            @Override
+            public List<String> knownTagNames() {
+                return knownTagNames;
+            }
+
+            @Override
+            public List<Long> amountsInScope() {
+                List<Long> scope = new ArrayList<>();
+                for (Booking b : allBookings) {
+                    if (inCurrentScope(b)) {
+                        scope.add(signedOf(b));
+                    }
+                }
+                return scope;
+            }
+
+            @Override
+            public List<Long> bookingDates() {
+                List<Long> dates = new ArrayList<>();
+                for (Booking b : allBookings) {
+                    dates.add(b.createdAt);
+                }
+                return dates;
+            }
+
+            @Override
+            public boolean isGpsEnabled() {
+                return settings.isGpsEnabled();
+            }
+
+            @Override
+            public boolean hasLocationPermission() {
+                return MainActivity.this.hasLocationPermission();
+            }
+
+            @Override
+            public void requestLocationPermission() {
+                locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION);
+            }
+
+            @Override
+            public String currentCoordinates() {
+                return locationTagger != null ? locationTagger.currentCoordinates() : null;
+            }
+
+            @Override
+            public String formatAmount(long signedCents) {
+                return formatEuro(signedCents);
+            }
+
+            @Override
+            public void onFilterApplied() {
+                applyFilter();
+                // Filter angelegt/geändert → automatisch die gefilterte Summe anzeigen.
+                if (isFilterActive()) {
+                    saldoIndex = indexOfFilteredView();
+                    showSaldo();
+                    flashSaldoBar();
+                }
+            }
+
+            @Override
+            public void onFilterReset() {
+                resetFilter();
             }
         });
-
-        // Stichwort: dieselbe Bedienung wie das Kategoriefeld, mit „Alle" als erstem Eintrag. Ohne
-        // bekannte Stichwörter (CSV-Betrieb, noch kein Abgleich) bleibt das ganze Feld weg.
-        View tagLayout = view.findViewById(R.id.filterTagLayout);
-        MaterialAutoCompleteTextView fTag = view.findViewById(R.id.filterTag);
-        if (knownTagNames.isEmpty()) {
-            tagLayout.setVisibility(View.GONE);
-        } else {
-            tagLayout.setVisibility(View.VISIBLE);
-            List<String> tagChoices = new ArrayList<>();
-            tagChoices.add(getString(R.string.category_all));
-            tagChoices.addAll(knownTagNames);
-            PickerAdapters.plainSearchable(fTag, tagChoices);
-            fTag.setText(filterTag, false);
-        }
-
-        // Betrag-Range: vorzeichenbehaftete Beträge der gerade sichtbaren Buchungen, sortiert – der
-        // Regler läuft über ihre Ränge, nicht über die Beträge (siehe AmountRange).
-        java.util.List<Long> scope = new ArrayList<>();
-        for (Booking b : allBookings) {
-            if (inCurrentScope(b)) {
-                scope.add(signedOf(b));
-            }
-        }
-        final long[] sortedCents = new long[scope.size()];
-        for (int i = 0; i < sortedCents.length; i++) {
-            sortedCents[i] = scope.get(i);
-        }
-        java.util.Arrays.sort(sortedCents);
-        final boolean hasRange = sortedCents.length > 1
-                && sortedCents[0] < sortedCents[sortedCents.length - 1];
-        final AmountRange amountRange = hasRange
-                ? AmountRange.attach(slider, fFrom, fTo, sortedCents,
-                        filterAmountFrom, filterAmountTo, this::formatEuro)
-                : null;
-        if (!hasRange) {
-            // Kein sinnvoller Bereich (0/1 Buchung oder alle gleich) → deaktivieren.
-            slider.setValueFrom(0f);
-            slider.setValueTo(1f);
-            slider.setValues(0f, 1f);
-            slider.setEnabled(false);
-            fFrom.setEnabled(false);
-            fTo.setEnabled(false);
-        }
-
-        // Datums-Range (Slider in Monatsschritten; taggenau direkt im Feld eingebbar).
-        com.google.android.material.slider.RangeSlider dateSlider = view.findViewById(R.id.filterDateSlider);
-        TextInputEditText dFrom = view.findViewById(R.id.filterDateFrom);
-        TextInputEditText dTo = view.findViewById(R.id.filterDateTo);
-        long dtMin = Long.MAX_VALUE;
-        long dtMax = Long.MIN_VALUE;
-        for (Booking b : allBookings) {
-            dtMin = Math.min(dtMin, b.createdAt);
-            dtMax = Math.max(dtMax, b.createdAt);
-        }
-        final MonthRange dateRange;
-        if (!allBookings.isEmpty()) {
-            dateRange = MonthRange.attach(dateSlider, dFrom, dTo, dtMin, dtMax, filterDateFrom, filterDateTo);
-        } else {
-            dateRange = null;
-            dateSlider.setValueFrom(0f);
-            dateSlider.setValueTo(1f);
-            dateSlider.setValues(0f, 1f);
-            dateSlider.setEnabled(false);
-            dFrom.setEnabled(false);
-            dTo.setEnabled(false);
-        }
-        final long dtDataMin = dtMin;
-        final long dtDataMax = dtMax;
-
-        // Umkreis: nur bei eingeschaltetem Standort; jeder Tipp schaltet eine Stufe weiter.
-        com.google.android.material.button.MaterialButton radius = view.findViewById(R.id.filterRadius);
-        final int[] radiusM = {filterRadiusM};
-        if (!settings.isGpsEnabled()) {
-            radius.setVisibility(View.GONE);
-        } else {
-            setRadiusLabel(radius, radiusM[0]);
-            radius.setOnClickListener(v -> {
-                radiusM[0] = de.spahr.ausgaben.location.RadiusFilter.next(radiusM[0]);
-                setRadiusLabel(radius, radiusM[0]);
-                // Ohne Berechtigung gäbe es nie eine Position – einmal danach fragen.
-                if (radiusM[0] > 0 && !hasLocationPermission()) {
-                    locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION);
-                }
-            });
-        }
-
-        androidx.appcompat.app.AlertDialog dialog = new AppDialog(this)
-                .setTitle(R.string.filter_title)
-                .setView(view)
-                .setPositiveButton(R.string.filter_apply, (d, w) -> {
-                    // Der Knopf nimmt dem Feld nicht zwangsläufig den Fokus; ein Feld mitten in der Suche
-                    // ist leer. Erst die Suche beenden, dann lesen.
-                    PickerBehaviour.settleAll(view);
-
-                    filterPayee = Ui.text(fPayee).trim();
-                    String typedCategory = Ui.text(fCategory).trim();
-                    if (!typedCategory.equals(catValue[0])) {
-                        catValue[0] = typedCategory;
-                        catIsMain[0] = isKnownMainCategory(typedCategory);
-                        catIsIncome[0] = typeForCategory(typedCategory);
-                    }
-
-                    // „Alle" heißt: kein Stichwort gewählt.
-                    String tag = Ui.text(fTag).trim();
-                    filterTag = knownTagNames.isEmpty() || tag.equals(getString(R.string.category_all))
-                            ? "" : tag;
-
-                    filterCategory = catValue[0] == null ? "" : catValue[0].trim();
-                    filterCategoryIsMain = catIsMain[0];
-                    filterCategoryIsIncome = filterCategory.isEmpty() ? null : catIsIncome[0];
-                    if (dateRange != null) {
-                        long df = dateRange.getFromMillis();
-                        long dt = dateRange.getToMillis();
-                        if (df <= dtDataMin && dt >= dtDataMax) {
-                            filterDateFrom = null;
-                            filterDateTo = null;
-                        } else {
-                            filterDateFrom = df;
-                            filterDateTo = dt;
-                        }
-                    } else {
-                        filterDateFrom = null;
-                        filterDateTo = null;
-                    }
-                    if (amountRange != null) {
-                        if (amountRange.isFullRange()) {
-                            filterAmountFrom = null;
-                            filterAmountTo = null;
-                        } else {
-                            filterAmountFrom = amountRange.getFromCents();
-                            filterAmountTo = amountRange.getToCents();
-                        }
-                    } else {
-                        filterAmountFrom = null;
-                        filterAmountTo = null;
-                    }
-                    filterRadiusM = radiusM[0];
-                    // Die Position einmal einfrieren: die Liste soll nicht mitwandern, wenn man weitergeht.
-                    filterCenter = filterRadiusM > 0 && locationTagger != null
-                            ? de.spahr.ausgaben.location.Geo.parse(locationTagger.currentCoordinates())
-                            : null;
-                    if (filterRadiusM > 0 && filterCenter == null) {
-                        Toast.makeText(this, R.string.filter_radius_no_fix, Toast.LENGTH_SHORT).show();
-                    }
-                    applyFilter();
-                    // Filter angelegt/geändert → automatisch die gefilterte Summe anzeigen.
-                    if (isFilterActive()) {
-                        saldoIndex = indexOfFilteredView();
-                        showSaldo();
-                        flashSaldoBar();
-                    }
-                })
-                .setNeutralButton(R.string.filter_reset, (d, w) -> resetFilter())
-                .show();
-
-        // Der Dialog ist lang – Suche, Kategorie, Stichwort, Betrag, Datum, Umkreis – und „Übernehmen"
-        // sitzt an seinem Ende. Tippt man ins Suchfeld ganz oben, fährt die Tastatur hoch und verdeckt
-        // ihn: Für den häufigsten Fall überhaupt, „ich suche einen Namen", waren erst zwei zusätzliche
-        // Handgriffe nötig. Zwei Auswege, je nach Absicht:
-        //   die Lupe auf der Tastatur übernimmt sofort,
-        Keyboard.onCommitAction(fPayee, () ->
-                dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).performClick());
-        //   und wer weiterschiebt, will unten etwas einstellen – dann geht sie nur weg.
-        Keyboard.hideOnScroll((android.widget.ScrollView) view);
     }
 
     /**
@@ -1698,71 +1352,17 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         if (searchBar != null) {
             searchBar.clearSilently();
         }
-        filterPayee = "";
-        filterCategory = "";
-        filterTag = "";
-        filterCategoryIsMain = false;
-        filterCategoryIsIncome = null;
-        filterAmountFrom = null;
-        filterAmountTo = null;
-        filterDateFrom = null;
-        filterDateTo = null;
-        filterRadiusM = 0;
-        filterCenter = null;
+        filter.reset();
         saldoIndex = 0;
         applyFilter();
         showSaldo();
         flashSaldoBar();
     }
 
-    /** Beschriftet den Umkreis-Knopf mit der eingestellten Stufe („Umkreis aus", „Umkreis 500 m"). */
-    private void setRadiusLabel(com.google.android.material.button.MaterialButton button, int radiusM) {
-        button.setText(radiusM <= 0
-                ? getString(R.string.filter_radius_off)
-                : getString(R.string.filter_radius,
-                        de.spahr.ausgaben.location.RadiusFilter.label(radiusM)));
-    }
 
 
-    private Long parseAmountToCents(String raw) {
-        if (raw == null) {
-            return null;
-        }
-        String normalized = raw.trim().replace(" ", "").replace(",", ".");
-        if (normalized.isEmpty()) {
-            return null;
-        }
-        try {
-            return new BigDecimal(normalized).movePointRight(2)
-                    .setScale(0, RoundingMode.HALF_UP).longValueExact();
-        } catch (ArithmeticException | NumberFormatException e) {
-            return null;
-        }
-    }
 
-    /** True für bekannte Hauptkategorien; frei getippte Unterkategorien bleiben exakte Filter. */
-    private boolean isKnownMainCategory(String category) {
-        if (category == null || category.trim().isEmpty() || category.contains(":")) {
-            return false;
-        }
-        String c = category.trim();
-        return containsIgnoreCase(catExpense, c) || containsIgnoreCase(catIncome, c);
-    }
 
-    /** Ermittelt den Kategorie-Typ auch dann, wenn der Text getippt statt aus der Liste gewählt wurde. */
-    private Boolean typeForCategory(String category) {
-        if (category == null || category.trim().isEmpty()) {
-            return null;
-        }
-        String c = category.trim();
-        if (containsIgnoreCase(catIncome, c)) {
-            return Boolean.TRUE;
-        }
-        if (containsIgnoreCase(catExpense, c)) {
-            return Boolean.FALSE;
-        }
-        return null;
-    }
 
 
     // ---- Menü / Aktionen ----
@@ -1830,7 +1430,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         } else if (id == R.id.action_import_all) {
             // Derselbe Weg wie der lange Druck auf „Alle Konten" in der Schublade: Prüfungen,
             // Fehlermeldungen und die Sicherheitsfrage stecken schon dort drin.
-            onImportRequested("", true);
+            importFlow.onImportRequested("", true);
             return true;
         } else if (id == R.id.action_export_receipts) {
             receiptExport.start(gefilterteBuchungen());
@@ -1840,19 +1440,19 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
             return true;
         } else if (id == R.id.action_analysis) {
             Intent i = new Intent(this, AnalysisActivity.class);
-            i.putExtra(AnalysisActivity.EXTRA_FILTER_PAYEE, filterPayee);
-            i.putExtra(AnalysisActivity.EXTRA_FILTER_CATEGORY, filterCategory);
-            i.putExtra(AnalysisActivity.EXTRA_FILTER_CATEGORY_MAIN, filterCategoryIsMain);
+            i.putExtra(AnalysisActivity.EXTRA_FILTER_PAYEE, filter.payee);
+            i.putExtra(AnalysisActivity.EXTRA_FILTER_CATEGORY, filter.category);
+            i.putExtra(AnalysisActivity.EXTRA_FILTER_CATEGORY_MAIN, filter.categoryIsMain);
             i.putExtra(AnalysisActivity.EXTRA_FILTER_CATEGORY_INCOME,
-                    filterCategoryIsIncome == null ? -1 : (filterCategoryIsIncome ? 1 : 0));
+                    filter.categoryIsIncome == null ? -1 : (filter.categoryIsIncome ? 1 : 0));
             i.putExtra(AnalysisActivity.EXTRA_FILTER_AMOUNT_FROM,
-                    filterAmountFrom == null ? Long.MIN_VALUE : filterAmountFrom);
+                    filter.amountFrom == null ? Long.MIN_VALUE : filter.amountFrom);
             i.putExtra(AnalysisActivity.EXTRA_FILTER_AMOUNT_TO,
-                    filterAmountTo == null ? Long.MAX_VALUE : filterAmountTo);
+                    filter.amountTo == null ? Long.MAX_VALUE : filter.amountTo);
             i.putExtra(AnalysisActivity.EXTRA_FILTER_DATE_FROM,
-                    filterDateFrom == null ? Long.MIN_VALUE : filterDateFrom);
+                    filter.dateFrom == null ? Long.MIN_VALUE : filter.dateFrom);
             i.putExtra(AnalysisActivity.EXTRA_FILTER_DATE_TO,
-                    filterDateTo == null ? Long.MAX_VALUE : filterDateTo);
+                    filter.dateTo == null ? Long.MAX_VALUE : filter.dateTo);
             i.putExtra(AnalysisActivity.EXTRA_VIEW_KEY, currentViewKey());
             startActivity(i);
             return true;
@@ -1935,278 +1535,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         });
     }
 
-    // ---- Import (Schublade: langer Tipp = importieren) ----
-
-    /** Langer Tipp auf ein Konto (bzw. „Alle Konten") in der Schublade. */
-    private void onImportRequested(String account, boolean isAll) {
-        if (!settings.isKmySource()) {
-            startCsvImport();
-            return;
-        }
-        if (!settings.hasRemoteConfig()) {
-            Toast.makeText(this, R.string.export_no_config, Toast.LENGTH_LONG).show();
-            return;
-        }
-        if (settings.getKmyPath().isEmpty()) {
-            Toast.makeText(this, R.string.kmy_path_missing, Toast.LENGTH_LONG).show();
-            return;
-        }
-        // Ohne Rückfrage: die KMyMoney-Datei ist führend.
-        runKmyImport(isAll ? null : account);
-    }
-
-    /** „Neues Konto hinzufügen": lädt die .kmy und zeigt den Konto-Auswahldialog. */
-    private void onAddAccountClicked() {
-        if (!settings.isKmySource()) {
-            startCsvImport();
-            return;
-        }
-        if (!settings.hasRemoteConfig()) {
-            Toast.makeText(this, R.string.export_no_config, Toast.LENGTH_LONG).show();
-            return;
-        }
-        String path = settings.getKmyPath();
-        if (path.isEmpty()) {
-            Toast.makeText(this, R.string.kmy_path_missing, Toast.LENGTH_LONG).show();
-            return;
-        }
-        showProgress(getString(R.string.progress_download));
-        new Thread(() -> {
-            try {
-                byte[] raw = RemoteStorage.from(settings).downloadBytes(RemotePath.folderOf(path), RemotePath.fileOf(path));
-                KmyImporter importer = new KmyImporter(
-                        new KmyDocument(raw, getApplicationContext()), getApplicationContext());
-                // Stichwortliste der Datei übernehmen – nur was dort steht, ist in der App wählbar.
-                // (Wie beim Aktualisieren/Export; sonst fehlten die Stichwörter nach dem Neuimport.)
-                repository.replaceTags(importer.tagNames());
-                post(() -> {
-                    dismissProgress();
-                    List<String> accounts = importer.accountNames();
-                    List<String> depots = importer.depotNames();
-                    if (accounts.isEmpty() && depots.isEmpty()) {
-                        Toast.makeText(this, R.string.kmy_no_files, Toast.LENGTH_LONG).show();
-                    } else {
-                        chooseAccountForImport(importer, accounts, depots);
-                    }
-                });
-            } catch (Exception e) {
-                postImportError(e);
-            }
-        }).start();
-    }
-
-    /**
-     * Auswahl-Dialog mit Mehrfachauswahl: mehrere Konten (und/oder Depots) auf einmal importieren.
-     * Bereits importierte Konten (in der App vorhanden) werden ausgeblendet; Depots mit „(Depot)" markiert.
-     */
-    private void chooseAccountForImport(KmyImporter importer, List<String> accounts, List<String> depots) {
-        // Bereits vorhandene App-Konten/Depots ausblenden – nur noch nicht importierte anbieten.
-        // Konten inkl. geschlossener (importedAccounts), damit auch geschlossene nicht erneut erscheinen.
-        final List<String> newAccounts = new ArrayList<>();
-        for (String a : accounts) {
-            if (!containsIgnoreCase(importedAccounts, a)) {
-                newAccounts.add(a);
-            }
-        }
-        final List<String> newDepots = new ArrayList<>();
-        for (String d : depots) {
-            if (!containsIgnoreCase(appDepots, d)) {
-                newDepots.add(d);
-            }
-        }
-        List<String> labels = new ArrayList<>(newAccounts);
-        for (String d : newDepots) {
-            labels.add(getString(R.string.kmy_choose_depot, d));
-        }
-        if (labels.isEmpty()) {
-            Toast.makeText(this, R.string.kmy_no_new_accounts, Toast.LENGTH_LONG).show();
-            return;
-        }
-        final int accountCount = newAccounts.size();
-        final boolean[] checked = new boolean[labels.size()];
-        String[] items = labels.toArray(new String[0]);
-        new AppDialog(this)
-                .setTitle(R.string.kmy_choose_account)
-                .setMultiChoiceItems(items, checked, (d, which, isChecked) -> checked[which] = isChecked)
-                .setPositiveButton(R.string.kmy_import_selected, (d, w) -> {
-                    List<String> accountTargets = new ArrayList<>();
-                    List<String> depotTargets = new ArrayList<>();
-                    for (int i = 0; i < checked.length; i++) {
-                        if (!checked[i]) {
-                            continue;
-                        }
-                        if (i < accountCount) {
-                            accountTargets.add(newAccounts.get(i));
-                        } else {
-                            depotTargets.add(newDepots.get(i - accountCount));
-                        }
-                    }
-                    if (accountTargets.isEmpty() && depotTargets.isEmpty()) {
-                        return; // nichts angehakt
-                    }
-                    startBatchImport(importer, accountTargets, depotTargets);
-                })
-                .show();
-    }
-
-    /**
-     * Importiert die gewählten Konten als Batch und anschließend die gewählten Depots nacheinander.
-     * Läuft komplett im Hintergrund – die Oberfläche bleibt bedienbar; nur bei einem Fehler kommt eine
-     * Meldung, am Ende wird die Liste still aktualisiert.
-     */
-    private void startBatchImport(KmyImporter importer, List<String> accountTargets,
-                                  List<String> depotTargets) {
-        importBanner.start(getString(R.string.import_running_banner));
-        // Die Mengen stehen fest – daraus ergeben sich die Prozentbereiche dieses Laufs.
-        final de.spahr.ausgaben.export.ImportBudget budget =
-                de.spahr.ausgaben.export.KmyAccountImport.budgetFor(importer, accountTargets.size(),
-                        depotTargets, false);
-        new Thread(() -> {
-            try {
-                if (accountTargets.isEmpty()) {
-                    post(() -> importDepotsThenFinish(importer, budget, depotTargets));
-                    return;
-                }
-                // Ein Lesedurchlauf für ALLE Konten (vorher: einer je Konto über die ganze Datei).
-                java.util.LinkedHashMap<String, List<Booking>> map = importer.bookingsForAccounts(
-                        accountTargets, importBanner.phase(getString(R.string.import_stage_bookings),
-                                budget.from(de.spahr.ausgaben.export.KmyAccountImport.BOOKINGS_READ),
-                                budget.to(de.spahr.ausgaben.export.KmyAccountImport.BOOKINGS_READ)));
-                for (String acc : accountTargets) {
-                    repository.setAccountCurrency(acc, importer.currencyOf(acc));
-                }
-                // Konto- und Kategorietypen für ALLE Konten/Kategorien der .kmy übernehmen.
-                repository.applyAccountTypes(importer.accountTypes());
-                repository.applyCategoryTypes(importer.categoryTypes());
-                int written = 0;
-                for (List<Booking> l : map.values()) {
-                    written += l.size();
-                }
-                budget.resize(de.spahr.ausgaben.export.KmyAccountImport.BOOKINGS_WRITE,
-                        written * de.spahr.ausgaben.export.ImportBudget.BOOKING_WRITE);
-                post(() -> repository.replaceImportAccounts(map,
-                        importBanner.phase(getString(R.string.import_stage_saving),
-                                budget.from(de.spahr.ausgaben.export.KmyAccountImport.BOOKINGS_WRITE),
-                                budget.to(de.spahr.ausgaben.export.KmyAccountImport.BOOKINGS_WRITE)),
-                        res -> importDepotsThenFinish(importer, budget, depotTargets)));
-            } catch (Exception e) {
-                postImportError(e);
-            }
-        }).start();
-    }
-
-    /** Importiert die Depots der Reihe nach; am Ende Banner auf 100 % und Liste aktualisieren. */
-    private void importDepotsThenFinish(KmyImporter importer,
-                                        de.spahr.ausgaben.export.ImportBudget budget,
-                                        List<String> depots) {
-        if (depots.isEmpty()) {
-            completeImport();
-            return;
-        }
-        final String depot = depots.get(0);
-        final List<String> rest = new ArrayList<>(depots.subList(1, depots.size()));
-        final String label = getString(R.string.import_stage_depot, depot);
-        final String lesen = de.spahr.ausgaben.export.KmyAccountImport.depotRead(depot);
-        final String schreiben = de.spahr.ausgaben.export.KmyAccountImport.depotWrite(depot);
-        final de.spahr.ausgaben.util.ProgressListener readListener =
-                importBanner.phase(label, budget.from(lesen), budget.to(lesen));
-        final de.spahr.ausgaben.util.ProgressListener writeListener =
-                importBanner.phase(label, budget.from(schreiben), budget.to(schreiben));
-        new Thread(() -> {
-            try {
-                KmyImporter.DepotData data = importer.importDepot(depot, readListener);
-                repository.replaceDepotImport(depot, data.securities, data.transactions, data.prices,
-                        writeListener, () -> importDepotsThenFinish(importer, budget, rest));
-            } catch (Exception e) {
-                postImportError(e);
-            }
-        }).start();
-    }
-
-    /**
-     * Langer Tipp in der Schublade: lädt die .kmy und aktualisiert genau dieses Depot – im Hintergrund
-     * mit dem gelben Fortschrittsbanner; die Oberfläche bleibt bedienbar, nur bei Fehlern kommt eine Meldung.
-     */
-    private void reimportDepot(String depotName) {
-        if (!settings.isKmySource()) {
-            Toast.makeText(this, R.string.export_no_config, Toast.LENGTH_LONG).show();
-            return;
-        }
-        if (!settings.hasRemoteConfig()) {
-            Toast.makeText(this, R.string.export_no_config, Toast.LENGTH_LONG).show();
-            return;
-        }
-        final String path = settings.getKmyPath();
-        if (path.isEmpty()) {
-            Toast.makeText(this, R.string.kmy_path_missing, Toast.LENGTH_LONG).show();
-            return;
-        }
-        importBanner.start(getString(R.string.import_running_banner));
-        new Thread(() -> {
-            try {
-                byte[] raw = RemoteStorage.from(settings).downloadBytes(RemotePath.folderOf(path), RemotePath.fileOf(path),
-                        importBanner.phase(getString(R.string.import_stage_download),
-                                de.spahr.ausgaben.export.ImportPhase.DOWNLOAD_FROM,
-                                de.spahr.ausgaben.export.ImportPhase.DOWNLOAD_TO));
-                KmyImporter importer = new KmyImporter(
-                        new KmyDocument(raw, getApplicationContext(),
-                                importBanner.phase(getString(R.string.import_stage_reading),
-                                        de.spahr.ausgaben.export.ImportPhase.READ_FILE_FROM,
-                                        de.spahr.ausgaben.export.ImportPhase.READ_FILE_TO)),
-                        getApplicationContext());
-                // Nur dieses eine Depot: ihm gehört der ganze Rest des Balkens.
-                final String label = getString(R.string.import_stage_depot, depotName);
-                final de.spahr.ausgaben.export.ImportBudget budget =
-                        de.spahr.ausgaben.export.KmyAccountImport.budgetFor(importer, 0,
-                                java.util.Collections.singletonList(depotName), false);
-                final String lesen = de.spahr.ausgaben.export.KmyAccountImport.depotRead(depotName);
-                final String schreiben = de.spahr.ausgaben.export.KmyAccountImport.depotWrite(depotName);
-                KmyImporter.DepotData data = importer.importDepot(depotName,
-                        importBanner.phase(label, budget.from(lesen), budget.to(lesen)));
-                final de.spahr.ausgaben.util.ProgressListener writeListener =
-                        importBanner.phase(label, budget.from(schreiben), budget.to(schreiben));
-                post(() -> repository.replaceDepotImport(depotName, data.securities,
-                        data.transactions, data.prices, writeListener, this::completeImport));
-            } catch (Exception e) {
-                postImportError(e);
-            }
-        }).start();
-    }
-
-    /** Lädt die .kmy und importiert ein Konto ({@code null} = alle bereits vorhandenen App-Konten). */
-    private void runKmyImport(final String account) {
-        importBanner.start(getString(R.string.import_running_banner));
-        // „Alle Konten" (account == null) heißt: Konten, Depots und geplante Buchungen in einem Zug.
-        de.spahr.ausgaben.export.KmyAccountImport.start(this, settings, repository, appAccounts, account,
-                account == null ? appDepots : java.util.Collections.emptyList(), account == null,
-                new de.spahr.ausgaben.export.KmyAccountImport.Ui() {
-                    @Override
-                    public de.spahr.ausgaben.util.ProgressListener phase(String label, int from, int to) {
-                        return importBanner.phase(label, from, to);
-                    }
-
-                    @Override
-                    public void noMatchingAccount() {
-                        post(() -> {
-                            importBanner.finishNow();
-                            Toast.makeText(MainActivity.this, R.string.kmy_account_not_found,
-                                    Toast.LENGTH_LONG).show();
-                        });
-                    }
-
-                    @Override
-                    public void failed(Exception e) {
-                        postImportError(e);
-                    }
-
-                    @Override
-                    public void finished() {
-                        completeImport();
-                    }
-                });
-    }
-
-    private boolean containsIgnoreCase(List<String> values, String needle) {
+    static boolean containsIgnoreCase(List<String> values, String needle) {
         for (String value : values) {
             if (value != null && value.equalsIgnoreCase(needle)) {
                 return true;
@@ -2214,32 +1543,6 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         }
         return false;
     }
-    private void postImportError(Exception e) {
-        final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-        post(() -> {
-            dismissProgress();
-            importBanner.finishNow();
-            Toast.makeText(this, getString(R.string.import_failed, msg), Toast.LENGTH_LONG).show();
-        });
-    }
-
-    /** Import abgeschlossen: 100 % kurz zeigen, dann Banner ausblenden und Liste aktualisieren. */
-    private void completeImport() {
-        importBanner.finish();
-        refreshBookings();
-    }
-
-    // ---- CSV-Import (Nextcloud-Liste oder lokaler Picker) ----
-
-    private void startCsvImport() {
-        if (settings.hasRemoteConfig()) {
-            browseCsvAt(settings.getImportFolder());
-        } else {
-            importLauncher.launch(new String[]{
-                    "text/*", "text/csv", "text/comma-separated-values", "application/octet-stream"});
-        }
-    }
-
     // ---- Fortschrittsdialog ----
 
     private androidx.appcompat.app.AlertDialog progressDialog;
@@ -2287,142 +1590,4 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         }
     }
 
-    /** Navigierbarer CSV-Browser (Unterordner + CSV-Dateien) im entfernten Importordner. */
-    private void browseCsvAt(String folder) {
-        Toast.makeText(this, R.string.loading_files, Toast.LENGTH_SHORT).show();
-        new Thread(() -> {
-            try {
-                // Ordner und Dateien in einem Aufruf: SMB meldet sich sonst zweimal hintereinander an.
-                RemoteStorage.Entries entries = RemoteStorage.from(settings).listEntries(folder, "csv");
-                List<String> folders = entries.folders;
-                List<String> files = entries.files;
-                java.util.Collections.sort(folders, String.CASE_INSENSITIVE_ORDER);
-                java.util.Collections.sort(files, String.CASE_INSENSITIVE_ORDER);
-                post(() -> {
-                    if (folder.isEmpty() && folders.isEmpty() && files.isEmpty()) {
-                        Toast.makeText(this, R.string.no_files, Toast.LENGTH_LONG).show();
-                    } else {
-                        showCsvPick(folder, folders, files);
-                    }
-                });
-            } catch (Exception e) {
-                final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-                post(() -> Toast.makeText(this,
-                        getString(R.string.import_failed, msg), Toast.LENGTH_LONG).show());
-            }
-        }).start();
-    }
-
-    private void showCsvPick(String folder, List<String> folders, List<String> files) {
-        Bundle args = new Bundle();
-        args.putString(ARG_CSV_FOLDER, folder);
-        args.putStringArray(ARG_CSV_FOLDERS, folders.toArray(new String[0]));
-        args.putStringArray(ARG_CSV_FILES, files.toArray(new String[0]));
-        HostedDialog.show(this, DLG_CSV_PICK, args);
-    }
-
-    /**
-     * Baut den Datei-Browser aus dem, was im Bundle steht — beim ersten Mal und nach jeder Drehung.
-     * Der Serverzugriff bleibt dabei aus: Die Liste dieses Ordners steht schon in den Angaben.
-     */
-    private android.app.Dialog buildCsvPick(Bundle args) {
-        final String folder = args.getString(ARG_CSV_FOLDER, "");
-        final List<String> labels = new java.util.ArrayList<>();
-        final List<Runnable> actions = new java.util.ArrayList<>();
-        if (!folder.isEmpty()) {
-            labels.add("↑  ..");
-            actions.add(() -> browseCsvAt(RemotePath.parentFolder(folder)));
-        }
-        for (String d : args.getStringArray(ARG_CSV_FOLDERS)) {
-            labels.add("📁  " + d);
-            final String target = folder.isEmpty() ? d : folder + "/" + d;
-            actions.add(() -> browseCsvAt(target));
-        }
-        for (String f : args.getStringArray(ARG_CSV_FILES)) {
-            labels.add(f);
-            actions.add(() -> downloadAndImport(folder, f));
-        }
-        String title = folder.isEmpty() ? getString(R.string.choose_import_file) : "/" + folder;
-        return new AppDialog(this)
-                .setTitle(title)
-                .setItems(labels.toArray(new String[0]), (d, w) -> actions.get(w).run())
-                .create();
-    }
-
-    private void downloadAndImport(String folder, String fileName) {
-        // Ohne das Banner sah ein CSV-Reimport nach nichts aus – anders als der KMY-Reimport
-        // (reimportDepot/runKmyImport), der immer schon importBanner.start()/finish() nutzt.
-        importBanner.start(getString(R.string.import_running_banner));
-        // Bewußt ein eigener Faden und nicht repository.executor(): der ist einfach besetzt
-        // (newSingleThreadExecutor) und trägt die gesamte Datenbankarbeit. Ein hängender Server
-        // würde dort jede andere Abfrage der App mit blockieren, bis der Timeout greift.
-        new Thread(() -> {
-            try {
-                String content = RemoteStorage.from(settings).downloadText(folder, fileName);
-                processImport(content);
-            } catch (Exception e) {
-                importFehlgeschlagen(e);
-            }
-        }).start();
-    }
-
-    private void doImportLocal(Uri uri) {
-        importBanner.start(getString(R.string.import_running_banner));
-        new Thread(() -> {
-            try {
-                processImport(readText(uri));
-            } catch (Exception e) {
-                importFehlgeschlagen(e);
-            }
-        }).start();
-    }
-
-    /** Parst den Inhalt und ersetzt die exportierten Buchungen des Kontos. Aufruf aus Hintergrund-Thread. */
-    private void processImport(String content) {
-        try {
-            CsvImporter importer = new CsvImporter(this);
-            List<Booking> bookings = importer.parse(content);
-            String account = importer.getParsedAccount();
-            post(() -> {
-                if (isFinishing() || isDestroyed()) {
-                    return;
-                }
-                repository.replaceImport(account, bookings, count -> {
-                    importBanner.finish();
-                    Toast.makeText(this, getString(R.string.import_done, count), Toast.LENGTH_LONG).show();
-                    refreshBookings();
-                });
-            });
-        } catch (Exception e) {
-            importFehlgeschlagen(e);
-        }
-    }
-
-    /**
-     * Meldet einen gescheiterten Import auf dem Bedienfaden. Der Import läuft im Hintergrund weiter,
-     * auch wenn der Nutzer die Maske inzwischen verlassen hat – am geschlossenen Fenster darf dann
-     * weder das Banner noch ein Toast mehr angefaßt werden.
-     */
-    private void importFehlgeschlagen(Exception e) {
-        final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-        post(() -> {
-            if (isFinishing() || isDestroyed()) {
-                return;
-            }
-            importBanner.finishNow();
-            Toast.makeText(this, getString(R.string.import_failed, msg), Toast.LENGTH_LONG).show();
-        });
-    }
-
-    private String readText(Uri uri) throws Exception {
-        try (InputStream is = getContentResolver().openInputStream(uri)) {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            byte[] buf = new byte[8192];
-            int n;
-            while (is != null && (n = is.read(buf)) > 0) {
-                bos.write(buf, 0, n);
-            }
-            return new String(bos.toByteArray(), StandardCharsets.UTF_8);
-        }
-    }
 }
