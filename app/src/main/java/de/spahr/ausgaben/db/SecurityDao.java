@@ -156,6 +156,13 @@ public interface SecurityDao {
      * {@code booking_id = 0}). Welche es wirklich ist, entscheidet {@link SecurityTxMatch} — hier wird
      * nur grob vorgesiebt, damit nicht das ganze Depot durch Java muss.
      */
+    /**
+     * Die in der App erfasste Bewegung, deren Geldbuchung {@code bookingId} ist – der Weg für Buchungen,
+     * die keine Umbuchung sind (die Dividende, siehe {@code SecurityTx#toMoneyBooking}).
+     */
+    @Query("SELECT * FROM security_tx WHERE booking_id = :bookingId AND booking_id > 0 LIMIT 1")
+    SecurityTx getTxByBookingId(long bookingId);
+
     @Query("SELECT * FROM security_tx WHERE booking_id = :bookingId "
             + "OR (security_name = :securityName AND money_account = :moneyAccount "
             + "AND date >= :fromMs AND date < :toMs) ORDER BY id ASC")

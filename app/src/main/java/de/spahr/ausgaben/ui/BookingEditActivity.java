@@ -180,6 +180,8 @@ public class BookingEditActivity extends LocalizedActivity {
      * Rückfrage an die Datenbank gesetzt; solange {@code false}, gibt es keinen Löschknopf.
      */
     private boolean securityTxFound;
+    /** Für eine Buchung ohne Umbuchung schon nach einer verknüpften Depot-Bewegung gefragt? */
+    private boolean linkedTxAsked;
     /** Die Namen der Wertpapiere aller Depots (klein); {@code null} = noch nicht geladen. */
     private java.util.Set<String> knownSecurityNames;
 
@@ -855,6 +857,22 @@ public class BookingEditActivity extends LocalizedActivity {
         if (notesOnly || readOnly || booking == null || knownAccountNames.isEmpty()) {
             return;
         }
+        if (!booking.isTransfer) {
+            // Die in der App erfasste Dividende ist eine Einnahme, keine Umbuchung (siehe
+            // SecurityTx#toMoneyBooking) – ihr sieht man die Bewegung nicht an. Sie gehört allein über
+            // die gespeicherte Verknüpfung dazu; danach fragen, einmal.
+            if (!linkedTxAsked) {
+                linkedTxAsked = true;
+                repository.getSecurityTxForBooking(booking, tx -> {
+                    if (tx != null && !isFinishing() && !notesOnly) {
+                        lockAsSecurityBooking();
+                        securityTxFound = true;
+                        btnDelete.setVisibility(View.VISIBLE);
+                    }
+                });
+            }
+            return;
+        }
         // Ohne die Wertpapiernamen ist die Frage noch nicht zu beantworten; der Aufruf kommt wieder,
         // sobald sie da sind.
         if (knownSecurityNames == null) {
@@ -863,6 +881,23 @@ public class BookingEditActivity extends LocalizedActivity {
         if (!isSecurityCounterpart(booking.transferAccount, booking.isTransfer)) {
             return;
         }
+        lockAsSecurityBooking();
+        // Der Löschknopf kommt erst zurück, wenn feststeht, dass wirklich eine Depot-Bewegung dazugehört;
+        // bis dahin bleibt er weg. Ein Knopf, der sich gleich wieder verabschiedet, wäre schlimmer.
+        repository.getSecurityTxForBooking(booking, tx -> {
+            if (tx != null && !isFinishing()) {
+                securityTxFound = true;
+                btnDelete.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    /**
+     * Sperrt alles außer Notiz, Stichwort und Beleg. Löschen darf sein, Ändern nicht – der Unterschied
+     * ist entscheidend: beim Löschen verschwindet die ganze Transaktion samt Stückzahl und Kurs, es kann
+     * nichts halb stehenbleiben.
+     */
+    private void lockAsSecurityBooking() {
         notesOnly = true;
         lockField(editAmount);
         lockField(editPayee);
@@ -879,17 +914,9 @@ public class BookingEditActivity extends LocalizedActivity {
         dateLayout.setEndIconMode(TextInputLayout.END_ICON_NONE);
         toggleType.setVisibility(View.GONE);
         btnToday.setVisibility(View.GONE);
-        // Löschen darf sein, Ändern nicht – der Unterschied ist entscheidend: beim Löschen verschwindet
-        // die ganze Transaktion samt Stückzahl und Kurs, es kann nichts halb stehenbleiben. Der Knopf
-        // kommt aber erst zurück, wenn feststeht, dass wirklich eine Depot-Bewegung dazugehört; bis
-        // dahin bleibt er weg. Ein Knopf, der sich gleich wieder verabschiedet, wäre schlimmer.
+        // Kategorien und Teilbeträge stehen an der Bewegung (Ertrag, Steuer) – hier nur ansehen.
+        splitCtl.lockRows();
         btnDelete.setVisibility(View.GONE);
-        repository.getSecurityTxForBooking(booking, tx -> {
-            if (tx != null && !isFinishing()) {
-                securityTxFound = true;
-                btnDelete.setVisibility(View.VISIBLE);
-            }
-        });
         // „Als neu speichern" ebensowenig: eine Wertpapier-Buchung kann die App nicht anlegen – ihr
         // fehlen Stückzahl und Kurs.
         btnSaveNew.setVisibility(View.GONE);
@@ -1291,6 +1318,10 @@ public class BookingEditActivity extends LocalizedActivity {
         }
         splitCtl.setSuppressEvents(false);
         splitCtl.ensureTrailingRow();
+        // Die Teile können nach der Sperre einer Depot-Buchung eintreffen (beides läuft nebenher).
+        if (notesOnly) {
+            splitCtl.lockRows();
+        }
         // Aus einer echten Buchung oder Planung geladen? Dann bleibt die Kategorie, wie sie ist. Aus
         // einer Vorlage der Spracherfassung gehört sie zum gefundenen Empfänger – und weicht einem
         // anderen, falls die Automatik danebenlag.

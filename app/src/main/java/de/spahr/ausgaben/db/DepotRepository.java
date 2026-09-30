@@ -170,6 +170,7 @@ class DepotRepository {
                 if (booking != null) {
                     db.accountDao().insertIfAbsent(new Account(booking.account));
                     tx.bookingId = db.bookingDao().insert(booking);
+                    writeBookingParts(tx.bookingId, booking);
                 }
                 writeParts(tx, securityDao.insertTx(tx));
             });
@@ -197,6 +198,7 @@ class DepotRepository {
                         if (booking != null) {
                             db.accountDao().insertIfAbsent(new Account(booking.account));
                             tx.bookingId = db.bookingDao().insert(booking);
+                            writeBookingParts(tx.bookingId, booking);
                         }
                         writeParts(tx, securityDao.insertTx(tx));
                     }
@@ -228,6 +230,8 @@ class DepotRepository {
                     booking.id = tx.bookingId;
                     db.accountDao().insertIfAbsent(new Account(booking.account));
                     db.bookingDao().update(booking);
+                    db.bookingDao().deleteSplits(tx.bookingId);
+                    writeBookingParts(tx.bookingId, booking);
                 }
                 securityDao.updateTx(tx);
                 securityDao.deleteSplits(tx.id);
@@ -248,6 +252,7 @@ class DepotRepository {
                     return;   // aus der Datei importiert: dort wird nicht gelöscht
                 }
                 if (tx.bookingId > 0) {
+                    db.bookingDao().deleteSplits(tx.bookingId);
                     db.bookingDao().delete(tx.bookingId);
                 }
                 securityDao.deleteSplits(txId);
@@ -257,6 +262,20 @@ class DepotRepository {
                 mainHandler.post(onDone);
             }
         });
+    }
+
+    /**
+     * Schreibt die Kategorie-Teile der Geldbuchung – bei einer Dividende mit Ertrag und Steuer ist sie
+     * eine Splitbuchung (siehe {@link SecurityTx#toMoneyBooking}). Kauf und Verkauf haben keine.
+     */
+    private void writeBookingParts(long bookingId, Booking booking) {
+        if (booking.parts == null) {
+            return;
+        }
+        for (BookingSplit part : booking.parts) {
+            part.bookingId = bookingId;
+            db.bookingDao().insertSplit(part);
+        }
     }
 
     /**

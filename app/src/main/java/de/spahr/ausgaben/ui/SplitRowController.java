@@ -540,6 +540,26 @@ class SplitRowController {
         return t == null ? 0 : t;
     }
 
+    /**
+     * Sperrt nachträglich alle vorhandenen Zeilen wie in der Ansicht und entfernt die leere
+     * Abschlusszeile – für die Geldbuchung einer Depot-Bewegung, an der nur Notiz, Stichwort und Beleg
+     * änderbar sind (siehe {@code BookingEditActivity#applyNotesOnlyIfNeeded}).
+     */
+    void lockRows() {
+        for (int i = container.getChildCount() - 1; i >= 0; i--) {
+            View row = container.getChildAt(i);
+            android.widget.EditText cat = row.findViewById(R.id.splitCategory);
+            android.widget.EditText amt = row.findViewById(R.id.splitAmount);
+            if (catText(row).isEmpty() && amtText(row).isEmpty()) {
+                container.removeViewAt(i);
+                continue;
+            }
+            lockField(cat);
+            lockField(amt);
+            row.findViewById(R.id.btnRemoveSplit).setVisibility(View.GONE);
+        }
+    }
+
     private void lockField(android.widget.EditText e) {
         e.setFocusable(false);
         e.setFocusableInTouchMode(false);

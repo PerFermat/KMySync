@@ -812,6 +812,7 @@ public class Repository {
             // Wie DepotRepository.deleteManualTx, nur in dieser einen Transaktion.
             for (SecurityTx tx : securityDao.getPendingTx()) {
                 if (tx.bookingId > 0) {
+                    bookingDao.deleteSplits(tx.bookingId);
                     bookingDao.delete(tx.bookingId);
                 }
                 securityDao.deleteSplits(tx.id);
@@ -854,7 +855,7 @@ public class Repository {
      */
     public void getSecurityTxForBooking(final Booking booking, final Callback<SecurityTx> callback) {
         executor.execute(() -> {
-            final SecurityTx tx = findSecurityTx(booking);
+            final SecurityTx tx = findLinkedSecurityTx(booking);
             mainHandler.post(() -> callback.onResult(tx));
         });
     }
@@ -886,13 +887,30 @@ public class Repository {
      */
     void deleteSecurityBookingNow(final Booking booking) {
         db.runInTransaction(() -> {
-            SecurityTx tx = findSecurityTx(booking);
+            SecurityTx tx = findLinkedSecurityTx(booking);
             if (tx != null) {
+                securityDao.deleteSplits(tx.id);
                 securityDao.deleteTxById(tx.id);
             }
             queueKmyDeleteIfNeeded(bookingDao.getById(booking.id));
+            bookingDao.deleteSplits(booking.id);
             bookingDao.delete(booking.id);
         });
+    }
+
+    /**
+     * Wie {@link #findSecurityTx}, erkennt aber auch die Geldbuchung einer in der App erfassten
+     * <b>Dividende</b>: die ist eine Einnahme, keine Umbuchung, und gehört allein über die gespeicherte
+     * Verknüpfung ({@link SecurityTx#bookingId}) zu ihrer Bewegung. Auf dem Hintergrund-Faden zu rufen.
+     */
+    private SecurityTx findLinkedSecurityTx(Booking booking) {
+        if (booking == null) {
+            return null;
+        }
+        if (booking.isTransfer) {
+            return findSecurityTx(booking);
+        }
+        return booking.id > 0 ? securityDao.getTxByBookingId(booking.id) : null;
     }
 
     /** Vorsieben in SQL, entscheiden in {@link SecurityTxMatch} – auf dem Hintergrund-Faden zu rufen. */

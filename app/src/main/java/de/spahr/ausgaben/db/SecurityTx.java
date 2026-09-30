@@ -245,16 +245,23 @@ public class SecurityTx {
     }
 
     /**
-     * Die Geldbuchung zu dieser Bewegung: eine Umbuchung zwischen Geldkonto und Wertpapier.
+     * Die Geldbuchung zu dieser Bewegung – in derselben Form, die der .kmy-Import aus der geschriebenen
+     * Transaktion später wieder macht (siehe {@code KmyImporter.toBooking}).
      *
-     * <p>Beim Kauf verlässt das Geld das Konto, bei Verkauf und Dividende kommt es an. Auch das stand
-     * zweimal im Code — siehe {@link #applyAmounts}.</p>
+     * <p>Kauf und Verkauf sind eine <b>Umbuchung</b> zwischen Geldkonto und Wertpapier: beim Kauf verlässt
+     * das Geld das Konto, beim Verkauf kommt es an. Eine <b>Dividende</b> dagegen bewegt keine Stücke;
+     * in KMyMoney kommt ihr Geld von der Ertragskategorie, und der Import liest sie als
+     * <b>Einnahme</b> – mit mehreren Kategorien (Ertrag, Steuer) als Splitbuchung. Bis 2.2 stand sie
+     * hier als Umbuchung und sah deshalb bis zum nächsten Einlesen anders aus als danach.</p>
      *
      * @param moneyCents der tatsächlich bewegte Betrag: beim Kauf der Gesamtbetrag samt Gebühr, bei
      *                   einer Dividende der gutgeschriebene Nettobetrag. <b>Nicht</b>
      *                   {@link #netCents} — das trägt bei Kauf und Verkauf den Bruttobetrag.
      */
     public Booking toMoneyBooking(long moneyCents) {
+        if (DIVIDEND.equals(action)) {
+            return dividendBooking(moneyCents);
+        }
         Booking b = new Booking();
         b.account = moneyAccount;
         b.isTransfer = true;
@@ -264,6 +271,40 @@ public class SecurityTx {
         b.payee = securityName;
         b.createdAt = date;
         b.category = "";
+        return b;
+    }
+
+    /**
+     * Die Dividende als Einnahme, so wie der Import sie aus der Datei liest: Ertragsteile mit ihrem
+     * Betrag, Steuer-/Gebührenteile als Abzug (negativ) – die Summe ist die Gutschrift. Kopf-Kategorie
+     * ist der betragsmäßig größte Teil, wie beim Import. Eine einzige Kategorie ergibt keine Teile.
+     */
+    private Booking dividendBooking(long moneyCents) {
+        Booking b = new Booking();
+        b.account = moneyAccount;
+        b.isTransfer = false;
+        b.isIncome = moneyCents >= 0;
+        b.amountCents = Math.abs(moneyCents);
+        b.payee = securityName;
+        b.createdAt = date;
+        java.util.List<BookingSplit> teile = new java.util.ArrayList<>();
+        for (SecurityTxSplit p : parts) {
+            if (p.category == null || p.category.trim().isEmpty() || p.amountCents == 0) {
+                continue;
+            }
+            // Ertrag kommt aufs Konto, Steuer/Gebühr geht davon ab.
+            long teil = p.income ? p.amountCents : -p.amountCents;
+            teile.add(new BookingSplit(0, p.category.trim(), b.isIncome ? teil : -teil, p.income));
+        }
+        BookingSplit haupt = null;
+        for (BookingSplit t : teile) {
+            if (haupt == null || Math.abs(t.amountCents) > Math.abs(haupt.amountCents)) {
+                haupt = t;
+            }
+        }
+        b.category = haupt == null ? "" : haupt.category;
+        b.categoryIsIncome = haupt == null ? null : haupt.categoryIsIncome;
+        b.parts = teile.size() > 1 ? teile : null;
         return b;
     }
 
