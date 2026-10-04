@@ -194,7 +194,7 @@ stammt aus einem echten Fehlschlag, nicht aus Vorsicht.
 (WebDAV), [smbj](https://github.com/hierynomus/smbj) mit BouncyCastle (SMB2/3),
 [MPAndroidChart](https://github.com/PhilJay/MPAndroidChart) – als Quellcode-Submodul, weil F-Droid
 JitPack nicht zuläßt –, [osmdroid](https://github.com/osmdroid/osmdroid) (Karten-Auswahl ohne
-API-Schlüssel),
+API-Schlüssel; lädt ihre Kacheln von OpenStreetMap, nur wenn die Karte geöffnet wird),
 [androidx.biometric](https://developer.android.com/jetpack/androidx/releases/biometric) sowie
 [play-services-wearable](https://developer.android.com/training/wearables/data/data-layer) und
 [androidx.wear.tiles](https://developer.android.com/training/wearables/tiles) – die letzten beiden nur

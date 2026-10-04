@@ -186,7 +186,7 @@ signature, or the Data Layer will not pair them.
 **Third-party libraries.** [Room](https://developer.android.com/training/data-storage/room), OkHttp
 (WebDAV), [smbj](https://github.com/hierynomus/smbj) with BouncyCastle (SMB2/3),
 [MPAndroidChart](https://github.com/PhilJay/MPAndroidChart) — as a source submodule, since F-Droid does
-not allow JitPack —, [osmdroid](https://github.com/osmdroid/osmdroid) (map picker, no API key),
+not allow JitPack —, [osmdroid](https://github.com/osmdroid/osmdroid) (map picker, no API key; loads its tiles from OpenStreetMap, only when the map is opened),
 [androidx.biometric](https://developer.android.com/jetpack/androidx/releases/biometric), plus
 [play-services-wearable](https://developer.android.com/training/wearables/data/data-layer) and
 [androidx.wear.tiles](https://developer.android.com/training/wearables/tiles) — the last two only in
