@@ -15,7 +15,7 @@ Repo: https://github.com/PerFermat/KMySync.git
 Builds:
   - versionName: '2.2'
     versionCode: 17
-    commit: 1e9b28372228c219f58ed89f22377f4523fd7172
+    commit: 413927ff6bdc9611817aaf50a0094ec6b249c8ab
     subdir: app
     submodules: true
     gradle:
