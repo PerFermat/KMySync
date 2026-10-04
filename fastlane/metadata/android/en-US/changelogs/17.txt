@@ -2,6 +2,6 @@ New: sync mode "Read .kmy, export CSV" – accounts, schedules and portfolio com
 
 Safer export: stops if KMyMoney has the file open; self-check before upload; no duplicate bookings after a crash; file encoding is checked.
 
-When writing via CSV, editing exported bookings, split bookings, advancing schedules and portfolio entry are locked.
+Editing exported bookings, split bookings, advancing schedules and portfolio entry are available in .kmy mode – CSV cannot represent them.
 
 Watch: more reliable voice input.
