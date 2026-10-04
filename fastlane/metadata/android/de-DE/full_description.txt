@@ -1,6 +1,6 @@
 KMySync ist eine mobile Ergänzung zur Desktop-Finanzsoftware KMyMoney. Erfassen Sie Bargeld-Ausgaben, -Einnahmen und Umbuchungen unterwegs, führen Sie Ihr Depot mit und schreiben Sie alles nach KMyMoney zurück, statt es später von Hand nachzutragen.
 
-Die App arbeitet vollständig offline und ohne Herstellerkonto: Der Datenaustausch mit KMyMoney läuft über einen von Ihnen bereitgestellten Ordner (WebDAV, Nextcloud oder SMB/Samba). Keine Werbung, kein Tracking.
+Die App braucht weder ein Herstellerkonto noch die Cloud eines Dritten: Der Datenaustausch mit KMyMoney läuft über einen von Ihnen bereitgestellten Ordner (WebDAV, Nextcloud oder SMB/Samba). Keine Werbung, kein Tracking.
 
 Eine Ausnahme davon: Die optionale Karte, auf der Sie einen Standort wählen, lädt ihre Kacheln von OpenStreetMap. Das ist die einzige Ansicht, die etwas anderes als Ihren eigenen Server anspricht — und sie geht nur auf, wenn Sie sie öffnen.
 

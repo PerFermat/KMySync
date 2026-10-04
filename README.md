@@ -32,7 +32,7 @@ instead of typing everything in by hand later.
 - 📲 **Mobile extension for KMyMoney** — capture cash spending the moment it happens
 - 🔌 **Seamless KMyMoney integration** via `.kmy` files or CSV import
 - 🗂️ **Sync through a shared WebDAV or SMB folder** — your own server, your data
-- 🔒 **Fully offline** — no extra cloud, no vendor account required
+- 🔒 **Your server, your data** — no extra cloud, no vendor account required
 - ⌚ **Wear OS app with voice input** — speak an expense right from your wrist
 - ➗ **Split bookings and transfers**, categories, places/holdings and portfolio import
 - 📈 **Analysis**: history per account, category pie chart, budget (actual/planned), portfolio return

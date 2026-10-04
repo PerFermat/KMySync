@@ -1,10 +1,10 @@
 {
   "doc_title": "KMySync – Benutzerhandbuch",
   "doc_author": "KMySync",
-  "version_text": "Version 2.1.1",
+  "version_text": "Version 2.2",
   "date_text": "Stand: September 2026",
   "toc_title": "Inhalt",
-  "footer_text": "KMySync · Benutzerhandbuch (Version 2.1.1)",
+  "footer_text": "KMySync · Benutzerhandbuch (Version 2.2)",
   "page_text": "Seite %d",
   "placeholder_no_image": "Kein Bild",
   "table_headers": [
@@ -110,7 +110,7 @@
     {
       "type": "p",
       "id": "b-0003",
-      "text": "Die App arbeitet vollständig offline und ohne Herstellerkonto: Der Datenaustausch mit KMyMoney läuft über einen von Ihnen bereitgestellten Ordner (Nextcloud, WebDAV oder SMB/Samba). Es gibt keine Werbung und kein Tracking."
+      "text": "Die App braucht weder ein Herstellerkonto noch die Cloud eines Dritten: Der Datenaustausch mit KMyMoney läuft über einen von Ihnen bereitgestellten Ordner (Nextcloud, WebDAV oder SMB/Samba). Es gibt keine Werbung und kein Tracking. Einzige Ausnahme: Die Kartenansicht zur Standortwahl lädt ihre Kacheln von OpenStreetMap, und zwar nur, wenn Sie sie öffnen."
     },
     {
       "type": "h2",

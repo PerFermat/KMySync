@@ -1,10 +1,10 @@
 {
   "doc_title": "KMySync – User Manual",
   "doc_author": "KMySync",
-  "version_text": "Version 2.1.1",
+  "version_text": "Version 2.2",
   "date_text": "Updated: September 2026",
   "toc_title": "Contents",
-  "footer_text": "KMySync · User Manual (Version 2.1.1)",
+  "footer_text": "KMySync · User Manual (Version 2.2)",
   "page_text": "Page %d",
   "placeholder_no_image": "No image",
   "table_headers": [
@@ -110,7 +110,7 @@
     {
       "type": "p",
       "id": "b-0003",
-      "text": "The app works fully offline and without any vendor account: data is exchanged with KMyMoney through a folder you provide yourself (Nextcloud, WebDAV or SMB/Samba). There are no ads and no tracking."
+      "text": "The app needs no vendor account and no third-party cloud: data is exchanged with KMyMoney through a folder you provide yourself (Nextcloud, WebDAV or SMB/Samba). There are no ads and no tracking. The one exception is the map for picking a location: it loads its tiles from OpenStreetMap, and only when you open it."
     },
     {
       "type": "h2",

@@ -32,7 +32,7 @@ nach KMyMoney, statt alles später von Hand nachzutragen.
 - 📲 **Mobile Erweiterung für KMyMoney** – Bargeldausgaben unterwegs sofort erfassen
 - 🔌 **Nahtlose KMyMoney-Integration** über `.kmy`-Dateien oder CSV-Import
 - 🗂️ **Sync über einen gemeinsamen WebDAV- oder SMB-Ordner** – eigener Server, eigene Daten
-- 🔒 **Vollständig offline nutzbar** – keine zusätzliche Cloud, kein Herstellerkonto
+- 🔒 **Ihr Server, Ihre Daten** – keine zusätzliche Cloud, kein Herstellerkonto
 - ⌚ **Wear-OS-App mit Spracheingabe** – Ausgabe direkt vom Handgelenk sprechen
 - ➗ **Splitbuchungen und Umbuchungen**, Kategorien, Orte/Bestände und Depot-Import
 - 📈 **Auswertungen**: Verlauf je Konto, Kategorien-Kreisdiagramm, Budget (Ist/Soll), Depot-Rendite
