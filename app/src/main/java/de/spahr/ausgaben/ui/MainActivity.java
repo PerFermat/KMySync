@@ -708,16 +708,6 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         // Die Favoritengruppe trägt einen übersetzten Namen; nach einem Sprachwechsel bliebe sonst das
         // alte Wort stehen. Ihre Mitglieder rührt das nicht an.
         repository.renameFavoritesGroup(getString(R.string.accounts_group_favorites));
-        // Depotwert (für „Gesamtvermögen") laden; die Schublade füllt der Schubladenkopf, weil dort
-        // die Kontengruppe und die festgelegte Reihenfolge gelten.
-        repository.getDepots(depots -> {
-            hasDepot = !depots.isEmpty();
-            appDepots.clear();
-            appDepots.addAll(depots);
-            // Trägerzeilen abgleichen, damit jedes vorhandene Depot auch in Schublade und Verwaltung steht.
-            repository.ensureDepotAccounts(depots, () -> drawerHeader.reload());
-            loadDepotTotal(depots);
-        });
         refreshBookings();
         // Standardort-Saldo an die Uhr spiegeln (No-op im foss-Flavor; nur bei Änderung übertragen).
         de.spahr.ausgaben.wear.BalanceSync.publish(this);
@@ -791,6 +781,17 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     }
 
     private void refreshBookings() {
+        // Depotwert (für „Gesamtvermögen") mitladen: Nach einem Abgleich mit der .kmy ändert er sich
+        // genauso wie die Buchungen. Die Schublade füllt der Schubladenkopf, weil dort die
+        // Kontengruppe und die festgelegte Reihenfolge gelten.
+        repository.getDepots(depots -> {
+            hasDepot = !depots.isEmpty();
+            appDepots.clear();
+            appDepots.addAll(depots);
+            // Trägerzeilen abgleichen, damit jedes vorhandene Depot auch in Schublade und Verwaltung steht.
+            repository.ensureDepotAccounts(depots, () -> drawerHeader.reload());
+            loadDepotTotal(depots);
+        });
         repository.getCategoriesGrouped(g -> {
             catExpense = g.expense;
             catIncome = g.income;
