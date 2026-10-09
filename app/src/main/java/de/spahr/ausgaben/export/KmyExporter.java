@@ -1090,7 +1090,7 @@ public class KmyExporter {
         splits.add(split("S0001", moneyId, "", fraction(money), memo, ""));
         int[] index = {2};
         if (dividend) {
-            splits.add(securitySplit(splitId(index), stockId, "0/100", "0/1", "1/1", "Dividend", memo));
+            splits.add(securitySplit(splitId(index), stockId, fraction(0), "0/1", "1/1", "Dividend", memo));
             // Der Ertrag steht in KMyMoney mit umgekehrtem Vorzeichen: er kommt von der Kategorie
             // und geht aufs Konto.
             if (!addCategorySplits(splits, index, tx.partsOf(true), -1, gross, label, commodity,
@@ -1419,8 +1419,14 @@ public class KmyExporter {
         return pairs;
     }
 
-    private String fraction(long signedCents) {
-        return signedCents + "/100";
+    /**
+     * Ein Betrag in Cent als Bruch, gekürzt: 80,00 wird {@code 80/1}, 12,40 wird {@code 62/5}. So
+     * schreibt KMyMoney seine Beträge selbst. Der Wert ist derselbe wie {@code 8000/100}, aber eine
+     * geänderte Buchung unterscheidet sich im Zeilenvergleich dann nur im Betrag und nicht auch noch
+     * in der Schreibweise.
+     */
+    static String fraction(long signedCents) {
+        return reduced(signedCents, 100);
     }
 
     private String dateFor(long millis) {

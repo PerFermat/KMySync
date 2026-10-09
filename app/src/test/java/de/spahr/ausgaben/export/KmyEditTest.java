@@ -101,7 +101,7 @@ public class KmyEditTest {
         assertTrue(r.xml.contains("<TRANSACTIONS count=\"4\">"));
         assertEquals(4, countOf(r.xml, "<TRANSACTION "));
         String block = blockOf(r.xml, "T000000000000000001");
-        assertTrue(block.contains("value=\"-400/100\""));
+        assertTrue(block.contains("value=\"-4/1\""));
         assertFalse(block.contains("value=\"-250/100\""));
         assertTrue(block.contains("postdate=\"2026-01-05\""));
         // Die anderen Transaktionen bleiben unberührt: jeder ihrer Blöcke steht Zeichen für Zeichen da.
@@ -149,9 +149,9 @@ public class KmyEditTest {
         assertEquals(1, r.updated);
         String block = blockOf(r.xml, "T000000000000000001");
         assertEquals(3, countOf(block, "<SPLIT "));
-        assertTrue(block.contains("value=\"-300/100\""));
-        assertTrue(block.contains("value=\"100/100\""));
-        assertTrue(block.contains("value=\"200/100\""));
+        assertTrue(block.contains("value=\"-3/1\""));
+        assertTrue(block.contains("value=\"1/1\""));
+        assertTrue(block.contains("value=\"2/1\""));
     }
 
     /** Umbuchung: zwei Buchungszeilen, aber nur eine Transaktion – sie wird genau einmal ersetzt. */
@@ -194,8 +194,8 @@ public class KmyEditTest {
         assertTrue(r.xml.contains("<TRANSACTIONS count=\"4\">"));
         assertEquals(4, countOf(r.xml, "<TRANSACTION "));
         String block = blockOf(r.xml, "T000000000000000002");
-        assertTrue(block.contains("value=\"-1500/100\""));
-        assertTrue(block.contains("value=\"1500/100\""));
+        assertTrue(block.contains("value=\"-15/1\""));
+        assertTrue(block.contains("value=\"15/1\""));
     }
 
     /** Zwei gleichartige Buchungen (gleicher Tag, gleicher Betrag) treffen zwei verschiedene Blöcke. */
@@ -210,7 +210,7 @@ public class KmyEditTest {
         assertEquals(2, r.updated);
         assertEquals(Collections.emptyList(), r.notFound);
         assertTrue(r.xml.contains("value=\"-501/100\""));
-        assertTrue(r.xml.contains("value=\"-502/100\""));
+        assertTrue(r.xml.contains("value=\"-251/50\""));
         assertFalse(r.xml.contains("value=\"-500/100\""));
         assertTrue(r.xml.contains("<TRANSACTIONS count=\"4\">"));
     }
@@ -231,7 +231,7 @@ public class KmyEditTest {
         assertEquals(0, r.updated);
         assertTrue(r.xml.contains("<TRANSACTIONS count=\"4\">"));
         assertEquals(4, countOf(r.xml, "<TRANSACTION "));
-        assertFalse(r.xml.contains("value=\"-400/100\""));
+        assertFalse(r.xml.contains("value=\"-4/1\""));
     }
 
     /** Neue und bearbeitete Buchungen im selben Lauf: eine kommt hinzu, eine wird geändert. */
@@ -258,7 +258,7 @@ public class KmyEditTest {
         assertTrue(r.xml.contains("<TRANSACTIONS count=\"5\">"));
         assertEquals(5, countOf(r.xml, "<TRANSACTION "));
         assertTrue(r.xml.contains("value=\"-111/100\""));
-        assertTrue(blockOf(r.xml, "T000000000000000001").contains("value=\"-400/100\""));
+        assertTrue(blockOf(r.xml, "T000000000000000001").contains("value=\"-4/1\""));
     }
 
     /** Das Konto der exportierten Fassung gibt es in der Datei nicht mehr → kein Treffer, nichts kaputt. */

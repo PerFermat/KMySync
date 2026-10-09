@@ -400,7 +400,7 @@ public class KmyExportCheckTest {
                 Collections.singletonList(b), new HashMap<>());
         assertEquals(1, r.updated);
         besteht(d.xml(), r.xml, r.aenderungen);
-        faelltDurch(d.xml(), imBlock(r.xml, T2, "\"400/100\"", "\"401/100\""), r.aenderungen,
+        faelltDurch(d.xml(), imBlock(r.xml, T2, "\"4/1\"", "\"401/100\""), r.aenderungen,
                 "Saldo von Konto A000003");
     }
 
@@ -461,7 +461,7 @@ public class KmyExportCheckTest {
             }
         }
         String neu = imBlock(imBlock(r.xml, a, "\"-111/100\"", "\"-112/100\""),
-                b, "\"-222/100\"", "\"-221/100\"");
+                b, "\"-111/50\"", "\"-221/100\"");
         faelltDurch(d.xml(), neu, r.aenderungen, a + ": Summe der Splits ist -1/100 statt 0/1");
     }
 

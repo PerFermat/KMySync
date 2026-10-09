@@ -88,7 +88,7 @@ public class KmyReconcileFlagTest {
 
         assertEquals(1, r.updated);
         String block = blockOf(r.xml, "T000000000000000001");
-        assertTrue("der neue Betrag muß drinstehen", block.contains("value=\"-400/100\""));
+        assertTrue("der neue Betrag muß drinstehen", block.contains("value=\"-4/1\""));
 
         String konto = splitOf(block, "A000001");
         assertTrue("Abgleich-Status bleibt", konto.contains("reconcileflag=\"1\""));

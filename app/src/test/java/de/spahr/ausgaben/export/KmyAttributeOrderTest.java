@@ -119,7 +119,7 @@ public class KmyAttributeOrderTest {
         assertArrayEquals(folge(d.xml(), "TRANSACTION", "T000000000000000001"),
                 folge(r.xml, "TRANSACTION", "T000000000000000002"));
         assertArrayEquals(folge(d.xml(), "SPLIT", "value=\"-250/100\""),
-                folge(r.xml, "SPLIT", "value=\"-400/100\""));
+                folge(r.xml, "SPLIT", "value=\"-4/1\""));
     }
 
     @Test

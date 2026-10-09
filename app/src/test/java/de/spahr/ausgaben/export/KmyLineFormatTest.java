@@ -287,6 +287,64 @@ public class KmyLineFormatTest {
         }
     }
 
+    // ---- Schreibweise der Beträge ----
+
+    /** Beträge stehen gekürzt da, wie KMyMoney sie schreibt – der Wert ist derselbe. */
+    @Test
+    public void betraegeWerdenGekuerztGeschrieben() {
+        assertEquals("-80/1", KmyExporter.fraction(-8000));
+        assertEquals("-62/5", KmyExporter.fraction(-1240));
+        assertEquals("-111/100", KmyExporter.fraction(-111));
+        assertEquals("1/2", KmyExporter.fraction(50));
+        assertEquals("0/1", KmyExporter.fraction(0));
+        for (long cent : new long[]{-8000, -1240, -111, 50, 0, 2706007, 1}) {
+            assertEquals(KmyBruch.ausCent(cent), KmyBruch.lesen(KmyExporter.fraction(cent)));
+        }
+    }
+
+    /**
+     * Eine Buchung von 90 auf 80 geändert: Im Zeilenvergleich steht {@code -90/1} gegen {@code -80/1},
+     * nicht gegen {@code -8000/100} – es unterscheidet sich der Betrag, nicht auch noch seine Form.
+     */
+    @Test
+    public void geaenderterBetragBehaeltDieSchreibweiseDerDatei() throws Exception {
+        String xml = edited().replace("\"-1000/100\"", "\"-90/1\"").replace("\"1000/100\"", "\"90/1\"");
+        KmyDocument d = doc(xml);
+        Booking b = new Booking();
+        b.id = 2;
+        b.account = "Bargeld";
+        b.transferAccount = "Girokonto";
+        b.isTransfer = true;
+        b.amountCents = 8000;
+        b.createdAt = KmyDocument.parseKmyDate("2026-01-06");
+        b.edited = true;
+        b.origAccount = "Bargeld";
+        b.origSignedCents = -9000;
+        b.origCreatedAt = b.createdAt;
+        KmyExporter.Result r = new KmyExporter(d, ctx).build(Collections.emptyList(),
+                Collections.singletonList(b), new HashMap<>());
+        assertEquals(1, r.updated);
+        KmyExportCheck.pruefen(d.xml(), r.xml, KmyDocument.gzip(r.xml), r.aenderungen);
+
+        ExportDiff diff = ExportDiff.von(d.xml(), r.xml);
+        List<String> rot = new ArrayList<>();
+        List<String> gruen = new ArrayList<>();
+        for (ExportDiff.Zeile z : diff.zeilen) {
+            if (z.text.contains("<SPLIT ")) {
+                (z.art == ExportDiff.ENTFERNT ? rot : z.art == ExportDiff.HINZU ? gruen
+                        : new ArrayList<String>()).add(z.text);
+            }
+        }
+        assertEquals(2, rot.size());
+        assertEquals(2, gruen.size());
+        assertTrue(rot.get(0).contains("value=\"-90/1\""));
+        assertTrue(gruen.get(0), gruen.get(0).contains("value=\"-80/1\"")
+                && gruen.get(0).contains("shares=\"-80/1\""));
+        assertTrue(gruen.get(1).contains("value=\"80/1\""));
+        // Die Zeile unterscheidet sich von der alten nur in den beiden Beträgen.
+        assertEquals(rot.get(0).replace("-90/1", "X"), gruen.get(0).replace("-80/1", "X"));
+    }
+
     @Test
     public void gliedernLehntTextZwischenDenTagsAb() {
         assertEquals("  <A x=\"a>b\">\n   <B/>\n  </A>\n",
