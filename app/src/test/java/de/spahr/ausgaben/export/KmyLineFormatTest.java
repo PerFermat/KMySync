@@ -237,7 +237,7 @@ public class KmyLineFormatTest {
         assertTrue(z.contains("  </TRANSACTIONS>"));
         assertTrue(z.contains("      <SPLITS>"));
         // Die alte Zeile selbst bleibt Zeichen für Zeichen stehen, nur ohne das schließende Tag.
-        assertTrue(r.xml.contains("bankid=\"\"/></SPLITS></TRANSACTION>\n    <TRANSACTION postdate="));
+        assertTrue(r.xml.contains("bankid=\"\"/></SPLITS></TRANSACTION>\n    <TRANSACTION id="));
     }
 
     @Test

@@ -135,6 +135,110 @@ public class KmyExporter {
     public KmyExporter(KmyDocument doc, android.content.Context context) {
         this.doc = doc;
         this.ctx = de.spahr.ausgaben.i18n.LocaleManager.localizedContext(context);
+        String xml = doc.xml();
+        int buch = xml.indexOf("<TRANSACTIONS");
+        int buchEnde = xml.indexOf(LEDGER_END);
+        this.txOrder = attributeNames(xml, "<TRANSACTION ", buch, buchEnde);
+        this.splitOrder = attributeNames(xml, "<SPLIT ", buch, buchEnde);
+        int empfaenger = xml.indexOf("<PAYEES");
+        int empfaengerEnde = xml.indexOf("</PAYEES>");
+        this.payeeOrder = attributeNames(xml, "<PAYEE ", empfaenger, empfaengerEnde);
+        this.addressOrder = attributeNames(xml, "<ADDRESS ", empfaenger, empfaengerEnde);
+    }
+
+    // ---- Reihenfolge der Attribute ----
+
+    /**
+     * Die Attributfolge, in der die Datei ihre eigenen Elemente gerade führt – abgelesen an der ersten
+     * Transaktion des Hauptbuchs, ihrem ersten Split und dem ersten Empfänger samt Adresse. Leer, wenn
+     * es kein solches Element gibt.
+     *
+     * <p>Eine feste Reihenfolge gibt es nicht zu treffen: KMyMoney 5 schreibt die Attribute bei jedem
+     * Speichern in einer anderen. Für KMyMoney ist das ohne Bedeutung, aber im Zeilenvergleich nach
+     * dem Export fielen die Zeilen der App sonst neben ihren Nachbarn auf. Also richten sie sich nach
+     * ihnen.</p>
+     */
+    private final String[] txOrder;
+    private final String[] splitOrder;
+    private final String[] payeeOrder;
+    private final String[] addressOrder;
+
+    /**
+     * Die Reihenfolge, wenn die Datei keine vorgibt (frische Datei) oder ein Attribut nicht kennt: so,
+     * wie die aktuelle Entwicklungsfassung von KMyMoney schreibt ({@code mymoneyxmlwriter.cpp}).
+     */
+    private static final String[] TX_DEFAULT = {"id", "postdate", "memo", "entrydate", "commodity"};
+    private static final String[] SPLIT_DEFAULT = {"id", "payee", "reconciledate", "action",
+            "reconcileflag", "value", "shares", "price", "memo", "account", "number", "bankid"};
+    private static final String[] PAYEE_DEFAULT = {"id", "name", "reference", "email",
+            "matchingenabled", "usingmatchkey", "matchignorecase", "matchkey"};
+    private static final String[] ADDRESS_DEFAULT = {"street", "city", "state", "postcode", "telephone"};
+
+    /**
+     * Die Attributnamen des ersten Tags, das zwischen {@code from} und {@code to} mit {@code marker}
+     * beginnt, in ihrer Reihenfolge. Gelesen wird Zeichen für Zeichen: ein {@code >} oder {@code =} in
+     * einem Attributwert zählt nicht.
+     */
+    static String[] attributeNames(String xml, String marker, int from, int to) {
+        int start = from < 0 ? -1 : xml.indexOf(marker, from);
+        if (start < 0 || (to >= 0 && start >= to)) {
+            return new String[0];
+        }
+        List<String> names = new ArrayList<>();
+        int i = start + marker.length();
+        while (i < xml.length()) {
+            char c = xml.charAt(i);
+            if (c == '>' || c == '/') {
+                break;
+            }
+            if (Character.isWhitespace(c)) {
+                i++;
+                continue;
+            }
+            int eq = xml.indexOf('=', i);
+            if (eq < 0) {
+                break;
+            }
+            names.add(xml.substring(i, eq).trim());
+            int q = eq + 1;
+            while (q < xml.length() && Character.isWhitespace(xml.charAt(q))) {
+                q++;
+            }
+            if (q >= xml.length() || (xml.charAt(q) != '"' && xml.charAt(q) != '\'')) {
+                break;
+            }
+            int close = xml.indexOf(xml.charAt(q), q + 1);
+            if (close < 0) {
+                break;
+            }
+            i = close + 1;
+        }
+        return names.toArray(new String[0]);
+    }
+
+    /**
+     * Das öffnende Tag {@code <name a="…" b="…"} ohne Abschluss. Die Attribute stehen in der
+     * Reihenfolge {@code order}; was dort fehlt, folgt in der von {@code fallback}, der Rest zuletzt.
+     * Geschrieben wird genau, was übergeben ist – ein Attribut, das nur die Vorlage kennt, wird nicht
+     * erfunden.
+     *
+     * @param pairs abwechselnd Name und (bereits maskierter) Wert
+     */
+    static String openTag(String name, String[] order, String[] fallback, String... pairs) {
+        Map<String, String> attrs = new java.util.LinkedHashMap<>();
+        for (int i = 0; i + 1 < pairs.length; i += 2) {
+            attrs.put(pairs[i], pairs[i + 1]);
+        }
+        StringBuilder sb = new StringBuilder("<").append(name);
+        for (String[] folge : new String[][]{order, fallback, attrs.keySet().toArray(new String[0])}) {
+            for (String attr : folge) {
+                String value = attrs.remove(attr);
+                if (value != null) {
+                    sb.append(' ').append(attr).append("=\"").append(value).append('"');
+                }
+            }
+        }
+        return sb.toString();
     }
 
     public Result build(List<Booking> bookings) {
@@ -1077,10 +1181,10 @@ public class KmyExporter {
      */
     private String securitySplit(String id, String accountId, String value, String shares,
                                  String price, String action, String memo) {
-        return "<SPLIT reconcileflag=\"0\" payee=\"\" number=\"\" bankid=\"\" memo=\"" + memo
-                + "\" value=\"" + value
-                + "\" reconciledate=\"\" account=\"" + esc(accountId) + "\" id=\"" + id
-                + "\" price=\"" + price + "\" shares=\"" + shares + "\" action=\"" + action + "\"/>";
+        return openTag("SPLIT", splitOrder, SPLIT_DEFAULT,
+                "id", id, "payee", "", "reconciledate", "", "action", action, "reconcileflag", "0",
+                "value", value, "shares", shares, "price", price, "memo", memo,
+                "account", esc(accountId), "number", "", "bankid", "") + "/>";
     }
 
     /**
@@ -1249,8 +1353,8 @@ public class KmyExporter {
         for (String s : splitXmls) {
             splits.append(s);
         }
-        return "<TRANSACTION postdate=\"" + postdate + "\" entrydate=\"" + entrydate + "\" memo=\"" + m
-                + "\" id=\"" + txId + "\" commodity=\"" + esc(commodity) + "\">"
+        return openTag("TRANSACTION", txOrder, TX_DEFAULT, "id", txId, "postdate", postdate,
+                "memo", m, "entrydate", entrydate, "commodity", esc(commodity)) + ">"
                 + "<SPLITS>"
                 + splits
                 + "</SPLITS>"
@@ -1263,9 +1367,10 @@ public class KmyExporter {
      */
     private String split(String id, String accountId, String payeeId, String value, String memo,
                          String tagChildren) {
-        String open = "<SPLIT reconcileflag=\"0\" payee=\"" + esc(payeeId) + "\" number=\"\" bankid=\"\" memo=\""
-                + memo + "\" value=\"" + value + "\" reconciledate=\"\" account=\"" + esc(accountId)
-                + "\" id=\"" + id + "\" price=\"1/1\" shares=\"" + value + "\" action=\"\"";
+        String open = openTag("SPLIT", splitOrder, SPLIT_DEFAULT,
+                "id", id, "payee", esc(payeeId), "reconciledate", "", "action", "", "reconcileflag", "0",
+                "value", value, "shares", value, "price", "1/1", "memo", memo,
+                "account", esc(accountId), "number", "", "bankid", "");
         return tagChildren.isEmpty()
                 ? open + "/>"
                 : open + ">" + tagChildren + "</SPLIT>";
@@ -1289,9 +1394,11 @@ public class KmyExporter {
     }
 
     private String payeeElement(String id, String name) {
-        return "<PAYEE reference=\"\" matchignorecase=\"1\" email=\"\" matchingenabled=\"1\" name=\""
-                + esc(name) + "\" id=\"" + id + "\" matchkey=\"\" usingmatchkey=\"0\">"
-                + "<ADDRESS city=\"\" street=\"\" telephone=\"\" postcode=\"\" state=\"\"/>"
+        return openTag("PAYEE", payeeOrder, PAYEE_DEFAULT, "id", id, "name", esc(name),
+                "reference", "", "email", "", "matchingenabled", "1", "usingmatchkey", "0",
+                "matchignorecase", "1", "matchkey", "") + ">"
+                + openTag("ADDRESS", addressOrder, ADDRESS_DEFAULT, "street", "", "city", "",
+                "state", "", "postcode", "", "telephone", "") + "/>"
                 + "</PAYEE>";
     }
 
