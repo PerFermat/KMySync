@@ -206,6 +206,9 @@ class MainImportFlow {
      */
     private void startBatchImport(KmyImporter importer, List<String> accountTargets,
                                   List<String> depotTargets) {
+        if (ExportBand.blocksImport(activity)) {
+            return;
+        }
         importBanner.start(activity.getString(R.string.import_running_banner));
         // Die Mengen stehen fest – daraus ergeben sich die Prozentbereiche dieses Laufs.
         final de.spahr.ausgaben.export.ImportBudget budget =
@@ -291,6 +294,9 @@ class MainImportFlow {
             Toast.makeText(activity, R.string.kmy_path_missing, Toast.LENGTH_LONG).show();
             return;
         }
+        if (ExportBand.blocksImport(activity)) {
+            return;
+        }
         importBanner.start(activity.getString(R.string.import_running_banner));
         new Thread(() -> {
             try {
@@ -325,6 +331,9 @@ class MainImportFlow {
 
     /** Lädt die .kmy und importiert ein Konto ({@code null} = alle bereits vorhandenen App-Konten). */
     void runKmyImport(final String account) {
+        if (ExportBand.blocksImport(activity)) {
+            return;
+        }
         importBanner.start(activity.getString(R.string.import_running_banner));
         // „Alle Konten" (account == null) heißt: Konten, Depots und geplante Buchungen in einem Zug.
         de.spahr.ausgaben.export.KmyAccountImport.start(activity, settings, repository, appAccounts, account,
@@ -447,6 +456,9 @@ class MainImportFlow {
     private void downloadAndImport(String folder, String fileName) {
         // Ohne das Banner sah ein CSV-Reimport nach nichts aus – anders als der KMY-Reimport
         // (reimportDepot/runKmyImport), der immer schon importBanner.start()/finish() nutzt.
+        if (ExportBand.blocksImport(activity)) {
+            return;
+        }
         importBanner.start(activity.getString(R.string.import_running_banner));
         // Bewußt ein eigener Faden und nicht repository.executor(): der ist einfach besetzt
         // (newSingleThreadExecutor) und trägt die gesamte Datenbankarbeit. Ein hängender Server
@@ -462,6 +474,9 @@ class MainImportFlow {
     }
 
     private void doImportLocal(Uri uri) {
+        if (ExportBand.blocksImport(activity)) {
+            return;
+        }
         importBanner.start(activity.getString(R.string.import_running_banner));
         new Thread(() -> {
             try {

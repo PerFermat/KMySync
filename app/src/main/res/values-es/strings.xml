@@ -702,6 +702,16 @@
     <string name="kmy_reconciled_skipped">Conciliado entretanto en KMyMoney: cambio no transferido (%1$d): %2$s. Importa primero; después el apunte queda bloqueado en la app y solo se puede editar en KMyMoney.</string>
     <string name="reconciled_locked">Este apunte está conciliado en KMyMoney y solo se puede editar allí.</string>
     <string name="reconciled_badge">Conciliado en KMyMoney</string>
+    <string name="export_locked">Hay una exportación en curso: este apunte se podrá volver a editar cuando termine.</string>
+    <string name="kmy_progress_readback">Releyendo el archivo escrito…</string>
+    <string name="export_busy">Ya hay una exportación en curso.</string>
+    <string name="export_wait">Espera a que termine la exportación en curso.</string>
+    <string name="export_blocks_import">No se puede importar mientras hay una exportación en curso.</string>
+    <string name="import_blocks_export">No se puede exportar mientras hay una importación en curso.</string>
+    <string name="kmy_result_refreshed">Cuentas actualizadas desde el archivo.</string>
+    <string name="kmy_result_refresh_failed">El archivo se ha escrito, pero después no se pudieron actualizar las cuentas: %1$s</string>
+    <string name="kmy_result_readback_failed">El archivo se ha escrito, pero después no se pudo releer: %1$s</string>
+    <string name="kmy_result_background">la app estuvo demasiado tiempo en segundo plano</string>
     <string name="kmy_result_new_payees">, beneficiarios nuevos: %1$d</string>
     <string name="kmy_result_deleted">, eliminados: %1$d</string>
     <string name="kmy_result_scheduled">, programas avanzados: %1$d</string>

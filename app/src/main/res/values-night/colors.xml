@@ -29,6 +29,10 @@
     <color name="import_banner_text">#FFFFFF</color>
     <!-- Wandernder Verlauf im Import-Banner (etwas helleres Amber) -->
     <color name="import_banner_shimmer">#FFB300</color>
+    <!-- Fortschrittsband des Exports: grün, wo das des Imports gelb ist. -->
+    <color name="export_banner_bg">#2E7D32</color>
+    <color name="export_banner_shimmer">#43A047</color>
+    <color name="export_banner_text">#FFFFFF</color>
     <!-- Haken und Kreuz im Band. Der Grund bleibt auch nachts ein Amber (#F57F17) und damit hell –
          deshalb hier keine aufgehellten Töne wie bei income_green/expense_red, sondern kräftige
          dunkle, die darauf stehen. Nur eine Spur satter als im Hell-Modus. -->

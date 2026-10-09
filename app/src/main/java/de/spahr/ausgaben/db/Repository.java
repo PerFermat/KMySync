@@ -486,11 +486,27 @@ public class Repository {
      * Meldung. Läuft auf dem Executor-Thread.
      */
     private boolean abgeglichenGesperrt(long id) {
-        if (!ReconciledGuard.locked(bookingDao.getById(id))) {
+        int grund = sperrgrund(bookingDao.getById(id));
+        if (grund == 0) {
             return false;
         }
-        meldeAbgeglichen(appContext, mainHandler);
+        meldeGesperrt(appContext, mainHandler, grund);
         return true;
+    }
+
+    /**
+     * Warum diese Buchung gerade weder geändert noch gelöscht werden darf – als Text-Ressource, oder
+     * {@code 0}: sie ist frei. Zwei Gründe gibt es: in KMyMoney abgeglichen ({@link ReconciledGuard}),
+     * oder es läuft ein Export, der sie schon erfasst hat ({@link ExportLock}).
+     */
+    static int sperrgrund(Booking b) {
+        if (ReconciledGuard.locked(b)) {
+            return de.spahr.ausgaben.R.string.reconciled_locked;
+        }
+        if (ExportLock.locked(b)) {
+            return de.spahr.ausgaben.R.string.export_locked;
+        }
+        return 0;
     }
 
     /** Wie {@link #abgeglichenGesperrt}, für eine Umbuchung: es genügt, dass eine ihrer Zeilen gesperrt ist. */
@@ -499,8 +515,9 @@ public class Repository {
             return abgeglichenGesperrt(fallbackId);
         }
         for (Booking b : bookingDao.getByTransferGroup(group)) {
-            if (ReconciledGuard.locked(b)) {
-                meldeAbgeglichen(appContext, mainHandler);
+            int grund = sperrgrund(b);
+            if (grund != 0) {
+                meldeGesperrt(appContext, mainHandler, grund);
                 return true;
             }
         }
@@ -508,10 +525,9 @@ public class Repository {
     }
 
     /** Sagt dem Nutzer, warum nichts geschehen ist. */
-    static void meldeAbgeglichen(Context appContext, Handler mainHandler) {
+    static void meldeGesperrt(Context appContext, Handler mainHandler, int grund) {
         mainHandler.post(() -> android.widget.Toast.makeText(
-                de.spahr.ausgaben.i18n.LocaleManager.localizedContext(appContext),
-                de.spahr.ausgaben.R.string.reconciled_locked,
+                de.spahr.ausgaben.i18n.LocaleManager.localizedContext(appContext), grund,
                 android.widget.Toast.LENGTH_LONG).show());
     }
 
@@ -944,7 +960,7 @@ public class Repository {
      * App heraus <b>nicht</b> gerufen werden: der Hauptfaden fasst die Datenbank nicht an.
      */
     void deleteSecurityBookingNow(final Booking booking) {
-        if (ReconciledGuard.locked(bookingDao.getById(booking.id))) {
+        if (sperrgrund(bookingDao.getById(booking.id)) != 0) {
             return;
         }
         db.runInTransaction(() -> {
@@ -2223,6 +2239,14 @@ public class Repository {
     }
 
     /** Liefert die Direktreferenz auf den BookingDao – nur für Hintergrund-Aufgaben verwenden. */
+    /**
+     * Alle Kontonamen der App, Depots eingeschlossen – für Hintergrund-Aufgaben, die „alle Konten
+     * aktualisieren" ohne eine Ansicht anstoßen. Nicht vom Main-Thread rufen.
+     */
+    public List<String> accountNamesNow() {
+        return accountDao.getAllNames();
+    }
+
     public BookingDao bookingDao() {
         return bookingDao;
     }

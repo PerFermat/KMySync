@@ -58,183 +58,244 @@ public class KmyExportCoordinator {
         return de.spahr.ausgaben.i18n.LocaleManager.localizedContext(appContext);
     }
 
+    /** Was ein Lauf hinterlässt – auch das, was die Schritte nach dem Schreiben brauchen. */
+    public static final class Outcome {
+        /** Meldung für den Nutzer. */
+        public final String message;
+        /** Abgebrochen: nichts wurde geschrieben. */
+        public final boolean failed;
+        /** Die Datei auf dem Server ist neu geschrieben. */
+        public final boolean written;
+        /** Der entpackte Stand vor dem Export; nur nach einem Schreiben. */
+        public String oldXml;
+        /** Die hochgeladenen Bytes; nur nach einem Schreiben. */
+        public byte[] uploaded;
+        /** Ordner und Name der Datei sowie der Name ihrer Sicherung; nur nach einem Schreiben. */
+        public String folder;
+        public String file;
+        public String backupName;
+
+        private Outcome(String message, boolean failed, boolean written) {
+            this.message = message;
+            this.failed = failed;
+            this.written = written;
+        }
+
+        static Outcome failed(String message) {
+            return new Outcome(message, true, false);
+        }
+
+        static Outcome done(String message, boolean written) {
+            return new Outcome(message, false, written);
+        }
+    }
+
+    /** Empfänger der Zwischenstände eines Laufs; wird auf dem arbeitenden Thread gerufen. */
+    public interface Fortschritt {
+        void melde(String stage, int percent);
+    }
+
+    /**
+     * Wie {@link #exportNow}, aber auf einem eigenen Thread und mit Rückmeldung auf dem Main-Thread.
+     */
     public void exportUnexported(Listener listener) {
-        repository.executor().execute(() -> {
-            Context r = res();
-            if (!settings.hasRemoteConfig()) {
-                failed(listener, r.getString(de.spahr.ausgaben.R.string.export_no_config));
-                return;
-            }
-            String path = settings.getKmyPath();
-            if (path.isEmpty()) {
-                failed(listener, r.getString(de.spahr.ausgaben.R.string.kmy_path_missing));
-                return;
-            }
-            String folder = RemotePath.folderOf(path);
-            String file = RemotePath.fileOf(path);
+        new Thread(() -> {
+            Outcome o = exportNow((stage, percent) ->
+                    repository.mainHandler().post(() -> listener.onProgress(stage)));
+            repository.mainHandler().post(() -> {
+                if (o.failed) {
+                    listener.onFailed(o.message);
+                } else {
+                    listener.onComplete(o.message, o.written);
+                }
+            });
+        }, "kmy-export").start();
+    }
 
-            List<Booking> bookings = repository.bookingDao().getUnexported();
-            // Nach dem Export geänderte Buchungen: ihre Transaktion wird in der Datei geändert, nicht neu
-            // angelegt (siehe KmyExporter.build).
-            List<Booking> edited = repository.bookingDao().getEdited();
-            List<de.spahr.ausgaben.db.KmyPendingDelete> pendingDeletes =
-                    repository.kmyPendingDeleteDao().getAll();
-            // Erledigte/übersprungene geplante Buchungen: die zugehörige KMyMoney-Regel wird weitergestellt.
-            List<de.spahr.ausgaben.db.ScheduledAdvance> advances =
-                    repository.scheduledAdvanceDao().getAll();
-            // In der App erfasste Depot-Bewegungen: sie werden als eigene Transaktion geschrieben; ihre
-            // Geldbuchung hängt daran und ist deshalb aus getUnexported() ausgenommen.
-            List<de.spahr.ausgaben.db.SecurityTx> securityTx = repository.securityDao().getPendingTx();
-            // Die Kategoriezeilen kommen mit: aus ihnen entstehen die Splits der Transaktion.
-            for (de.spahr.ausgaben.db.SecurityTx tx : securityTx) {
-                tx.parts = repository.securityDao().getSplits(tx.id);
-            }
-            if (bookings.isEmpty() && edited.isEmpty() && pendingDeletes.isEmpty()
-                    && advances.isEmpty() && securityTx.isEmpty()) {
-                complete(listener, r.getString(de.spahr.ausgaben.R.string.export_none), false);
-                return;
-            }
+    /**
+     * Der Export selbst, vom Festhalten des Stands bis zum lokalen Markieren. Blockiert, bis er fertig
+     * ist – also nie vom Main-Thread rufen. Läuft bewusst <b>nicht</b> auf dem Executor des
+     * Repositorys: der ist einspurig, und solange hier das Netz arbeitet, stünde sonst jeder andere
+     * Datenbankzugriff der App in der Schlange.
+     *
+     * <p>Was exportiert wird, steht mit den ersten Abfragen fest. Buchungen, die danach angelegt
+     * werden, bleiben für den nächsten Lauf liegen.</p>
+     */
+    public Outcome exportNow(Fortschritt fortschritt) {
+        Context r = res();
+        if (!settings.hasRemoteConfig()) {
+            return Outcome.failed(r.getString(de.spahr.ausgaben.R.string.export_no_config));
+        }
+        String path = settings.getKmyPath();
+        if (path.isEmpty()) {
+            return Outcome.failed(r.getString(de.spahr.ausgaben.R.string.kmy_path_missing));
+        }
+        String folder = RemotePath.folderOf(path);
+        String file = RemotePath.fileOf(path);
 
-            RemoteStorage storage = RemoteStorage.from(settings);
+        List<Booking> bookings = repository.bookingDao().getUnexported();
+        // Nach dem Export geänderte Buchungen: ihre Transaktion wird in der Datei geändert, nicht neu
+        // angelegt (siehe KmyExporter.build).
+        List<Booking> edited = repository.bookingDao().getEdited();
+        List<de.spahr.ausgaben.db.KmyPendingDelete> pendingDeletes =
+                repository.kmyPendingDeleteDao().getAll();
+        // Erledigte/übersprungene geplante Buchungen: die zugehörige KMyMoney-Regel wird weitergestellt.
+        List<de.spahr.ausgaben.db.ScheduledAdvance> advances =
+                repository.scheduledAdvanceDao().getAll();
+        // In der App erfasste Depot-Bewegungen: sie werden als eigene Transaktion geschrieben; ihre
+        // Geldbuchung hängt daran und ist deshalb aus getUnexported() ausgenommen.
+        List<de.spahr.ausgaben.db.SecurityTx> securityTx = repository.securityDao().getPendingTx();
+        // Die Kategoriezeilen kommen mit: aus ihnen entstehen die Splits der Transaktion.
+        for (de.spahr.ausgaben.db.SecurityTx tx : securityTx) {
+            tx.parts = repository.securityDao().getSplits(tx.id);
+        }
+        if (bookings.isEmpty() && edited.isEmpty() && pendingDeletes.isEmpty()
+                && advances.isEmpty() && securityTx.isEmpty()) {
+            return Outcome.done(r.getString(de.spahr.ausgaben.R.string.export_none), false);
+        }
+
+        RemoteStorage storage = RemoteStorage.from(settings);
+        try {
+            fortschritt.melde(r.getString(de.spahr.ausgaben.R.string.progress_download), 5);
+            byte[] raw = storage.downloadBytes(folder, file);
+            // Stand der Datei merken: Schreibt KMyMoney am Rechner in der Zwischenzeit, bricht das
+            // Rückschreiben unten ab, statt die fremden Änderungen still zu überschreiben.
+            // Lässt sich der Stand nicht ermitteln (alter/eigenwilliger Server), wird ungeprüft
+            // geschrieben wie bisher – der Export darf daran nicht scheitern.
+            String version;
             try {
-                progress(listener, r.getString(de.spahr.ausgaben.R.string.progress_download));
-                byte[] raw = storage.downloadBytes(folder, file);
-                // Stand der Datei merken: Schreibt KMyMoney am Rechner in der Zwischenzeit, bricht das
-                // Rückschreiben unten ab, statt die fremden Änderungen still zu überschreiben.
-                // Lässt sich der Stand nicht ermitteln (alter/eigenwilliger Server), wird ungeprüft
-                // geschrieben wie bisher – der Export darf daran nicht scheitern.
-                String version;
-                try {
-                    version = storage.fileVersion(folder, file);
-                } catch (Exception e) {
-                    version = "";
-                }
-
-                progress(listener, r.getString(de.spahr.ausgaben.R.string.kmy_progress_processing));
-                KmyDocument doc = new KmyDocument(raw, appContext);
-                // Der Export liest die Datei ohnehin – dabei bleibt die Stichwortliste frisch, auch für
-                // Nutzer, die nie zurückimportieren.
-                repository.replaceTags(doc.tagNames());
-                KmyExporter exporter = new KmyExporter(doc, r);
-
-                // Vermerk aus einem evtl. abgebrochenen vorherigen Lauf auflösen, bevor irgendetwas
-                // neu geschrieben wird: stand die vorgemerkte Buchung (Absturz zwischen Schreiben und
-                // lokalem Markieren) schon mit genau dieser Signatur in der Datei, wird sie nur
-                // nachmarkiert statt ein zweites Mal angelegt. Siehe PendingExport.
-                List<Long> recoveredIds = PendingExport.recover(settings, exporter, doc.xml(), bookings);
-                if (!recoveredIds.isEmpty()) {
-                    repository.bookingDao().markExported(recoveredIds);
-                }
-
-                KmyExporter.Result res = exporter.build(bookings, edited, loadSplits());
-
-                // Bereits vorhandene, lokal inzwischen gelöschte Buchungen aus der XML entfernen (nur im
-                // kmy-Modus vorgemerkt, siehe Repository.queueKmyDeleteIfNeeded); Suche über Konto/Datum/
-                // Betrag, da Transaktionen aus App-Sicht keine bekannte id haben.
-                KmyExporter.DeleteResult delRes = exporter.removeTransactions(res.xml, pendingDeletes);
-                res.xml = delRes.xml;
-                res.reconciledSkipped.addAll(delRes.reconciledSkipped);
-
-                // Geplante Buchungen weiterstellen (nur postdate/lastPayment – die Regel bleibt bestehen).
-                KmyExporter.ScheduleResult schedRes = exporter.applyScheduleAdvances(res.xml, advances);
-                res.xml = schedRes.xml;
-
-                // Erfasste Depot-Bewegungen als vollständige Wertpapier-Transaktionen anhängen.
-                KmyExporter.SecurityResult secRes =
-                        exporter.buildSecurityTransactions(res.xml, securityTx);
-                res.xml = secRes.xml;
-                res.skipped.addAll(secRes.skipped);
-
-                if (res.writtenIds.isEmpty() && delRes.resolvedIds.isEmpty()
-                        && schedRes.resolvedIds.isEmpty() && secRes.writtenIds.isEmpty()) {
-                    complete(listener, r.getString(de.spahr.ausgaben.R.string.kmy_none_matched)
-                            + "\n" + skippedText(r, res) + notFoundText(r, res)
-                            + reconciledText(r, res), false);
-                    return;
-                }
-
-                // Die neue Fassung einmal ganz durchlesen und gegen die alte halten, bevor irgendetwas
-                // den Server erreicht. Gepackt wird schon hier, damit genau die Bytes geprüft sind,
-                // die nachher hochgehen.
-                byte[] packed = KmyDocument.gzip(res.xml);
-                KmyExportCheck.pruefen(doc.xml(), res.xml, packed, KmyAenderungen.zusammen(
-                        res.aenderungen, delRes.aenderungen, schedRes.aenderungen,
-                        secRes.aenderungen));
-
-                // Hat KMyMoney die Datei gerade offen, überschriebe es beim Speichern diesen Export –
-                // still, und die App schickte die Buchungen nie wieder. Also gar nicht erst schreiben.
-                // So spät wie möglich geprüft, direkt vor dem ersten Schreibzugriff.
-                if (KmyLock.isOpenInKmyMoney(storage, folder, file)) {
-                    failed(listener, r.getString(de.spahr.ausgaben.R.string.kmy_locked, file));
-                    return;
-                }
-
-                // Sicherung in den Unterordner „Backup" neben der .kmy (wird bei Bedarf angelegt).
-                progress(listener, r.getString(de.spahr.ausgaben.R.string.kmy_progress_backup));
-                String backupFolder = folder.isEmpty() ? BACKUP_DIR : folder + "/" + BACKUP_DIR;
-                String backupName = file + ".bak-" + tsFormat.format(new Date());
-                String backup = BACKUP_DIR + "/" + backupName;
-                storage.ensureFolder(backupFolder);
-                storage.uploadBytes(backupFolder, backupName, raw);
-                // Erst nach der neuen Sicherung aufräumen: Geht das Löschen der alten schief, steht die
-                // frische schon da. Beiwerk – Fehler dabei bleiben folgenlos.
-                KmyBackups.prune(storage, backupFolder, file, KmyBackups.KEEP);
-
-                progress(listener, r.getString(de.spahr.ausgaben.R.string.kmy_progress_writing));
-                // Vermerken, mit welcher Signatur die gleich neu geschriebenen Buchungen in der Datei
-                // stehen werden – bevor überhaupt geschrieben wird. Stirbt der Prozess gleich danach vor
-                // dem lokalen Markieren weiter unten, löst der nächste Lauf das über PendingExport auf,
-                // statt die Buchungen ein zweites Mal anzulegen.
-                PendingExport.write(settings, PendingExport.entriesFor(bookings, res.writtenIds));
-
-                // Nicht über die vorhandene Datei schreiben: erst vollständig in eine Zwischendatei,
-                // dann auf dem Server umbenennen. Ein Abbruch mittendrin (Timeout, Funkloch) läßt sonst
-                // einen unlesbaren Torso zurück – genau so ging schon einmal eine .kmy verloren.
-                de.spahr.ausgaben.net.SafeReplace.cleanUp(storage, folder, file);
-                try {
-                    de.spahr.ausgaben.net.SafeReplace.replace(storage, folder, file, packed, version,
-                            tsFormat.format(new Date()));
-                } catch (java.io.IOException | RuntimeException e) {
-                    // Nachweislich nicht geschrieben: Der Vermerk muss weg, sonst hielte der nächste
-                    // Lauf eine zufällig gleich signierte fremde Transaktion für diese Buchung und
-                    // markierte sie als exportiert, ohne sie je zu schreiben.
-                    if (!keepPendingAfter(e)) {
-                        PendingExport.clear(settings);
-                    }
-                    throw e;
-                }
-
-                // Die Datei ist geschrieben; jetzt zieht der lokale Stand nach.
-                commitLocally(res, secRes, securityTx, delRes, schedRes, advances);
-                // Lokal nachgezogen: der Vermerk von oben hat seinen Zweck erfüllt.
-                PendingExport.clear(settings);
-                complete(listener, buildMessage(r, res, secRes.writtenIds.size(),
-                        delRes.resolvedIds.size(), schedRes.writtenIds.size(), file, backup), true);
-            } catch (de.spahr.ausgaben.net.RemoteConflictException e) {
-                // Fremdänderung erkannt: nichts geschrieben, nichts als exportiert markiert.
-                failed(listener, r.getString(de.spahr.ausgaben.R.string.kmy_conflict));
-            } catch (KmyExportCheck.Failed e) {
-                // Die erzeugte Datei hat die Selbstprüfung nicht bestanden: nichts geschrieben.
-                android.util.Log.e("KmyExport", "Selbstprüfung fehlgeschlagen", e);
-                failed(listener, r.getString(de.spahr.ausgaben.R.string.kmy_check_failed,
-                        e.getMessage()));
-            } catch (de.spahr.ausgaben.net.RemoteReplaceStuckException e) {
-                // Weder neu noch alt an ihrem Platz. Nichts ist als exportiert markiert; die Meldung
-                // sagt, welche Datei zurückbenannt werden muss.
-                failed(listener, r.getString(de.spahr.ausgaben.R.string.kmy_replace_stuck,
-                        e.oldName, e.file));
-            } catch (de.spahr.ausgaben.net.RemoteMoveException e) {
-                // Übertragen hat geklappt, nur das Ersetzen nicht – ein anderer Sachverhalt als ein
-                // Netzfehler, und die Datei ist nachweislich unberührt. Das soll die Meldung sagen.
-                Throwable cause = e.getCause() == null ? e : e.getCause();
-                String msg = cause.getMessage() == null ? cause.toString() : cause.getMessage();
-                failed(listener,
-                        r.getString(de.spahr.ausgaben.R.string.kmy_move_failed, msg));
+                version = storage.fileVersion(folder, file);
             } catch (Exception e) {
-                String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-                failed(listener, r.getString(de.spahr.ausgaben.R.string.export_failed, msg));
+                version = "";
             }
-        });
+
+            fortschritt.melde(r.getString(de.spahr.ausgaben.R.string.kmy_progress_processing), 20);
+            KmyDocument doc = new KmyDocument(raw, appContext);
+            // Der Export liest die Datei ohnehin – dabei bleibt die Stichwortliste frisch, auch für
+            // Nutzer, die nie zurückimportieren.
+            repository.replaceTags(doc.tagNames());
+            KmyExporter exporter = new KmyExporter(doc, r);
+
+            // Vermerk aus einem evtl. abgebrochenen vorherigen Lauf auflösen, bevor irgendetwas
+            // neu geschrieben wird: stand die vorgemerkte Buchung (Absturz zwischen Schreiben und
+            // lokalem Markieren) schon mit genau dieser Signatur in der Datei, wird sie nur
+            // nachmarkiert statt ein zweites Mal angelegt. Siehe PendingExport.
+            List<Long> recoveredIds = PendingExport.recover(settings, exporter, doc.xml(), bookings);
+            if (!recoveredIds.isEmpty()) {
+                repository.bookingDao().markExported(recoveredIds);
+            }
+
+            KmyExporter.Result res = exporter.build(bookings, edited, loadSplits());
+
+            // Bereits vorhandene, lokal inzwischen gelöschte Buchungen aus der XML entfernen (nur im
+            // kmy-Modus vorgemerkt, siehe Repository.queueKmyDeleteIfNeeded); Suche über Konto/Datum/
+            // Betrag, da Transaktionen aus App-Sicht keine bekannte id haben.
+            KmyExporter.DeleteResult delRes = exporter.removeTransactions(res.xml, pendingDeletes);
+            res.xml = delRes.xml;
+            res.reconciledSkipped.addAll(delRes.reconciledSkipped);
+
+            // Geplante Buchungen weiterstellen (nur postdate/lastPayment – die Regel bleibt bestehen).
+            KmyExporter.ScheduleResult schedRes = exporter.applyScheduleAdvances(res.xml, advances);
+            res.xml = schedRes.xml;
+
+            // Erfasste Depot-Bewegungen als vollständige Wertpapier-Transaktionen anhängen.
+            KmyExporter.SecurityResult secRes =
+                    exporter.buildSecurityTransactions(res.xml, securityTx);
+            res.xml = secRes.xml;
+            res.skipped.addAll(secRes.skipped);
+
+            if (res.writtenIds.isEmpty() && delRes.resolvedIds.isEmpty()
+                    && schedRes.resolvedIds.isEmpty() && secRes.writtenIds.isEmpty()) {
+                return Outcome.done(r.getString(de.spahr.ausgaben.R.string.kmy_none_matched)
+                        + "\n" + skippedText(r, res) + notFoundText(r, res)
+                        + reconciledText(r, res), false);
+            }
+
+            // Die neue Fassung einmal ganz durchlesen und gegen die alte halten, bevor irgendetwas
+            // den Server erreicht. Gepackt wird schon hier, damit genau die Bytes geprüft sind,
+            // die nachher hochgehen.
+            byte[] packed = KmyDocument.gzip(res.xml);
+            KmyExportCheck.pruefen(doc.xml(), res.xml, packed, KmyAenderungen.zusammen(
+                    res.aenderungen, delRes.aenderungen, schedRes.aenderungen,
+                    secRes.aenderungen));
+
+            // Hat KMyMoney die Datei gerade offen, überschriebe es beim Speichern diesen Export –
+            // still, und die App schickte die Buchungen nie wieder. Also gar nicht erst schreiben.
+            // So spät wie möglich geprüft, direkt vor dem ersten Schreibzugriff.
+            if (KmyLock.isOpenInKmyMoney(storage, folder, file)) {
+                return Outcome.failed(r.getString(de.spahr.ausgaben.R.string.kmy_locked, file));
+            }
+
+            // Sicherung in den Unterordner „Backup" neben der .kmy (wird bei Bedarf angelegt).
+            fortschritt.melde(r.getString(de.spahr.ausgaben.R.string.kmy_progress_backup), 30);
+            String backupFolder = folder.isEmpty() ? BACKUP_DIR : folder + "/" + BACKUP_DIR;
+            String backupName = file + ".bak-" + tsFormat.format(new Date());
+            String backup = BACKUP_DIR + "/" + backupName;
+            storage.ensureFolder(backupFolder);
+            storage.uploadBytes(backupFolder, backupName, raw);
+            // Erst nach der neuen Sicherung aufräumen: Geht das Löschen der alten schief, steht die
+            // frische schon da. Beiwerk – Fehler dabei bleiben folgenlos.
+            KmyBackups.prune(storage, backupFolder, file, KmyBackups.KEEP);
+
+            fortschritt.melde(r.getString(de.spahr.ausgaben.R.string.kmy_progress_writing), 40);
+            // Vermerken, mit welcher Signatur die gleich neu geschriebenen Buchungen in der Datei
+            // stehen werden – bevor überhaupt geschrieben wird. Stirbt der Prozess gleich danach vor
+            // dem lokalen Markieren weiter unten, löst der nächste Lauf das über PendingExport auf,
+            // statt die Buchungen ein zweites Mal anzulegen.
+            PendingExport.write(settings, PendingExport.entriesFor(bookings, res.writtenIds));
+
+            // Nicht über die vorhandene Datei schreiben: erst vollständig in eine Zwischendatei,
+            // dann auf dem Server umbenennen. Ein Abbruch mittendrin (Timeout, Funkloch) läßt sonst
+            // einen unlesbaren Torso zurück – genau so ging schon einmal eine .kmy verloren.
+            de.spahr.ausgaben.net.SafeReplace.cleanUp(storage, folder, file);
+            try {
+                de.spahr.ausgaben.net.SafeReplace.replace(storage, folder, file, packed, version,
+                        tsFormat.format(new Date()));
+            } catch (java.io.IOException | RuntimeException e) {
+                // Nachweislich nicht geschrieben: Der Vermerk muss weg, sonst hielte der nächste
+                // Lauf eine zufällig gleich signierte fremde Transaktion für diese Buchung und
+                // markierte sie als exportiert, ohne sie je zu schreiben.
+                if (!keepPendingAfter(e)) {
+                    PendingExport.clear(settings);
+                }
+                throw e;
+            }
+
+            // Die Datei ist geschrieben; jetzt zieht der lokale Stand nach.
+            commitLocally(res, secRes, securityTx, delRes, schedRes, advances);
+            // Lokal nachgezogen: der Vermerk von oben hat seinen Zweck erfüllt.
+            PendingExport.clear(settings);
+            Outcome ok = Outcome.done(buildMessage(r, res, secRes.writtenIds.size(),
+                    delRes.resolvedIds.size(), schedRes.writtenIds.size(), file, backup), true);
+            ok.oldXml = doc.xml();
+            ok.uploaded = packed;
+            ok.folder = folder;
+            ok.file = file;
+            ok.backupName = backupName;
+            return ok;
+        } catch (de.spahr.ausgaben.net.RemoteConflictException e) {
+            // Fremdänderung erkannt: nichts geschrieben, nichts als exportiert markiert.
+            return Outcome.failed(r.getString(de.spahr.ausgaben.R.string.kmy_conflict));
+        } catch (KmyExportCheck.Failed e) {
+            // Die erzeugte Datei hat die Selbstprüfung nicht bestanden: nichts geschrieben.
+            android.util.Log.e("KmyExport", "Selbstprüfung fehlgeschlagen", e);
+            return Outcome.failed(r.getString(de.spahr.ausgaben.R.string.kmy_check_failed,
+                    e.getMessage()));
+        } catch (de.spahr.ausgaben.net.RemoteReplaceStuckException e) {
+            // Weder neu noch alt an ihrem Platz. Nichts ist als exportiert markiert; die Meldung
+            // sagt, welche Datei zurückbenannt werden muss.
+            return Outcome.failed(r.getString(de.spahr.ausgaben.R.string.kmy_replace_stuck,
+                    e.oldName, e.file));
+        } catch (de.spahr.ausgaben.net.RemoteMoveException e) {
+            // Übertragen hat geklappt, nur das Ersetzen nicht – ein anderer Sachverhalt als ein
+            // Netzfehler, und die Datei ist nachweislich unberührt. Das soll die Meldung sagen.
+            Throwable cause = e.getCause() == null ? e : e.getCause();
+            String msg = cause.getMessage() == null ? cause.toString() : cause.getMessage();
+            return Outcome.failed(r.getString(de.spahr.ausgaben.R.string.kmy_move_failed, msg));
+        } catch (Exception e) {
+            String msg = e.getMessage() == null ? e.toString() : e.getMessage();
+            return Outcome.failed(r.getString(de.spahr.ausgaben.R.string.export_failed, msg));
+        }
     }
 
     /** Alle Kategorie-Teile (Splitbuchungen) nach Buchungs-ID gruppiert laden. */
@@ -329,14 +390,6 @@ public class KmyExportCoordinator {
                 TextUtils.join("; ", show) + more);
     }
 
-    private void progress(Listener l, String stage) {
-        repository.mainHandler().post(() -> l.onProgress(stage));
-    }
-
-    private void complete(Listener l, String message, boolean refresh) {
-        repository.mainHandler().post(() -> l.onComplete(message, refresh));
-    }
-
     /**
      * Die Datei ist geschrieben; jetzt zieht der lokale Stand nach — und zwar als ein Vorgang. Vorher
      * waren das bis zu fünf einzelne Schreibzugriffe, und ein Abbruch dazwischen (Absturz, Speicher voll)
@@ -389,9 +442,5 @@ public class KmyExportCoordinator {
      */
     static boolean keepPendingAfter(Throwable e) {
         return e instanceof de.spahr.ausgaben.net.RemoteReplaceStuckException;
-    }
-
-    private void failed(Listener l, String message) {
-        repository.mainHandler().post(() -> l.onFailed(message));
     }
 }

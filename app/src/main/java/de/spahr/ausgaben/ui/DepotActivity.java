@@ -72,6 +72,8 @@ public class DepotActivity extends LocalizedActivity {
 
     /** Gelber Import-Banner (Depot-Aktualisierung im Hintergrund), wie im Hauptbildschirm. */
     private ImportBanner importBanner;
+    /** Zeigt den Export-Lauf der App im Band dieser Ansicht. */
+    private ExportBand exportBand;
 
     /** Konten der Schublade – Grundlage für „Alle Konten aktualisieren". */
     private final List<String> appAccounts = new ArrayList<>();
@@ -157,6 +159,10 @@ public class DepotActivity extends LocalizedActivity {
         importShimmer.setColors(getColor(R.color.import_banner_bg), getColor(R.color.import_banner_shimmer));
         importBanner = new ImportBanner(findViewById(R.id.importBanner), importShimmer,
                 findViewById(R.id.importStatus), findViewById(R.id.importPercent));
+        exportBand = new ExportBand(this, importBanner, () -> {
+            loadDrawerAccounts();
+            render();
+        });
         swipeRefresh = findViewById(R.id.swipeRefresh);
         swipeRefresh.setOnRefreshListener(() -> {
             swipeRefresh.setRefreshing(false);
@@ -274,6 +280,18 @@ public class DepotActivity extends LocalizedActivity {
             depot = d;
             saldoIndex = 0;
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        exportBand.attach();
+    }
+
+    @Override
+    protected void onStop() {
+        exportBand.detach();
+        super.onStop();
     }
 
     @Override
@@ -501,31 +519,9 @@ public class DepotActivity extends LocalizedActivity {
         runExport();
     }
 
+    /** Wie im Hauptbild: der Export läuft im Hintergrund, das grüne Band zeigt den Stand. */
     private void runKmyExport() {
-        showProgress(getString(R.string.progress_exporting));
-        new KmyExportCoordinator(this, repository, settings).exportUnexported(
-                new KmyExportCoordinator.Listener() {
-                    @Override
-                    public void onProgress(String stage) {
-                        updateProgress(stage);
-                    }
-
-                    @Override
-                    public void onComplete(String message, boolean refreshNeeded) {
-                        dismissProgress();
-                        Toast.makeText(DepotActivity.this, message, Toast.LENGTH_LONG).show();
-                    }
-
-                    @Override
-                    public void onFailed(String message) {
-                        dismissProgress();
-                        new AppDialog(DepotActivity.this)
-                                .setTitle(R.string.kmy_export_stopped_title)
-                                .setMessage(message)
-                                .setPositiveButton(android.R.string.ok, null)
-                                .show();
-                    }
-                });
+        exportBand.start(repository, settings);
     }
 
     private void runExport() {
@@ -605,6 +601,9 @@ public class DepotActivity extends LocalizedActivity {
 
     /** Konto-Import mit dem gelben Banner dieser Ansicht (gleiche Logik wie im Hauptbildschirm). */
     private void runAccountImport(final String account) {
+        if (ExportBand.blocksImport(this)) {
+            return;
+        }
         importBanner.start(getString(R.string.import_running_banner));
         // „Alle Konten" (account == null) heißt: Konten, Depots und geplante Buchungen in einem Zug.
         KmyAccountImport.start(this, settings, repository, appAccounts, account,
@@ -657,6 +656,9 @@ public class DepotActivity extends LocalizedActivity {
         final String path = settings.getKmyPath();
         if (path.isEmpty()) {
             Toast.makeText(this, R.string.kmy_path_missing, Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (ExportBand.blocksImport(this)) {
             return;
         }
         importBanner.start(getString(R.string.import_running_banner));

@@ -59,6 +59,36 @@ public final class ImportBanner {
 
     /** Ein Import beginnt: Banner zeigen, Anzeige auf 0 und den Takt starten. */
     public void start(String startLabel) {
+        faerben(R.color.import_banner_bg, R.color.import_banner_shimmer, R.color.import_banner_text);
+        beginne(startLabel);
+    }
+
+    /**
+     * Dasselbe Band für den Export in die KMyMoney-Datei – grün statt gelb, damit auf einen Blick klar
+     * ist, in welche Richtung gerade Daten fließen.
+     */
+    public void startExport(String startLabel) {
+        faerben(R.color.export_banner_bg, R.color.export_banner_shimmer, R.color.export_banner_text);
+        beginne(startLabel);
+    }
+
+    private void faerben(int grund, int glanz, int schrift) {
+        if (banner == null) {
+            return;
+        }
+        android.content.Context c = banner.getContext();
+        if (shimmer != null) {
+            shimmer.setColors(c.getColor(grund), c.getColor(glanz));
+        }
+        if (status != null) {
+            status.setTextColor(c.getColor(schrift));
+        }
+        if (percent != null) {
+            percent.setTextColor(c.getColor(schrift));
+        }
+    }
+
+    private void beginne(String startLabel) {
         active++;
         smoother.reset();
         shownPercent = -1;

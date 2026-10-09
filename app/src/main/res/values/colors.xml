@@ -42,6 +42,10 @@
     <color name="import_banner_text">#000000</color>
     <!-- Wandernder Verlauf im Import-Banner (etwas kräftigeres Gelb) -->
     <color name="import_banner_shimmer">#FFEB3B</color>
+    <!-- Fortschrittsband des Exports: grün, wo das des Imports gelb ist. -->
+    <color name="export_banner_bg">#A5D6A7</color>
+    <color name="export_banner_shimmer">#66BB6A</color>
+    <color name="export_banner_text">#000000</color>
     <!-- Haken und Kreuz im Band während „Verbindung testen". Eigene Namen statt income_green und
          expense_red: die stehen für Einnahmen und Ausgaben, und eine Änderung dort soll nicht
          ungewollt hier landen. Beide Töne müssen auf dem gelben Grund des Bandes lesbar sein. -->

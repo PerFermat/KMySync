@@ -66,6 +66,8 @@ public class ScheduledActivity extends LocalizedActivity {
     private FloatingActionButton fabScrollTop;
     private SwipeRefreshLayout swipeRefresh;
     private ImportBanner importBanner;
+    /** Zeigt den Export-Lauf der App im Band dieser Ansicht. */
+    private ExportBand exportBand;
 
     private List<ScheduledTransaction> all = new ArrayList<>();
     /** {@code kmy_id} → bereits erledigte/übersprungene Termine: neue nächste Fälligkeit ({@code 0} = fertig). */
@@ -138,6 +140,7 @@ public class ScheduledActivity extends LocalizedActivity {
         importShimmer.setColors(getColor(R.color.import_banner_bg), getColor(R.color.import_banner_shimmer));
         importBanner = new ImportBanner(findViewById(R.id.importBanner), importShimmer,
                 findViewById(R.id.importStatus), findViewById(R.id.importPercent));
+        exportBand = new ExportBand(this, importBanner, this::reload);
 
         // Wischgeste nach unten aktualisiert die geplanten Buchungen aus der .kmy (nur hier, nicht beim Konto-Import).
         swipeRefresh = findViewById(R.id.swipeRefresh);
@@ -159,6 +162,18 @@ public class ScheduledActivity extends LocalizedActivity {
                 fabScrollTop.hide();
             }
         });
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        exportBand.attach();
+    }
+
+    @Override
+    protected void onStop() {
+        exportBand.detach();
+        super.onStop();
     }
 
     @Override
@@ -188,6 +203,9 @@ public class ScheduledActivity extends LocalizedActivity {
         }
         // Der gelbe Banner übernimmt die Fortschrittsanzeige – den Kreis-Spinner der Geste ausblenden.
         swipeRefresh.setRefreshing(false);
+        if (ExportBand.blocksImport(this)) {
+            return;
+        }
         importBanner.start(getString(R.string.import_running_banner));
         final String folder = RemotePath.folderOf(path);
         final String file = RemotePath.fileOf(path);

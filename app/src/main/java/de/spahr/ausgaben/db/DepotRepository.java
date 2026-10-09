@@ -227,8 +227,10 @@ class DepotRepository {
         executor.execute(() -> {
             // Kann nur eine Vormerkung treffen, und die ist nie abgeglichen – die Schranke steht hier
             // trotzdem, damit kein Weg an ihr vorbeiführt.
-            if (tx.bookingId > 0 && ReconciledGuard.locked(db.bookingDao().getById(tx.bookingId))) {
-                Repository.meldeAbgeglichen(appContext, mainHandler);
+            int grund = tx.bookingId > 0
+                    ? Repository.sperrgrund(db.bookingDao().getById(tx.bookingId)) : 0;
+            if (grund != 0) {
+                Repository.meldeGesperrt(appContext, mainHandler, grund);
                 return;
             }
             db.runInTransaction(() -> {
@@ -258,8 +260,8 @@ class DepotRepository {
                     return;   // aus der Datei importiert: dort wird nicht gelöscht
                 }
                 if (tx.bookingId > 0
-                        && ReconciledGuard.locked(db.bookingDao().getById(tx.bookingId))) {
-                    return;   // in KMyMoney abgeglichen: nur dort zu ändern
+                        && Repository.sperrgrund(db.bookingDao().getById(tx.bookingId)) != 0) {
+                    return;   // in KMyMoney abgeglichen oder gerade im Export
                 }
                 if (tx.bookingId > 0) {
                     db.bookingDao().deleteSplits(tx.bookingId);

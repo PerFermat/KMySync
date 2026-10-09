@@ -95,6 +95,8 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     private TextView textBalance;
     private TextView textSaldoLabel;
     private ImportBanner importBanner;
+    /** Zeigt den Export-Lauf der App im Band dieser Ansicht. */
+    private ExportBand exportBand;
 
     /** Uhr-Buchung wurde im Hintergrund angelegt → Liste live aktualisieren. */
     private final android.content.BroadcastReceiver bookingsChangedReceiver =
@@ -477,6 +479,7 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         importShimmer.setColors(getColor(R.color.import_banner_bg), getColor(R.color.import_banner_shimmer));
         importBanner = new ImportBanner(findViewById(R.id.importBanner), importShimmer,
                 findViewById(R.id.importStatus), findViewById(R.id.importPercent));
+        exportBand = new ExportBand(this, importBanner, this::refreshBookings);
         swipeRefresh = findViewById(R.id.swipeRefresh);
         swipeRefresh.setOnRefreshListener(() -> {
             swipeRefresh.setRefreshing(false);
@@ -669,6 +672,18 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
             i.putExtra(BookingEditActivity.EXTRA_PRESET_ACCOUNT, selectedAccount);
         }
         startActivity(i);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        exportBand.attach();
+    }
+
+    @Override
+    protected void onStop() {
+        exportBand.detach();
+        super.onStop();
     }
 
     @Override
@@ -1493,36 +1508,12 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         runExport();
     }
 
+    /**
+     * Der Export in die KMyMoney-Datei läuft im Hintergrund weiter, während die App bedienbar bleibt;
+     * das grüne Band zeigt, wie weit er ist. Siehe {@link de.spahr.ausgaben.export.KmyExportRun}.
+     */
     private void runKmyExport() {
-        showProgress(getString(R.string.progress_exporting));
-        new KmyExportCoordinator(this, repository, settings).exportUnexported(
-                new KmyExportCoordinator.Listener() {
-                    @Override
-                    public void onProgress(String stage) {
-                        updateProgress(stage);
-                    }
-
-                    @Override
-                    public void onComplete(String message, boolean refreshNeeded) {
-                        dismissProgress();
-                        Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
-                        if (refreshNeeded) {
-                            refreshBookings();
-                        }
-                    }
-
-                    @Override
-                    public void onFailed(String message) {
-                        dismissProgress();
-                        // Kein Toast: der zeigt zwei Zeilen und ist nach Sekunden weg – ausgerechnet
-                        // bei den Meldungen, die man lesen muss.
-                        new AppDialog(MainActivity.this)
-                                .setTitle(R.string.kmy_export_stopped_title)
-                                .setMessage(message)
-                                .setPositiveButton(android.R.string.ok, null)
-                                .show();
-                    }
-                });
+        exportBand.start(repository, settings);
     }
 
     private void runExport() {

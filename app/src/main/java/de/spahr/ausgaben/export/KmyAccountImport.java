@@ -97,78 +97,103 @@ public final class KmyAccountImport {
                 byte[] raw = RemoteStorage.from(settings).downloadBytes(folderOf(path), fileOf(path),
                         ui.phase(app.getString(R.string.import_stage_download),
                                 ImportPhase.DOWNLOAD_FROM, ImportPhase.DOWNLOAD_TO));
-                KmyImporter importer = new KmyImporter(
-                        new KmyDocument(raw, app,
-                                ui.phase(app.getString(R.string.import_stage_reading),
-                                        ImportPhase.READ_FILE_FROM, ImportPhase.READ_FILE_TO)),
-                        app);
-                // Die Stichwortliste der Datei: nur was dort steht, ist in der App wählbar.
-                repository.replaceTags(importer.tagNames());
-                List<String> available = importer.accountNames();
-                List<String> targets = new ArrayList<>();
-                if (account == null) {
-                    // Nur bereits vorhandene App-Konten, die es auch in der .kmy gibt.
-                    for (String acc : knownAccounts) {
-                        if (containsIgnoreCase(available, acc)) {
-                            targets.add(acc);
-                        }
-                    }
-                } else if (containsIgnoreCase(available, account)) {
-                    targets.add(account);
-                }
-                final List<String> depotTargets = new ArrayList<>();
-                if (depots != null) {
-                    for (String d : depots) {
-                        if (containsIgnoreCase(importer.depotNames(), d)) {
-                            depotTargets.add(d);
-                        }
-                    }
-                }
-                if (targets.isEmpty() && depotTargets.isEmpty() && !schedules) {
-                    ui.noMatchingAccount();
-                    return;
-                }
-                // Jetzt stehen die Mengen fest – daraus ergeben sich die Prozentbereiche des Laufs.
-                final ImportBudget budget = budgetFor(importer, targets.isEmpty() ? 0 : 1,
-                        depotTargets, schedules);
-                if (targets.isEmpty()) {
-                    // Nur Depots und/oder Planungen – die Buchungsphase entfällt.
-                    afterAccounts(app, repository, importer, budget, depotTargets, schedules, ui);
-                    return;
-                }
-                // Ein Lesedurchlauf für ALLE Konten (vorher: einer je Konto über die ganze Datei).
-                LinkedHashMap<String, List<Booking>> map = importer.bookingsForAccounts(targets,
-                        ui.phase(app.getString(R.string.import_stage_bookings),
-                                budget.from(BOOKINGS_READ), budget.to(BOOKINGS_READ)));
-                for (String acc : targets) {
-                    // Währungskennzeichen aus der KMyMoney-Datei je Konto übernehmen.
-                    repository.setAccountCurrency(acc, importer.currencyOf(acc));
-                }
-                // Anlage/Verbindlichkeit bzw. Einnahme/Ausgabe für ALLE Konten und Kategorien der .kmy
-                // klassifizieren, nicht nur für die aktualisierten.
-                repository.applyAccountTypes(importer.accountTypes());
-                repository.applyCategoryTypes(importer.categoryTypes());
-                // Kontengruppen aus der Datei nachziehen: Banken aus dem Institutsblock, „Favoriten"
-                // aus den bevorzugten Konten.
-                repository.applyFileGroups(importer.institutions(), importer.favorites(),
-                        app.getString(R.string.accounts_group_favorites));
-                // Jetzt ist die wirkliche Zahl der Buchungen bekannt – vorher war sie geschätzt.
-                int written = 0;
-                for (List<Booking> l : map.values()) {
-                    written += l.size();
-                }
-                budget.resize(BOOKINGS_WRITE, written * ImportBudget.BOOKING_WRITE);
-                // Kein separates „Buchungen werden gespeichert" beim Konto-Aktualisieren – nur die
-                // laufende Phase weiterzählen.
-                repository.replaceImportAccounts(map,
-                        ui.phase(app.getString(R.string.import_running_banner),
-                                budget.from(BOOKINGS_WRITE), budget.to(BOOKINGS_WRITE)),
-                        res -> afterAccounts(app, repository, importer, budget, depotTargets,
-                                schedules, ui));
+                importRaw(app, repository, raw, knownAccounts, account, depots, schedules, ui);
             } catch (Exception e) {
                 ui.failed(e);
             }
         }).start();
+    }
+
+    /**
+     * Wie {@link #start}, aber mit einer schon geladenen Datei – für den Export, der die eben
+     * geschriebene Datei ohnehin zurückliest und sie nicht ein zweites Mal holen soll. Läuft auf einem
+     * eigenen Thread; {@code ui} wird wie bei {@link #start} bedient.
+     */
+    public static void startWithBytes(Context context, Repository repository, final byte[] raw,
+                                      List<String> knownAccounts, final List<String> depots,
+                                      final boolean schedules, final Ui ui) {
+        final Context app = context.getApplicationContext();
+        new Thread(() -> {
+            try {
+                importRaw(app, repository, raw, knownAccounts, null, depots, schedules, ui);
+            } catch (Exception e) {
+                ui.failed(e);
+            }
+        }).start();
+    }
+
+    /** Alles hinter dem Laden: Datei aufbereiten, Konten, Depots und Planungen einlesen. */
+    private static void importRaw(Context app, Repository repository, byte[] raw,
+                                  List<String> knownAccounts, String account, List<String> depots,
+                                  boolean schedules, Ui ui) throws Exception {
+        KmyImporter importer = new KmyImporter(
+                new KmyDocument(raw, app,
+                        ui.phase(app.getString(R.string.import_stage_reading),
+                                ImportPhase.READ_FILE_FROM, ImportPhase.READ_FILE_TO)),
+                app);
+        // Die Stichwortliste der Datei: nur was dort steht, ist in der App wählbar.
+        repository.replaceTags(importer.tagNames());
+        List<String> available = importer.accountNames();
+        List<String> targets = new ArrayList<>();
+        if (account == null) {
+            // Nur bereits vorhandene App-Konten, die es auch in der .kmy gibt.
+            for (String acc : knownAccounts) {
+                if (containsIgnoreCase(available, acc)) {
+                    targets.add(acc);
+                }
+            }
+        } else if (containsIgnoreCase(available, account)) {
+            targets.add(account);
+        }
+        final List<String> depotTargets = new ArrayList<>();
+        if (depots != null) {
+            for (String d : depots) {
+                if (containsIgnoreCase(importer.depotNames(), d)) {
+                    depotTargets.add(d);
+                }
+            }
+        }
+        if (targets.isEmpty() && depotTargets.isEmpty() && !schedules) {
+            ui.noMatchingAccount();
+            return;
+        }
+        // Jetzt stehen die Mengen fest – daraus ergeben sich die Prozentbereiche des Laufs.
+        final ImportBudget budget = budgetFor(importer, targets.isEmpty() ? 0 : 1,
+                depotTargets, schedules);
+        if (targets.isEmpty()) {
+            // Nur Depots und/oder Planungen – die Buchungsphase entfällt.
+            afterAccounts(app, repository, importer, budget, depotTargets, schedules, ui);
+            return;
+        }
+        // Ein Lesedurchlauf für ALLE Konten (vorher: einer je Konto über die ganze Datei).
+        LinkedHashMap<String, List<Booking>> map = importer.bookingsForAccounts(targets,
+                ui.phase(app.getString(R.string.import_stage_bookings),
+                        budget.from(BOOKINGS_READ), budget.to(BOOKINGS_READ)));
+        for (String acc : targets) {
+            // Währungskennzeichen aus der KMyMoney-Datei je Konto übernehmen.
+            repository.setAccountCurrency(acc, importer.currencyOf(acc));
+        }
+        // Anlage/Verbindlichkeit bzw. Einnahme/Ausgabe für ALLE Konten und Kategorien der .kmy
+        // klassifizieren, nicht nur für die aktualisierten.
+        repository.applyAccountTypes(importer.accountTypes());
+        repository.applyCategoryTypes(importer.categoryTypes());
+        // Kontengruppen aus der Datei nachziehen: Banken aus dem Institutsblock, „Favoriten"
+        // aus den bevorzugten Konten.
+        repository.applyFileGroups(importer.institutions(), importer.favorites(),
+                app.getString(R.string.accounts_group_favorites));
+        // Jetzt ist die wirkliche Zahl der Buchungen bekannt – vorher war sie geschätzt.
+        int written = 0;
+        for (List<Booking> l : map.values()) {
+            written += l.size();
+        }
+        budget.resize(BOOKINGS_WRITE, written * ImportBudget.BOOKING_WRITE);
+        // Kein separates „Buchungen werden gespeichert" beim Konto-Aktualisieren – nur die
+        // laufende Phase weiterzählen.
+        repository.replaceImportAccounts(map,
+                ui.phase(app.getString(R.string.import_running_banner),
+                        budget.from(BOOKINGS_WRITE), budget.to(BOOKINGS_WRITE)),
+                res -> afterAccounts(app, repository, importer, budget, depotTargets,
+                        schedules, ui));
     }
 
     /**

@@ -190,7 +190,11 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
         ((MaterialButton) findViewById(R.id.btnExportAll)).setOnClickListener(v -> exportAll());
         ((MaterialButton) findViewById(R.id.btnBackup)).setOnClickListener(v -> askBackupOptions());
         ((MaterialButton) findViewById(R.id.btnRestore)).setOnClickListener(
-                v -> fullBackupRestoreFlow.start());
+                v -> {
+                    if (!ExportBand.blocksDataChange(this)) {
+                        fullBackupRestoreFlow.start();
+                    }
+                });
         ((MaterialButton) findViewById(R.id.btnReset)).setOnClickListener(v -> confirmReset());
     }
     /** Schalter „App mit Biometrie schützen": bei Aktivierung Verfügbarkeit prüfen. */
@@ -396,6 +400,9 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
     }
 
     private void confirmReset() {
+        if (ExportBand.blocksDataChange(this)) {
+            return;
+        }
         AppDialog.destructive(this)
                 .setTitle(R.string.reset_confirm_title)
                 .setMessage(R.string.reset_confirm_message)

@@ -144,6 +144,10 @@ public interface BookingDao {
     List<Integer> getDataYearsBefore(long ms);
 
     /** Anzahl aller Buchungen – Sicherheitsleine vor dem Aufräumen (leere Tabelle = frische Installation). */
+    /** Höchste vergebene Buchungs-id ({@code null} = es gibt keine Buchung). */
+    @Query("SELECT MAX(id) FROM booking")
+    Long getMaxId();
+
     @Query("SELECT COUNT(*) FROM booking")
     int countAll();
 

@@ -372,7 +372,8 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
             Toast.makeText(this, R.string.onboarding_import_running, Toast.LENGTH_LONG).show();
             return true;
         }
-        return false;
+        // Ein Export, der im Hintergrund läuft, aktualisiert am Ende selbst alle Konten.
+        return ExportBand.blocksImport(this);
     }
 
     /**
@@ -518,6 +519,9 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         }
         button.setVisibility(View.VISIBLE);
         button.setOnClickListener(v -> {
+            if (ExportBand.blocksDataChange(this)) {
+                return;
+            }
             if (blockIfImporting()) {
                 return;
             }
@@ -1268,6 +1272,9 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
     }
 
     private void confirmRestore() {
+        if (ExportBand.blocksDataChange(this)) {
+            return;
+        }
         restoreBackupLauncher.launch(new String[]{"*/*"});
     }
 
@@ -1281,6 +1288,9 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
      * kommt aus Kursen, nicht aus der Buchungssumme).
      */
     private void manageAccounts() {
+        if (ExportBand.blocksDataChange(this)) {
+            return;
+        }
         repository.getAllAccountsWithStatus(all -> {
             if (all.isEmpty()) {
                 Toast.makeText(this, R.string.no_accounts, Toast.LENGTH_LONG).show();
@@ -1448,6 +1458,9 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
      * bleiben unberührt.
      */
     private void confirmResetProfile() {
+        if (ExportBand.blocksDataChange(this)) {
+            return;
+        }
         AppDialog.destructive(this)
                 .setTitle(R.string.reset_profile_confirm_title)
                 .setMessage(R.string.reset_profile_confirm_message)

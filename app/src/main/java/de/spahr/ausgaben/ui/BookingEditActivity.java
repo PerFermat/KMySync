@@ -99,8 +99,9 @@ public class BookingEditActivity extends LocalizedActivity {
     /** true = bereits exportierte Buchung im CSV-Modus: erzwingt {@link #readOnly}, s. {@link CsvModeGuard}. */
     private boolean csvLocked;
     /**
-     * true = in KMyMoney abgeglichene Buchung: nur zur Ansicht, erzwingt {@link #readOnly}, s.
-     * {@link de.spahr.ausgaben.db.ReconciledGuard}. Anders als bei {@link #csvLocked} bleibt auch
+     * true = in KMyMoney abgeglichene Buchung – oder eine, die ein gerade laufender Export schon
+     * erfasst hat ({@link de.spahr.ausgaben.db.ExportLock}): nur zur Ansicht, erzwingt
+     * {@link #readOnly}, s. {@link de.spahr.ausgaben.db.ReconciledGuard}. Anders als bei {@link #csvLocked} bleibt auch
      * „Neue Buchung" mit diesen Daten weg – die Maske ist dann eine reine Ansicht.
      */
     private boolean reconciledLocked;
@@ -828,10 +829,15 @@ public class BookingEditActivity extends LocalizedActivity {
         // die Daten bleiben als Vorlage für „Neue Buchung" nutzbar, deshalb kein genereller readOnly.
         csvLocked = CsvModeGuard.lockedForEdit(b, settings.isKmyMode());
         // In KMyMoney abgeglichen: gleichgültig, wie die Maske geöffnet wurde, bleibt sie Ansicht.
-        reconciledLocked = de.spahr.ausgaben.db.ReconciledGuard.locked(b);
+        // Ebenso, solange ein Export läuft, der diese Buchung schon erfasst hat: bis er durch ist,
+        // ersetzt das Aktualisieren danach jede Änderung (siehe ExportLock).
+        boolean abgeglichen = de.spahr.ausgaben.db.ReconciledGuard.locked(b);
+        reconciledLocked = abgeglichen || de.spahr.ausgaben.db.ExportLock.locked(b);
         if (reconciledLocked) {
             readOnly = true;
-            findViewById(R.id.textReconciledHint).setVisibility(View.VISIBLE);
+            android.widget.TextView hint = findViewById(R.id.textReconciledHint);
+            hint.setText(abgeglichen ? R.string.reconciled_locked : R.string.export_locked);
+            hint.setVisibility(View.VISIBLE);
         }
         // Gespeicherte Buchung: die Kategorie ist gesetzte Wahrheit und keine Vorbelegung.
         keepLoadedCategories = true;

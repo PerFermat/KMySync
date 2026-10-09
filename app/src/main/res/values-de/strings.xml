@@ -708,6 +708,16 @@
     <string name="kmy_reconciled_skipped">In KMyMoney inzwischen abgeglichen – Änderung nicht übertragen (%1$d): %2$s. Bitte zuerst importieren; danach ist die Buchung in der App gesperrt und kann nur noch in KMyMoney bearbeitet werden.</string>
     <string name="reconciled_locked">Diese Buchung ist in KMyMoney abgeglichen und kann nur dort bearbeitet werden.</string>
     <string name="reconciled_badge">In KMyMoney abgeglichen</string>
+    <string name="export_locked">Ein Export läuft – diese Buchung lässt sich danach wieder bearbeiten.</string>
+    <string name="kmy_progress_readback">Lese die geschriebene Datei zurück…</string>
+    <string name="export_busy">Es läuft bereits ein Export.</string>
+    <string name="export_wait">Bitte warten Sie, bis der laufende Export fertig ist.</string>
+    <string name="export_blocks_import">Solange ein Export läuft, kann nichts importiert werden.</string>
+    <string name="import_blocks_export">Solange ein Import läuft, kann nichts exportiert werden.</string>
+    <string name="kmy_result_refreshed">Konten aus der Datei aktualisiert.</string>
+    <string name="kmy_result_refresh_failed">Die Datei ist geschrieben, die Konten ließen sich danach aber nicht aktualisieren: %1$s</string>
+    <string name="kmy_result_readback_failed">Die Datei ist geschrieben, ließ sich danach aber nicht zurücklesen: %1$s</string>
+    <string name="kmy_result_background">die App war zu lange im Hintergrund</string>
     <string name="kmy_result_new_payees">, neue Empfänger: %1$d</string>
     <string name="kmy_result_deleted">, %1$d gelöscht</string>
     <string name="kmy_result_scheduled">, geplante Buchungen weitergestellt: %1$d</string>

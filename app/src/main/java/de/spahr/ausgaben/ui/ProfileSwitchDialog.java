@@ -33,6 +33,10 @@ public final class ProfileSwitchDialog {
     }
 
     public static void show(Activity activity) {
+        // Ein Profilwechsel schließt die Datenbank – mitten in einem Export wäre das ihr Ende.
+        if (ExportBand.blocksDataChange(activity)) {
+            return;
+        }
         ProfileManager pm = new ProfileManager(activity);
         LinearLayout list = new LinearLayout(activity);
         list.setOrientation(LinearLayout.VERTICAL);
