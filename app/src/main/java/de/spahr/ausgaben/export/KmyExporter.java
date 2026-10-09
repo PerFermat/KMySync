@@ -184,7 +184,8 @@ public class KmyExporter {
                         transactionElement(found.txId, dateFor(b.createdAt), today,
                                 built.memo, built.commodity, built.splits),
                         found.block));
-                result.aenderungen.geaendert(found.txId);
+                result.aenderungen.geaendert(found.txId).soll =
+                        KmyAbsicht.fuerBuchung(b, splitsMap.get(b.id), doc);
             }
             result.updated++;
             result.writtenIds.add(b.id);
@@ -209,7 +210,7 @@ public class KmyExporter {
             String txId = String.format(Locale.US, "T%018d", nextTx[0]++);
             txFragments.append(transactionElement(txId, dateFor(b.createdAt), today, built.memo,
                     built.commodity, built.splits));
-            result.aenderungen.neu(txId);
+            result.aenderungen.neu(txId).soll = KmyAbsicht.fuerBuchung(b, splitsMap.get(b.id), doc);
             newTx++;
             result.writtenIds.add(b.id);
             if (b.isTransfer && !group.isEmpty()) {
@@ -814,7 +815,7 @@ public class KmyExporter {
             String txId = String.format(Locale.US, "T%018d", nextTx++);
             fragments.append(transactionElement(txId, dateFor(tx.date), today, "",
                     commodityOf(tx.moneyAccount), splits));
-            result.aenderungen.neu(txId);
+            result.aenderungen.neu(txId).soll = KmyAbsicht.fuerBewegung(tx, doc);
             written++;
             result.writtenIds.add(tx.id);
         }

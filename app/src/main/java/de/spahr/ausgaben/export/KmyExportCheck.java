@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -61,11 +62,43 @@ public final class KmyExportCheck {
     private KmyExportCheck() {
     }
 
-    /** Das Gezählte einer Fassung. */
+    /** Ein Split des Hauptbuchs mit allem, was an ihm steht. */
+    static final class Split {
+        final Map<String, String> attribute = new LinkedHashMap<>();
+        /** Die ids seiner {@code <TAG>}-Kindelemente. */
+        final List<String> stichwoerter = new ArrayList<>();
+
+        String von(String name) {
+            String v = attribute.get(name);
+            return v == null ? "" : v;
+        }
+    }
+
+    /** Eine Transaktion des Hauptbuchs. */
+    static final class Buchung {
+        final Map<String, String> attribute = new LinkedHashMap<>();
+        final List<Split> splits = new ArrayList<>();
+
+        String id() {
+            return attribute.get("id");
+        }
+    }
+
+    /** Das Gelesene einer Fassung. */
     static final class Stand {
         final Map<String, Integer> anzahl = new HashMap<>();
         /** {@code <TRANSACTIONS count="…">}; {@code -1}, wenn nicht angegeben. */
         int kopfzahl = -1;
+        /** Konto-id → Summe aller Split-{@code value} im Hauptbuch. */
+        final Map<String, KmyBruch> saldo = new HashMap<>();
+        /**
+         * Splits, deren {@code value} keine Zahl ist („Konto Wert“ → Anzahl). In einer fremden Datei
+         * kann so etwas stehen; solange es vorher und nachher gleich viele sind, hat der Export nichts
+         * daran getan.
+         */
+        final Map<String, Integer> unlesbar = new HashMap<>();
+        /** Die Transaktionen, nach denen gefragt war, im Einzelnen (id → Transaktion). */
+        final Map<String, Buchung> genau = new HashMap<>();
 
         int von(String element) {
             Integer n = anzahl.get(element);
@@ -81,8 +114,12 @@ public final class KmyExportCheck {
      */
     public static void pruefen(String alt, String neu, byte[] gepackt, KmyAenderungen erwartet)
             throws Failed {
-        Stand vorher = erfassen(alt, "alte Datei");
-        Stand nachher = erfassen(neu, "neue Datei");
+        Set<String> angesagt = new HashSet<>();
+        for (KmyAenderungen.Absicht ab : erwartet.transaktionen()) {
+            angesagt.add(ab.txId);
+        }
+        Stand vorher = erfassen(alt, "alte Datei", angesagt);
+        Stand nachher = erfassen(neu, "neue Datei", angesagt);
 
         KmyGliederung a;
         KmyGliederung n;
@@ -93,6 +130,7 @@ public final class KmyExportCheck {
         } catch (KmyGliederung.Fehler e) {
             throw new Failed("Datei nicht zerlegbar (" + e.getMessage() + ")", e);
         }
+        saldenStimmen(vorher, nachher, erwartet);
 
         int txAlt = vorher.von("TRANSACTION");
         int txNeu = nachher.von("TRANSACTION");
@@ -342,7 +380,7 @@ public final class KmyExportCheck {
      * nur als direktes Kind seines Behälters. Das ist nötig, weil dieselben Namen anderswo wieder
      * auftauchen: {@code ACCOUNT} in jedem Budget, {@code TRANSACTION} in jeder Planung.
      */
-    static Stand erfassen(String xml, String welche) throws Failed {
+    static Stand erfassen(String xml, String welche, Set<String> genau) throws Failed {
         Stand stand = new Stand();
         Map<String, String> behaelterVon = new HashMap<>();
         for (String[] paar : GEZAEHLT) {
@@ -350,6 +388,9 @@ public final class KmyExportCheck {
         }
         Deque<String> pfad = new ArrayDeque<>();
         boolean wurzelGesehen = false;
+        // Die Transaktion des Hauptbuchs, in der der Parser gerade steht, und ihr letzter Split.
+        Buchung buchung = null;
+        Split split = null;
         try {
             XmlPullParser parser = Xml.newPullParser();
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
@@ -376,9 +417,28 @@ public final class KmyExportCheck {
                             stand.kopfzahl = -1;
                         }
                     }
+                    // Nur das Hauptbuch: dieselben Namen stehen auch in jeder Planung.
+                    if ("TRANSACTION".equals(name) && pfad.size() == 2
+                            && "TRANSACTIONS".equals(pfad.peek())) {
+                        buchung = new Buchung();
+                        attribute(parser, buchung.attribute);
+                    } else if (buchung != null && "SPLIT".equals(name)) {
+                        split = new Split();
+                        attribute(parser, split.attribute);
+                        buchung.splits.add(split);
+                    } else if (split != null && "TAG".equals(name)) {
+                        String id = parser.getAttributeValue(null, "id");
+                        split.stichwoerter.add(id == null ? "" : id);
+                    }
                     pfad.push(name);
                 } else if (event == XmlPullParser.END_TAG) {
                     pfad.pop();
+                    if ("SPLIT".equals(parser.getName())) {
+                        split = null;
+                    } else if (buchung != null && pfad.size() == 2) {
+                        verbuchen(stand, buchung, genau);
+                        buchung = null;
+                    }
                 }
                 event = parser.next();
             }
@@ -389,5 +449,109 @@ public final class KmyExportCheck {
             throw new Failed(welche + ": leer");
         }
         return stand;
+    }
+
+    private static void attribute(XmlPullParser parser, Map<String, String> ziel) {
+        for (int i = 0; i < parser.getAttributeCount(); i++) {
+            ziel.put(parser.getAttributeName(i), parser.getAttributeValue(i));
+        }
+    }
+
+    /** Trägt die Splits einer fertig gelesenen Transaktion in die Salden ein. */
+    private static void verbuchen(Stand stand, Buchung buchung, Set<String> genau) {
+        for (Split s : buchung.splits) {
+            String konto = s.von("account");
+            try {
+                KmyBruch wert = KmyBruch.lesen(s.von("value"));
+                KmyBruch bisher = stand.saldo.get(konto);
+                stand.saldo.put(konto, bisher == null ? wert : bisher.plus(wert));
+            } catch (NumberFormatException | ArithmeticException e) {
+                stand.unlesbar.merge(konto + " " + s.von("value"), 1, Integer::sum);
+            }
+        }
+        String id = buchung.id();
+        if (id != null && genau.contains(id) && !stand.genau.containsKey(id)) {
+            stand.genau.put(id, buchung);
+        }
+    }
+
+    // ---- Salden ----
+
+    /** Konto-id → Summe der Split-{@code value} dieser einen Transaktion. */
+    private static Map<String, KmyBruch> summen(Buchung buchung, String welche) throws Failed {
+        Map<String, KmyBruch> out = new HashMap<>();
+        for (Split s : buchung.splits) {
+            KmyBruch wert;
+            try {
+                wert = KmyBruch.lesen(s.von("value"));
+            } catch (NumberFormatException | ArithmeticException e) {
+                throw new Failed("TRANSACTION " + buchung.id() + " (" + welche + "): value \""
+                        + s.von("value") + "\" ist kein Betrag");
+            }
+            KmyBruch bisher = out.get(s.von("account"));
+            out.put(s.von("account"), bisher == null ? wert : bisher.plus(wert));
+        }
+        return out;
+    }
+
+    private static void addiere(Map<String, KmyBruch> ziel, Map<String, KmyBruch> dazu, boolean negativ) {
+        for (Map.Entry<String, KmyBruch> e : dazu.entrySet()) {
+            KmyBruch wert = negativ ? e.getValue().negiert() : e.getValue();
+            KmyBruch bisher = ziel.get(e.getKey());
+            ziel.put(e.getKey(), bisher == null ? wert : bisher.plus(wert));
+        }
+    }
+
+    /**
+     * Die zweite Regel: Auf jedem Konto ändert sich die Summe aller Split-{@code value} um genau das,
+     * was der Export beabsichtigt hat – und auf jedem anderen Konto um nichts.
+     *
+     * <p>Die Absicht stammt aus den Daten der App ({@link KmyAbsicht}), nicht aus dem geschriebenen XML:
+     * eine neue Buchung bringt ihr Soll mit, eine geänderte ihr Soll abzüglich dessen, was vorher unter
+     * ihrer id in der Datei stand, eine gelöschte nimmt genau das mit.</p>
+     */
+    private static void saldenStimmen(Stand vorher, Stand nachher, KmyAenderungen erwartet)
+            throws Failed {
+        Map<String, KmyBruch> absicht = new HashMap<>();
+        for (KmyAenderungen.Absicht ab : erwartet.transaktionen()) {
+            boolean bringtSoll = ab.art == KmyAenderungen.Art.NEU
+                    || ab.art == KmyAenderungen.Art.GEAENDERT;
+            if (bringtSoll) {
+                if (ab.soll == null) {
+                    throw new Failed("TRANSACTION " + ab.txId + " ohne beabsichtigte Beträge angesagt");
+                }
+                addiere(absicht, ab.soll, false);
+                // Was dasteht, muss sich lesen lassen – ein kaputter Betrag darf hier nicht still
+                // unter „unlesbar" fallen.
+                Buchung neu = nachher.genau.get(ab.txId);
+                if (neu != null) {
+                    summen(neu, "neu");
+                }
+            }
+            if (ab.art == KmyAenderungen.Art.GEAENDERT || ab.art == KmyAenderungen.Art.GELOESCHT) {
+                Buchung alt = vorher.genau.get(ab.txId);
+                if (alt == null) {
+                    throw new Failed("TRANSACTION " + ab.txId + " steht nicht in der alten Datei");
+                }
+                addiere(absicht, summen(alt, "alt"), true);
+            }
+        }
+        Set<String> konten = new HashSet<>(vorher.saldo.keySet());
+        konten.addAll(nachher.saldo.keySet());
+        konten.addAll(absicht.keySet());
+        for (String konto : konten) {
+            KmyBruch alt = vorher.saldo.get(konto);
+            KmyBruch neu = nachher.saldo.get(konto);
+            KmyBruch differenz = (neu == null ? KmyBruch.NULL : neu)
+                    .minus(alt == null ? KmyBruch.NULL : alt);
+            KmyBruch soll = absicht.get(konto);
+            if (!differenz.equals(soll == null ? KmyBruch.NULL : soll)) {
+                throw new Failed("Saldo von Konto " + konto + " ändert sich um " + differenz
+                        + ", beabsichtigt war " + (soll == null ? KmyBruch.NULL : soll));
+            }
+        }
+        if (!vorher.unlesbar.equals(nachher.unlesbar)) {
+            throw new Failed("Splits mit unlesbarem value: " + vorher.unlesbar + " → " + nachher.unlesbar);
+        }
     }
 }

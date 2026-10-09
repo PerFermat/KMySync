@@ -55,8 +55,9 @@ public class KmyExportCheckTest {
 
     /** Anfang und Ende des Blocks zu dieser Transaktions-id. */
     private static int[] block(String xml, String txId) {
-        int start = xml.indexOf("<TRANSACTION id=\"" + txId + "\"");
-        assertTrue("Transaktion " + txId + " fehlt", start >= 0);
+        int id = xml.indexOf(" id=\"" + txId + "\"");
+        assertTrue("Transaktion " + txId + " fehlt", id >= 0);
+        int start = xml.lastIndexOf("<TRANSACTION", id);
         return new int[]{start, xml.indexOf("</TRANSACTION>", start) + "</TRANSACTION>".length()};
     }
 
@@ -214,7 +215,7 @@ public class KmyExportCheckTest {
                 .replace("<TRANSACTIONS count=\"4\"", "<TRANSACTIONS count=\"5\"");
         faelltDurch(alt, neu, KmyAenderungen.keine(), "T000000000000000099 aufgetaucht");
         KmyAenderungen angesagt = new KmyAenderungen();
-        angesagt.neu("T000000000000000099");
+        angesagt.neu("T000000000000000099").soll = soll("A000001", -500, "A000003", 500);
         besteht(alt, neu, angesagt);
     }
 
@@ -287,7 +288,7 @@ public class KmyExportCheckTest {
         // Die Buchung ist angesagt, ihr neuer Empfänger nicht.
         KmyAenderungen ohneEmpfaenger = new KmyAenderungen();
         for (KmyAenderungen.Absicht a : r.aenderungen.transaktionen()) {
-            ohneEmpfaenger.neu(a.txId);
+            ohneEmpfaenger.neu(a.txId).soll = a.soll;
         }
         faelltDurch(d.xml(), r.xml, ohneEmpfaenger, "PAYEE P000002 aufgetaucht");
     }
@@ -316,6 +317,125 @@ public class KmyExportCheckTest {
                 "<CREATION_DATE date=\"2026-09-09\"/>"), KmyAenderungen.keine(), "FILEINFO");
         faelltDurch(alt, alt.replace("<FIXVERSION id=\"11\"/>", "<FIXVERSION id=\"12\"/>"),
                 KmyAenderungen.keine(), "FILEINFO");
+    }
+
+    // ---- Salden ----
+
+    private static java.util.Map<String, KmyBruch> soll(String konto1, long cent1, String konto2,
+                                                        long cent2) {
+        java.util.Map<String, KmyBruch> m = new HashMap<>();
+        m.put(konto1, KmyBruch.ausCent(cent1));
+        m.put(konto2, KmyBruch.ausCent(cent2));
+        return m;
+    }
+
+    /** Die id der einen Transaktion, die dieser Export neu angelegt hat. */
+    private static String neueId(KmyExporter.Result r) {
+        String id = null;
+        for (KmyAenderungen.Absicht a : r.aenderungen.transaktionen()) {
+            assertEquals(KmyAenderungen.Art.NEU, a.art);
+            id = a.txId;
+        }
+        return id;
+    }
+
+    /** Der neue Block trägt einen Cent mehr, als die Buchung der App hergibt. */
+    @Test
+    public void neueBuchungMitFalschemBetrag_faelltDurch() throws Exception {
+        KmyDocument d = doc();
+        KmyExporter.Result r = neueBuchung(d);
+        String neu = imBlock(r.xml, neueId(r), "\"-111/100\"", "\"-112/100\"");
+        faelltDurch(d.xml(), neu, r.aenderungen, "Saldo von Konto A000001");
+    }
+
+    @Test
+    public void neueBuchungAufFalschemKonto_faelltDurch() throws Exception {
+        KmyDocument d = doc();
+        KmyExporter.Result r = neueBuchung(d);
+        // Die Kategorie „Auto" statt „Essen": die Summe der Transaktion stimmt weiter, das Konto nicht.
+        String neu = imBlock(r.xml, neueId(r), "account=\"A000003\"", "account=\"A000004\"");
+        faelltDurch(d.xml(), neu, r.aenderungen, "Saldo von Konto A00000");
+    }
+
+    @Test
+    public void neueBuchungMitFalschemNenner_faelltDurch() throws Exception {
+        KmyDocument d = doc();
+        KmyExporter.Result r = neueBuchung(d);
+        String neu = imBlock(r.xml, neueId(r), "\"-111/100\"", "\"-111/10\"");
+        faelltDurch(d.xml(), neu, r.aenderungen, "Saldo von Konto A000001");
+    }
+
+    @Test
+    public void neueBuchungMitUnlesbaremBetrag_faelltDurch() throws Exception {
+        KmyDocument d = doc();
+        KmyExporter.Result r = neueBuchung(d);
+        String neu = imBlock(r.xml, neueId(r), "value=\"-111/100\"", "value=\"elf\"");
+        faelltDurch(d.xml(), neu, r.aenderungen, "kein Betrag");
+    }
+
+    @Test
+    public void neueBuchungOhneSplit_faelltDurch() throws Exception {
+        KmyDocument d = doc();
+        KmyExporter.Result r = neueBuchung(d);
+        int[] b = block(r.xml, neueId(r));
+        int split = r.xml.indexOf("<SPLIT ", r.xml.indexOf("id=\"S0001\"", b[0]));
+        int ende = r.xml.indexOf("/>", split) + 2;
+        assertTrue(split > b[0] && ende < b[1]);
+        faelltDurch(d.xml(), r.xml.substring(0, split) + r.xml.substring(ende), r.aenderungen,
+                "Saldo von Konto A000003");
+    }
+
+    /** Die geänderte Buchung steht mit dem alten statt dem neuen Betrag da. */
+    @Test
+    public void geaenderteBuchungMitFalschemBetrag_faelltDurch() throws Exception {
+        KmyDocument d = doc();
+        Booking b = ausgabe(1, 400);
+        b.createdAt = KmyDocument.parseKmyDate("2026-01-06");
+        b.edited = true;
+        b.origAccount = "Bargeld";
+        b.origSignedCents = -1000;
+        b.origCreatedAt = b.createdAt;
+        // Aus der Umbuchung Bargeld → Girokonto wird eine Ausgabe für Essen.
+        KmyExporter.Result r = new KmyExporter(d, ctx).build(Collections.emptyList(),
+                Collections.singletonList(b), new HashMap<>());
+        assertEquals(1, r.updated);
+        besteht(d.xml(), r.xml, r.aenderungen);
+        faelltDurch(d.xml(), imBlock(r.xml, T2, "\"400/100\"", "\"401/100\""), r.aenderungen,
+                "Saldo von Konto A000003");
+    }
+
+    @Test
+    public void neueUmbuchung_besteht() throws Exception {
+        KmyDocument d = doc();
+        Booking b = new Booking();
+        b.id = 7;
+        b.account = "Bargeld";
+        b.transferAccount = "Girokonto";
+        b.isTransfer = true;
+        b.amountCents = 2000;
+        b.createdAt = KmyDocument.parseKmyDate("2026-02-02");
+        KmyExporter.Result r = new KmyExporter(d, ctx).build(Collections.singletonList(b),
+                Collections.emptyList(), new HashMap<>());
+        assertEquals(Collections.emptyList(), r.skipped);
+        besteht(d.xml(), r.xml, r.aenderungen);
+        // Quelle und Ziel vertauscht: jede Transaktion für sich ausgeglichen, die Konten nicht.
+        String id = neueId(r);
+        String vertauscht = imBlock(imBlock(imBlock(r.xml, id, "account=\"A000001\"", "account=\"X\""),
+                id, "account=\"A000002\"", "account=\"A000001\""), id, "account=\"X\"",
+                "account=\"A000002\"");
+        faelltDurch(d.xml(), vertauscht, r.aenderungen, "Saldo von Konto A00000");
+    }
+
+    /** Eine Buchung ohne Kategorie geht bewusst mit nur einer Seite in die Datei. */
+    @Test
+    public void neueBuchungOhneKategorie_besteht() throws Exception {
+        KmyDocument d = doc();
+        Booking b = ausgabe(8, 333);
+        b.category = "";
+        KmyExporter.Result r = new KmyExporter(d, ctx).build(Collections.singletonList(b),
+                Collections.emptyList(), new HashMap<>());
+        assertEquals(Collections.emptyList(), r.skipped);
+        besteht(d.xml(), r.xml, r.aenderungen);
     }
 
     // ---- Planungen ----

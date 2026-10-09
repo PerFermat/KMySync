@@ -30,7 +30,7 @@ import java.util.zip.GZIPOutputStream;
  * <p>Konten der Typen 12 (Einnahme) und 13 (Ausgabe) sind Kategorien; Typ 16 ist Eigenkapital.
  * Alle übrigen Konten (Bargeld/Bank/Vermögen …) gelten als wählbare „Konten".</p>
  */
-public class KmyDocument {
+public class KmyDocument implements KmyAbsicht.Konten {
 
     private static final int TYPE_INCOME = 12;
     private static final int TYPE_EXPENSE = 13;
@@ -232,6 +232,7 @@ public class KmyDocument {
         return new ArrayList<>(selectableAccounts.keySet());
     }
 
+    @Override
     public String accountId(String name) {
         return name == null ? null : assetNameToId.get(name.trim().toLowerCase(Locale.GERMANY));
     }
@@ -249,6 +250,7 @@ public class KmyDocument {
     }
 
     /** Findet die Kategorie-id per vollem Pfad (bevorzugt) oder Blattnamen. */
+    @Override
     public String categoryId(String pathOrName) {
         return pathOrName == null ? null : categoryToId.get(pathOrName.trim().toLowerCase(Locale.GERMANY));
     }
@@ -357,6 +359,22 @@ public class KmyDocument {
 
     public String depotId(String name) {
         return name == null ? null : depotAccounts.get(name);
+    }
+
+    /** Konto-id des Wertpapiers (Typ 15) unterhalb des Depots; {@code null}, wenn es dort keines gibt. */
+    @Override
+    public String wertpapierKontoId(String depot, String securityKmyId) {
+        String depotId = depotId(depot);
+        if (depotId == null || securityKmyId == null) {
+            return null;
+        }
+        for (Map.Entry<String, Integer> e : accountType.entrySet()) {
+            if (e.getValue() == TYPE_STOCK && depotId.equals(accountParent.get(e.getKey()))
+                    && securityKmyId.equals(accountCurrency.get(e.getKey()))) {
+                return e.getKey();
+            }
+        }
+        return null;
     }
 
     /** Alle Konto-IDs (für den Import über Stock-Konten eines Depots). */

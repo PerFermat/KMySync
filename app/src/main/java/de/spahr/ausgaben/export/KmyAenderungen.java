@@ -32,6 +32,12 @@ public final class KmyAenderungen {
     public static final class Absicht {
         public final String txId;
         public final Art art;
+        /**
+         * Was die Transaktion auf jedem Konto bewegen soll (Konto-id → Betrag), berechnet aus den Daten
+         * der App – siehe {@link KmyAbsicht}. Nur bei {@link Art#NEU} und {@link Art#GEAENDERT}; eine
+         * gelöschte nimmt mit, was sie in der Datei trug, eine {@link Art#NUR_NOTIZ} bewegt nichts.
+         */
+        public Map<String, KmyBruch> soll;
 
         Absicht(String txId, Art art) {
             this.txId = txId;
