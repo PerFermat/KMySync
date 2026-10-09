@@ -738,6 +738,15 @@
     <string name="kmy_progress_readback">Reading the written file back…</string>
     <string name="export_busy">An export is already running.</string>
     <string name="export_wait">Please wait until the running export has finished.</string>
+    <string name="kmy_changes_title">Changes to the KMyMoney file</string>
+    <string name="kmy_changes_hint">For each export: the lines that actually changed in the file, compared after reading it back from the server.</string>
+    <string name="kmy_changes_empty">No export with a comparison yet. After the next export you will see here which lines of the file changed.</string>
+    <string name="kmy_changes_summary">Lines: +%1$d / −%2$d · %3$s</string>
+    <string name="kmy_changes_none">No line changed.</string>
+    <string name="kmy_changes_differs">The file on the server does not match what was uploaded.</string>
+    <string name="kmy_changes_truncated">Display shortened – too many changes.</string>
+    <string name="kmy_changes_gap">····</string>
+    <string name="kmy_result_differs">Warning: the file read back does not match the one uploaded – see Profile settings, “Changes to the KMyMoney file”.</string>
     <string name="export_blocks_import">Nothing can be imported while an export is running.</string>
     <string name="import_blocks_export">Nothing can be exported while an import is running.</string>
     <string name="kmy_result_refreshed">Accounts refreshed from the file.</string>

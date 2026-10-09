@@ -344,6 +344,8 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
                 .setOnClickListener(v -> syncFields.browseFolderInto(editImportFolder));
         ((MaterialButton) findViewById(R.id.btnImportAccounts))
                 .setOnClickListener(v -> importAccounts());
+        findViewById(R.id.btnKmyChanges).setOnClickListener(v -> startActivity(
+                new android.content.Intent(this, ExportDiffActivity.class)));
         ((MaterialButton) findViewById(R.id.btnDone)).setOnClickListener(v -> {
             if (blockIfImporting() || !steuersatzIstBrauchbar()) {
                 return;
@@ -467,6 +469,8 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         // aus der .kmy-Datei, der Ordner wäre dort ohne Bedeutung.
         findViewById(R.id.importFolderGroup).setVisibility(
                 SettingsStore.MODE_CSV.equals(selectedExportMode) ? View.VISIBLE : View.GONE);
+        // Der Zeilenvergleich entsteht nur, wo die App die .kmy-Datei selbst schreibt.
+        findViewById(R.id.btnKmyChanges).setVisibility(kmy ? View.VISIBLE : View.GONE);
     }
 
     /** Dropdown „CSV-Trennzeichen" (nur im CSV-Block sichtbar): Semikolon (Standard) oder Komma. */

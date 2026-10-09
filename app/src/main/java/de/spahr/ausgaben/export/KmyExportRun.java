@@ -140,6 +140,8 @@ public final class KmyExportRun {
                 return;
             }
 
+            final String meldung = o.message + vergleiche(app, r, o, zurueck);
+
             // Alle Konten, Depots und Planungen aus der eben gelesenen Datei – ohne zweiten Download.
             List<String> konten = repository.accountNamesNow();
             KmyAccountImport.startWithBytes(app, repository, zurueck, konten, konten, true,
@@ -152,23 +154,51 @@ public final class KmyExportRun {
 
                         @Override
                         public void noMatchingAccount() {
-                            ende(o.message, false, true);
+                            ende(meldung, false, true);
                         }
 
                         @Override
                         public void failed(Exception e) {
-                            ende(o.message + "\n"
+                            ende(meldung + "\n"
                                     + r.getString(R.string.kmy_result_refresh_failed, grund(e)), false, true);
                         }
 
                         @Override
                         public void finished() {
-                            ende(o.message + "\n" + r.getString(R.string.kmy_result_refreshed), false, true);
+                            ende(meldung + "\n" + r.getString(R.string.kmy_result_refreshed), false, true);
                         }
                     });
         } catch (RuntimeException | Error e) {
             // Was auch geschieht: die Sperre muss sich wieder lösen.
             ende(r.getString(R.string.export_failed, String.valueOf(e)), true, false);
+        }
+    }
+
+    /**
+     * Hält fest, was sich in der Datei wirklich geändert hat: der Stand vor dem Export gegen das, was
+     * eben vom Server zurückkam, Zeile für Zeile ({@link ExportDiff}). Abgelegt unter dem Namen der
+     * Sicherung dieses Exports; aufgeräumt wie die Sicherungen.
+     *
+     * <p>Beiwerk: Scheitert der Vergleich, ist der Export trotzdem gelungen und es geht weiter.</p>
+     *
+     * @return ein Zusatz für die Abschlussmeldung, leer im Normalfall
+     */
+    private static String vergleiche(Context app, Context r, KmyExportCoordinator.Outcome o,
+                                     byte[] zurueck) {
+        try {
+            ExportDiff d = ExportDiff.von(o.oldXml, KmyDocument.gunzip(zurueck));
+            o.oldXml = null;   // mehrere Megabyte, die ab hier niemand mehr braucht
+            d.zeit = System.currentTimeMillis();
+            d.datei = o.file;
+            d.abweichung = !java.util.Arrays.equals(zurueck, o.uploaded);
+            ExportDiffStore store = new ExportDiffStore(ExportDiffStore.ordnerFuer(app.getFilesDir(),
+                    new de.spahr.ausgaben.settings.ProfileManager(app).getActiveProfileId()));
+            store.speichere(o.backupName, d);
+            store.raeumeAuf(o.file, KmyBackups.KEEP);
+            return d.abweichung ? "\n" + r.getString(R.string.kmy_result_differs) : "";
+        } catch (Exception | OutOfMemoryError e) {
+            android.util.Log.w("KmyExport", "Vergleich nach dem Export nicht möglich", e);
+            return "";
         }
     }
 

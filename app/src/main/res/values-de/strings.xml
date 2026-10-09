@@ -712,6 +712,15 @@
     <string name="kmy_progress_readback">Lese die geschriebene Datei zurück…</string>
     <string name="export_busy">Es läuft bereits ein Export.</string>
     <string name="export_wait">Bitte warten Sie, bis der laufende Export fertig ist.</string>
+    <string name="kmy_changes_title">Änderungen an der KMyMoney-Datei</string>
+    <string name="kmy_changes_hint">Zu jedem Export: die Zeilen, die sich in der Datei wirklich geändert haben – verglichen, nachdem sie vom Server zurückgelesen wurde.</string>
+    <string name="kmy_changes_empty">Noch kein Export mit Vergleich. Nach dem nächsten Export steht hier, welche Zeilen der Datei sich geändert haben.</string>
+    <string name="kmy_changes_summary">Zeilen: +%1$d / −%2$d · %3$s</string>
+    <string name="kmy_changes_none">Keine Zeile geändert.</string>
+    <string name="kmy_changes_differs">Die Datei auf dem Server stimmt nicht mit dem überein, was hochgeladen wurde.</string>
+    <string name="kmy_changes_truncated">Anzeige gekürzt – zu viele Änderungen.</string>
+    <string name="kmy_changes_gap">····</string>
+    <string name="kmy_result_differs">Achtung: Die zurückgelesene Datei stimmt nicht mit der hochgeladenen überein – siehe Profileinstellungen, „Änderungen an der KMyMoney-Datei“.</string>
     <string name="export_blocks_import">Solange ein Export läuft, kann nichts importiert werden.</string>
     <string name="import_blocks_export">Solange ein Import läuft, kann nichts exportiert werden.</string>
     <string name="kmy_result_refreshed">Konten aus der Datei aktualisiert.</string>

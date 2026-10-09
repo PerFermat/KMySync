@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/green_primary"
+        android:theme="@style/ThemeOverlay.Ausgaben.Toolbar"
+        app:navigationIcon="@drawable/ic_back"
+        app:subtitleTextColor="@color/toolbar_subtitle"
+        app:title="@string/kmy_changes_title"
+        app:titleTextColor="@color/white" />
+
+    <!-- Hinweis über der Liste bzw. Warnung über den Zeilen. -->
+    <TextView
+        android:id="@+id/diffNote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp"
+        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+    <!-- Die Exporte, jüngster zuerst. -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/diffList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone" />
+
+    <!-- Die Zeilen eines Exports: waagerecht verschiebbar, senkrecht rollt die Liste selbst. -->
+    <HorizontalScrollView
+        android:id="@+id/diffScroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@color/diff_bg"
+        android:fillViewport="true"
+        android:visibility="gone">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/diffLines"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent" />
+    </HorizontalScrollView>
+</LinearLayout>

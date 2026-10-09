@@ -175,6 +175,11 @@
             android:parentActivityName=".ui.DepotActivity" />
 
         <activity
+            android:name=".ui.ExportDiffActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.ProfileSettingsActivity" />
+
+        <activity
             android:name=".ui.PlaceHistoryActivity"
             android:exported="false"
             android:parentActivityName=".ui.BalanceActivity" />

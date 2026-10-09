@@ -706,6 +706,15 @@
     <string name="kmy_progress_readback">Releyendo el archivo escrito…</string>
     <string name="export_busy">Ya hay una exportación en curso.</string>
     <string name="export_wait">Espera a que termine la exportación en curso.</string>
+    <string name="kmy_changes_title">Cambios en el archivo de KMyMoney</string>
+    <string name="kmy_changes_hint">Para cada exportación: las líneas que realmente cambiaron en el archivo, comparadas tras releerlo del servidor.</string>
+    <string name="kmy_changes_empty">Aún no hay ninguna exportación con comparación. Tras la próxima exportación verás aquí qué líneas del archivo cambiaron.</string>
+    <string name="kmy_changes_summary">Líneas: +%1$d / −%2$d · %3$s</string>
+    <string name="kmy_changes_none">No ha cambiado ninguna línea.</string>
+    <string name="kmy_changes_differs">El archivo del servidor no coincide con lo que se subió.</string>
+    <string name="kmy_changes_truncated">Vista abreviada: demasiados cambios.</string>
+    <string name="kmy_changes_gap">····</string>
+    <string name="kmy_result_differs">Atención: el archivo releído no coincide con el subido; consulta Ajustes del perfil, «Cambios en el archivo de KMyMoney».</string>
     <string name="export_blocks_import">No se puede importar mientras hay una exportación en curso.</string>
     <string name="import_blocks_export">No se puede exportar mientras hay una importación en curso.</string>
     <string name="kmy_result_refreshed">Cuentas actualizadas desde el archivo.</string>
