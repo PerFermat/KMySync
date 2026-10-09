@@ -330,6 +330,15 @@ public final class KmyExportCheck {
                         + warDa + "-mal in der alten und " + istDa + "-mal in der neuen Datei");
             }
         }
+        // Was der Export geschrieben hat, darf in keinem Attribut einen wörtlichen Zeilenumbruch
+        // tragen: KMyMoney läse dort ein Leerzeichen, und aus einer mehrzeiligen Notiz würde eine Zeile.
+        for (KmyGliederung.Element e : n.kinder) {
+            KmyAenderungen.Absicht ab = erwartet.zu(e.id());
+            if (ab != null && ab.art != KmyAenderungen.Art.GELOESCHT && e.umbruchImAttribut()) {
+                throw new Failed("TRANSACTION " + ab.txId + ": Zeilenumbruch in einem Attribut "
+                        + "nicht als &#xa; geschrieben");
+            }
+        }
     }
 
     private static void empfaengerBleiben(KmyGliederung.Element alt, KmyGliederung.Element neu,

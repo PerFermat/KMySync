@@ -1602,7 +1602,13 @@ public class KmyExporter {
         return xml;
     }
 
-    private static String esc(String s) {
+    /**
+     * Maskiert einen Attributwert. Dazu gehören auch Zeilenumbruch und Tabulator: Ein XML-Leser macht
+     * aus einem wörtlichen Zeilenumbruch in einem Attribut ein Leerzeichen – eine mehrzeilige Notiz
+     * käme in KMyMoney als eine einzige Zeile an. KMyMoney selbst schreibt deshalb {@code &#xa;}, und
+     * so steht die ganze Notiz auch weiter auf der Zeile ihres Tags.
+     */
+    static String esc(String s) {
         if (s == null) {
             return "";
         }
@@ -1615,6 +1621,9 @@ public class KmyExporter {
                 case '>': sb.append("&gt;"); break;
                 case '"': sb.append("&quot;"); break;
                 case '\'': sb.append("&apos;"); break;
+                case '\n': sb.append("&#xa;"); break;
+                case '\r': sb.append("&#xd;"); break;
+                case '\t': sb.append("&#x9;"); break;
                 default: sb.append(c);
             }
         }

@@ -240,6 +240,53 @@ public class KmyLineFormatTest {
         assertTrue(r.xml.contains("bankid=\"\"/></SPLITS></TRANSACTION>\n    <TRANSACTION id="));
     }
 
+    /**
+     * Eine mehrzeilige Notiz (Verwendungszweck mit EREF, MREF, CRED) bleibt auf der Zeile ihres Tags:
+     * der Umbruch steht als {@code &#xa;} da, wie KMyMoney ihn schreibt. Wörtlich geschrieben läse
+     * KMyMoney dort Leerzeichen – und die Datei bekäme Zeilen, die mitten in einem Attribut beginnen.
+     */
+    @Test
+    public void mehrzeiligeNotizBleibtAufIhrerZeile() throws Exception {
+        KmyDocument d = doc(edited());
+        Booking b = neu("");
+        b.note = "1048110120269/PP\nEREF: 1048110120269\nMREF: 5LV\tX\r\nCRED: LU96";
+        KmyExporter.Result r = schreibe(d, b);
+
+        assertTrue(r.xml.contains(
+                "memo=\"1048110120269/PP&#xa;EREF: 1048110120269&#xa;MREF: 5LV&#x9;X&#xd;&#xa;CRED: LU96\""));
+        // Sechs neue Zeilen wie bei jeder Buchung – die Notiz bringt keine weiteren.
+        assertEquals(zeilen(d.xml()).size() + 6, zeilen(r.xml).size());
+        for (String zeile : hinzugekommen(d.xml(), r.xml)) {
+            assertTrue("Zeile beginnt nicht mit einem Tag: " + zeile, zeile.trim().startsWith("<"));
+        }
+        // Und zurückgelesen ist die Notiz, was sie war.
+        Booking zurueck = null;
+        for (Booking x : new KmyImporter(doc(r.xml), ctx).bookingsForAccount("Bargeld")) {
+            if (x.createdAt == KmyDocument.parseKmyDate("2026-02-01")) {
+                zurueck = x;
+            }
+        }
+        assertEquals(b.note, zurueck.note);
+    }
+
+    /** Die Selbstprüfung hält es fest: ein wörtlicher Umbruch in einem geschriebenen Attribut fällt durch. */
+    @Test
+    public void woertlicherUmbruchImAttributFaelltDurch() throws Exception {
+        KmyDocument d = doc(edited());
+        Booking b = neu("");
+        b.note = "eins\nzwei";
+        KmyExporter.Result r = new KmyExporter(d, ctx).build(Collections.singletonList(b),
+                Collections.emptyList(), new HashMap<>());
+        String kaputt = r.xml.replace("eins&#xa;zwei", "eins\nzwei");
+        assertFalse(kaputt.equals(r.xml));
+        try {
+            KmyExportCheck.pruefen(d.xml(), kaputt, KmyDocument.gzip(kaputt), r.aenderungen);
+            org.junit.Assert.fail("die Prüfung hätte anschlagen müssen");
+        } catch (KmyExportCheck.Failed e) {
+            assertTrue(e.getMessage(), e.getMessage().contains("Zeilenumbruch in einem Attribut"));
+        }
+    }
+
     @Test
     public void gliedernLehntTextZwischenDenTagsAb() {
         assertEquals("  <A x=\"a>b\">\n   <B/>\n  </A>\n",

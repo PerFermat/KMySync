@@ -109,6 +109,35 @@ final class KmyGliederung {
             }
         }
 
+        /**
+         * Steht irgendwo in diesem Element ein wörtlicher Zeilenumbruch oder Tabulator <b>innerhalb
+         * eines Attributwerts</b>? Erlaubt wäre das, aber ein XML-Leser macht daraus ein Leerzeichen –
+         * der Wert käme anders an, als er geschrieben wurde. Richtig ist {@code &#xa;}.
+         */
+        boolean umbruchImAttribut() {
+            boolean imTag = false;
+            char quote = 0;
+            for (int i = start; i < ende; i++) {
+                char c = quelle.charAt(i);
+                if (quote != 0) {
+                    if (c == quote) {
+                        quote = 0;
+                    } else if (c == '\n' || c == '\r' || c == '\t') {
+                        return true;
+                    }
+                } else if (imTag) {
+                    if (c == '"' || c == '\'') {
+                        quote = c;
+                    } else if (c == '>') {
+                        imTag = false;
+                    }
+                } else if (c == '<') {
+                    imTag = true;
+                }
+            }
+            return false;
+        }
+
         /** Das Attribut {@code id}, oder {@code null}. */
         String id() throws Fehler {
             return attribute().get("id");
