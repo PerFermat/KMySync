@@ -78,6 +78,54 @@ public class ExportDiffEndToEndTest {
         }
     }
 
+    /**
+     * Die neue Buchung hängt hinter einer bestehenden, die mit denselben Zeilen endet. Grün ist genau
+     * die neue – von ihrem {@code <TRANSACTION} bis zu ihrem eigenen {@code </TRANSACTION>} –, und
+     * keine Zeile der alten.
+     */
+    @Test
+    public void gruenIstDieNeueBuchungAlsGanzes() throws Exception {
+        KmyDocument d = new KmyDocument(KmyRobustnessTest.fixture("edited.xml"), ctx);
+        Booking b = new Booking();
+        b.id = 5;
+        b.account = "Bargeld";
+        b.category = "Essen";
+        b.amountCents = 111;
+        b.createdAt = KmyDocument.parseKmyDate("2026-02-01");
+        KmyExporter.Result r = new KmyExporter(d, ctx).build(Collections.singletonList(b),
+                Collections.emptyList(), new HashMap<>());
+
+        ExportDiff diff = ExportDiff.von(d.xml(), r.xml);
+
+        // Der zusammenhängende grüne Block, der die Transaktion enthält.
+        List<String> block = new ArrayList<>();
+        boolean drin = false;
+        for (ExportDiff.Zeile z : diff.zeilen) {
+            String t = z.text.trim();
+            if (z.art == ExportDiff.HINZU && t.startsWith("<TRANSACTION ")) {
+                drin = true;
+            }
+            if (drin && z.art != ExportDiff.HINZU) {
+                break;
+            }
+            if (drin) {
+                block.add(t.contains(" ") ? t.substring(0, t.indexOf(' ')) : t);
+            }
+        }
+        assertEquals(java.util.Arrays.asList("<TRANSACTION", "<SPLITS>", "<SPLIT", "<SPLIT", "</SPLITS>",
+                "</TRANSACTION>"), block);
+        // Unmittelbar davor steht das unveränderte Ende der alten Buchung, dahinter das des Behälters.
+        for (int i = 0; i < diff.zeilen.size(); i++) {
+            ExportDiff.Zeile z = diff.zeilen.get(i);
+            if (z.art == ExportDiff.HINZU && z.text.trim().startsWith("<TRANSACTION ")) {
+                assertEquals(ExportDiff.GLEICH, diff.zeilen.get(i - 1).art);
+                assertEquals("</TRANSACTION>", diff.zeilen.get(i - 1).text.trim());
+                assertEquals("</TRANSACTIONS>", diff.zeilen.get(i + 6).text.trim());
+                assertEquals(ExportDiff.GLEICH, diff.zeilen.get(i + 6).art);
+            }
+        }
+    }
+
     /** Ein Export ohne Wirkung auf die Datei ergäbe einen leeren Vergleich – kein Rauschen. */
     @Test
     public void unveraenderteDateiErgibtNichts() throws Exception {

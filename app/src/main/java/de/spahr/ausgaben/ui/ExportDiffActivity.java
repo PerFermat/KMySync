@@ -140,6 +140,17 @@ public class ExportDiffActivity extends LocalizedActivity {
         final int removed = getColor(R.color.diff_removed_bg);
         final int gap = getColor(R.color.diff_gap_bg);
         final String gapText = getString(R.string.kmy_changes_gap);
+        // Die Nummernspalte so breit wie die größte Nummer – eine KMyMoney-Datei hat schnell
+        // fünfstellige Zeilennummern, und eine feste Breite schnitte die führende Ziffer ab.
+        View probeZeile = LayoutInflater.from(this)
+                .inflate(R.layout.item_export_diff_line, lines, false);
+        int groesste = 0;
+        for (ExportDiff.Zeile z : d.zeilen) {
+            groesste = Math.max(groesste, z.nummer);
+        }
+        final float dichte = getResources().getDisplayMetrics().density;
+        final int nummernBreite = (int) (((TextView) probeZeile.findViewById(R.id.lineNumber))
+                .getPaint().measureText(String.valueOf(groesste)) + 20 * dichte);
         lines.setAdapter(new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             @NonNull
             @Override
@@ -155,6 +166,10 @@ public class ExportDiffActivity extends LocalizedActivity {
                 ExportDiff.Zeile z = d.zeilen.get(position);
                 TextView number = h.itemView.findViewById(R.id.lineNumber);
                 TextView text = h.itemView.findViewById(R.id.lineText);
+                if (number.getLayoutParams().width != nummernBreite) {
+                    number.getLayoutParams().width = nummernBreite;
+                    number.requestLayout();
+                }
                 switch (z.art) {
                     case ExportDiff.HINZU:
                         h.itemView.setBackgroundColor(added);
@@ -183,16 +198,14 @@ public class ExportDiffActivity extends LocalizedActivity {
         });
         // Die Liste so breit wie ihre längste Zeile, mindestens so breit wie der Bildschirm: Erst mit
         // fester Breite lässt sie sich waagerecht verschieben, ohne dass jede Zeile umbricht.
-        TextView probe = LayoutInflater.from(this)
-                .inflate(R.layout.item_export_diff_line, lines, false).findViewById(R.id.lineText);
+        TextView probe = probeZeile.findViewById(R.id.lineText);
         float breiteste = 0;
         for (ExportDiff.Zeile z : d.zeilen) {
             breiteste = Math.max(breiteste, probe.getPaint().measureText("  " + z.text));
         }
-        float dichte = getResources().getDisplayMetrics().density;
         ViewGroup.LayoutParams lp = lines.getLayoutParams();
         lp.width = Math.max(getResources().getDisplayMetrics().widthPixels,
-                (int) (breiteste + (64 + 16 + 8) * dichte));
+                (int) (breiteste + nummernBreite + 24 * dichte));
         lines.setLayoutParams(lp);
     }
 }

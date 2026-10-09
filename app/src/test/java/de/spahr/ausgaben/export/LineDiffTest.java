@@ -99,6 +99,58 @@ public class LineDiffTest {
         stimmt(alt, neu);
     }
 
+    /** Die markierten Stellen als Zeichenkette: „.." unverändert, „#" markiert. */
+    private static String lage(boolean[] markiert) {
+        StringBuilder sb = new StringBuilder();
+        for (boolean b : markiert) {
+            sb.append(b ? '#' : '.');
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Eine Buchung wird hinter eine bestehende gehängt; beide enden mit denselben Zeilen. Markiert
+     * sein muss die neue als Ganzes – von ihrem Kopf bis zu ihrem eigenen Ende –, nicht die Ende-Zeilen
+     * der alten samt dem Anfang der neuen.
+     */
+    @Test
+    public void angehaengterBlockWirdAlsGanzesMarkiert() {
+        String[] alt = z("<T1>", "<S>", "s1", "</S>", "</T>", "</TS>");
+        String[] neu = z("<T1>", "<S>", "s1", "</S>", "</T>", "<T2>", "<S>", "s2", "</S>", "</T>", "</TS>");
+        LineDiff d = LineDiff.vergleiche(alt, neu);
+        assertEquals(".....#####.", lage(d.hinzu));
+        assertEquals("......", lage(d.entfernt));
+        stimmt(alt, neu);
+    }
+
+    /** Dasselbe beim Löschen: Die mittlere von drei gleich endenden Buchungen fällt als Ganzes weg. */
+    @Test
+    public void entfernterBlockWirdAlsGanzesMarkiert() {
+        String[] alt = z("<T1>", "</S>", "</T>", "<T2>", "</S>", "</T>", "<T3>", "</S>", "</T>");
+        String[] neu = z("<T1>", "</S>", "</T>", "<T3>", "</S>", "</T>");
+        LineDiff d = LineDiff.vergleiche(alt, neu);
+        assertEquals("...###...", lage(d.entfernt));
+        stimmt(alt, neu);
+    }
+
+    /** Ein Block mitten zwischen gleichlautenden Nachbarn rückt bis an sein eigenes Ende, nicht weiter. */
+    @Test
+    public void blockInDerMitte() {
+        String[] alt = z("<T1>", "</T>", "<T3>", "</T>");
+        String[] neu = z("<T1>", "</T>", "<T2>", "</T>", "<T3>", "</T>");
+        assertEquals("..##..", lage(LineDiff.vergleiche(alt, neu).hinzu));
+    }
+
+    /** Wo nichts mehrdeutig ist, bleibt der Block, wo er ist; Nachbarn laufen nicht ineinander. */
+    @Test
+    public void eindeutigeBloeckeBleibenStehen() {
+        assertEquals(".#..", lage(LineDiff.vergleiche(z("a", "b", "c"), z("a", "x", "b", "c")).hinzu));
+        // Zwei eingefügte Zeilen, durch eine gleichlautende getrennt: jede bleibt für sich.
+        LineDiff d = LineDiff.vergleiche(z("k", "a", "a", "e"), z("k", "x", "a", "y", "a", "e"));
+        assertEquals(".#.#..", lage(d.hinzu));
+        stimmt(z("k", "a", "a", "e"), z("k", "x", "a", "y", "a", "e"));
+    }
+
     @Test
     public void zeilenTrennenAmZeilenende() {
         assertArrayEquals(z("a", "b"), LineDiff.zeilen("a\nb\n"));

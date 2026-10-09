@@ -77,6 +77,8 @@ public final class LineDiff {
             for (int j = 0; j < m; j++) {
                 hinzu[anfang + j] = true;
             }
+            schiebeNachUnten(alt, entfernt);
+            schiebeNachUnten(neu, hinzu);
             return new LineDiff(entfernt, hinzu);
         }
 
@@ -98,7 +100,46 @@ public final class LineDiff {
                 hinzu[anfang + j] = true;
             }
         }
+        schiebeNachUnten(alt, entfernt);
+        schiebeNachUnten(neu, hinzu);
         return new LineDiff(entfernt, hinzu);
+    }
+
+    /**
+     * Rückt jeden markierten Block so weit nach unten, wie es geht, ohne dass sich am Vergleich etwas
+     * ändert.
+     *
+     * <p>Wo ein Block eingefügt wurde, ist oft nicht eindeutig: Hängt hinter einer Buchung eine neue,
+     * enden beide mit denselben zwei Zeilen ({@code </SPLITS>}, {@code </TRANSACTION>}). Der
+     * Vergleich darf dann ebenso gut die Ende-Zeilen der alten samt Kopf und Splits der neuen als
+     * „hinzugekommen" melden – gleich viele Zeilen, gleich richtig, aber so liest es niemand. Solange
+     * die Zeile hinter dem Block dasselbe sagt wie seine erste, wandert er deshalb eine Zeile
+     * weiter: Der Block beginnt dann am Kopf des Neuen und endet an dessen eigenem Ende.</p>
+     *
+     * <p>Richtig bleibt das Ergebnis, weil die freigegebene und die neu markierte Zeile denselben
+     * Text tragen und zwischen ihnen nur markierte liegen: Die Folge der unmarkierten Zeilen ist
+     * danach dieselbe wie davor.</p>
+     */
+    private static void schiebeNachUnten(String[] zeilen, boolean[] markiert) {
+        // Von hinten nach vorn, damit ein Block auf einen schon gesetzten Nachfolger trifft.
+        int i = zeilen.length - 1;
+        while (i >= 0) {
+            if (!markiert[i]) {
+                i--;
+                continue;
+            }
+            int ende = i + 1;
+            int start = i;
+            while (start > 0 && markiert[start - 1]) {
+                start--;
+            }
+            int weiter = start - 1;
+            while (ende < zeilen.length && !markiert[ende] && zeilen[ende].equals(zeilen[start])) {
+                markiert[start++] = false;
+                markiert[ende++] = true;
+            }
+            i = weiter;
+        }
     }
 
     private static int nummer(Map<String, Integer> nummern, String zeile) {
