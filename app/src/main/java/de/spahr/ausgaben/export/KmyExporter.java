@@ -384,8 +384,27 @@ public class KmyExporter {
                 consumed[matchIdx] = true;
                 result.resolvedIds.add(sigDeleteId.get(matchIdx));
                 result.aenderungen.geloescht(attributeOfOpeningTag(tx, ID_ATTR));
-                sb.append(xml, last, m.start());
-                last = m.end();
+                // Steht der Block auf eigenen Zeilen, gehen sie ganz – samt Einrückung und
+                // Zeilenende. Sonst bliebe eine leere Zeile zurück, und die Datei stünde nach
+                // „schreiben und wieder löschen" nicht mehr da wie zuvor.
+                int from = m.start();
+                int to = m.end();
+                String indent = indentBefore(xml, from);
+                if (indent != null) {
+                    int e = to;
+                    while (e < xml.length() && (xml.charAt(e) == ' ' || xml.charAt(e) == '\t')) {
+                        e++;
+                    }
+                    if (xml.startsWith("\r\n", e)) {
+                        from -= indent.length();
+                        to = e + 2;
+                    } else if (xml.startsWith("\n", e)) {
+                        from -= indent.length();
+                        to = e + 1;
+                    }
+                }
+                sb.append(xml, last, from);
+                last = to;
                 removed++;
             }
         }
@@ -416,8 +435,22 @@ public class KmyExporter {
             this.end = end;
         }
 
-        /** Die XML mit {@code replacement} an der Stelle des Fundes. */
+        /**
+         * Die XML mit {@code replacement} an der Stelle des Fundes. Steht der alte Block auf eigenen
+         * Zeilen, kommt der neue ebenso zu stehen – ein Element je Zeile, mit der Einrückung des alten.
+         */
         String replacedBy(String replacement) {
+            String indent = indentBefore(head, start);
+            if (indent != null) {
+                // Eine Transaktion steht zwei Ebenen tief; die halbe Einrückung ist eine Ebene.
+                String unit = indent.length() >= 2 && indent.length() % 2 == 0
+                        ? indent.substring(0, indent.length() / 2) : " ";
+                String eol = eolOf(head);
+                String lines = gegliedert(replacement, indent, unit, eol);
+                if (lines != null) {
+                    replacement = lines.substring(indent.length(), lines.length() - eol.length());
+                }
+            }
             return head.substring(0, start) + replacement + head.substring(end) + tail;
         }
     }
@@ -1288,12 +1321,40 @@ public class KmyExporter {
      * KMyMoney selbstschließend ({@code <PAYEES/>} bzw. {@code <PAYEES count="0"/>}); die werden hier
      * aufgeklappt. Ohne das gingen bei einer frischen Datei alle Buchungen lautlos verloren.
      *
+     * <p>Geschrieben wird, wie KMyMoney selbst schreibt: ein Element je Zeile, je Ebene eingerückt wie
+     * der Bestand. Das ändert am Inhalt nichts, macht aber einen Zeilenvergleich der Datei lesbar – je
+     * Split eine Zeile statt aller neuen Buchungen in einer einzigen. Nur eine Datei, die selbst keine
+     * Zeilen kennt, bekommt das Fragment wie früher am Stück.</p>
+     *
+     * @param fragment die neuen Elemente am Stück, ohne Leerraum dazwischen
      * @return das ergänzte XML oder {@code null}, wenn es den Block gar nicht gibt (dann darf auch das
      *         count-Attribut nicht hochgezählt werden)
      */
     static String insertIntoBlock(String xml, String tag, String fragment) {
+        boolean zeilenweise = xml.indexOf('\n') >= 0;
+        String eol = eolOf(xml);
         int idx = xml.lastIndexOf("</" + tag + ">");
         if (idx >= 0) {
+            String closing = zeilenweise ? indentBefore(xml, idx) : null;
+            if (closing != null) {
+                // Der Regelfall: das schließende Tag steht allein auf seiner Zeile. Der Behälter liegt
+                // eine Ebene tief, seine Einrückung ist also zugleich die Schrittweite.
+                String unit = closing.isEmpty() ? " " : closing;
+                String lines = gegliedert(fragment, closing + unit, unit, eol);
+                if (lines != null) {
+                    int lineStart = idx - closing.length();
+                    return xml.substring(0, lineStart) + lines + xml.substring(lineStart);
+                }
+            } else if (zeilenweise) {
+                // Vor dem schließenden Tag steht noch etwas auf der Zeile – so schrieb die App bis
+                // 2.2 ihre Buchungen. Ab hier geht es zeilenweise weiter.
+                String line = lineIndent(xml, idx);
+                String unit = line.isEmpty() ? " " : line;
+                String lines = gegliedert(fragment, line + unit, unit, eol);
+                if (lines != null) {
+                    return xml.substring(0, idx) + eol + lines + line + xml.substring(idx);
+                }
+            }
             return xml.substring(0, idx) + fragment + xml.substring(idx);
         }
         Matcher m = Pattern.compile("<" + tag + "\\b[^>]*/>").matcher(xml);
@@ -1303,8 +1364,98 @@ public class KmyExporter {
         String open = m.group();
         // „<PAYEES count="0"/>" → „<PAYEES count="0">…</PAYEES>"
         String opened = open.substring(0, open.length() - 2).trim() + ">";
+        String indent = zeilenweise ? indentBefore(xml, m.start()) : null;
+        if (indent != null) {
+            String unit = indent.isEmpty() ? " " : indent;
+            String lines = gegliedert(fragment, indent + unit, unit, eol);
+            if (lines != null) {
+                return xml.substring(0, m.start()) + opened + eol + lines + indent + "</" + tag + ">"
+                        + xml.substring(m.end());
+            }
+        }
         return xml.substring(0, m.start()) + opened + fragment + "</" + tag + ">"
                 + xml.substring(m.end());
+    }
+
+    /** Das Zeilenende, das die Datei benutzt. */
+    private static String eolOf(String xml) {
+        return xml.contains("\r\n") ? "\r\n" : "\n";
+    }
+
+    /**
+     * Die Einrückung vor {@code pos}, wenn dort bis zum Zeilenanfang nichts als Leerzeichen und
+     * Tabulatoren stehen – sonst {@code null}: dann steht das Element nicht am Anfang einer Zeile.
+     */
+    private static String indentBefore(String xml, int pos) {
+        int i = pos;
+        while (i > 0 && (xml.charAt(i - 1) == ' ' || xml.charAt(i - 1) == '\t')) {
+            i--;
+        }
+        return i > 0 && xml.charAt(i - 1) == '\n' ? xml.substring(i, pos) : null;
+    }
+
+    /** Die Einrückung der Zeile, in der {@code pos} liegt. */
+    private static String lineIndent(String xml, int pos) {
+        int start = xml.lastIndexOf('\n', pos - 1) + 1;
+        int i = start;
+        while (i < pos && (xml.charAt(i) == ' ' || xml.charAt(i) == '\t')) {
+            i++;
+        }
+        return xml.substring(start, i);
+    }
+
+    /**
+     * Setzt am Stück gebaute Elemente auf Zeilen: jedes Tag auf eine eigene, die erste Ebene mit
+     * {@code indent} eingerückt, jede tiefere um {@code unit} weiter; jede Zeile endet mit {@code eol}.
+     *
+     * @return {@code null}, wenn zwischen den Tags Text steht – der Exporter baut so etwas nicht, und
+     *         falls doch, bleibt es lieber am Stück, als dass Leerraum in einen Textknoten geriete
+     */
+    static String gegliedert(String kompakt, String indent, String unit, String eol) {
+        StringBuilder out = new StringBuilder(kompakt.length() + 64);
+        int depth = 0;
+        int pos = 0;
+        while (pos < kompakt.length()) {
+            if (kompakt.charAt(pos) != '<') {
+                return null;
+            }
+            // Ende des Tags; ein „>" in einem Attributwert zählt nicht.
+            int end = -1;
+            char quote = 0;
+            for (int i = pos + 1; i < kompakt.length(); i++) {
+                char c = kompakt.charAt(i);
+                if (quote != 0) {
+                    if (c == quote) {
+                        quote = 0;
+                    }
+                } else if (c == '"' || c == '\'') {
+                    quote = c;
+                } else if (c == '>') {
+                    end = i + 1;
+                    break;
+                }
+            }
+            if (end < 0) {
+                return null;
+            }
+            boolean closing = kompakt.charAt(pos + 1) == '/';
+            if (closing) {
+                depth--;
+            }
+            if (depth < 0) {
+                return null;
+            }
+            out.append(indent);
+            for (int d = 0; d < depth; d++) {
+                out.append(unit);
+            }
+            out.append(kompakt, pos, end).append(eol);
+            if (!closing && kompakt.charAt(end - 2) != '/') {
+                depth++;
+            }
+            pos = end;
+        }
+        return depth == 0 ? out.toString() : null;
     }
 
     /** Erhöht das count-Attribut von {@code <TAG count="N" …>} um {@code delta}. */

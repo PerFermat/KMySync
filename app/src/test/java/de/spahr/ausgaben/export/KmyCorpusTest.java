@@ -191,15 +191,17 @@ public class KmyCorpusTest {
             } else if ("PAYEES".equals(neu.name) || "TRANSACTIONS".equals(neu.name)) {
                 StringBuilder kinder = new StringBuilder();
                 KmyGliederung.Inhalt inhalt = neu.inhalt();
+                int geblieben = 0;
                 for (int k = 0; k < inhalt.kinder.size(); k++) {
-                    kinder.append(inhalt.luecken.get(k));
                     KmyGliederung.Element kind = inhalt.kinder.get(k);
+                    // Der neue Empfänger geht samt seiner Zeile: Zeilenende und Einrückung davor.
                     if (!geschrieben.neueEmpfaenger().contains(kind.id())) {
-                        kinder.append(kind.text());
+                        kinder.append(inhalt.luecken.get(k)).append(kind.text());
+                        geblieben++;
                     }
                 }
                 kinder.append(inhalt.luecken.get(inhalt.kinder.size()));
-                ersatz = vorher.leer && kinder.length() == 0
+                ersatz = vorher.leer && geblieben == 0
                         ? vorher.text()
                         : vorher.oeffnung() + kinder + "</" + neu.name + ">";
             }
