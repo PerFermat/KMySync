@@ -33,6 +33,13 @@
     <color name="export_banner_bg">#2E7D32</color>
     <color name="export_banner_shimmer">#43A047</color>
     <color name="export_banner_text">#FFFFFF</color>
+    <!-- Zeilenvergleich der KMyMoney-Datei, dunkler Modus: weiße Schrift auf dunklem Grund. -->
+    <color name="diff_bg">#1E1E1E</color>
+    <color name="diff_text">#FFFFFF</color>
+    <color name="diff_number">#9E9E9E</color>
+    <color name="diff_added_bg">#1B5E20</color>
+    <color name="diff_removed_bg">#B71C1C</color>
+    <color name="diff_gap_bg">#616161</color>
     <!-- Haken und Kreuz im Band. Der Grund bleibt auch nachts ein Amber (#F57F17) und damit hell –
          deshalb hier keine aufgehellten Töne wie bei income_green/expense_red, sondern kräftige
          dunkle, die darauf stehen. Nur eine Spur satter als im Hell-Modus. -->

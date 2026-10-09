@@ -27,7 +27,8 @@ import de.spahr.ausgaben.settings.ProfileManager;
 /**
  * Was die Exporte an der KMyMoney-Datei geändert haben. Ohne {@link #EXTRA_NAME} die Liste der
  * aufgehobenen Exporte, mit ihm die Zeilen eines einzelnen: hinzugekommene grün, entfernte rot, die
- * Umgebung weiß auf dunklem Grund, mit Zeilennummer.
+ * Umgebung ohne Farbe – schwarz auf Weiß im hellen, weiß auf dunklem Grund im dunklen Modus –, jede
+ * mit Zeilennummer.
  *
  * <p>Die Daten stammen aus dem Vergleich nach dem Export ({@link ExportDiff}) – dem Stand davor gegen
  * die vom Server zurückgelesene Datei –, nicht aus dem, was die App zu schreiben vorhatte.</p>
@@ -115,8 +116,10 @@ public class ExportDiffActivity extends LocalizedActivity {
             return;
         }
         toolbar.setTitle(datum.format(new Date(d.zeit)));
-        toolbar.setSubtitle(summary(d));
+        // Die Kurzfassung steht unter der Leiste, nicht als ihr Untertitel: bei großer Schrift passt
+        // eine zweite Zeile dort nicht hinein und wird unten abgeschnitten.
         List<String> hinweise = new ArrayList<>();
+        hinweise.add(summary(d));
         if (d.abweichung) {
             hinweise.add(getString(R.string.kmy_changes_differs));
         }
@@ -126,11 +129,7 @@ public class ExportDiffActivity extends LocalizedActivity {
         if (d.zeilen.isEmpty()) {
             hinweise.add(getString(R.string.kmy_changes_none));
         }
-        if (hinweise.isEmpty()) {
-            note.setVisibility(View.GONE);
-        } else {
-            note.setText(android.text.TextUtils.join("\n", hinweise));
-        }
+        note.setText(android.text.TextUtils.join("\n", hinweise));
         if (d.zeilen.isEmpty()) {
             return;
         }

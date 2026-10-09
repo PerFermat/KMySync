@@ -46,13 +46,13 @@
     <color name="export_banner_bg">#A5D6A7</color>
     <color name="export_banner_shimmer">#66BB6A</color>
     <color name="export_banner_text">#000000</color>
-    <!-- Zeilenvergleich der KMyMoney-Datei: immer dunkle Fläche mit weißer Schrift, wie ein Terminal. -->
-    <color name="diff_bg">#1E1E1E</color>
-    <color name="diff_text">#FFFFFF</color>
-    <color name="diff_number">#9E9E9E</color>
-    <color name="diff_added_bg">#1B5E20</color>
-    <color name="diff_removed_bg">#B71C1C</color>
-    <color name="diff_gap_bg">#616161</color>
+    <!-- Zeilenvergleich der KMyMoney-Datei, heller Modus: schwarze Schrift, unveränderte Zeilen auf Weiß. -->
+    <color name="diff_bg">#FFFFFF</color>
+    <color name="diff_text">#000000</color>
+    <color name="diff_number">#757575</color>
+    <color name="diff_added_bg">#A5D6A7</color>
+    <color name="diff_removed_bg">#EF9A9A</color>
+    <color name="diff_gap_bg">#BDBDBD</color>
     <!-- Haken und Kreuz im Band während „Verbindung testen". Eigene Namen statt income_green und
          expense_red: die stehen für Einnahmen und Ausgaben, und eine Änderung dort soll nicht
          ungewollt hier landen. Beide Töne müssen auf dem gelben Grund des Bandes lesbar sein. -->
