@@ -89,6 +89,35 @@ final class KmyAbsicht {
     }
 
     /**
+     * Trägt ein, auf welcher Seite die Buchung ihre Kategorien führt: {@code category_is_income} der
+     * Buchung bzw. jedes Teils einer Splitbuchung. Unbekannt ({@code null}, Zeilen aus der Zeit vor
+     * diesem Feld) bleibt unbekannt. Umbuchungen haben keine Kategorie.
+     */
+    static void seiten(KmyAenderungen.Absicht ziel, Booking b, List<BookingSplit> teile, Konten konten) {
+        if (b.isTransfer) {
+            return;
+        }
+        if (teile != null && teile.size() >= 2) {
+            for (BookingSplit t : teile) {
+                seite(ziel, konten.categoryId(t.category == null ? "" : t.category.trim()),
+                        t.categoryIsIncome);
+            }
+            return;
+        }
+        String name = b.category == null ? "" : b.category.trim();
+        if (!name.isEmpty()) {
+            seite(ziel, konten.categoryId(name), b.categoryIsIncome);
+        }
+    }
+
+    private static void seite(KmyAenderungen.Absicht ziel, String kategorieId, Boolean einnahme) {
+        if (kategorieId == null || einnahme == null) {
+            return;
+        }
+        (einnahme ? ziel.einnahmeKonten : ziel.ausgabeKonten).add(kategorieId);
+    }
+
+    /**
      * Soll je Konto-id für eine Depot-Bewegung: das Geld auf dem Verrechnungskonto, der Gegenwert auf
      * dem Wertpapier, Ertrag und Abzüge auf ihren Kategorien.
      *

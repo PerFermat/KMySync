@@ -586,6 +586,111 @@ public class KmyExportCheckTest {
                 r.aenderungen, "mehr als die Notiz geändert");
     }
 
+    // ---- Einnahme- und Ausgabeseite ----
+
+    /** edited.xml kennt nur Ausgabekategorien – hier kommt „Lohn" im Einnahmenbaum dazu. */
+    private KmyDocument mitEinnahmekategorie() throws Exception {
+        String xml = alt().replace("<ACCOUNTS count=\"4\">", "<ACCOUNTS count=\"6\">\n"
+                + "    <ACCOUNT id=\"A000005\" parentaccount=\"AStd::Income\" lastreconciled=\"\" "
+                + "lastmodified=\"2026-01-01\" institution=\"\" opened=\"2026-01-01\" number=\"\" "
+                + "type=\"12\" name=\"Lohn\" description=\"\" currency=\"EUR\"/>\n"
+                + "    <ACCOUNT id=\"A000006\" parentaccount=\"A000005\" lastreconciled=\"\" "
+                + "lastmodified=\"2026-01-01\" institution=\"\" opened=\"2026-01-01\" number=\"\" "
+                + "type=\"12\" name=\"Bonus\" description=\"\" currency=\"EUR\"/>");
+        return new KmyDocument(xml.getBytes(java.nio.charset.StandardCharsets.UTF_8), ctx);
+    }
+
+    private KmyExporter.Result eine(KmyDocument d, Booking b) {
+        KmyExporter.Result r = new KmyExporter(d, ctx).build(Collections.singletonList(b),
+                Collections.emptyList(), new HashMap<>());
+        assertEquals(Collections.emptyList(), r.skipped);
+        return r;
+    }
+
+    @Test
+    public void kategorieImFalschenBaum_faelltDurch() throws Exception {
+        KmyDocument d = mitEinnahmekategorie();
+        // Als Ausgabekategorie geführt, liegt aber im Einnahmenbaum.
+        Booking b = ausgabe(5, 111);
+        b.category = "Lohn";
+        b.categoryIsIncome = false;
+        b.payee = "Chef";
+        KmyExporter.Result r = eine(d, b);
+        faelltDurch(d.xml(), r.xml, r.aenderungen, "Kategorie A000005 liegt im Einnahmenbaum");
+        // Die Meldung nennt die Buchung, damit man sie findet.
+        faelltDurch(d.xml(), r.xml, r.aenderungen, "(Chef, 2026-02-01)");
+
+        // Und umgekehrt: als Einnahmekategorie geführt, liegt im Ausgabenbaum.
+        Booking c = ausgabe(6, 111);
+        c.isIncome = true;
+        c.categoryIsIncome = true;
+        KmyExporter.Result r2 = eine(d, c);
+        faelltDurch(d.xml(), r2.xml, r2.aenderungen, "Kategorie A000003 liegt im Ausgabenbaum");
+    }
+
+    @Test
+    public void kategorieImRichtigenBaum_besteht() throws Exception {
+        KmyDocument d = mitEinnahmekategorie();
+        Booking lohn = ausgabe(5, 250000);
+        lohn.isIncome = true;
+        lohn.category = "Lohn";
+        lohn.categoryIsIncome = true;
+        KmyExporter.Result r = eine(d, lohn);
+        besteht(d.xml(), r.xml, r.aenderungen);
+
+        // Eine Erstattung: Geld kommt herein, die Kategorie bleibt eine Ausgabekategorie. Maßgeblich
+        // ist die Seite der Kategorie, nicht die Richtung des Geldes.
+        Booking erstattung = ausgabe(6, 111);
+        erstattung.isIncome = true;
+        erstattung.categoryIsIncome = false;
+        r = eine(d, erstattung);
+        besteht(d.xml(), r.xml, r.aenderungen);
+
+        // Kennt die App die Seite nicht (Zeile aus der Zeit vor dem Feld), wird nichts behauptet.
+        Booking unbekannt = ausgabe(7, 111);
+        unbekannt.category = "Lohn";
+        unbekannt.categoryIsIncome = null;
+        r = eine(d, unbekannt);
+        besteht(d.xml(), r.xml, r.aenderungen);
+    }
+
+    /** Jeder Teil einer Splitbuchung trägt seine eigene Seite. */
+    @Test
+    public void splitbuchungMitEinemTeilImFalschenBaum_faelltDurch() throws Exception {
+        KmyDocument d = mitEinnahmekategorie();
+        Booking b = ausgabe(5, 300);
+        b.category = "";
+        java.util.Map<Long, java.util.List<de.spahr.ausgaben.db.BookingSplit>> teile = new HashMap<>();
+        teile.put(5L, Arrays.asList(
+                new de.spahr.ausgaben.db.BookingSplit(5, "Essen", 100, false),
+                new de.spahr.ausgaben.db.BookingSplit(5, "Bonus", 200, false)));
+        KmyExporter.Result r = new KmyExporter(d, ctx).build(Collections.singletonList(b),
+                Collections.emptyList(), teile);
+        assertEquals(Collections.emptyList(), r.skipped);
+        faelltDurch(d.xml(), r.xml, r.aenderungen, "liegt im Einnahmenbaum");
+
+        teile.put(5L, Arrays.asList(
+                new de.spahr.ausgaben.db.BookingSplit(5, "Essen", 100, false),
+                new de.spahr.ausgaben.db.BookingSplit(5, "Bonus", 200, true)));
+        r = new KmyExporter(d, ctx).build(Collections.singletonList(b), Collections.emptyList(), teile);
+        besteht(d.xml(), r.xml, r.aenderungen);
+    }
+
+    /** Der Baum eines Kontos: am Typ, und wo der nichts sagt, über die Elternkonten bis zur Wurzel. */
+    @Test
+    public void baumEinesKontos() throws Exception {
+        String xml = mitEinnahmekategorie().xml()
+                .replace("type=\"12\" name=\"Bonus\"", "type=\"\" name=\"Bonus\"");
+        KmyExportCheck.Stand datei = KmyExportCheck.erfassen(xml, "Test", Collections.emptySet());
+        assertEquals(Boolean.TRUE, KmyExportCheck.einnahmenbaum("A000005", datei));
+        assertEquals("ohne eigenen Typ: über das Elternkonto", Boolean.TRUE,
+                KmyExportCheck.einnahmenbaum("A000006", datei));
+        assertEquals(Boolean.FALSE, KmyExportCheck.einnahmenbaum("A000003", datei));
+        assertEquals("ein Bestandskonto liegt in keinem der beiden", null,
+                KmyExportCheck.einnahmenbaum("A000001", datei));
+        assertEquals(null, KmyExportCheck.einnahmenbaum("A999999", datei));
+    }
+
     // ---- Planungen ----
 
     private static String planung(String id, String postdate) {

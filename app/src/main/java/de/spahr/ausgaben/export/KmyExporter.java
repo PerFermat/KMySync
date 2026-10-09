@@ -221,8 +221,7 @@ public class KmyExporter {
                         transactionElement(found.txId, dateFor(b.createdAt), today,
                                 built.memo, built.commodity, built.splits),
                         found.block));
-                result.aenderungen.geaendert(found.txId).soll =
-                        KmyAbsicht.fuerBuchung(b, splitsMap.get(b.id), doc);
+                absicht(result.aenderungen.geaendert(found.txId), b, splitsMap);
             }
             result.updated++;
             result.writtenIds.add(b.id);
@@ -247,7 +246,7 @@ public class KmyExporter {
             String txId = String.format(Locale.US, "T%018d", nextTx[0]++);
             txFragments.append(transactionElement(txId, dateFor(b.createdAt), today, built.memo,
                     built.commodity, built.splits));
-            result.aenderungen.neu(txId).soll = KmyAbsicht.fuerBuchung(b, splitsMap.get(b.id), doc);
+            absicht(result.aenderungen.neu(txId), b, splitsMap);
             newTx++;
             result.writtenIds.add(b.id);
             if (b.isTransfer && !group.isEmpty()) {
@@ -291,6 +290,17 @@ public class KmyExporter {
         xml = updateLastModified(xml, today);
         result.xml = xml;
         return result;
+    }
+
+    /**
+     * Füllt die Ansage zu einer geschriebenen Buchung mit dem, was die App mit ihr vorhat – berechnet
+     * aus der Buchung selbst, nicht aus dem eben gebauten XML (siehe {@link KmyAbsicht}).
+     */
+    private void absicht(KmyAenderungen.Absicht ziel, Booking b, Map<Long, List<BookingSplit>> splitsMap) {
+        List<BookingSplit> teile = splitsMap.get(b.id);
+        ziel.soll = KmyAbsicht.fuerBuchung(b, teile, doc);
+        KmyAbsicht.seiten(ziel, b, teile, doc);
+        ziel.bezeichnung = label(b) + ", " + dateFor(b.createdAt);
     }
 
     /**

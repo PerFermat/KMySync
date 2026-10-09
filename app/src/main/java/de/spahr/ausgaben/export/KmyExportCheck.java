@@ -150,6 +150,7 @@ public final class KmyExportCheck {
             Buchung neueFassung = nachher.genau.get(ab.txId);
             if (ab.art == KmyAenderungen.Art.NEU || ab.art == KmyAenderungen.Art.GEAENDERT) {
                 inSichStimmig(neueFassung, ab, nachher);
+                seitePlausibel(ab, nachher);
             } else if (ab.art == KmyAenderungen.Art.NUR_NOTIZ) {
                 nurNotizGeaendert(vorher.genau.get(ab.txId), neueFassung);
             }
@@ -739,6 +740,60 @@ public final class KmyExportCheck {
                     throw new Failed(wer + ": Split " + s.von("id") + " trägt shares " + s.von("shares")
                             + " bei value " + s.von("value"));
                 }
+            }
+        }
+    }
+
+    // ---- Einnahme- und Ausgabeseite ----
+
+    /**
+     * In welchem Baum liegt das Konto: {@code TRUE} = Einnahmen, {@code FALSE} = Ausgaben,
+     * {@code null} = in keinem von beiden. Entschieden wird am Kontotyp (12/13) und, wo der fehlt, an
+     * der Kette der Elternkonten bis zur Wurzel {@code AStd::Income} bzw. {@code AStd::Expense}.
+     */
+    static Boolean einnahmenbaum(String kontoId, Stand datei) {
+        String id = kontoId;
+        for (int i = 0; i < 64 && id != null && !id.isEmpty(); i++) {
+            if ("AStd::Income".equals(id)) {
+                return Boolean.TRUE;
+            }
+            if ("AStd::Expense".equals(id)) {
+                return Boolean.FALSE;
+            }
+            String[] stamm = datei.konten.get(id);
+            if (stamm == null) {
+                return null;
+            }
+            if ("12".equals(stamm[0])) {
+                return Boolean.TRUE;
+            }
+            if ("13".equals(stamm[0])) {
+                return Boolean.FALSE;
+            }
+            id = stamm[1];
+        }
+        return null;
+    }
+
+    /**
+     * Die fünfte Regel: Führt die App eine Kategorie als Einnahme, darf ihr Split nicht auf einem Konto
+     * des Ausgabenbaums liegen, und umgekehrt. KMyMoney erlaubt denselben Kategorienamen in beiden
+     * Bäumen; landete eine Buchung im falschen, stünde sie mit richtigem Betrag in der falschen
+     * Auswertung – unauffällig, und deshalb hier abgefangen.
+     */
+    private static void seitePlausibel(KmyAenderungen.Absicht ab, Stand datei) throws Failed {
+        String wer = "TRANSACTION " + ab.txId
+                + (ab.bezeichnung.isEmpty() ? "" : " (" + ab.bezeichnung + ")");
+        for (String konto : ab.einnahmeKonten) {
+            if (Boolean.FALSE.equals(einnahmenbaum(konto, datei))) {
+                throw new Failed(wer + ": Kategorie " + konto + " liegt im Ausgabenbaum, die Buchung "
+                        + "führt sie als Einnahme");
+            }
+        }
+        for (String konto : ab.ausgabeKonten) {
+            if (Boolean.TRUE.equals(einnahmenbaum(konto, datei))) {
+                throw new Failed(wer + ": Kategorie " + konto + " liegt im Einnahmenbaum, die Buchung "
+                        + "führt sie als Ausgabe");
             }
         }
     }

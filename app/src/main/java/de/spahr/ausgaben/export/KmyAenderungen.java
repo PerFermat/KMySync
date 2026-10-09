@@ -38,6 +38,16 @@ public final class KmyAenderungen {
          * gelöschte nimmt mit, was sie in der Datei trug, eine {@link Art#NUR_NOTIZ} bewegt nichts.
          */
         public Map<String, KmyBruch> soll;
+        /**
+         * Kategorie-Konten, die die Buchung der App als Einnahme- bzw. als Ausgabekategorie führt
+         * ({@code category_is_income}). Die Selbstprüfung hält dagegen, in welchem Baum das Konto in
+         * der Datei wirklich liegt. Eine Kategorie, deren Seite die App nicht kennt, steht in keiner
+         * der beiden Mengen.
+         */
+        public final Set<String> einnahmeKonten = new LinkedHashSet<>();
+        public final Set<String> ausgabeKonten = new LinkedHashSet<>();
+        /** Woran der Nutzer die Buchung erkennt – für die Meldung, falls die Prüfung anschlägt. */
+        public String bezeichnung = "";
 
         Absicht(String txId, Art art) {
             this.txId = txId;
