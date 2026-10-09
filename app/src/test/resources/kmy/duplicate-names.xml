@@ -23,7 +23,9 @@
   <TRANSACTIONS count="0"/>
   <SCHEDULES/>
   <SECURITIES/>
-  <CURRENCIES/>
+  <CURRENCIES count="1">
+    <CURRENCY id="EUR" name="Euro" symbol="€" type="3" saf="100" pp="4" scf="100" rounding-method="0"/>
+  </CURRENCIES>
   <PRICES/>
   <BUDGETS/>
   <KEYVALUEPAIRS>

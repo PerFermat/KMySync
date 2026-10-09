@@ -10,8 +10,12 @@
     <FIXVERSION id="11"/>
   </FILEINFO>
   <INSTITUTIONS count="2">
-    <INSTITUTION id="I000001" sortcode="99951010" manager="" name="LBS"/>
-    <INSTITUTION id="I000002" sortcode="61060500" manager="" name="Volksbank"/>
+    <INSTITUTION id="I000001" sortcode="99951010" manager="" name="LBS">
+      <ADDRESS city="" street="" zip="" telephone=""/>
+    </INSTITUTION>
+    <INSTITUTION id="I000002" sortcode="61060500" manager="" name="Volksbank">
+      <ADDRESS city="" street="" zip="" telephone=""/>
+    </INSTITUTION>
   </INSTITUTIONS>
   <PAYEES/>
   <COSTCENTERS/>
@@ -37,7 +41,9 @@
   <TRANSACTIONS count="0"/>
   <SCHEDULES/>
   <SECURITIES/>
-  <CURRENCIES/>
+  <CURRENCIES count="1">
+    <CURRENCY id="EUR" name="Euro" symbol="€" type="3" saf="100" pp="4" scf="100" rounding-method="0"/>
+  </CURRENCIES>
   <PRICES/>
   <BUDGETS/>
   <KEYVALUEPAIRS>

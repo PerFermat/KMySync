@@ -9,7 +9,9 @@
     <FIXVERSION id="11"/>
   </FILEINFO>
   <PAYEES count="1">
-    <PAYEE id="P000001" name="Broker" email="" reference="" matchingenabled="0"/>
+    <PAYEE id="P000001" name="Broker" email="" reference="" matchingenabled="0">
+      <ADDRESS postcode="" city="" street="" telephone="" state=""/>
+    </PAYEE>
   </PAYEES>
   <TAGS count="1">
     <TAG id="G000001" name="Depot" tagcolor="#00ff00" closed="0" notes=""/>
@@ -40,7 +42,9 @@
       </KEYVALUEPAIRS>
     </SECURITY>
   </SECURITIES>
-  <CURRENCIES/>
+  <CURRENCIES count="1">
+    <CURRENCY id="EUR" name="Euro" symbol="€" type="3" saf="100" pp="4" scf="100" rounding-method="0"/>
+  </CURRENCIES>
   <PRICES/>
   <BUDGETS/>
   <KEYVALUEPAIRS>

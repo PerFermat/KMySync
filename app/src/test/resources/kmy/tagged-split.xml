@@ -9,7 +9,9 @@
     <FIXVERSION id="11"/>
   </FILEINFO>
   <PAYEES count="1">
-    <PAYEE id="P000001" name="Bäcker" email="" reference="" matchingenabled="0"/>
+    <PAYEE id="P000001" name="Bäcker" email="" reference="" matchingenabled="0">
+      <ADDRESS postcode="" city="" street="" telephone="" state=""/>
+    </PAYEE>
   </PAYEES>
   <TAGS count="1">
     <TAG id="G000001" name="Urlaub" tagcolor="#ff0000" closed="0" notes=""/>
@@ -30,7 +32,9 @@
   </TRANSACTIONS>
   <SCHEDULES/>
   <SECURITIES/>
-  <CURRENCIES/>
+  <CURRENCIES count="1">
+    <CURRENCY id="EUR" name="Euro" symbol="€" type="3" saf="100" pp="4" scf="100" rounding-method="0"/>
+  </CURRENCIES>
   <PRICES/>
   <BUDGETS/>
   <KEYVALUEPAIRS>

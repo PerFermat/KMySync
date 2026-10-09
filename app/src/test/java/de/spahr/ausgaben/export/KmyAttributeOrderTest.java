@@ -169,15 +169,10 @@ public class KmyAttributeOrderTest {
     @Test
     public void adresseDesNeuenEmpfaengersWieInDerDatei() throws Exception {
         String basis = new String(KmyRobustnessTest.fixture("edited.xml"), StandardCharsets.UTF_8);
-        String alt = "<PAYEE id=\"P000001\" name=\"Bäcker\" email=\"\" reference=\"\" "
-                + "matchingenabled=\"0\"/>";
+        // Die Testdatei führt die Adresse wie KMyMoney 5.x: postcode und state.
+        String alt = "<ADDRESS postcode=\"\" city=\"\" street=\"\" telephone=\"\" state=\"\"/>";
         assertTrue(basis.contains(alt));
-        String offen = alt.substring(0, alt.length() - 2) + ">\n      ";
-
-        // Wie KMyMoney 5.x: postcode und state.
-        String xml5 = basis.replace(alt, offen
-                + "<ADDRESS postcode=\"\" city=\"\" street=\"\" telephone=\"\" state=\"\"/>\n    </PAYEE>");
-        KmyDocument d = new KmyDocument(xml5.getBytes(StandardCharsets.UTF_8), ctx);
+        KmyDocument d = new KmyDocument(basis.getBytes(StandardCharsets.UTF_8), ctx);
         KmyExporter.Result r = new KmyExporter(d, ctx).build(Collections.singletonList(neu()),
                 Collections.emptyList(), new HashMap<>());
         int kiosk = r.xml.indexOf("name=\"Kiosk\"");
@@ -186,8 +181,8 @@ public class KmyAttributeOrderTest {
         KmyExportCheck.pruefen(d.xml(), r.xml, KmyDocument.gzip(r.xml), r.aenderungen);
 
         // Wie die aktuelle Fassung: zip, dazu die alten Namen.
-        String xmlNeu = basis.replace(alt, offen + "<ADDRESS street=\"\" city=\"\" state=\"\" zip=\"\" "
-                + "telephone=\"\" country=\"\" county=\"\" zipcode=\"\" postcode=\"\"/>\n    </PAYEE>");
+        String xmlNeu = basis.replace(alt, "<ADDRESS street=\"\" city=\"\" state=\"\" zip=\"\" "
+                + "telephone=\"\" country=\"\" county=\"\" zipcode=\"\" postcode=\"\"/>");
         d = new KmyDocument(xmlNeu.getBytes(StandardCharsets.UTF_8), ctx);
         r = new KmyExporter(d, ctx).build(Collections.singletonList(neu()),
                 Collections.emptyList(), new HashMap<>());
