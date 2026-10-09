@@ -162,6 +162,41 @@ public class KmyAttributeOrderTest {
                 folge(r.xml, "ADDRESS", "postcode"));
     }
 
+    /**
+     * Die Adresse eines neuen Empfängers trägt genau die Attribute, die die Empfänger-Adressen der
+     * Datei tragen – die Namen der Postleitzahl und des Landes wechseln zwischen den KMyMoney-Fassungen.
+     */
+    @Test
+    public void adresseDesNeuenEmpfaengersWieInDerDatei() throws Exception {
+        String basis = new String(KmyRobustnessTest.fixture("edited.xml"), StandardCharsets.UTF_8);
+        String alt = "<PAYEE id=\"P000001\" name=\"Bäcker\" email=\"\" reference=\"\" "
+                + "matchingenabled=\"0\"/>";
+        assertTrue(basis.contains(alt));
+        String offen = alt.substring(0, alt.length() - 2) + ">\n      ";
+
+        // Wie KMyMoney 5.x: postcode und state.
+        String xml5 = basis.replace(alt, offen
+                + "<ADDRESS postcode=\"\" city=\"\" street=\"\" telephone=\"\" state=\"\"/>\n    </PAYEE>");
+        KmyDocument d = new KmyDocument(xml5.getBytes(StandardCharsets.UTF_8), ctx);
+        KmyExporter.Result r = new KmyExporter(d, ctx).build(Collections.singletonList(neu()),
+                Collections.emptyList(), new HashMap<>());
+        int kiosk = r.xml.indexOf("name=\"Kiosk\"");
+        assertArrayEquals(new String[]{"postcode", "city", "street", "telephone", "state"},
+                KmyExporter.attributeNames(r.xml, "<ADDRESS ", kiosk, -1));
+        KmyExportCheck.pruefen(d.xml(), r.xml, KmyDocument.gzip(r.xml), r.aenderungen);
+
+        // Wie die aktuelle Fassung: zip, dazu die alten Namen.
+        String xmlNeu = basis.replace(alt, offen + "<ADDRESS street=\"\" city=\"\" state=\"\" zip=\"\" "
+                + "telephone=\"\" country=\"\" county=\"\" zipcode=\"\" postcode=\"\"/>\n    </PAYEE>");
+        d = new KmyDocument(xmlNeu.getBytes(StandardCharsets.UTF_8), ctx);
+        r = new KmyExporter(d, ctx).build(Collections.singletonList(neu()),
+                Collections.emptyList(), new HashMap<>());
+        kiosk = r.xml.indexOf("name=\"Kiosk\"");
+        assertArrayEquals(new String[]{"street", "city", "state", "zip", "telephone", "country", "county",
+                "zipcode", "postcode"}, KmyExporter.attributeNames(r.xml, "<ADDRESS ", kiosk, -1));
+        assertTrue(r.xml.substring(kiosk).contains("zip=\"\" telephone=\"\""));
+    }
+
     @Test
     public void attributnamenLesen() {
         assertArrayEquals(new String[]{"a", "b", "c"}, KmyExporter.attributeNames(

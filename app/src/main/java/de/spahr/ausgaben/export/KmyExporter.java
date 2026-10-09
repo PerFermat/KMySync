@@ -1397,9 +1397,26 @@ public class KmyExporter {
         return openTag("PAYEE", payeeOrder, PAYEE_DEFAULT, "id", id, "name", esc(name),
                 "reference", "", "email", "", "matchingenabled", "1", "usingmatchkey", "0",
                 "matchignorecase", "1", "matchkey", "") + ">"
-                + openTag("ADDRESS", addressOrder, ADDRESS_DEFAULT, "street", "", "city", "",
-                "state", "", "postcode", "", "telephone", "") + "/>"
+                + openTag("ADDRESS", addressOrder, ADDRESS_DEFAULT, addressPairs()) + "/>"
                 + "</PAYEE>";
+    }
+
+    /**
+     * Die Attribute der (leeren) Adresse eines neuen Empfängers. Wie die Postleitzahl heißt, hängt von
+     * der KMyMoney-Fassung ab, die die Datei zuletzt geschrieben hat: {@code postcode} bei 5.x,
+     * {@code zip} samt den alten Namen {@code zipcode} und {@code postcode} bei der aktuellen; ähnlich
+     * {@code state}, {@code country} und {@code county}. Führt die Datei schon eine Empfänger-Adresse,
+     * bekommt die neue deshalb genau deren Attribute – alle leer, es sind reine Textfelder. Ohne
+     * Vorlage bleibt es bei den fünf, die jede Fassung liest.
+     */
+    private String[] addressPairs() {
+        String[] names = addressOrder.length > 0 ? addressOrder : ADDRESS_DEFAULT;
+        String[] pairs = new String[names.length * 2];
+        for (int i = 0; i < names.length; i++) {
+            pairs[2 * i] = names[i];
+            pairs[2 * i + 1] = "";
+        }
+        return pairs;
     }
 
     private String fraction(long signedCents) {
