@@ -419,6 +419,9 @@ public class Repository {
     /** Aktualisiert eine Buchung und ergänzt geänderte Konto-/Empfängerwerte. */
     public void updateBooking(final Booking booking, final Runnable onDone) {
         executor.execute(() -> {
+            if (abgeglichenGesperrt(booking.id)) {
+                return;
+            }
             rememberPayee(booking.payee);
             accountDao.insertIfAbsent(new Account(booking.account));
             bookingDao.update(booking);
@@ -437,6 +440,9 @@ public class Repository {
      */
     public void updateNotesAndTags(final Booking booking, final Runnable onDone) {
         executor.execute(() -> {
+            if (abgeglichenGesperrt(booking.id)) {
+                return;
+            }
             applyEditStatus(booking);
             bookingDao.update(booking);
             if (onDone != null) {
@@ -452,6 +458,9 @@ public class Repository {
     public void updateSplitBooking(final Booking booking, final List<BookingSplit> parts,
                                    final Runnable onDone) {
         executor.execute(() -> {
+            if (abgeglichenGesperrt(booking.id)) {
+                return;
+            }
             applyEditStatus(booking);
             rememberPayee(booking.payee);
             accountDao.insertIfAbsent(new Account(booking.account));
@@ -467,6 +476,43 @@ public class Repository {
                 mainHandler.post(onDone);
             }
         });
+    }
+
+    /**
+     * Die zweite Schranke hinter der Maske: Ist die <b>gespeicherte</b> Buchung in KMyMoney abgeglichen,
+     * wird sie weder geändert noch gelöscht (siehe {@link ReconciledGuard}). Gefragt wird der Stand der
+     * Datenbank, nicht das übergebene Objekt – das kommt aus der Maske und könnte veraltet sein. Bei
+     * einer Ablehnung bleibt alles, wie es ist; der Aufrufer bekommt kein „fertig", dafür erscheint die
+     * Meldung. Läuft auf dem Executor-Thread.
+     */
+    private boolean abgeglichenGesperrt(long id) {
+        if (!ReconciledGuard.locked(bookingDao.getById(id))) {
+            return false;
+        }
+        meldeAbgeglichen(appContext, mainHandler);
+        return true;
+    }
+
+    /** Wie {@link #abgeglichenGesperrt}, für eine Umbuchung: es genügt, dass eine ihrer Zeilen gesperrt ist. */
+    private boolean umbuchungGesperrt(String group, long fallbackId) {
+        if (group == null || group.isEmpty()) {
+            return abgeglichenGesperrt(fallbackId);
+        }
+        for (Booking b : bookingDao.getByTransferGroup(group)) {
+            if (ReconciledGuard.locked(b)) {
+                meldeAbgeglichen(appContext, mainHandler);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Sagt dem Nutzer, warum nichts geschehen ist. */
+    static void meldeAbgeglichen(Context appContext, Handler mainHandler) {
+        mainHandler.post(() -> android.widget.Toast.makeText(
+                de.spahr.ausgaben.i18n.LocaleManager.localizedContext(appContext),
+                de.spahr.ausgaben.R.string.reconciled_locked,
+                android.widget.Toast.LENGTH_LONG).show());
     }
 
     /**
@@ -554,6 +600,9 @@ public class Repository {
                                       final String fromPlace, final String toPlace,
                                       final Runnable onDone) {
         executor.execute(() -> {
+            if (umbuchungGesperrt(existing.transferGroup, existing.id)) {
+                return;
+            }
             boolean kmy = isKmyMode();
             if (existing.transferGroup != null && !existing.transferGroup.isEmpty()) {
                 // Beide Seiten werden neu angelegt; der Status muß die alte Von-Zeile überdauern, denn nur
@@ -732,6 +781,9 @@ public class Repository {
 
     public void deleteBooking(final long id, final Runnable onDone) {
         executor.execute(() -> {
+            if (abgeglichenGesperrt(id)) {
+                return;
+            }
             Booking old = bookingDao.getById(id);
             queueKmyDeleteIfNeeded(old);
             bookingDao.deleteSplits(id);
@@ -831,6 +883,9 @@ public class Repository {
     /** Löscht eine Umbuchung: beide Seiten (über {@code group}) oder die einzelne (importierte) Buchung. */
     public void deleteTransfer(final String group, final long fallbackId, final Runnable onDone) {
         executor.execute(() -> {
+            if (umbuchungGesperrt(group, fallbackId)) {
+                return;
+            }
             if (group != null && !group.isEmpty()) {
                 for (Booking b : bookingDao.getByTransferGroup(group)) {
                     queueKmyDeleteIfNeeded(b);
@@ -874,6 +929,9 @@ public class Repository {
      */
     public void deleteSecurityBooking(final Booking booking, final Runnable onDone) {
         executor.execute(() -> {
+            if (abgeglichenGesperrt(booking.id)) {
+                return;
+            }
             deleteSecurityBookingNow(booking);
             if (onDone != null) {
                 mainHandler.post(onDone);
@@ -886,6 +944,9 @@ public class Repository {
      * App heraus <b>nicht</b> gerufen werden: der Hauptfaden fasst die Datenbank nicht an.
      */
     void deleteSecurityBookingNow(final Booking booking) {
+        if (ReconciledGuard.locked(bookingDao.getById(booking.id))) {
+            return;
+        }
         db.runInTransaction(() -> {
             SecurityTx tx = findLinkedSecurityTx(booking);
             if (tx != null) {
@@ -1287,6 +1348,9 @@ public class Repository {
         rememberPayee(b.payee);
         accountDao.insertIfAbsent(new Account(b.account));
         long id = bookingDao.insert(b);
+        if (b.reconciled) {
+            dropDeletesFor(b);
+        }
         if (b.parts != null) {
             for (BookingSplit p : b.parts) {
                 p.bookingId = id;
@@ -1298,6 +1362,25 @@ public class Repository {
                 analysisExtraDao.insert(ex);
             }
         }
+    }
+
+    /**
+     * Eine eingelesene Buchung ist in KMyMoney abgeglichen: Eine Löschung, die in der App für sie
+     * vorgemerkt war, wird der Export nie mehr ausführen (siehe {@code KmyExporter.removeTransactions})
+     * – die Buchung ist mit diesem Import wieder da und gesperrt. Die Vormerkung hat damit keinen
+     * Zweck mehr und würde sonst bei jedem Export von neuem gemeldet.
+     */
+    private void dropDeletesFor(Booking b) {
+        java.util.Calendar day = java.util.Calendar.getInstance();
+        day.setTimeInMillis(b.createdAt);
+        day.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        day.set(java.util.Calendar.MINUTE, 0);
+        day.set(java.util.Calendar.SECOND, 0);
+        day.set(java.util.Calendar.MILLISECOND, 0);
+        long from = day.getTimeInMillis();
+        day.add(java.util.Calendar.DAY_OF_MONTH, 1);
+        kmyPendingDeleteDao.deleteBySignature(b.account, EditStatus.signed(b), from,
+                day.getTimeInMillis(), b.payee == null ? "" : b.payee);
     }
 
     /**
@@ -2031,6 +2114,9 @@ public class Repository {
     public void updateBookingWithPlace(final Booking booking, final String newPlace,
                                        final List<BookingSplit> parts, final Runnable onDone) {
         executor.execute(() -> {
+            if (abgeglichenGesperrt(booking.id)) {
+                return;
+            }
             Booking old = bookingDao.getById(booking.id);
             String np = isRealPlace(newPlace) ? newPlace.trim() : "";
             long now = System.currentTimeMillis();

@@ -57,6 +57,21 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
+                <!-- In KMyMoney abgeglichene Buchung: warum hier nichts zu ändern ist. -->
+                <TextView
+                    android:id="@+id/textReconciledHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:drawablePadding="8dp"
+                    android:gravity="center_vertical"
+                    android:text="@string/reconciled_locked"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    app:drawableStartCompat="@drawable/ic_lock"
+                    app:drawableTint="?android:attr/textColorPrimary" />
+
                 <com.google.android.material.button.MaterialButtonToggleGroup
                     android:id="@+id/toggleType"
                     android:layout_width="match_parent"

@@ -99,6 +99,12 @@ public class BookingEditActivity extends LocalizedActivity {
     /** true = bereits exportierte Buchung im CSV-Modus: erzwingt {@link #readOnly}, s. {@link CsvModeGuard}. */
     private boolean csvLocked;
     /**
+     * true = in KMyMoney abgeglichene Buchung: nur zur Ansicht, erzwingt {@link #readOnly}, s.
+     * {@link de.spahr.ausgaben.db.ReconciledGuard}. Anders als bei {@link #csvLocked} bleibt auch
+     * „Neue Buchung" mit diesen Daten weg – die Maske ist dann eine reine Ansicht.
+     */
+    private boolean reconciledLocked;
+    /**
      * true = kein .kmy-Schreibziel: keine Splitbuchungen, s. {@link CsvModeGuard#splitBlocked}. Eine
      * Quelle mit mehreren Kategorien (Vorlage, Planung, Alias, alte Splitbuchung) belegt dann gar keine
      * Kategorie vor – der Nutzer wählt selbst eine.
@@ -809,6 +815,12 @@ public class BookingEditActivity extends LocalizedActivity {
         // Gesperrt heißt hier nur: nicht mehr änderbar/löschbar (siehe unten bei btnUpdate/btnDelete) –
         // die Daten bleiben als Vorlage für „Neue Buchung" nutzbar, deshalb kein genereller readOnly.
         csvLocked = CsvModeGuard.lockedForEdit(b, settings.isKmyMode());
+        // In KMyMoney abgeglichen: gleichgültig, wie die Maske geöffnet wurde, bleibt sie Ansicht.
+        reconciledLocked = de.spahr.ausgaben.db.ReconciledGuard.locked(b);
+        if (reconciledLocked) {
+            readOnly = true;
+            findViewById(R.id.textReconciledHint).setVisibility(View.VISIBLE);
+        }
         // Gespeicherte Buchung: die Kategorie ist gesetzte Wahrheit und keine Vorbelegung.
         keepLoadedCategories = true;
         origIsTransfer = b.isTransfer;
@@ -838,6 +850,10 @@ public class BookingEditActivity extends LocalizedActivity {
         updateNoteTagRows();
         if (readOnly) {
             applyReadOnly();
+        }
+        if (reconciledLocked) {
+            // Die Kategoriezeilen sind schon aufgebaut – der Schalter beim Anlegen kam dafür zu früh.
+            splitCtl.lockRows();
         }
         applyNotesOnlyIfNeeded();
     }
@@ -1127,6 +1143,9 @@ public class BookingEditActivity extends LocalizedActivity {
         if (booking == null || booking.id <= 0
                 || getIntent().getLongExtra(EXTRA_SCHEDULED_ID, -1) >= 0) {
             return;
+        }
+        if (reconciledLocked) {
+            return; // in KMyMoney abgeglichen: es gibt kein Bearbeiten, also auch keinen Stift
         }
         toolbar.inflateMenu(R.menu.booking_view_menu);
         toolbar.setOnMenuItemClickListener(item -> {
@@ -1820,7 +1839,7 @@ public class BookingEditActivity extends LocalizedActivity {
     // ---- Aktualisieren (bestehende Buchung) ----
 
     private void update() {
-        if (booking == null || csvLocked) {
+        if (booking == null || csvLocked || reconciledLocked) {
             return;
         }
         if (notesOnly) {
@@ -1990,7 +2009,7 @@ public class BookingEditActivity extends LocalizedActivity {
     }
 
     private void confirmDelete() {
-        if (booking == null || csvLocked) {
+        if (booking == null || csvLocked || reconciledLocked) {
             return;
         }
         if (securityTxFound) {

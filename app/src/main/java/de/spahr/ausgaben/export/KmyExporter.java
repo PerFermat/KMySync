@@ -40,6 +40,15 @@ public class KmyExporter {
          * „bearbeitet"; es wird nichts eingefügt, damit keine Dubletten entstehen.
          */
         public final List<Long> notFound = new ArrayList<>();
+        /**
+         * Bearbeitete Buchungen, deren Transaktion in der Datei inzwischen abgeglichen ist
+         * ({@code reconcileflag="2"}). Die Datei bleibt dort unberührt, und die Buchung auch: Inhalt
+         * und Status „bearbeitet" stehen weiter da, damit die Änderung sichtbar bleibt und in KMyMoney
+         * nachgetragen werden kann. Erst der nächste Import setzt {@code reconciled}.
+         */
+        public final List<Long> reconciledIds = new ArrayList<>();
+        /** Dieselben – und die abgelehnten Löschungen des Laufs – als Text für die Meldung. */
+        public final List<String> reconciledSkipped = new ArrayList<>();
         /** Was dieser Schritt an der Datei ändern wollte – Maßstab der Selbstprüfung. */
         public final KmyAenderungen aenderungen = new KmyAenderungen();
     }
@@ -62,6 +71,14 @@ public class KmyExporter {
         public String xml;
         /** In dieser Runde tatsächlich gefundene und entfernte Vormerkungen (per {@link KmyPendingDelete#id}). */
         public final List<Long> resolvedIds = new ArrayList<>();
+        /**
+         * Vormerkungen, deren Transaktion in der Datei inzwischen abgeglichen ist: sie wird nicht
+         * entfernt, die Vormerkung bleibt stehen. Aufgelöst wird sie beim nächsten Import (siehe
+         * {@code KmyAccountImport}).
+         */
+        public final List<Long> reconciledIds = new ArrayList<>();
+        /** Dieselben als Text für die Meldung. */
+        public final List<String> reconciledSkipped = new ArrayList<>();
         /** Was dieser Schritt an der Datei ändern wollte – Maßstab der Selbstprüfung. */
         public final KmyAenderungen aenderungen = new KmyAenderungen();
     }
@@ -105,6 +122,8 @@ public class KmyExporter {
     private static final Pattern VALUE_ATTR = Pattern.compile("\\bvalue=\"([^\"]*)\"");
     private static final Pattern PAYEE_ATTR = Pattern.compile("\\bpayee=\"([^\"]*)\"");
     /** Das {@code memo}-Attribut eines Splits – das einzige, das an einer Wertpapier-Buchung wandert. */
+    /** Ein in KMyMoney abgeglichener Split; „1" ist nur „geklärt" und bleibt bearbeitbar. */
+    private static final Pattern RECONCILED_ATTR = Pattern.compile("\\breconcileflag=\"2\"");
     private static final Pattern MEMO_ATTR = Pattern.compile("\\bmemo=\"[^\"]*\"");
     /** Nummernteil einer Transaktions-id ({@code T000000000000000042}). */
     private static final Pattern TX_ID_NUMBER = Pattern.compile("id=\"T(\\d+)\"");
@@ -154,6 +173,8 @@ public class KmyExporter {
         // Erst die bearbeiteten: solange noch keine neue Transaktion eingefügt ist, kann die Suche im
         // Hauptbuch nicht auf einen frisch geschriebenen Block treffen.
         Set<String> replacedTxIds = new HashSet<>();
+        // Umbuchungs-Gruppen, deren Transaktion abgeglichen ist: die zweite Zeile teilt das Schicksal.
+        Set<String> reconciledGroups = new HashSet<>();
         for (Booking b : edited) {
             String group = b.transferGroup == null ? "" : b.transferGroup;
             if (!group.isEmpty() && doneTransferGroups.contains(group)) {
@@ -161,11 +182,27 @@ public class KmyExporter {
                 result.writtenIds.add(b.id);
                 continue;
             }
+            if (!group.isEmpty() && reconciledGroups.contains(group)) {
+                result.reconciledIds.add(b.id);
+                continue;
+            }
             // Erst suchen, dann entscheiden: eine Wertpapier-Transaktion darf nicht neu gebaut werden,
             // denn Stückzahl, Kurs und Aktion stehen in keiner Buchung – sie wären danach fort.
             Found found = findTransaction(xml, b, replacedTxIds);
             if (found == null) {
                 result.notFound.add(b.id);
+                continue;
+            }
+            if (isReconciled(found.block)) {
+                // In KMyMoney inzwischen abgeglichen – nach der letzten Bearbeitung in der App. Die
+                // Datei bleibt dort unberührt, und die Buchung auch: sie wird weder als geschrieben
+                // gemeldet noch als fehlend. Der Block gilt als verbraucht (replacedTxIds), damit ein
+                // Zwilling nicht an seiner Stelle auf dieselbe Transaktion trifft.
+                result.reconciledIds.add(b.id);
+                result.reconciledSkipped.add(label(b) + ", " + dateFor(b.createdAt));
+                if (!group.isEmpty()) {
+                    reconciledGroups.add(group);
+                }
                 continue;
             }
             if (hasSecuritySplit(found.block)) {
@@ -241,6 +278,8 @@ public class KmyExporter {
                 xml = doc.xml();
                 result.writtenIds.clear();
                 result.notFound.clear();
+                result.reconciledIds.clear();
+                result.reconciledSkipped.clear();
                 result.updated = 0;
                 result.newPayees = 0;
                 result.aenderungen.leeren();
@@ -276,6 +315,7 @@ public class KmyExporter {
         List<Long> sigCents = new ArrayList<>();
         List<String> sigPayeeId = new ArrayList<>();
         List<Long> sigDeleteId = new ArrayList<>();
+        List<String> sigLabel = new ArrayList<>();
         for (KmyPendingDelete d : deletes) {
             String assetId = doc.accountId(d.account);
             if (assetId == null) {
@@ -286,6 +326,9 @@ public class KmyExporter {
             sigCents.add(d.signedCents);
             sigPayeeId.add(doc.payeeId(d.payee));
             sigDeleteId.add(d.id);
+            sigLabel.add((d.payee == null || d.payee.trim().isEmpty()
+                    ? ctx.getString(de.spahr.ausgaben.R.string.no_payee) : d.payee.trim())
+                    + ", " + dateFor(d.createdAt));
         }
         if (sigAccountId.isEmpty()) {
             result.xml = xml;
@@ -321,7 +364,13 @@ public class KmyExporter {
                     }
                 }
             }
-            if (matchIdx >= 0) {
+            if (matchIdx >= 0 && isReconciled(tx)) {
+                // In KMyMoney inzwischen abgeglichen: die Transaktion bleibt stehen, die Vormerkung
+                // auch. Verbraucht ist sie für diesen Lauf trotzdem, damit sie keinen Zwilling trifft.
+                consumed[matchIdx] = true;
+                result.reconciledIds.add(sigDeleteId.get(matchIdx));
+                result.reconciledSkipped.add(sigLabel.get(matchIdx));
+            } else if (matchIdx >= 0) {
                 consumed[matchIdx] = true;
                 result.resolvedIds.add(sigDeleteId.get(matchIdx));
                 result.aenderungen.geloescht(attributeOfOpeningTag(tx, ID_ATTR));
@@ -459,6 +508,22 @@ public class KmyExporter {
         while (sm.find()) {
             Matcher am = ACCOUNT_ATTR.matcher(sm.group());
             if (am.find() && doc.accountTypeOf(am.group(1)) == 15) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Ist die Transaktion in KMyMoney abgeglichen, trägt also irgendeiner ihrer Splits
+     * {@code reconcileflag="2"}? Dann gehört sie zu einer abgeschlossenen Periode, und die App ändert
+     * und löscht sie nicht mehr – auch dann nicht, wenn der Abgleich erst nach der letzten Bearbeitung
+     * in der App geschah und die Buchung hier noch als änderbar gilt.
+     */
+    private static boolean isReconciled(String tx) {
+        Matcher sm = SPLIT_TAG.matcher(tx);
+        while (sm.find()) {
+            if (RECONCILED_ATTR.matcher(sm.group()).find()) {
                 return true;
             }
         }

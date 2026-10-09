@@ -805,6 +805,16 @@
       "text": "Stichwörter gibt es bei <b>Ausgaben, Einnahmen und Umbuchungen</b> gleichermaßen. Kennt die App noch keine – etwa im CSV-Betrieb ohne KMyMoney-Datei –, erscheint die Zeile gar nicht."
     },
     {
+      "type": "h2",
+      "id": "b-0062e",
+      "text": "Abgeglichene Buchungen"
+    },
+    {
+      "type": "p",
+      "id": "b-0062f",
+      "text": "Haben Sie eine Buchung in KMyMoney <b>abgeglichen</b>, also mit dem Kontoauszug bestätigt, gehört sie zu einer abgeschlossenen Periode. KMySync übernimmt diesen Status beim Einlesen der .kmy-Datei und zeigt die Buchung danach nur noch an: In der Liste trägt sie ein kleines Schloss, in der Maske sind Felder, Kategorien, Beleg und Löschen gesperrt. Ändern lässt sie sich nur in KMyMoney. Nehmen Sie den Abgleich dort zurück, ist die Buchung nach dem nächsten Einlesen wieder bearbeitbar; nur «geklärte» Buchungen bleiben ohnehin bearbeitbar. Wurde eine Buchung erst abgeglichen, nachdem Sie sie in der App geändert oder gelöscht hatten, überträgt KMySync diese Änderung nicht und meldet das. Lesen Sie die Datei dann neu ein und tragen Sie die Änderung in KMyMoney nach."
+    },
+    {
       "type": "h1",
       "id": "b-0062z",
       "text": "9. Wertpapiere - Depot"

@@ -805,6 +805,16 @@
       "text": "Tags work the same for <b>expenses, income and transfers</b>. If the app does not know any tags yet – in CSV mode without a KMyMoney file, say – the row does not appear at all."
     },
     {
+      "type": "h2",
+      "id": "b-0062e",
+      "text": "Reconciled bookings"
+    },
+    {
+      "type": "p",
+      "id": "b-0062f",
+      "text": "Once you have <b>reconciled</b> a booking in KMyMoney, that is, confirmed it against the bank statement, it belongs to a closed period. KMySync adopts this status when it reads the .kmy file and from then on only displays the booking: in the list it carries a small lock, and in the form the fields, categories, receipt and deletion are locked. It can only be changed in KMyMoney. If you undo the reconciliation there, the booking is editable again after the next import; bookings that are merely «cleared» stay editable anyway. If a booking was reconciled only after you had changed or deleted it in the app, KMySync does not transfer that change and tells you so. Import the file again and make the change in KMyMoney."
+    },
+    {
       "type": "h1",
       "id": "b-0062z",
       "text": "9. Securities - Portfolio"

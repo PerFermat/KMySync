@@ -99,6 +99,8 @@ public final class KmyExportCheck {
         final Map<String, Integer> unlesbar = new HashMap<>();
         /** Die Transaktionen, nach denen gefragt war, im Einzelnen (id → Transaktion). */
         final Map<String, Buchung> genau = new HashMap<>();
+        /** Die Transaktionen mit mindestens einem abgeglichenen Split (id → Transaktion). */
+        final Map<String, Buchung> abgeglichen = new LinkedHashMap<>();
 
         int von(String element) {
             Integer n = anzahl.get(element);
@@ -119,7 +121,11 @@ public final class KmyExportCheck {
             angesagt.add(ab.txId);
         }
         Stand vorher = erfassen(alt, "alte Datei", angesagt);
-        Stand nachher = erfassen(neu, "neue Datei", angesagt);
+        // Was vorher abgeglichen war, wird in der neuen Fassung im Einzelnen gebraucht – auch dann,
+        // wenn es dort gar nicht mehr als abgeglichen dasteht.
+        Set<String> genau = new HashSet<>(angesagt);
+        genau.addAll(vorher.abgeglichen.keySet());
+        Stand nachher = erfassen(neu, "neue Datei", genau);
 
         KmyGliederung a;
         KmyGliederung n;
@@ -131,6 +137,7 @@ public final class KmyExportCheck {
             throw new Failed("Datei nicht zerlegbar (" + e.getMessage() + ")", e);
         }
         saldenStimmen(vorher, nachher, erwartet);
+        abgeglichenesBleibt(vorher, nachher);
 
         int txAlt = vorher.von("TRANSACTION");
         int txNeu = nachher.von("TRANSACTION");
@@ -472,6 +479,53 @@ public final class KmyExportCheck {
         String id = buchung.id();
         if (id != null && genau.contains(id) && !stand.genau.containsKey(id)) {
             stand.genau.put(id, buchung);
+        }
+        if (id != null && !stand.abgeglichen.containsKey(id)) {
+            for (Split s : buchung.splits) {
+                if (ABGEGLICHEN.equals(s.von("reconcileflag").trim())) {
+                    stand.abgeglichen.put(id, buchung);
+                    break;
+                }
+            }
+        }
+    }
+
+    // ---- Abgeglichenes ----
+
+    /** {@code reconcileflag} eines in KMyMoney abgeglichenen Splits. */
+    private static final String ABGEGLICHEN = "2";
+
+    /**
+     * Kein Split, der vorher abgeglichen war, darf verändert sein oder fehlen. Mit dem Abgleich ist in
+     * KMyMoney bestätigt, dass diese Buchungen zum Kontoauszug passen – der Export lässt sie deshalb
+     * aus ({@code KmyExporter}), und hier wird nachgesehen, dass er es wirklich getan hat. Verglichen
+     * wird der Inhalt: jedes Attribut und jedes Stichwort des Splits.
+     */
+    private static void abgeglichenesBleibt(Stand vorher, Stand nachher) throws Failed {
+        for (Map.Entry<String, Buchung> e : vorher.abgeglichen.entrySet()) {
+            Buchung neu = nachher.genau.get(e.getKey());
+            if (neu == null) {
+                throw new Failed("abgeglichene TRANSACTION " + e.getKey() + " fehlt");
+            }
+            List<Split> uebrig = new ArrayList<>(neu.splits);
+            for (Split alt : e.getValue().splits) {
+                if (!ABGEGLICHEN.equals(alt.von("reconcileflag").trim())) {
+                    continue;
+                }
+                boolean gefunden = false;
+                for (int i = 0; i < uebrig.size() && !gefunden; i++) {
+                    Split s = uebrig.get(i);
+                    if (s.attribute.equals(alt.attribute) && s.stichwoerter.equals(alt.stichwoerter)) {
+                        uebrig.remove(i);
+                        gefunden = true;
+                    }
+                }
+                if (!gefunden) {
+                    throw new Failed("abgeglichener Split " + alt.von("id") + " (Konto "
+                            + alt.von("account") + ") der TRANSACTION " + e.getKey()
+                            + " verändert oder entfernt");
+                }
+            }
         }
     }
 

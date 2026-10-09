@@ -123,6 +123,20 @@ public class Booking {
     public String origPayee = "";
 
     /**
+     * In KMyMoney abgeglichen: irgendein Split der Transaktion trägt dort {@code reconcileflag="2"}.
+     * Solche Buchungen gehören zu einer abgeschlossenen Periode und lassen sich nur noch in KMyMoney
+     * bearbeiten – die App zeigt sie an, ändert und löscht sie aber nicht (siehe
+     * {@link ReconciledGuard}).
+     *
+     * <p>Gesetzt wird das Feld allein beim Einlesen der .kmy-Datei ({@code KmyImporter}), und zwar bei
+     * jedem Einlesen neu: Wird der Abgleich in KMyMoney zurückgenommen, ist die Buchung danach wieder
+     * bearbeitbar. Der Export fasst es nicht an. Ohne .kmy-Datei (reiner CSV-Modus) bleibt es
+     * {@code false}.</p>
+     */
+    @ColumnInfo(name = "reconciled", defaultValue = "0")
+    public boolean reconciled;
+
+    /**
      * Unbenutzt (Spalte bleibt aus Migrationsgründen bestehen). Die Lösch-Synchronisierung mit der
      * .kmy-Datei ({@code KmyPendingDelete}) identifiziert Transaktionen stattdessen über Konto, Datum
      * und Betrag, da importierte Buchungen keine KMyMoney-Transaktions-id kennen.

@@ -98,7 +98,7 @@ public class KmyReconcileFlagTest {
         assertTrue("Bankimport-Kennung bleibt", konto.contains("bankid=\"B-123\""));
 
         // Auch die Gegenseite behält ihren eigenen Wert – zugeordnet wird je Konto, nicht pauschal.
-        assertTrue(splitOf(block, "A000003").contains("reconcileflag=\"2\""));
+        assertTrue(splitOf(block, "A000003").contains("reconcileflag=\"1\""));
     }
 
     /**

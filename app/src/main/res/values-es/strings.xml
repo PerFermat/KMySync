@@ -699,6 +699,9 @@
     <string name="kmy_result_written">Apuntes escritos en %2$s: %1$d</string>
     <string name="kmy_result_updated">, con cambios: %1$d</string>
     <string name="kmy_edited_not_found">Apuntes editados no encontrados en el archivo: %1$d – permanecen marcados como \"editados\".</string>
+    <string name="kmy_reconciled_skipped">Conciliado entretanto en KMyMoney: cambio no transferido (%1$d): %2$s. Importa primero; después el apunte queda bloqueado en la app y solo se puede editar en KMyMoney.</string>
+    <string name="reconciled_locked">Este apunte está conciliado en KMyMoney y solo se puede editar allí.</string>
+    <string name="reconciled_badge">Conciliado en KMyMoney</string>
     <string name="kmy_result_new_payees">, beneficiarios nuevos: %1$d</string>
     <string name="kmy_result_deleted">, eliminados: %1$d</string>
     <string name="kmy_result_scheduled">, programas avanzados: %1$d</string>

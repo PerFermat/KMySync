@@ -583,6 +583,7 @@ public class KmyImporter {
         b.tags = tagsOf(splits);
         b.createdAt = parseDate(postdate, entrydate);
         b.exported = true;
+        b.reconciled = isReconciled(splits);
 
         // Gegen-Splits klassifizieren: Kategorie (Typ 12/13) vs. Konto; Aktien/ETF (Typ 15) gesondert.
         List<String[]> categorySplits = new ArrayList<>();
@@ -910,8 +911,12 @@ public class KmyImporter {
 
     /** Feld einer gelesenen Split-Zeile, das die Kennungen ihrer Stichwörter sammelt. */
     private static final int SPLIT_TAGS = 5;
+    /** Feld einer gelesenen Split-Zeile mit ihrem {@code reconcileflag}. */
+    private static final int SPLIT_RECONCILE = 6;
+    /** {@code reconcileflag} eines abgeglichenen Splits; „1" ist nur „geklärt" und sperrt nichts. */
+    static final String RECONCILED = "2";
 
-    /** Eine Split-Zeile: {@code {account, value, payeeId, memo, shares, tagIds}}. */
+    /** Eine Split-Zeile: {@code {account, value, payeeId, memo, shares, tagIds, reconcileflag}}. */
     private static String[] newSplit(XmlPullParser parser) {
         return new String[]{
                 orEmpty(parser.getAttributeValue(null, "account")),
@@ -919,7 +924,22 @@ public class KmyImporter {
                 orEmpty(parser.getAttributeValue(null, "payee")),
                 orEmpty(parser.getAttributeValue(null, "memo")),
                 orEmpty(parser.getAttributeValue(null, "shares")),
-                ""};
+                "",
+                orEmpty(parser.getAttributeValue(null, "reconcileflag")).trim()};
+    }
+
+    /**
+     * Ist die Transaktion in KMyMoney abgeglichen? Es genügt ein einziger Split: der Abgleich hängt am
+     * Konto, die Buchung der App steht aber für die ganze Transaktion – wer sie ändert, ändert auch
+     * die abgeglichene Seite.
+     */
+    private static boolean isReconciled(List<String[]> splits) {
+        for (String[] s : splits) {
+            if (s.length > SPLIT_RECONCILE && RECONCILED.equals(s[SPLIT_RECONCILE])) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

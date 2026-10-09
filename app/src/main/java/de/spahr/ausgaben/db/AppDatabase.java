@@ -17,7 +17,7 @@ import de.spahr.ausgaben.settings.ProfileManager;
         AnalysisExtra.class, SecurityTxValueOverride.class, KmyPendingDelete.class, SecurityPrice.class,
         ScheduledAdvance.class, AccountGroup.class, AccountGroupMember.class, AccountKindOrder.class,
         Tag.class, SecurityTxSplit.class},
-        version = 53, exportSchema = true)
+        version = 54, exportSchema = true)
 public abstract class AppDatabase extends RoomDatabase {
 
     /** v1 → v2: Notiz-Spalte ergänzen (bestehende Buchungen bleiben erhalten). */
@@ -730,6 +730,18 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    /**
+     * v53 → v54: {@code booking.reconciled} hält fest, dass die Buchung in KMyMoney abgeglichen ist
+     * ({@code reconcileflag="2"}) – sie ist dann in der App schreibgeschützt. Bestehende Zeilen starten
+     * mit 0; der nächste Abgleich mit der .kmy-Datei setzt den wirklichen Stand.
+     */
+    static final Migration MIGRATION_53_54 = new Migration(53, 54) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("ALTER TABLE booking ADD COLUMN reconciled INTEGER NOT NULL DEFAULT 0");
+        }
+    };
+
     public abstract BookingDao bookingDao();
 
     public abstract AccountDao accountDao();
@@ -798,7 +810,8 @@ public abstract class AppDatabase extends RoomDatabase {
                                 MIGRATION_41_42, MIGRATION_42_43, MIGRATION_43_44,
                                 MIGRATION_44_45, MIGRATION_45_46, MIGRATION_46_47,
                                 MIGRATION_47_48, MIGRATION_48_49, MIGRATION_49_50,
-                                MIGRATION_50_51, MIGRATION_51_52, MIGRATION_52_53)
+                                MIGRATION_50_51, MIGRATION_51_52, MIGRATION_52_53,
+                                MIGRATION_53_54)
                         .build();
             }
             return instance;

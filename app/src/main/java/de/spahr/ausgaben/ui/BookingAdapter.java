@@ -185,6 +185,10 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.VH> {
             h.exported.setVisibility(View.GONE);
         }
 
+        // In KMyMoney abgeglichen: ein kleines Schloss – die Buchung lässt sich hier nur ansehen.
+        h.reconciled.setVisibility(
+                de.spahr.ausgaben.db.ReconciledGuard.locked(b) ? View.VISIBLE : View.GONE);
+
         h.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onClick(b);
@@ -216,6 +220,7 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.VH> {
         final TextView note;
         final TextView amount;
         final TextView exported;
+        final View reconciled;
 
         VH(@NonNull View itemView) {
             super(itemView);
@@ -225,6 +230,7 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.VH> {
             note = itemView.findViewById(R.id.textNote);
             amount = itemView.findViewById(R.id.textAmount);
             exported = itemView.findViewById(R.id.textExported);
+            reconciled = itemView.findViewById(R.id.iconReconciled);
             // Laufschrift für lange Empfänger-Namen (bei großer Schrift), damit nichts abgeschnitten wird.
             payee.setSelected(true);
         }

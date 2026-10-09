@@ -225,6 +225,12 @@ class DepotRepository {
      */
     void updateManualTx(final SecurityTx tx, final Booking booking, final Runnable onDone) {
         executor.execute(() -> {
+            // Kann nur eine Vormerkung treffen, und die ist nie abgeglichen – die Schranke steht hier
+            // trotzdem, damit kein Weg an ihr vorbeiführt.
+            if (tx.bookingId > 0 && ReconciledGuard.locked(db.bookingDao().getById(tx.bookingId))) {
+                Repository.meldeAbgeglichen(appContext, mainHandler);
+                return;
+            }
             db.runInTransaction(() -> {
                 if (booking != null && tx.bookingId > 0) {
                     booking.id = tx.bookingId;
@@ -250,6 +256,10 @@ class DepotRepository {
                 SecurityTx tx = securityDao.getTxById(txId);
                 if (tx == null || !tx.pending) {
                     return;   // aus der Datei importiert: dort wird nicht gelöscht
+                }
+                if (tx.bookingId > 0
+                        && ReconciledGuard.locked(db.bookingDao().getById(tx.bookingId))) {
+                    return;   // in KMyMoney abgeglichen: nur dort zu ändern
                 }
                 if (tx.bookingId > 0) {
                     db.bookingDao().deleteSplits(tx.bookingId);

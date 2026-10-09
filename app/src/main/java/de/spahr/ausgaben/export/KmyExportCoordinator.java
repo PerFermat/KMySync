@@ -133,6 +133,7 @@ public class KmyExportCoordinator {
                 // Betrag, da Transaktionen aus App-Sicht keine bekannte id haben.
                 KmyExporter.DeleteResult delRes = exporter.removeTransactions(res.xml, pendingDeletes);
                 res.xml = delRes.xml;
+                res.reconciledSkipped.addAll(delRes.reconciledSkipped);
 
                 // Geplante Buchungen weiterstellen (nur postdate/lastPayment – die Regel bleibt bestehen).
                 KmyExporter.ScheduleResult schedRes = exporter.applyScheduleAdvances(res.xml, advances);
@@ -147,7 +148,8 @@ public class KmyExportCoordinator {
                 if (res.writtenIds.isEmpty() && delRes.resolvedIds.isEmpty()
                         && schedRes.resolvedIds.isEmpty() && secRes.writtenIds.isEmpty()) {
                     complete(listener, r.getString(de.spahr.ausgaben.R.string.kmy_none_matched)
-                            + "\n" + skippedText(r, res) + notFoundText(r, res), false);
+                            + "\n" + skippedText(r, res) + notFoundText(r, res)
+                            + reconciledText(r, res), false);
                     return;
                 }
 
@@ -279,7 +281,27 @@ public class KmyExportCoordinator {
             sb.append("\n").append(skippedText(r, res));
         }
         sb.append(notFoundText(r, res));
+        sb.append(reconciledText(r, res));
         return sb.toString();
+    }
+
+    /**
+     * Hinweis auf Änderungen und Löschungen, die nicht übertragen wurden, weil die Transaktion in
+     * KMyMoney inzwischen abgeglichen ist. Die Buchungen bleiben lokal, wie sie sind; erst ein Import
+     * bringt beide Seiten wieder in Einklang.
+     */
+    private static String reconciledText(Context r, KmyExporter.Result res) {
+        if (res.reconciledSkipped.isEmpty()) {
+            return "";
+        }
+        List<String> show = res.reconciledSkipped;
+        String more = "";
+        if (show.size() > 5) {
+            show = new ArrayList<>(res.reconciledSkipped.subList(0, 5));
+            more = " … (+" + (res.reconciledSkipped.size() - 5) + ")";
+        }
+        return "\n" + r.getString(de.spahr.ausgaben.R.string.kmy_reconciled_skipped,
+                res.reconciledSkipped.size(), TextUtils.join("; ", show) + more);
     }
 
     /**

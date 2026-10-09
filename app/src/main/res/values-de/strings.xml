@@ -705,6 +705,9 @@
     <string name="kmy_result_written">Buchungen in %2$s geschrieben: %1$d</string>
     <string name="kmy_result_updated">, %1$d geändert</string>
     <string name="kmy_edited_not_found">Bearbeitete Buchungen, die in der Datei nicht zu finden waren: %1$d – sie bleiben „bearbeitet“.</string>
+    <string name="kmy_reconciled_skipped">In KMyMoney inzwischen abgeglichen – Änderung nicht übertragen (%1$d): %2$s. Bitte zuerst importieren; danach ist die Buchung in der App gesperrt und kann nur noch in KMyMoney bearbeitet werden.</string>
+    <string name="reconciled_locked">Diese Buchung ist in KMyMoney abgeglichen und kann nur dort bearbeitet werden.</string>
+    <string name="reconciled_badge">In KMyMoney abgeglichen</string>
     <string name="kmy_result_new_payees">, neue Empfänger: %1$d</string>
     <string name="kmy_result_deleted">, %1$d gelöscht</string>
     <string name="kmy_result_scheduled">, geplante Buchungen weitergestellt: %1$d</string>

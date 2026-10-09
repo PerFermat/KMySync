@@ -731,6 +731,9 @@
     <!-- liest sich auch bei 1 richtig; nur das spanische Pendant war zu beugen -->
     <string name="kmy_result_updated" tools:ignore="PluralsCandidate">, %1$d changed</string>
     <string name="kmy_edited_not_found">Edited bookings not found in the file: %1$d — they stay marked “edited”.</string>
+    <string name="kmy_reconciled_skipped" tools:ignore="PluralsCandidate">Reconciled in KMyMoney in the meantime – change not transferred (%1$d): %2$s. Please import first; after that the booking is locked in the app and can only be edited in KMyMoney.</string>
+    <string name="reconciled_locked">This booking is reconciled in KMyMoney and can only be edited there.</string>
+    <string name="reconciled_badge">Reconciled in KMyMoney</string>
     <string name="kmy_result_new_payees">, new payees: %1$d</string>
     <!-- liest sich auch bei 1 richtig; nur das spanische Pendant war zu beugen -->
     <string name="kmy_result_deleted" tools:ignore="PluralsCandidate">, %1$d deleted</string>
