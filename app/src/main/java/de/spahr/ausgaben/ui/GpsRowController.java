@@ -74,7 +74,7 @@ class GpsRowController {
                 });
     }
 
-    /** Die Koordinaten der Buchung „lat,lon", {@code null} = keine. */
+    /** Die Koordinaten der Buchung „lat, lon", {@code null} = keine. */
     String coords() {
         return gpsRowCoords;
     }
@@ -94,13 +94,18 @@ class GpsRowController {
         return gpsEditedByUser;
     }
 
-    /** Die „lat, lon" hinter einem {@code GPS:}-Tag (exakt wie gespeichert), sonst {@code null}. */
+    /**
+     * Die „lat, lon" hinter einem {@code GPS:}-Tag, exakt wie gespeichert – samt dem Leerzeichen hinter
+     * dem Komma, falls dort eines steht. Beim Speichern einer geänderten Buchung wird der Tag aus
+     * diesem Wert wieder zusammengesetzt; früher fiel dabei das Leerzeichen weg, und die Notiz stand
+     * in der KMyMoney-Datei als geändert da, obwohl niemand den Standort angefasst hatte.
+     */
     static String parseGpsCoords(String note) {
         if (note == null) {
             return null;
         }
         java.util.regex.Matcher m = GPS_PAIR.matcher(note);
-        return m.find() ? m.group(1).replaceAll("\\s+", "") : null;
+        return m.find() ? m.group(1).trim() : null;
     }
 
     /** Baut die Standort-Zeile je nach Ansicht-/Bearbeiten-Modus auf. */
@@ -171,8 +176,11 @@ class GpsRowController {
         gpsMapLauncher.launch(i);
     }
 
-    /** Koordinaten als „lat,lon" mit sechs Nachkommastellen (wie die Karten-Auswahl liefert). */
+    /**
+     * Koordinaten als „lat, lon" mit sechs Nachkommastellen – dieselbe Form, in der die Ortung
+     * ({@code LocationTagger}) und die Spracheingabe sie schreiben.
+     */
     static String formatCoords(double lat, double lon) {
-        return String.format(java.util.Locale.US, "%.6f,%.6f", lat, lon);
+        return String.format(java.util.Locale.US, "%.6f, %.6f", lat, lon);
     }
 }
