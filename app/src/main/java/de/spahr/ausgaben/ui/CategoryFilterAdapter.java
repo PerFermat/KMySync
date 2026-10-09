@@ -126,12 +126,24 @@ public class CategoryFilterAdapter extends ArrayAdapter<CategoryFilterAdapter.Ca
      * Hauptkategorie als Überschrift darüber.</p>
      */
     void setFavorites(String header, List<String> values) {
+        setFavorites(header, values, null);
+    }
+
+    /**
+     * Wie oben, mit der Seite jeder Kategorie ({@code sides} gleich lang wie {@code values}, ein
+     * {@code null} darin = unbekannt). Eine mitgegebene Seite geht vor: sie stammt von der Buchung, aus
+     * der der Vorschlag kommt, und entscheidet auch dann richtig, wenn es den Namen in beiden Bäumen
+     * gibt. Nur ohne sie zählt die Gruppe des gleichnamigen Listeneintrags.
+     */
+    void setFavorites(String header, List<String> values, List<Boolean> sides) {
         List<CatItem> neu = new ArrayList<>();
         if (values != null) {
-            for (String value : values) {
-                CatItem item = itemFor(value);
+            for (int i = 0; i < values.size(); i++) {
+                CatItem item = itemFor(values.get(i));
                 if (item != null && !item.value.isEmpty()) {
-                    neu.add(new CatItem(item.value, item.value, KIND_FAV, header, item.groupIsIncome));
+                    Boolean side = sides != null && i < sides.size() ? sides.get(i) : null;
+                    neu.add(new CatItem(item.value, item.value, KIND_FAV, header,
+                            side != null ? side : item.groupIsIncome));
                 }
             }
         }

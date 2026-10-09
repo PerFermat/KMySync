@@ -1175,10 +1175,21 @@ public class Repository {
             b.payee = alias.corrected;
             b.category = income ? AliasResolver.firstNonEmpty(alias.catIncome1, alias.catIncome2)
                     : AliasResolver.firstNonEmpty(alias.catExpense1, alias.catExpense2);
+            // Die Seite kommt mit der Kategorie aus dem Alias – von derjenigen der beiden, die
+            // firstNonEmpty genommen hat. Ein Alias aus der Zeit vor diesem Feld kennt sie nicht; dann
+            // wird einmal nachgeschlagen.
+            boolean erste = !(income ? alias.catIncome1 : alias.catExpense1).trim().isEmpty();
+            Boolean seite = income
+                    ? (erste ? alias.catIncome1IsIncome : alias.catIncome2IsIncome)
+                    : (erste ? alias.catExpense1IsIncome : alias.catExpense2IsIncome);
+            b.categoryIsIncome = b.category.isEmpty() ? null
+                    : (seite != null ? seite : categoryTypeDao.isIncome(b.category));
             b.note = "";
         } else if (template != null) {
             b.payee = template.payee;
             b.category = templateSameType ? template.category : "";
+            // Mit der Kategorie der Vorlage auch ihre Seite: dort stand schon fest, welche gemeint war.
+            b.categoryIsIncome = templateSameType ? template.categoryIsIncome : null;
             b.note = templateSameType ? template.note : "";
         } else {
             b.payee = term;
@@ -1213,7 +1224,7 @@ public class Repository {
                     } else {
                         part = amount - assigned;
                     }
-                    bookingDao.insertSplit(new BookingSplit(id, s.category, part));
+                    bookingDao.insertSplit(new BookingSplit(id, s.category, part, s.categoryIsIncome));
                 }
             }
         }
@@ -1245,7 +1256,8 @@ public class Repository {
     }
 
     /** Die Kategorien dieses Empfängers (höchstens {@code PayeeCategories.LIMIT}) für den Editor. */
-    public void getPayeeCategories(String payee, boolean income, Callback<List<String>> callback) {
+    public void getPayeeCategories(String payee, boolean income,
+                                   Callback<List<PayeeCategory>> callback) {
         aliasResolver.getPayeeCategories(payee, income, callback);
     }
 
@@ -2067,7 +2079,7 @@ public class Repository {
      */
     public void saveReconcile(final String account, final String place, final long targetCents,
                               final boolean createBooking, final String payee, final String category,
-                              final Runnable onDone) {
+                              final Boolean categoryIsIncome, final Runnable onDone) {
         executor.execute(() -> {
             String acct = account == null ? "" : account;
             String pl = place == null ? "" : place.trim();
@@ -2088,6 +2100,13 @@ public class Repository {
                     b.payee = payee == null ? "" : payee.trim();
                     b.account = account == null ? "" : account;
                     b.category = category == null ? "" : category.trim();
+                    // Die Seite der Kategorie steht in der Vorgabe; eine Vorgabe aus der Zeit vor
+                    // diesem Feld kennt sie nicht, dann wird einmal nachgeschlagen. Die Richtung des
+                    // Geldes (isIncome) sagt darüber nichts: der Ausgleich geht in beide Richtungen
+                    // auf dieselbe Kategorie.
+                    b.categoryIsIncome = b.category.isEmpty() ? null
+                            : (categoryIsIncome != null ? categoryIsIncome
+                            : categoryTypeDao.isIncome(b.category));
                     b.note = pl.isEmpty() ? "Kassensturz" : "Kassensturz " + pl;
                     b.createdAt = now;
                     b.exported = false;

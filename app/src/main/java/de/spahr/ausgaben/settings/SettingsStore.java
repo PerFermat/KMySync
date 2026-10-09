@@ -67,6 +67,7 @@ public class SettingsStore {
     private static final String KEY_SMB_KNOWN_HOSTS = "smb_known_hosts";
     private static final String KEY_RECONCILE_PAYEE = "reconcile_payee";
     private static final String KEY_RECONCILE_CATEGORY = "reconcile_category";
+    private static final String KEY_RECONCILE_CATEGORY_INCOME = "reconcile_category_income";
 
     /** So viele zuletzt gefundene SMB-Server werden gemerkt. */
     private static final int MAX_KNOWN_SMB_HOSTS = 10;
@@ -280,10 +281,22 @@ public class SettingsStore {
         return prefs.getString(KEY_RECONCILE_CATEGORY, "").trim();
     }
 
-    public void setReconcileTarget(String payee, String category) {
+    /**
+     * Die Seite der Kassensturz-Kategorie: {@code true} = Einnahmekategorie, {@code false} =
+     * Ausgabekategorie, {@code null} = unbekannt (Vorgabe aus der Zeit vor diesem Wert). Der Name
+     * allein genügt nicht – KMyMoney erlaubt denselben in beiden Bäumen.
+     */
+    public Boolean getReconcileCategoryIsIncome() {
+        String v = prefs.getString(KEY_RECONCILE_CATEGORY_INCOME, "");
+        return "1".equals(v) ? Boolean.TRUE : ("0".equals(v) ? Boolean.FALSE : null);
+    }
+
+    public void setReconcileTarget(String payee, String category, Boolean categoryIsIncome) {
         prefs.edit()
                 .putString(KEY_RECONCILE_PAYEE, payee == null ? "" : payee.trim())
                 .putString(KEY_RECONCILE_CATEGORY, category == null ? "" : category.trim())
+                .putString(KEY_RECONCILE_CATEGORY_INCOME,
+                        categoryIsIncome == null ? "" : (categoryIsIncome ? "1" : "0"))
                 .apply();
     }
 

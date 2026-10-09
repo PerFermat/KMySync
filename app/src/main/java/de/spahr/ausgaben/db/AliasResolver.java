@@ -534,9 +534,9 @@ class AliasResolver {
      * übrige Aliase – die Reihenfolge macht {@link PayeeCategories#rank}.
      */
     void getPayeeCategories(final String payee, final boolean income,
-                            final Callback<List<String>> callback) {
+                            final Callback<List<PayeeCategory>> callback) {
         executor.execute(() -> {
-            final List<String> result = PayeeCategories.rank(
+            final List<PayeeCategory> result = PayeeCategories.ranked(
                     correctionDao.findAllByCorrected(payee),
                     bookingDao.getCategoriesByPayee(payee, income), income);
             mainHandler.post(() -> callback.onResult(result));

@@ -17,7 +17,7 @@ import de.spahr.ausgaben.settings.ProfileManager;
         AnalysisExtra.class, SecurityTxValueOverride.class, KmyPendingDelete.class, SecurityPrice.class,
         ScheduledAdvance.class, AccountGroup.class, AccountGroupMember.class, AccountKindOrder.class,
         Tag.class, SecurityTxSplit.class},
-        version = 54, exportSchema = true)
+        version = 55, exportSchema = true)
 public abstract class AppDatabase extends RoomDatabase {
 
     /** v1 → v2: Notiz-Spalte ergänzen (bestehende Buchungen bleiben erhalten). */
@@ -742,6 +742,22 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    /**
+     * v54 → v55: Der Alias merkt sich zu jeder seiner vier Kategorien, ob sie eine Einnahme- oder eine
+     * Ausgabekategorie ist. Bisher stand dort nur der Name, und wer ihn in eine Buchung übernahm, musste
+     * die Seite raten. Bestehende Aliase starten mit NULL (unbekannt) und werden beim Verwenden
+     * nachgeschlagen.
+     */
+    static final Migration MIGRATION_54_55 = new Migration(54, 55) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("ALTER TABLE payee_correction ADD COLUMN cat_income_1_is_income INTEGER");
+            db.execSQL("ALTER TABLE payee_correction ADD COLUMN cat_income_2_is_income INTEGER");
+            db.execSQL("ALTER TABLE payee_correction ADD COLUMN cat_expense_1_is_income INTEGER");
+            db.execSQL("ALTER TABLE payee_correction ADD COLUMN cat_expense_2_is_income INTEGER");
+        }
+    };
+
     public abstract BookingDao bookingDao();
 
     public abstract AccountDao accountDao();
@@ -811,7 +827,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                 MIGRATION_44_45, MIGRATION_45_46, MIGRATION_46_47,
                                 MIGRATION_47_48, MIGRATION_48_49, MIGRATION_49_50,
                                 MIGRATION_50_51, MIGRATION_51_52, MIGRATION_52_53,
-                                MIGRATION_53_54)
+                                MIGRATION_53_54, MIGRATION_54_55)
                         .build();
             }
             return instance;

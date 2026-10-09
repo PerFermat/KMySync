@@ -391,14 +391,14 @@ class SplitRowController {
      * Nutzer selbst eingetragen hat, bleibt unangetastet ({@link #isCategoryAuto()}). Ohne Kategorie
      * bleibt allein die leere Abschlusszeile stehen.
      */
-    void replaceAutoCategories(String category) {
+    void replaceAutoCategories(String category, Boolean categoryIsIncome) {
         if (!categoryAuto) {
             return;
         }
         prefilling = true;
         clear();
         ensureTrailingRow();
-        setFirstCategory(category);
+        setFirstCategory(category, categoryIsIncome);
         prefilling = false;
         onChanged.run();
     }
@@ -409,7 +409,7 @@ class SplitRowController {
      * Teilbetrag mit dem Gesamtbetrag und hängt eine neue leere Zeile an – wie bei einer Auswahl von
      * Hand. Den Typ setzt er dabei zurück, deshalb kommt er erst danach.
      */
-    void setFirstCategory(String category) {
+    void setFirstCategory(String category, Boolean categoryIsIncome) {
         if (category == null || category.trim().isEmpty() || container.getChildCount() == 0) {
             return;
         }
@@ -417,17 +417,35 @@ class SplitRowController {
         if (cat == null) {
             return;
         }
+        cat.setText(category, false);
+        // Die Seite kommt mit der Kategorie von ihrer Quelle; nur ohne sie wird nachgeschlagen.
+        cat.setTag(categoryIsIncome != null ? categoryIsIncome : sideOf(category));
+    }
+
+    /**
+     * Die Seite einer Kategorie laut Auswahlliste ({@code null} = die Liste kennt sie nicht oder ist
+     * noch nicht da). Der Rückfall für Kategorien, die ohne ihre Seite ankommen.
+     */
+    Boolean sideOf(String category) {
         CategoryFilterAdapter.CatItem item =
                 categoryAdapter != null ? categoryAdapter.itemFor(category) : null;
-        cat.setText(category, false);
-        cat.setTag(item != null ? item.groupIsIncome : null);
+        return item != null && !item.value.isEmpty() ? item.groupIsIncome : null;
     }
 
     /** Reicht den Vorspann des Empfängers an die gemeinsame Kategorieliste aller Zeilen weiter. */
-    void setCategoryFavorites(String header, List<String> values) {
-        if (categoryAdapter != null) {
-            categoryAdapter.setFavorites(header, values);
+    void setCategoryFavorites(String header, List<de.spahr.ausgaben.db.PayeeCategory> values) {
+        if (categoryAdapter == null) {
+            return;
         }
+        List<String> names = new ArrayList<>();
+        List<Boolean> sides = new ArrayList<>();
+        if (values != null) {
+            for (de.spahr.ausgaben.db.PayeeCategory v : values) {
+                names.add(v.category);
+                sides.add(v.isIncome);
+            }
+        }
+        categoryAdapter.setFavorites(header, names, sides);
     }
 
     /** Sorgt für genau eine leere Abschluss-Zeile am Ende. */

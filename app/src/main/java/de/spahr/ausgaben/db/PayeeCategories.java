@@ -26,31 +26,57 @@ public final class PayeeCategories {
     }
 
     /**
-     * Die Kategorien dieses Empfängers in der Reihenfolge, in der sie oben stehen sollen.
+     * Die Kategorien dieses Empfängers in der Reihenfolge, in der sie oben stehen sollen – jede mit der
+     * Seite, auf der ihre Quelle sie führte.
      *
      * @param aliases Aliase, deren Zielname der Empfänger ist (jüngste zuerst)
      * @param uses    Kategorien seiner Buchungen samt Teilzeilen, jüngste zuerst
-     * @param income  {@code true} = Einnahme-Kategorien, {@code false} = Ausgabe-Kategorien
+     * @param income  {@code true} = Kategorien für Einnahmen, {@code false} = für Ausgaben
      * @param limit   Länge der Liste
      */
-    public static List<String> rank(List<PayeeCorrection> aliases, List<String> uses,
-                                    boolean income, int limit) {
+    public static List<PayeeCategory> ranked(List<PayeeCorrection> aliases, List<PayeeCategory> uses,
+                                             boolean income, int limit) {
         // Reihenfolge der ersten Eintragung zählt, Doppelte fallen weg (Groß-/Kleinschreibung egal).
-        Map<String, String> gefunden = new LinkedHashMap<>();
+        Map<String, PayeeCategory> gefunden = new LinkedHashMap<>();
         vonAliasen(gefunden, aliases, income, true);
         if (uses != null) {
-            for (String cat : uses) {
-                merke(gefunden, cat);
+            for (PayeeCategory use : uses) {
+                if (use != null) {
+                    merke(gefunden, use.category, use.isIncome);
+                }
             }
         }
         vonAliasen(gefunden, aliases, income, false);
 
-        List<String> out = new ArrayList<>();
-        for (String cat : gefunden.values()) {
+        List<PayeeCategory> out = new ArrayList<>();
+        for (PayeeCategory cat : gefunden.values()) {
             if (out.size() >= limit) {
                 break;
             }
             out.add(cat);
+        }
+        return out;
+    }
+
+    /** Wie {@link #ranked(List, List, boolean, int)} mit {@link #LIMIT}. */
+    public static List<PayeeCategory> ranked(List<PayeeCorrection> aliases, List<PayeeCategory> uses,
+                                             boolean income) {
+        return ranked(aliases, uses, income, LIMIT);
+    }
+
+    /** Nur die Namen – für Aufrufer, denen die Seite gleichgültig ist. */
+    public static List<String> rank(List<PayeeCorrection> aliases, List<String> uses,
+                                    boolean income, int limit) {
+        List<PayeeCategory> mitSeite = null;
+        if (uses != null) {
+            mitSeite = new ArrayList<>();
+            for (String use : uses) {
+                mitSeite.add(new PayeeCategory(use == null ? "" : use, null));
+            }
+        }
+        List<String> out = new ArrayList<>();
+        for (PayeeCategory cat : ranked(aliases, mitSeite, income, limit)) {
+            out.add(cat.category);
         }
         return out;
     }
@@ -61,7 +87,7 @@ public final class PayeeCategories {
     }
 
     /** Die zur Buchungsart passenden Kategorien der bevorzugten bzw. der übrigen Aliase. */
-    private static void vonAliasen(Map<String, String> gefunden, List<PayeeCorrection> aliases,
+    private static void vonAliasen(Map<String, PayeeCategory> gefunden, List<PayeeCorrection> aliases,
                                    boolean income, boolean preferred) {
         if (aliases == null) {
             return;
@@ -70,19 +96,28 @@ public final class PayeeCategories {
             if (a == null || a.preferred != preferred) {
                 continue;
             }
-            merke(gefunden, income ? a.catIncome1 : a.catExpense1);
-            merke(gefunden, income ? a.catIncome2 : a.catExpense2);
+            merke(gefunden, income ? a.catIncome1 : a.catExpense1,
+                    income ? a.catIncome1IsIncome : a.catExpense1IsIncome);
+            merke(gefunden, income ? a.catIncome2 : a.catExpense2,
+                    income ? a.catIncome2IsIncome : a.catExpense2IsIncome);
         }
     }
 
-    private static void merke(Map<String, String> gefunden, String category) {
+    /**
+     * Der erste Fund eines Namens bestimmt seinen Platz. Kennt er seine Seite nicht, darf ein späterer
+     * gleichnamiger sie nachtragen – der Platz bleibt.
+     */
+    private static void merke(Map<String, PayeeCategory> gefunden, String category, Boolean isIncome) {
         if (category == null || category.trim().isEmpty()) {
             return;
         }
         String cat = category.trim();
         String key = cat.toLowerCase(Locale.ROOT);
-        if (!gefunden.containsKey(key)) {
-            gefunden.put(key, cat);
+        PayeeCategory schon = gefunden.get(key);
+        if (schon == null) {
+            gefunden.put(key, new PayeeCategory(cat, isIncome));
+        } else if (schon.isIncome == null) {
+            schon.isIncome = isIncome;
         }
     }
 }

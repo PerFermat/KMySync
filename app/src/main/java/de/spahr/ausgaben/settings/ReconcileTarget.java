@@ -2,7 +2,7 @@ package de.spahr.ausgaben.settings;
 
 /**
  * Vorgabe für die Kassensturz-Ausgleichsbuchung: Empfänger und Kategorie. Beides ist anfangs leer und
- * wird vom Benutzer einmal festgelegt (siehe {@link SettingsStore#setReconcileTarget(String, String)}).
+ * wird vom Benutzer einmal festgelegt (siehe {@link SettingsStore#setReconcileTarget(String, String, Boolean)}).
  */
 public final class ReconcileTarget {
 

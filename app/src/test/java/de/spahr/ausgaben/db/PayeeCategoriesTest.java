@@ -98,4 +98,47 @@ public class PayeeCategoriesTest {
         assertTrue(PayeeCategories.rank(Collections.singletonList(ausgabeAlias(true, "", null)),
                 Arrays.asList("", "   "), false).isEmpty());
     }
+
+    // ---- Die Seite der Kategorie kommt mit ----
+
+    private static List<String> beschrieben(List<PayeeCategory> cats) {
+        List<String> out = new ArrayList<>();
+        for (PayeeCategory c : cats) {
+            out.add(c.category + "=" + c.isIncome);
+        }
+        return out;
+    }
+
+    /** Eine Erstattung: für Einnahmen gebucht, aber auf eine Ausgabekategorie. Das bleibt so. */
+    @Test
+    public void dieSeiteDerAltenBuchungBleibtErhalten() {
+        List<PayeeCategory> cats = PayeeCategories.ranked(null, Arrays.asList(
+                new PayeeCategory("Kleidung", false), new PayeeCategory("Gutschrift", true),
+                new PayeeCategory("Alt", null)), true);
+        assertEquals(Arrays.asList("Kleidung=false", "Gutschrift=true", "Alt=null"), beschrieben(cats));
+    }
+
+    @Test
+    public void derAliasBringtSeineSeiteMit() {
+        PayeeCorrection stern = einnahmeAlias(true, "Kleidung");
+        stern.catIncome1IsIncome = false;
+        PayeeCorrection alt = einnahmeAlias(false, "Gehalt");
+        List<PayeeCategory> cats = PayeeCategories.ranked(Arrays.asList(stern, alt), null, true);
+        assertEquals("ein Alias aus der Zeit vor dem Feld kennt seine Seite nicht",
+                Arrays.asList("Kleidung=false", "Gehalt=null"), beschrieben(cats));
+    }
+
+    /** Kennt der erste Fund seine Seite nicht, trägt ein späterer gleichnamiger sie nach – am selben Platz. */
+    @Test
+    public void spaetererFundTraegtDieSeiteNach() {
+        List<PayeeCategory> cats = PayeeCategories.ranked(
+                Collections.singletonList(ausgabeAlias(true, "Lebensmittel", null)),
+                Arrays.asList(new PayeeCategory("Drogerie", false),
+                        new PayeeCategory("lebensmittel", false)), false);
+        assertEquals(Arrays.asList("Lebensmittel=false", "Drogerie=false"), beschrieben(cats));
+        // Eine schon bekannte Seite überschreibt er nicht.
+        cats = PayeeCategories.ranked(null, Arrays.asList(new PayeeCategory("Kleidung", false),
+                new PayeeCategory("Kleidung", true)), true);
+        assertEquals(Collections.singletonList("Kleidung=false"), beschrieben(cats));
+    }
 }

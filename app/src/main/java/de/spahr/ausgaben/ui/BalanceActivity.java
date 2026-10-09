@@ -486,6 +486,8 @@ public class BalanceActivity extends LocalizedActivity {
         MaterialButton target = view.findViewById(R.id.btnReconcileTarget);
         final String[] payee = {settings.getReconcilePayee()};
         final String[] category = {settings.getReconcileCategory()};
+        // Mit der Kategorie auch ihre Seite (Einnahme-/Ausgabekategorie) – sie geht in die Buchung mit.
+        final Boolean[] categoryIsIncome = {settings.getReconcileCategoryIsIncome()};
         showReconcileTarget(target, payee[0], category[0]);
 
         androidx.appcompat.app.AlertDialog dialog =
@@ -505,7 +507,7 @@ public class BalanceActivity extends LocalizedActivity {
                                 return;
                             }
                             repository.saveReconcile(account[0], p, cents, createBooking.isChecked(),
-                                    payee[0], category[0], this::refresh);
+                                    payee[0], category[0], categoryIsIncome[0], this::refresh);
                         })
                         .create();
         // „Übernehmen" bleibt gesperrt, solange eine Buchung erzeugt werden soll, aber Empfänger oder
@@ -514,7 +516,7 @@ public class BalanceActivity extends LocalizedActivity {
             final Runnable update = () -> dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
                     .setEnabled(ReconcileTarget.canApply(createBooking.isChecked(), payee[0], category[0]));
             createBooking.setOnCheckedChangeListener((b, checked) -> update.run());
-            target.setOnClickListener(v -> showReconcileTargetDialog(payee, category, target, update));
+            target.setOnClickListener(v -> showReconcileTargetDialog(payee, category, categoryIsIncome, target, update));
             update.run();
         });
         dialog.show();
@@ -527,7 +529,8 @@ public class BalanceActivity extends LocalizedActivity {
     }
 
     /** Empfänger und Kategorie der Ausgleichsbuchung festlegen – „Speichern" merkt sie dauerhaft. */
-    private void showReconcileTargetDialog(String[] payee, String[] category, MaterialButton button,
+    private void showReconcileTargetDialog(String[] payee, String[] category,
+                                           Boolean[] categoryIsIncome, MaterialButton button,
                                            Runnable onSaved) {
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_reconcile_target, null, false);
         MaterialAutoCompleteTextView payeeField = view.findViewById(R.id.reconcileTargetPayee);
@@ -535,9 +538,14 @@ public class BalanceActivity extends LocalizedActivity {
         payeeField.setText(payee[0]);
         categoryField.setText(category[0]);
         repository.getPayeeNames(names -> PickerAdapters.payees(payeeField, names));
-        repository.getCategoriesGrouped(g -> PickerAdapters.categories(categoryField, new CategoryFilterAdapter(this, null,
-                getString(R.string.category_group_expense), g.expense,
-                getString(R.string.category_group_income), g.income)));
+        // Die Liste kennt zu jeder Kategorie ihre Gruppe; daraus kommt beim Speichern die Seite.
+        final CategoryFilterAdapter[] categories = {null};
+        repository.getCategoriesGrouped(g -> {
+            categories[0] = new CategoryFilterAdapter(this, null,
+                    getString(R.string.category_group_expense), g.expense,
+                    getString(R.string.category_group_income), g.income);
+            PickerAdapters.categories(categoryField, categories[0]);
+        });
 
         new AppDialog(this)
                 .setTitle(R.string.reconcile_target_title)
@@ -548,8 +556,18 @@ public class BalanceActivity extends LocalizedActivity {
                     PickerBehaviour.settleAll(view);
 
                     payee[0] = Ui.trimmedText(payeeField);
-                    category[0] = Ui.trimmedText(categoryField);
-                    settings.setReconcileTarget(payee[0], category[0]);
+                    String gewaehlt = Ui.trimmedText(categoryField);
+                    CategoryFilterAdapter.CatItem item =
+                            categories[0] == null ? null : categories[0].itemFor(gewaehlt);
+                    if (gewaehlt.isEmpty()) {
+                        categoryIsIncome[0] = null;
+                    } else if (item != null) {
+                        categoryIsIncome[0] = item.groupIsIncome;
+                    } else if (!gewaehlt.equalsIgnoreCase(category[0])) {
+                        categoryIsIncome[0] = null; // andere Kategorie, Liste noch nicht da: unbekannt
+                    }
+                    category[0] = gewaehlt;
+                    settings.setReconcileTarget(payee[0], category[0], categoryIsIncome[0]);
                     showReconcileTarget(button, payee[0], category[0]);
                     onSaved.run();
                 })

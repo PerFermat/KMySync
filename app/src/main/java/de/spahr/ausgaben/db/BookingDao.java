@@ -163,18 +163,24 @@ public interface BookingDao {
      * Vorbelegung im Editor. Die Teilzeilen einer Splitbuchung zählen mit, denn in
      * {@code booking.category} steht dort nur die erste. Der Empfängername muß genau stimmen
      * (Groß-/Kleinschreibung egal); Umbuchungen haben keine Kategorie.
+     *
+     * <p>Jede Kategorie bringt die Seite mit, auf der die frühere Buchung sie führte
+     * ({@code category_is_income}) – {@code :income} ist dagegen die Richtung des Geldes. Beides fällt
+     * bei einer Erstattung auseinander: Einnahme auf eine Ausgabekategorie.</p>
      */
-    @Query("SELECT category FROM ("
-            + "SELECT category AS category, created_at AS created_at FROM booking "
+    @Query("SELECT category, category_is_income FROM ("
+            + "SELECT category AS category, category_is_income AS category_is_income, "
+            + "created_at AS created_at FROM booking "
             + "WHERE payee = :payee COLLATE NOCASE AND is_transfer = 0 AND is_income = :income "
             + "AND category != '' "
             + "UNION ALL "
-            + "SELECT s.category AS category, b.created_at AS created_at FROM booking_split s "
+            + "SELECT s.category AS category, s.category_is_income AS category_is_income, "
+            + "b.created_at AS created_at FROM booking_split s "
             + "JOIN booking b ON s.booking_id = b.id "
             + "WHERE b.payee = :payee COLLATE NOCASE AND b.is_transfer = 0 AND b.is_income = :income "
             + "AND s.category != '') "
             + "ORDER BY created_at DESC LIMIT 200")
-    List<String> getCategoriesByPayee(String payee, boolean income);
+    List<PayeeCategory> getCategoriesByPayee(String payee, boolean income);
 
     /**
      * Die Stichwortfelder der Buchungen dieses Empfängers, jüngste zuerst – Quelle des Vorspanns im

@@ -56,6 +56,25 @@ public class PayeeCorrection {
     @ColumnInfo(name = "cat_expense_2")
     public String catExpense2 = "";
 
+    /**
+     * Die Seite jeder der vier Kategorien: {@code true} = Einnahmekategorie, {@code false} =
+     * Ausgabekategorie, {@code null} = unbekannt (Alias aus der Zeit vor diesen Feldern, oder das Feld
+     * ist leer). {@code catIncome…} heißt „für Einnahmen vorgesehen", nicht „Einnahmekategorie" – ein
+     * aus einer Erstattung gelernter Alias trägt dort eine Ausgabekategorie. Deshalb steht die Seite
+     * eigens daneben und wird mit der Kategorie in die Buchung übernommen.
+     */
+    @ColumnInfo(name = "cat_income_1_is_income")
+    public Boolean catIncome1IsIncome;
+
+    @ColumnInfo(name = "cat_income_2_is_income")
+    public Boolean catIncome2IsIncome;
+
+    @ColumnInfo(name = "cat_expense_1_is_income")
+    public Boolean catExpense1IsIncome;
+
+    @ColumnInfo(name = "cat_expense_2_is_income")
+    public Boolean catExpense2IsIncome;
+
     /** Quell-/Zielkonto für Umbuchungen. */
     @NonNull
     @ColumnInfo(name = "from_account")

@@ -692,12 +692,20 @@ public class BookingEditActivity extends LocalizedActivity {
             List<SplitRowController.Part> parts = splitCtl.collectParts();
             String c1 = parts.size() > 0 ? parts.get(0).category : "";
             String c2 = parts.size() > 1 ? parts.get(1).category : "";
+            // Mit jeder Kategorie ihre Seite: „für Einnahmen vorgesehen" (catIncome…) heißt nicht
+            // „Einnahmekategorie" – eine Erstattung führt eine Ausgabekategorie.
+            Boolean s1 = c1.isEmpty() ? null : seiteVon(parts.get(0));
+            Boolean s2 = c2.isEmpty() ? null : seiteVon(parts.get(1));
             if (toggleType.getCheckedButtonId() == R.id.btnIncome) {
                 a.catIncome1 = c1;
                 a.catIncome2 = c2;
+                a.catIncome1IsIncome = s1;
+                a.catIncome2IsIncome = s2;
             } else {
                 a.catExpense1 = c1;
                 a.catExpense2 = c2;
+                a.catExpense1IsIncome = s1;
+                a.catExpense2IsIncome = s2;
             }
         }
         // Standort der Buchung (aus der GPS-Zeile) übernehmen → Alias per GPS auffindbar (Betrag-only).
@@ -754,6 +762,10 @@ public class BookingEditActivity extends LocalizedActivity {
         boolean income = toggleType.getCheckedButtonId() == R.id.btnIncome;
         String c1 = income ? activeAlias.catIncome1 : activeAlias.catExpense1;
         String c2 = income ? activeAlias.catIncome2 : activeAlias.catExpense2;
+        // Die Seite steht im Alias neben der Kategorie; ein Alias aus der Zeit davor kennt sie nicht,
+        // dann sagt es die Auswahlliste.
+        Boolean s1 = income ? activeAlias.catIncome1IsIncome : activeAlias.catExpense1IsIncome;
+        Boolean s2 = income ? activeAlias.catIncome2IsIncome : activeAlias.catExpense2IsIncome;
         splitCtl.setSuppressEvents(true);
         splitCtl.clear();
         boolean hasC1 = c1 != null && !c1.trim().isEmpty();
@@ -761,10 +773,10 @@ public class BookingEditActivity extends LocalizedActivity {
         // Ohne .kmy-Schreibziel ergäben zwei Kategorien eine Splitbuchung – dann keine vorbelegen.
         if (!(splitLocked && hasC1 && hasC2)) {
             if (hasC1) {
-                splitCtl.addRow(c1, null);
+                splitCtl.addRow(c1, null, s1 != null ? s1 : splitCtl.sideOf(c1));
             }
             if (hasC2) {
-                splitCtl.addRow(c2, null);
+                splitCtl.addRow(c2, null, s2 != null ? s2 : splitCtl.sideOf(c2));
             }
         }
         splitCtl.setSuppressEvents(false);
@@ -1482,7 +1494,8 @@ public class BookingEditActivity extends LocalizedActivity {
             }
             splitCtl.setCategoryFavorites(getString(R.string.category_group_payee), cats);
             if (splitCtl.isCategoryAuto() && !key.equals(categorySourceKey)) {
-                splitCtl.replaceAutoCategories(cats.isEmpty() ? null : cats.get(0));
+                splitCtl.replaceAutoCategories(cats.isEmpty() ? null : cats.get(0).category,
+                        cats.isEmpty() ? null : cats.get(0).isIncome);
                 categorySourceKey = key;
             }
         });
@@ -2159,13 +2172,22 @@ public class BookingEditActivity extends LocalizedActivity {
     }
 
     /**
-     * Kategorietyp eines Teils: aus der Auswahlliste angetippt/vorbelegt, sonst Rückfall auf den
-     * Einnahme/Ausgabe-Umschalter der Buchung (z. B. bei frei getipptem Kategorietext).
+     * Die Seite der Kategorie eines Teils, soweit sie feststeht: von der Zeile gemerkt (aus der Liste
+     * gewählt, getippt und in der Liste gefunden, oder mit der Kategorie von ihrer Quelle übernommen),
+     * sonst aus der Auswahlliste nachgeschlagen. {@code null} = nicht zu ermitteln.
+     */
+    private Boolean seiteVon(SplitRowController.Part p) {
+        return p.categoryIsIncome != null ? p.categoryIsIncome : splitCtl.sideOf(p.category);
+    }
+
+    /**
+     * Kategorietyp eines Teils für das Speichern. Erst wenn weder die Zeile noch die Auswahlliste die
+     * Seite kennen – die Liste ist noch nicht geladen –, entscheidet der Einnahme/Ausgabe-Umschalter
+     * der Buchung. Frei eingeben lässt sich eine Kategorie nicht; sie stammt immer aus der Liste.
      */
     private boolean resolvePartType(SplitRowController.Part p) {
-        return p.categoryIsIncome != null
-                ? p.categoryIsIncome
-                : toggleType.getCheckedButtonId() == R.id.btnIncome;
+        Boolean seite = seiteVon(p);
+        return seite != null ? seite : toggleType.getCheckedButtonId() == R.id.btnIncome;
     }
 
     private long composeTimestamp() {

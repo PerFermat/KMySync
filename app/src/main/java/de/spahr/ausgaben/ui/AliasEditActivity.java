@@ -331,6 +331,12 @@ public class AliasEditActivity extends LocalizedActivity {
         a.catExpense2 = text(editCatExpense2);
         a.catIncome1 = text(editCatIncome1);
         a.catIncome2 = text(editCatIncome2);
+        // Die Ausgabe-Felder bieten nur den Ausgabenbaum an, die Einnahme-Felder nur den
+        // Einnahmenbaum, und validate() hat das eben geprüft – die Seite ist hier die des Feldes.
+        a.catExpense1IsIncome = a.catExpense1.isEmpty() ? null : Boolean.FALSE;
+        a.catExpense2IsIncome = a.catExpense2.isEmpty() ? null : Boolean.FALSE;
+        a.catIncome1IsIncome = a.catIncome1.isEmpty() ? null : Boolean.TRUE;
+        a.catIncome2IsIncome = a.catIncome2.isEmpty() ? null : Boolean.TRUE;
         a.fromAccount = text(editFrom);
         a.toAccount = text(editTo);
         a.place = text(editPlace);
