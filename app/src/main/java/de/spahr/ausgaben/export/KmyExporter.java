@@ -40,6 +40,8 @@ public class KmyExporter {
          * „bearbeitet"; es wird nichts eingefügt, damit keine Dubletten entstehen.
          */
         public final List<Long> notFound = new ArrayList<>();
+        /** Was dieser Schritt an der Datei ändern wollte – Maßstab der Selbstprüfung. */
+        public final KmyAenderungen aenderungen = new KmyAenderungen();
     }
 
     /** Eine zusammengebaute Transaktion: die fertigen Splits samt Währung und Notiz. */
@@ -60,6 +62,8 @@ public class KmyExporter {
         public String xml;
         /** In dieser Runde tatsächlich gefundene und entfernte Vormerkungen (per {@link KmyPendingDelete#id}). */
         public final List<Long> resolvedIds = new ArrayList<>();
+        /** Was dieser Schritt an der Datei ändern wollte – Maßstab der Selbstprüfung. */
+        public final KmyAenderungen aenderungen = new KmyAenderungen();
     }
 
     /** Ergebnis des Schreibens der in der App erfassten Depot-Bewegungen. */
@@ -68,6 +72,8 @@ public class KmyExporter {
         /** Geschriebene Bewegungen ({@link de.spahr.ausgaben.db.SecurityTx#id}). */
         public final List<Long> writtenIds = new ArrayList<>();
         public final List<String> skipped = new ArrayList<>();
+        /** Was dieser Schritt an der Datei ändern wollte – Maßstab der Selbstprüfung. */
+        public final KmyAenderungen aenderungen = new KmyAenderungen();
     }
 
     /** Ergebnis des Weiterstellens erledigter/übersprungener geplanter Buchungen. */
@@ -77,6 +83,8 @@ public class KmyExporter {
         public final List<Long> resolvedIds = new ArrayList<>();
         /** Tatsächlich in der Datei weitergestellte Vormerkungen (Teilmenge von {@link #resolvedIds}). */
         public final List<Long> writtenIds = new ArrayList<>();
+        /** Was dieser Schritt an der Datei ändern wollte – Maßstab der Selbstprüfung. */
+        public final KmyAenderungen aenderungen = new KmyAenderungen();
     }
 
     /** Ende des Hauptbuchs; alles dahinter (z. B. geplante Buchungen) bleibt bei der Suche außen vor. */
@@ -162,6 +170,7 @@ public class KmyExporter {
             }
             if (hasSecuritySplit(found.block)) {
                 xml = found.replacedBy(patchedSplits(found.block, b));
+                result.aenderungen.nurNotiz(found.txId);
             } else {
                 Built built = b.isTransfer
                         ? buildTransfer(b, result, newPayeeIds, payeeFragments, nextPayee)
@@ -175,6 +184,7 @@ public class KmyExporter {
                         transactionElement(found.txId, dateFor(b.createdAt), today,
                                 built.memo, built.commodity, built.splits),
                         found.block));
+                result.aenderungen.geaendert(found.txId);
             }
             result.updated++;
             result.writtenIds.add(b.id);
@@ -199,6 +209,7 @@ public class KmyExporter {
             String txId = String.format(Locale.US, "T%018d", nextTx[0]++);
             txFragments.append(transactionElement(txId, dateFor(b.createdAt), today, built.memo,
                     built.commodity, built.splits));
+            result.aenderungen.neu(txId);
             newTx++;
             result.writtenIds.add(b.id);
             if (b.isTransfer && !group.isEmpty()) {
@@ -231,6 +242,7 @@ public class KmyExporter {
                 result.notFound.clear();
                 result.updated = 0;
                 result.newPayees = 0;
+                result.aenderungen.leeren();
                 result.skipped.add(ctx.getString(de.spahr.ausgaben.R.string.err_kmy_read));
             } else {
                 xml = merged;
@@ -311,6 +323,7 @@ public class KmyExporter {
             if (matchIdx >= 0) {
                 consumed[matchIdx] = true;
                 result.resolvedIds.add(sigDeleteId.get(matchIdx));
+                result.aenderungen.geloescht(attributeOfOpeningTag(tx, ID_ATTR));
                 sb.append(xml, last, m.start());
                 last = m.end();
                 removed++;
@@ -643,6 +656,7 @@ public class KmyExporter {
             result.xml = result.xml.substring(0, m.start()) + updated + result.xml.substring(m.end());
             result.resolvedIds.add(a.id);
             result.writtenIds.add(a.id);
+            result.aenderungen.planung(a.kmyId.trim());
         }
         return result;
     }
@@ -800,6 +814,7 @@ public class KmyExporter {
             String txId = String.format(Locale.US, "T%018d", nextTx++);
             fragments.append(transactionElement(txId, dateFor(tx.date), today, "",
                     commodityOf(tx.moneyAccount), splits));
+            result.aenderungen.neu(txId);
             written++;
             result.writtenIds.add(tx.id);
         }
@@ -811,6 +826,7 @@ public class KmyExporter {
             // Ohne <TRANSACTIONS>-Block lieber nichts schreiben, als ein count zu behaupten, das nirgends
             // steht – die Bewegungen bleiben dann vorgemerkt.
             result.writtenIds.clear();
+            result.aenderungen.leeren();
             result.skipped.add(ctx.getString(de.spahr.ausgaben.R.string.err_kmy_read));
             return result;
         }
@@ -1084,6 +1100,7 @@ public class KmyExporter {
             existing = String.format(Locale.US, "P%06d", nextPayee[0]++);
             newPayeeIds.put(payee.toLowerCase(Locale.GERMANY), existing);
             payeeFragments.append(payeeElement(existing, payee));
+            result.aenderungen.neuerEmpfaenger(existing);
             result.newPayees++;
         }
         return existing;

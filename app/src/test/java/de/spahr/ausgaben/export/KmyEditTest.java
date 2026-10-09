@@ -104,8 +104,11 @@ public class KmyEditTest {
         assertTrue(block.contains("value=\"-400/100\""));
         assertFalse(block.contains("value=\"-250/100\""));
         assertTrue(block.contains("postdate=\"2026-01-05\""));
-        // Die anderen Transaktionen bleiben unberührt.
-        assertTrue(r.xml.contains("value=\"-1000/100\""));
+        // Die anderen Transaktionen bleiben unberührt: jeder ihrer Blöcke steht Zeichen für Zeichen da.
+        for (String id : new String[]{"T000000000000000002", "T000000000000000003",
+                "T000000000000000004"}) {
+            assertEquals(id, blockOf(d.xml(), id), blockOf(r.xml, id));
+        }
     }
 
     /** Bearbeitung verschiebt Konto und Datum: gefunden wird über die Signatur der exportierten Fassung. */

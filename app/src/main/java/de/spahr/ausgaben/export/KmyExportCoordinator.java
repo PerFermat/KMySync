@@ -155,8 +155,9 @@ public class KmyExportCoordinator {
                 // den Server erreicht. Gepackt wird schon hier, damit genau die Bytes geprüft sind,
                 // die nachher hochgehen.
                 byte[] packed = KmyDocument.gzip(res.xml);
-                KmyExportCheck.pruefen(doc.xml(), res.xml, packed, delRes.resolvedIds.size(),
-                        res.writtenIds.size() + secRes.writtenIds.size());
+                KmyExportCheck.pruefen(doc.xml(), res.xml, packed, KmyAenderungen.zusammen(
+                        res.aenderungen, delRes.aenderungen, schedRes.aenderungen,
+                        secRes.aenderungen));
 
                 // Hat KMyMoney die Datei gerade offen, überschriebe es beim Speichern diesen Export –
                 // still, und die App schickte die Buchungen nie wieder. Also gar nicht erst schreiben.

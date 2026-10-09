@@ -74,8 +74,7 @@ public class KmySecurityExportTest {
                 original.xml(), Collections.singletonList(tx));
         assertEquals("Bewegung wurde übersprungen: " + res.skipped, 1, res.writtenIds.size());
         assertBalanced(res.xml);
-        KmyExportCheck.pruefen(original.xml(), res.xml, KmyDocument.gzip(res.xml), 0,
-                res.writtenIds.size());
+        KmyExportCheck.pruefen(original.xml(), res.xml, KmyDocument.gzip(res.xml), res.aenderungen);
 
         KmyDocument written = new KmyDocument(res.xml.getBytes(StandardCharsets.UTF_8), ctx);
         return new KmyImporter(written, ctx).importDepot("Depot").transactions;
