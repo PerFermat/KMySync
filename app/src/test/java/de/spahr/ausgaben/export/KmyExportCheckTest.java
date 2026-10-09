@@ -438,6 +438,154 @@ public class KmyExportCheckTest {
         besteht(d.xml(), r.xml, r.aenderungen);
     }
 
+    // ---- Neue und geänderte Transaktionen sind in sich stimmig ----
+
+    /**
+     * Zwei neue Buchungen auf denselben Konten, ein Cent wandert von der einen in die andere: Die
+     * Salden der Konten stimmen weiter, die einzelne Transaktion nicht.
+     */
+    @Test
+    public void unausgeglicheneNeueBuchung_faelltDurch() throws Exception {
+        KmyDocument d = doc();
+        KmyExporter.Result r = new KmyExporter(d, ctx).build(
+                Arrays.asList(ausgabe(5, 111), ausgabe(6, 222)), Collections.emptyList(), new HashMap<>());
+        assertEquals(2, r.writtenIds.size());
+        besteht(d.xml(), r.xml, r.aenderungen);
+        String a = null;
+        String b = null;
+        for (KmyAenderungen.Absicht ab : r.aenderungen.transaktionen()) {
+            if (a == null) {
+                a = ab.txId;
+            } else {
+                b = ab.txId;
+            }
+        }
+        String neu = imBlock(imBlock(r.xml, a, "\"-111/100\"", "\"-112/100\""),
+                b, "\"-222/100\"", "\"-221/100\"");
+        faelltDurch(d.xml(), neu, r.aenderungen, a + ": Summe der Splits ist -1/100 statt 0/1");
+    }
+
+    /** Ausgeglichen und mit richtigen Kontosalden – aber in der Transaktion sind die Seiten vertauscht. */
+    @Test
+    public void vertauschteSeitenZwischenZweiBuchungen_faelltDurch() throws Exception {
+        KmyDocument d = doc();
+        Booking einnahme = ausgabe(6, 111);
+        einnahme.isIncome = true;
+        KmyExporter.Result r = new KmyExporter(d, ctx).build(
+                Arrays.asList(ausgabe(5, 111), einnahme), Collections.emptyList(), new HashMap<>());
+        assertEquals(2, r.writtenIds.size());
+        besteht(d.xml(), r.xml, r.aenderungen);
+        // Aus Ausgabe und Einnahme über je 1,11 werden zwei Einnahmen bzw. Ausgaben vertauscht:
+        // jede Transaktion summiert sich auf 0, jedes Konto behält seinen Saldo.
+        String neu = r.xml;
+        for (KmyAenderungen.Absicht ab : r.aenderungen.transaktionen()) {
+            neu = imBlock(imBlock(imBlock(neu, ab.txId, "\"-111/100\"", "\"X\""),
+                    ab.txId, "\"111/100\"", "\"-111/100\""), ab.txId, "\"X\"", "\"111/100\"");
+        }
+        faelltDurch(d.xml(), neu, r.aenderungen, "auf Konto A00000");
+    }
+
+    @Test
+    public void sharesWeichenVomValueAb_faelltDurch() throws Exception {
+        KmyDocument d = doc();
+        KmyExporter.Result r = neueBuchung(d);
+        faelltDurch(d.xml(), imBlock(r.xml, neueId(r), "shares=\"-111/100\"", "shares=\"-111/10\""),
+                r.aenderungen, "trägt shares -111/10 bei value -111/100");
+    }
+
+    @Test
+    public void verweisInsLeere_faelltDurch() throws Exception {
+        KmyDocument d = doc();
+        KmyExporter.Result r = neueBuchung(d);
+        String id = neueId(r);
+        faelltDurch(d.xml(), imBlock(r.xml, id, "payee=\"P000002\"", "payee=\"P000099\""), r.aenderungen,
+                "Empfänger \"P000099\" gibt es nicht");
+        faelltDurch(d.xml(), imBlock(r.xml, id, "commodity=\"EUR\"", "commodity=\"XXX\""), r.aenderungen,
+                "Währung \"XXX\"");
+
+        // Ein Konto, das es nicht gibt – so angesagt, dass die Saldoprüfung nichts dagegen hat.
+        KmyAenderungen angesagt = new KmyAenderungen();
+        angesagt.neu(id).soll = soll("A000001", -111, "A000999", 111);
+        angesagt.neuerEmpfaenger("P000002");
+        faelltDurch(d.xml(), imBlock(r.xml, id, "account=\"A000003\"", "account=\"A000999\""), angesagt,
+                "Konto \"A000999\" gibt es nicht");
+    }
+
+    @Test
+    public void doppelteSplitId_faelltDurch() throws Exception {
+        KmyDocument d = doc();
+        KmyExporter.Result r = neueBuchung(d);
+        faelltDurch(d.xml(), imBlock(r.xml, neueId(r), "id=\"S0002\"", "id=\"S0001\""), r.aenderungen,
+                "Split-id \"S0001\" fehlt oder ist doppelt");
+    }
+
+    /** Eine neue Transaktion unter einer id, die es schon gibt. */
+    @Test
+    public void neueIdKollidiertMitVorhandener_faelltDurch() throws Exception {
+        KmyDocument d = doc();
+        KmyExporter.Result r = neueBuchung(d);
+        String id = neueId(r);
+        KmyAenderungen angesagt = new KmyAenderungen();
+        angesagt.neu(T1).soll = soll("A000001", -111, "A000003", 111);
+        angesagt.neuerEmpfaenger("P000002");
+        faelltDurch(d.xml(), r.xml.replace("id=\"" + id + "\"", "id=\"" + T1 + "\""), angesagt,
+                "TRANSACTION " + T1);
+    }
+
+    @Test
+    public void unmoeglichesDatum_faelltDurch() throws Exception {
+        KmyDocument d = doc();
+        KmyExporter.Result r = neueBuchung(d);
+        String id = neueId(r);
+        faelltDurch(d.xml(), imBlock(r.xml, id, "postdate=\"2026-02-01\"", "postdate=\"2026-02-30\""),
+                r.aenderungen, "ist kein Datum");
+        faelltDurch(d.xml(), imBlock(r.xml, id, "postdate=\"2026-02-01\"", "postdate=\"01.02.2026\""),
+                r.aenderungen, "ist kein Datum");
+        faelltDurch(d.xml(), imBlock(r.xml, id, "postdate=\"2026-02-01\"", "postdate=\"\""),
+                r.aenderungen, "ist kein Datum");
+    }
+
+    @Test
+    public void datumspruefung() {
+        assertTrue(KmyExportCheck.istDatum("2026-02-28"));
+        assertTrue(KmyExportCheck.istDatum("2024-02-29"));
+        assertTrue(KmyExportCheck.istDatum("2000-02-29"));
+        for (String s : new String[]{"2026-02-29", "1900-02-29", "2026-13-01", "2026-00-10",
+                "2026-04-31", "2026-1-01", "2026-01-1", "26-01-01", "2026/01/01", "2026-01-00", ""}) {
+            assertTrue(s, !KmyExportCheck.istDatum(s));
+        }
+    }
+
+    /** An einer Wertpapier-Transaktion ändert der Export nur die Notiz – und nur das geht durch. */
+    @Test
+    public void wertpapierbuchung_nurDieNotiz() throws Exception {
+        KmyDocument d = new KmyDocument(KmyRobustnessTest.fixture("security-tx.xml"), ctx);
+        Booking b = new Booking();
+        b.id = 3;
+        b.account = "Verrechnungskonto";
+        b.transferAccount = "Musterfonds";
+        b.isTransfer = true;
+        b.amountCents = 101000;
+        b.note = "BELEG:2026/kauf.pdf";
+        b.createdAt = KmyDocument.parseKmyDate("2026-03-10");
+        b.edited = true;
+        b.origAccount = "Verrechnungskonto";
+        b.origSignedCents = -101000;
+        b.origCreatedAt = b.createdAt;
+        KmyExporter.Result r = new KmyExporter(d, ctx).build(Collections.emptyList(),
+                Collections.singletonList(b), new HashMap<>());
+        assertEquals(1, r.updated);
+        assertEquals(KmyAenderungen.Art.NUR_NOTIZ, r.aenderungen.zu(T1).art);
+        assertTrue(r.xml.contains("memo=\"BELEG:2026/kauf.pdf\""));
+        besteht(d.xml(), r.xml, r.aenderungen);
+
+        // Dabei die Stückzahl verändert: kein Konto bewegt sich, die Summe bleibt – und doch falsch.
+        faelltDurch(d.xml(), imBlock(r.xml, T1, "shares=\"20/1\"", "shares=\"21/1\""), r.aenderungen,
+                "über die Notiz hinaus geändert");
+        faelltDurch(d.xml(), imBlock(r.xml, T1, "postdate=\"2026-03-10\"", "postdate=\"2026-03-11\""),
+                r.aenderungen, "mehr als die Notiz geändert");
+    }
+
     // ---- Planungen ----
 
     private static String planung(String id, String postdate) {

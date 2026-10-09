@@ -101,6 +101,15 @@ public final class KmyExportCheck {
         final Map<String, Buchung> genau = new HashMap<>();
         /** Die Transaktionen mit mindestens einem abgeglichenen Split (id → Transaktion). */
         final Map<String, Buchung> abgeglichen = new LinkedHashMap<>();
+        /** Konto-id → {@code {type, parentaccount, currency}} aus dem {@code ACCOUNTS}-Block. */
+        final Map<String, String[]> konten = new HashMap<>();
+        /** Die ids aller {@code PAYEE}. */
+        final Set<String> empfaenger = new HashSet<>();
+        /**
+         * Die Währungen, die die Datei kennt: der {@code CURRENCIES}-Block, die Währungen ihrer Konten
+         * und die Basiswährung.
+         */
+        final Set<String> waehrungen = new HashSet<>();
 
         int von(String element) {
             Integer n = anzahl.get(element);
@@ -137,6 +146,14 @@ public final class KmyExportCheck {
             throw new Failed("Datei nicht zerlegbar (" + e.getMessage() + ")", e);
         }
         saldenStimmen(vorher, nachher, erwartet);
+        for (KmyAenderungen.Absicht ab : erwartet.transaktionen()) {
+            Buchung neueFassung = nachher.genau.get(ab.txId);
+            if (ab.art == KmyAenderungen.Art.NEU || ab.art == KmyAenderungen.Art.GEAENDERT) {
+                inSichStimmig(neueFassung, ab, nachher);
+            } else if (ab.art == KmyAenderungen.Art.NUR_NOTIZ) {
+                nurNotizGeaendert(vorher.genau.get(ab.txId), neueFassung);
+            }
+        }
         abgeglichenesBleibt(vorher, nachher);
 
         int txAlt = vorher.von("TRANSACTION");
@@ -424,6 +441,7 @@ public final class KmyExportCheck {
                             stand.kopfzahl = -1;
                         }
                     }
+                    stammdaten(stand, parser, name, pfad);
                     // Nur das Hauptbuch: dieselben Namen stehen auch in jeder Planung.
                     if ("TRANSACTION".equals(name) && pfad.size() == 2
                             && "TRANSACTIONS".equals(pfad.peek())) {
@@ -456,6 +474,38 @@ public final class KmyExportCheck {
             throw new Failed(welche + ": leer");
         }
         return stand;
+    }
+
+    private static String oderLeer(String s) {
+        return s == null ? "" : s.trim();
+    }
+
+    /** Konten, Empfänger und Währungen – worauf eine Transaktion verweisen darf. */
+    private static void stammdaten(Stand stand, XmlPullParser parser, String name, Deque<String> pfad) {
+        if (pfad.size() != 2) {
+            return; // nur direkte Kinder der Behälter; ACCOUNT steht auch in jedem Budget
+        }
+        String behaelter = pfad.peek();
+        String id = parser.getAttributeValue(null, "id");
+        if ("ACCOUNT".equals(name) && "ACCOUNTS".equals(behaelter) && id != null) {
+            String waehrung = oderLeer(parser.getAttributeValue(null, "currency"));
+            stand.konten.put(id, new String[]{
+                    oderLeer(parser.getAttributeValue(null, "type")),
+                    oderLeer(parser.getAttributeValue(null, "parentaccount")), waehrung});
+            if (!waehrung.isEmpty()) {
+                stand.waehrungen.add(waehrung.toUpperCase(java.util.Locale.ROOT));
+            }
+        } else if ("PAYEE".equals(name) && "PAYEES".equals(behaelter) && id != null) {
+            stand.empfaenger.add(id);
+        } else if ("CURRENCY".equals(name) && "CURRENCIES".equals(behaelter) && id != null) {
+            stand.waehrungen.add(id.trim().toUpperCase(java.util.Locale.ROOT));
+        } else if ("PAIR".equals(name) && "KEYVALUEPAIRS".equals(behaelter)
+                && "kmm-baseCurrency".equals(parser.getAttributeValue(null, "key"))) {
+            String basis = oderLeer(parser.getAttributeValue(null, "value"));
+            if (!basis.isEmpty()) {
+                stand.waehrungen.add(basis.toUpperCase(java.util.Locale.ROOT));
+            }
+        }
     }
 
     private static void attribute(XmlPullParser parser, Map<String, String> ziel) {
@@ -606,6 +656,135 @@ public final class KmyExportCheck {
         }
         if (!vorher.unlesbar.equals(nachher.unlesbar)) {
             throw new Failed("Splits mit unlesbarem value: " + vorher.unlesbar + " → " + nachher.unlesbar);
+        }
+    }
+
+    // ---- Neue und geänderte Transaktionen ----
+
+    /**
+     * Die dritte Regel: Was der Export angelegt oder neu gebaut hat, ist für sich genommen eine
+     * Transaktion, die KMyMoney so auch selbst geschrieben haben könnte.
+     *
+     * <ul>
+     *   <li>Auf jedem Konto steht genau der beabsichtigte Betrag, die Summe aller Splits ist damit 0 –
+     *       außer bei einer Buchung ohne Kategorie, die bewusst nur ihre Kontoseite trägt.</li>
+     *   <li>Ein Split in der Währung der Transaktion trägt als {@code shares} denselben Betrag wie als
+     *       {@code value}.</li>
+     *   <li>Jedes Konto, jeder Empfänger und die Währung gibt es in der Datei.</li>
+     *   <li>Die Split-ids sind innerhalb der Transaktion eindeutig. (Dass ihre eigene id neu und
+     *       einmalig ist, stellt schon die erste Regel sicher.)</li>
+     *   <li>{@code postdate} ist ein wirkliches Datum.</li>
+     * </ul>
+     */
+    private static void inSichStimmig(Buchung tx, KmyAenderungen.Absicht ab, Stand datei) throws Failed {
+        String wer = "TRANSACTION " + ab.txId;
+        if (tx == null || ab.soll == null) {
+            throw new Failed(wer + " fehlt in der neuen Datei");
+        }
+        Map<String, KmyBruch> ist = summen(tx, "neu");
+        KmyBruch summe = KmyBruch.NULL;
+        for (KmyBruch b : ist.values()) {
+            summe = summe.plus(b);
+        }
+        KmyBruch sollSumme = KmyBruch.NULL;
+        for (KmyBruch b : ab.soll.values()) {
+            sollSumme = sollSumme.plus(b);
+        }
+        if (!summe.equals(sollSumme)) {
+            throw new Failed(wer + ": Summe der Splits ist " + summe + " statt " + sollSumme);
+        }
+        Set<String> konten = new HashSet<>(ist.keySet());
+        konten.addAll(ab.soll.keySet());
+        for (String konto : konten) {
+            KmyBruch i = ist.get(konto);
+            KmyBruch s = ab.soll.get(konto);
+            if (!(i == null ? KmyBruch.NULL : i).equals(s == null ? KmyBruch.NULL : s)) {
+                throw new Failed(wer + ": auf Konto " + konto + " steht " + (i == null ? KmyBruch.NULL : i)
+                        + ", beabsichtigt war " + (s == null ? KmyBruch.NULL : s));
+            }
+        }
+
+        String waehrung = oderLeer(tx.attribute.get("commodity"));
+        if (waehrung.isEmpty() || (!datei.waehrungen.isEmpty()
+                && !datei.waehrungen.contains(waehrung.toUpperCase(java.util.Locale.ROOT)))) {
+            throw new Failed(wer + ": Währung \"" + waehrung + "\" kennt die Datei nicht");
+        }
+        if (!istDatum(oderLeer(tx.attribute.get("postdate")))) {
+            throw new Failed(wer + ": postdate \"" + tx.attribute.get("postdate") + "\" ist kein Datum");
+        }
+        Set<String> splitIds = new HashSet<>();
+        for (Split s : tx.splits) {
+            String konto = s.von("account");
+            String[] stamm = datei.konten.get(konto);
+            if (stamm == null) {
+                throw new Failed(wer + ": Konto \"" + konto + "\" gibt es nicht");
+            }
+            String empfaenger = s.von("payee");
+            if (!empfaenger.isEmpty() && !datei.empfaenger.contains(empfaenger)) {
+                throw new Failed(wer + ": Empfänger \"" + empfaenger + "\" gibt es nicht");
+            }
+            if (s.von("id").isEmpty() || !splitIds.add(s.von("id"))) {
+                throw new Failed(wer + ": Split-id \"" + s.von("id") + "\" fehlt oder ist doppelt");
+            }
+            // Ein Konto ohne Währungsangabe gilt wie im Exporter als eines in der Währung der
+            // Transaktion; ein Wertpapierkonto trägt hier die id des Papiers und fällt damit heraus.
+            if (stamm[2].isEmpty() || stamm[2].equalsIgnoreCase(waehrung)) {
+                KmyBruch shares;
+                try {
+                    shares = KmyBruch.lesen(s.von("shares"));
+                } catch (NumberFormatException | ArithmeticException e) {
+                    throw new Failed(wer + ": shares \"" + s.von("shares") + "\" ist kein Betrag");
+                }
+                if (!shares.equals(KmyBruch.lesen(s.von("value")))) {
+                    throw new Failed(wer + ": Split " + s.von("id") + " trägt shares " + s.von("shares")
+                            + " bei value " + s.von("value"));
+                }
+            }
+        }
+    }
+
+    /** Ein Datum in der Form {@code JJJJ-MM-TT}, das es im Kalender gibt. */
+    static boolean istDatum(String s) {
+        if (s.length() != 10 || s.charAt(4) != '-' || s.charAt(7) != '-') {
+            return false;
+        }
+        for (int i = 0; i < 10; i++) {
+            if (i != 4 && i != 7 && (s.charAt(i) < '0' || s.charAt(i) > '9')) {
+                return false;
+            }
+        }
+        int jahr = Integer.parseInt(s.substring(0, 4));
+        int monat = Integer.parseInt(s.substring(5, 7));
+        int tag = Integer.parseInt(s.substring(8, 10));
+        if (jahr < 1 || monat < 1 || monat > 12 || tag < 1) {
+            return false;
+        }
+        boolean schaltjahr = jahr % 4 == 0 && (jahr % 100 != 0 || jahr % 400 == 0);
+        int[] tage = {31, schaltjahr ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+        return tag <= tage[monat - 1];
+    }
+
+    /**
+     * An einer Wertpapier-Transaktion darf der Export nur Notiz und Stichwörter ändern. Alles andere –
+     * Datum, Konten, Beträge, Stückzahl, Kurs, Aktion, Abgleich – steht da wie zuvor.
+     */
+    private static void nurNotizGeaendert(Buchung alt, Buchung neu) throws Failed {
+        if (alt == null || neu == null) {
+            throw new Failed("TRANSACTION mit geänderter Notiz fehlt in einer der Fassungen");
+        }
+        String wer = "TRANSACTION " + alt.id();
+        if (!alt.attribute.equals(neu.attribute) || alt.splits.size() != neu.splits.size()) {
+            throw new Failed(wer + ": mehr als die Notiz geändert");
+        }
+        for (int i = 0; i < alt.splits.size(); i++) {
+            Map<String, String> a = new HashMap<>(alt.splits.get(i).attribute);
+            Map<String, String> n = new HashMap<>(neu.splits.get(i).attribute);
+            a.remove("memo");
+            n.remove("memo");
+            if (!a.equals(n)) {
+                throw new Failed(wer + ": Split " + alt.splits.get(i).von("id")
+                        + " über die Notiz hinaus geändert");
+            }
         }
     }
 }
