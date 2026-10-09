@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE KMYMONEY-FILE>
+<KMYMONEY-FILE>
+  <FILEINFO>
+    <CREATION_DATE date=""/>
+    <LAST_MODIFIED_DATE date="2026-04-12T07:35:49+02:00"/>
+    <VERSION id="1"/>
+    <FIXVERSION id="11"/>
+    <APPVERSION id="5.2.70-cdc2e4fc7"/>
+  </FILEINFO>
+  <USER name="" email="">
+    <ADDRESS street="" city="" state="" zip="" telephone="" country="" county="" zipcode="" postcode=""/>
+  </USER>
+  <INSTITUTIONS/>
+  <PAYEES/>
+  <COSTCENTERS/>
+  <TAGS/>
+  <ACCOUNTS>
+    <ACCOUNT id="AStd::Asset" parentaccount="" lastreconciled="" lastmodified="" institution="" opened="" number="" type="9" name="Asset" description="" currency="USD">
+      <SUBACCOUNTS>
+        <SUBACCOUNT id="A000010"/>
+        <SUBACCOUNT id="A000011"/>
+        <SUBACCOUNT id="A000016"/>
+        <SUBACCOUNT id="A000017"/>
+        <SUBACCOUNT id="A000021"/>
+        <SUBACCOUNT id="A000022"/>
+      </SUBACCOUNTS>
+    </ACCOUNT>
+    <ACCOUNT id="AStd::Liability" parentaccount="" lastreconciled="" lastmodified="" institution="" opened="" number="" type="10" name="Liability" description="" currency="USD"/>
+    <ACCOUNT id="AStd::Expense" parentaccount="" lastreconciled="" lastmodified="" institution="" opened="" number="" type="13" name="Expense" description="" currency="USD"/>
+    <ACCOUNT id="AStd::Income" parentaccount="" lastreconciled="" lastmodified="" institution="" opened="" number="" type="12" name="Income" description="" currency="USD"/>
+    <ACCOUNT id="AStd::Equity" parentaccount="" lastreconciled="" lastmodified="" institution="" opened="" number="" type="16" name="Equity" description="" currency="USD"/>
+    <ACCOUNT id="A000010" parentaccount="AStd::Asset" lastreconciled="" lastmodified="" institution="" opened="2024-01-01" number="" type="7" name="Investment" description="" currency="USD">
+      <SUBACCOUNTS>
+        <SUBACCOUNT id="A000014"/>
+        <SUBACCOUNT id="A000019"/>
+      </SUBACCOUNTS>
+    </ACCOUNT>
+    <ACCOUNT id="A000011" parentaccount="AStd::Asset" lastreconciled="" lastmodified="2025-01-27" institution="" opened="2024-01-01" number="" type="1" name="Investment (Brokerage)" description="" currency="USD"/>
+    <ACCOUNT id="A000014" parentaccount="A000010" lastreconciled="" lastmodified="2024-12-24" institution="" opened="2024-01-01" number="" type="15" name="A (USD)" description="" currency="E000001"/>
+    <ACCOUNT id="A000016" parentaccount="AStd::Asset" lastreconciled="" lastmodified="" institution="" opened="2024-01-01" number="" type="7" name="Investment (JPY)" description="" currency="JPY">
+      <SUBACCOUNTS>
+        <SUBACCOUNT id="A000018"/>
+      </SUBACCOUNTS>
+    </ACCOUNT>
+    <ACCOUNT id="A000017" parentaccount="AStd::Asset" lastreconciled="" lastmodified="2024-12-24" institution="" opened="2024-01-01" number="" type="1" name="Investment (JPY) (Brokerage)" description="" currency="JPY"/>
+    <ACCOUNT id="A000018" parentaccount="A000016" lastreconciled="" lastmodified="2024-12-24" institution="" opened="2024-01-01" number="" type="15" name="C (JPY)" description="" currency="E000005"/>
+    <ACCOUNT id="A000019" parentaccount="A000010" lastreconciled="" lastmodified="2025-01-27" institution="" opened="2024-01-01" number="" type="15" name="B (USD)" description="" currency="E000006"/>
+    <ACCOUNT id="A000020" parentaccount="A000021" lastreconciled="" lastmodified="2025-01-25" institution="" opened="2024-01-01" number="" type="15" name="E (EUR)" description="" currency="E000007"/>
+    <ACCOUNT id="A000021" parentaccount="AStd::Asset" lastreconciled="" lastmodified="" institution="" opened="2024-01-01" number="" type="7" name="Investment (EUR)" description="" currency="EUR">
+      <SUBACCOUNTS>
+        <SUBACCOUNT id="A000020"/>
+      </SUBACCOUNTS>
+    </ACCOUNT>
+    <ACCOUNT id="A000022" parentaccount="AStd::Asset" lastreconciled="" lastmodified="2025-01-25" institution="" opened="2024-01-01" number="" type="1" name="Investment (EUR) (Brokerage)" description="" currency="EUR"/>
+  </ACCOUNTS>
+  <TRANSACTIONS>
+    <TRANSACTION id="T000000000000000004" postdate="2024-01-01" memo="" entrydate="2025-01-25" commodity="EUR">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="" action="" reconcileflag="0" value="-75/1" shares="-75/1" price="0/1" memo="" account="A000022" number="" bankid=""/>
+        <SPLIT id="S0002" payee="" reconciledate="" action="Buy" reconcileflag="0" value="75/1" shares="5/1" price="15/1" memo="" account="A000020" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <TRANSACTION id="T000000000000000001" postdate="2024-01-27" memo="" entrydate="2024-12-24" commodity="JPY">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="" action="" reconcileflag="0" value="-2750/1" shares="-2750/1" price="1/1" memo="" account="A000017" number="" bankid=""/>
+        <SPLIT id="S0002" payee="" reconciledate="" action="Buy" reconcileflag="0" value="2750/1" shares="110/1" price="25/1" memo="" account="A000018" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <TRANSACTION id="T000000000000000002" postdate="2024-01-27" memo="" entrydate="2024-12-24" commodity="USD">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="" action="" reconcileflag="0" value="-1000/1" shares="-1000/1" price="1/1" memo="" account="A000011" number="" bankid=""/>
+        <SPLIT id="S0002" payee="" reconciledate="" action="Buy" reconcileflag="0" value="1000/1" shares="200/1" price="5/1" memo="" account="A000014" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <TRANSACTION id="T000000000000000003" postdate="2024-01-27" memo="" entrydate="2025-01-25" commodity="USD">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="" action="" reconcileflag="0" value="-600/1" shares="-600/1" price="0/1" memo="" account="A000011" number="" bankid=""/>
+        <SPLIT id="S0002" payee="" reconciledate="" action="Buy" reconcileflag="0" value="600/1" shares="30/1" price="20/1" memo="" account="A000019" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+    <TRANSACTION id="T000000000000000005" postdate="2024-10-01" memo="" entrydate="2025-01-27" commodity="USD">
+      <SPLITS>
+        <SPLIT id="S0001" payee="" reconciledate="" action="" reconcileflag="0" value="-300/1" shares="-300/1" price="0/1" memo="" account="A000011" number="" bankid=""/>
+        <SPLIT id="S0002" payee="" reconciledate="" action="Buy" reconcileflag="0" value="300/1" shares="15/1" price="20/1" memo="" account="A000019" number="" bankid=""/>
+      </SPLITS>
+    </TRANSACTION>
+  </TRANSACTIONS>
+  <KEYVALUEPAIRS>
+    <PAIR key="LastModificationDate" value="2026-04-12T07:35:49+02:00"/>
+    <PAIR key="kmm-baseCurrency" value="USD"/>
+    <PAIR key="kmm-id" value="{02e971fd-cb66-4021-9299-cc2d4e3853be}"/>
+  </KEYVALUEPAIRS>
+  <SCHEDULES/>
+  <SECURITIES>
+    <SECURITY id="E000001" name="A" symbol="A" type="0" rounding-method="7" saf="100" pp="4" trading-currency="USD" trading-market="A-Market"/>
+    <SECURITY id="E000005" name="C" symbol="C" type="0" rounding-method="7" saf="100" pp="4" trading-currency="JPY" trading-market="C-Market"/>
+    <SECURITY id="E000006" name="B" symbol="B" type="0" rounding-method="7" saf="100" pp="4" trading-currency="USD" trading-market="B-Market"/>
+    <SECURITY id="E000007" name="E-Fullname" symbol="E" type="0" rounding-method="7" saf="100" pp="4" trading-currency="EUR" trading-market="E-Market"/>
+  </SECURITIES>
+  <CURRENCIES>
+    <CURRENCY id="EUR" name="Euro" symbol="€" type="3" rounding-method="7" saf="100" pp="4" scf="100"/>
+    <CURRENCY id="JPY" name="Japanese Yen" symbol="¥" type="3" rounding-method="7" saf="1" pp="4" scf="1"/>
+    <CURRENCY id="USD" name="US Dollar" symbol="$" type="3" rounding-method="7" saf="100" pp="4" scf="100"/>
+  </CURRENCIES>
+  <PRICES>
+    <PRICEPAIR from="E000001" to="USD">
+      <PRICE date="2024-01-27" price="5/1" source="User"/>
+      <PRICE date="2024-10-01" price="7/1" source="User"/>
+    </PRICEPAIR>
+    <PRICEPAIR from="E000005" to="JPY">
+      <PRICE date="2024-01-27" price="100/1" source="User"/>
+      <PRICE date="2024-10-01" price="27/1" source="User"/>
+    </PRICEPAIR>
+    <PRICEPAIR from="E000006" to="USD">
+      <PRICE date="2024-01-27" price="20/1" source="User"/>
+      <PRICE date="2024-10-01" price="25/1" source="User"/>
+    </PRICEPAIR>
+    <PRICEPAIR from="E000007" to="EUR">
+      <PRICE date="2024-01-01" price="15/1" source="User"/>
+      <PRICE date="2024-10-01" price="15/1" source="User"/>
+    </PRICEPAIR>
+    <PRICEPAIR from="USD" to="EUR">
+      <PRICE date="2024-01-01" price="19/20" source="User"/>
+      <PRICE date="2025-08-04" price="4319/5000" source="Yahoo.com [Currency]"/>
+    </PRICEPAIR>
+    <PRICEPAIR from="USD" to="JPY">
+      <PRICE date="2024-01-01" price="1062393/10000" source="User"/>
+      <PRICE date="2025-08-04" price="147077/1000" source="Yahoo.com [Currency]"/>
+    </PRICEPAIR>
+  </PRICES>
+  <REPORTS>
+    <REPORT id="R000003" type="querytable 1.15" group="Investments" name="Investment Capital Gains by Account (with currency conversion)" comment="Custom Report" convertcurrency="1" favorite="0" skipZero="0" datelock="alldates" rowtype="topaccount-account" querycolumns="capitalgain,rate" tax="0" propBudgetDiff="0" investments="1" loans="0" hidetransactions="0" showcolumntotals="1" detail="all" includestransfers="0" investmentsum="2"/>
+    <REPORT id="R000004" type="querytable 1.15" group="Investments" name="Investment Capital Gains by Account (without currency conversion)" comment="Custom Report" convertcurrency="0" favorite="0" skipZero="0" datelock="alldates" rowtype="topaccount-account" querycolumns="capitalgain" tax="0" propBudgetDiff="0" investments="1" loans="0" hidetransactions="0" showcolumntotals="1" detail="all" includestransfers="0" investmentsum="2"/>
+    <REPORT id="R000005" type="querytable 1.15" group="Investments" name="Investment Transactions (with currency conversion)" comment="Custom Report" convertcurrency="1" favorite="0" skipZero="0" datelock="alldates" rowtype="topaccount" querycolumns="category,account,action,shares,price,balance,rate" tax="0" propBudgetDiff="0" investments="1" loans="0" hidetransactions="0" showcolumntotals="1" detail="all" includestransfers="0"/>
+    <REPORT id="R000006" type="querytable 1.15" group="Investments" name="Investment Transactions (without currency conversion)" comment="Custom Report" convertcurrency="0" favorite="0" skipZero="0" datelock="alldates" rowtype="topaccount" querycolumns="category,account,action,shares,price,balance" tax="0" propBudgetDiff="0" investments="1" loans="0" hidetransactions="0" showcolumntotals="1" detail="all" includestransfers="0"/>
+    <REPORT id="R000007" type="querytable 1.15" group="Transactions" name="Transactions by Account (with currency conversion)" comment="Custom Report" convertcurrency="1" favorite="0" skipZero="0" datelock="alldates" rowtype="account" querycolumns="number,payee,category,tag,account,action,shares,price,balance,rate" tax="0" propBudgetDiff="0" investments="0" loans="0" hidetransactions="0" showcolumntotals="1" detail="all" includestransfers="0">
+      <ACCOUNTGROUP group="asset"/>
+      <ACCOUNTGROUP group="assetloan"/>
+      <ACCOUNTGROUP group="cash"/>
+      <ACCOUNTGROUP group="checkings"/>
+      <ACCOUNTGROUP group="creditcard"/>
+      <ACCOUNTGROUP group="expense"/>
+      <ACCOUNTGROUP group="income"/>
+      <ACCOUNTGROUP group="liability"/>
+      <ACCOUNTGROUP group="loan"/>
+      <ACCOUNTGROUP group="savings"/>
+      <ACCOUNTGROUP group="stock"/>
+    </REPORT>
+    <REPORT id="R00008" type="querytable 1.15" group="Transactions" name="Transactions by Account (without currency conversion)" comment="Custom Report" convertcurrency="0" favorite="0" skipZero="0" datelock="alldates" rowtype="account" querycolumns="number,payee,category,tag,account,action,shares,price,balance" tax="0" propBudgetDiff="0" investments="0" loans="0" hidetransactions="0" showcolumntotals="1" detail="all" includestransfers="0">
+      <ACCOUNTGROUP group="asset"/>
+      <ACCOUNTGROUP group="assetloan"/>
+      <ACCOUNTGROUP group="cash"/>
+      <ACCOUNTGROUP group="checkings"/>
+      <ACCOUNTGROUP group="creditcard"/>
+      <ACCOUNTGROUP group="expense"/>
+      <ACCOUNTGROUP group="income"/>
+      <ACCOUNTGROUP group="liability"/>
+      <ACCOUNTGROUP group="loan"/>
+      <ACCOUNTGROUP group="savings"/>
+      <ACCOUNTGROUP group="stock"/>
+    </REPORT>
+    <REPORT id="R000009" type="querytable 1.15" group="Investments" name="Investment Holdings by Account (with currency conversion)" comment="Custom Report" convertcurrency="1" favorite="0" skipZero="0" datelock="alldates" rowtype="topaccount-account" querycolumns="shares,price" tax="0" propBudgetDiff="0" investments="1" loans="0" hidetransactions="0" showcolumntotals="1" detail="all" includestransfers="0"/>
+    <REPORT id="R000010" type="querytable 1.15" group="Investments" name="Investment Holdings by Account (without currency conversion)" comment="Custom Report" convertcurrency="0" favorite="0" skipZero="0" datelock="alldates" rowtype="topaccount-account" querycolumns="shares,price" tax="0" propBudgetDiff="0" investments="1" loans="0" hidetransactions="0" showcolumntotals="1" detail="all" includestransfers="0"/>
+   </REPORTS>
+    <REPORT id="R000011" type="pivottable 1.16" group="Investments" name="Investment Moving Average (with currency conversion)" comment="Custom Report" convertcurrency="1" favorite="0" skipZero="0" datelock="alldates" rowtype="assetliability" includesactuals="0" includesforecast="0" includesprice="0" includesaverageprice="0" mixedtime="0" investments="1" showrowtotals="0" showcolumntotals="1" detail="all" includesmovingaverage="1" movingaveragedays="1" includeschedules="0" includestransfers="0" includeunused="0" columnsaredays="1" charttype="line" chartpalette="application" chartchgridlines="0" chartsvgridlines="0" chartdatalabels="1" chartbydefault="0" logYaxis="0" negexpenses="0" chartlinewidth="2" columntype="months" datalock="automatic" dataRangeStart="1" dataRangeEnd="10" dataMajorTick="1" dataMinorTick="0" yLabelsPrecision="2">
+      <ACCOUNTGROUP group="asset"/>
+      <ACCOUNTGROUP group="liability"/>
+    </REPORT>
+    <REPORT id="R000012" type="pivottable 1.16" group="Investments" name="Investment Moving Average (without currency conversion)" comment="Custom Report" convertcurrency="0" favorite="0" skipZero="0" datelock="alldates" rowtype="assetliability" includesactuals="0" includesforecast="0" includesprice="0" includesaverageprice="0" mixedtime="0" investments="1" showrowtotals="0" showcolumntotals="1" detail="all" includesmovingaverage="1" movingaveragedays="0" includeschedules="0" includestransfers="0" includeunused="0" columnsaredays="1" charttype="line" chartpalette="application" chartchgridlines="0" chartsvgridlines="0" chartdatalabels="1" chartbydefault="0" logYaxis="0" negexpenses="0" chartlinewidth="2" columntype="months" datalock="automatic" dataRangeStart="1" dataRangeEnd="10" dataMajorTick="1" dataMinorTick="0" yLabelsPrecision="2">
+      <ACCOUNTGROUP group="asset"/>
+      <ACCOUNTGROUP group="liability"/>
+    </REPORT>
+    <REPORT id="R000013" type="querytable 1.15" group="Investments" name="Investment Performance by Account (with currency conversion)" comment="Custom Report" convertcurrency="1" favorite="0" skipZero="0" datelock="alldates" rowtype="topaccount-account" querycolumns="performance" tax="0" propBudgetDiff="0" investments="1" loans="0" hidetransactions="0" showcolumntotals="1" detail="all" includestransfers="0" investmentsum="0"/>
+    <REPORT id="R000014" type="querytable 1.15" group="Investments" name="Investment Performance by Account (without currency conversion)" comment="Custom Report" convertcurrency="0" favorite="0" skipZero="0" datelock="alldates" rowtype="topaccount-account" querycolumns="performance" tax="0" propBudgetDiff="0" investments="1" loans="0" hidetransactions="0" showcolumntotals="1" detail="all" includestransfers="0" investmentsum="0"/>
+  <BUDGETS/>
+  <ONLINEJOBS/>
+</KMYMONEY-FILE>

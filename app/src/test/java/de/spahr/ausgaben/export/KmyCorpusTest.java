@@ -8,7 +8,6 @@ import android.content.Context;
 
 import androidx.test.core.app.ApplicationProvider;
 
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -28,36 +27,57 @@ import de.spahr.ausgaben.db.KmyPendingDelete;
 
 /**
  * Lässt Lesen, Schreiben und Löschen gegen die echten KMyMoney-Testdateien laufen (aus Fehlerberichten
- * entstanden, FIXVERSION 4–11, Mehrwährung, Depots, Budgets, Kredite). Ohne dieses Nachbar-Repo wird der
- * Test übersprungen; der Pfad lässt sich per {@code -Dkmy.corpus=…} setzen.
+ * entstanden, FIXVERSION 4–11, Mehrwährung, Depots, Budgets, Kredite). Sie liegen als Kopie in
+ * {@code src/test/resources/kmy/corpus} – Herkunft und Lizenz stehen dort in der README. Ein weiterer
+ * Ordner lässt sich per {@code -Dkmy.corpus=…} zusätzlich mitprüfen.
  *
  * <p>Geprüft wird nicht der Inhalt einzelner Dateien, sondern was für <b>jede</b> Datei gelten muss:
- * einlesbar, exportierbar zu wohlgeformtem XML mit stimmigem {@code count}, und das Geschriebene kommt
- * unverändert wieder zurück.</p>
+ * einlesbar, exportierbar zu wohlgeformtem XML mit stimmigem {@code count}, das Geschriebene kommt
+ * unverändert wieder zurück, und nach dem Löschen steht die Datei Zeichen für Zeichen da wie zuvor.</p>
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
 public class KmyCorpusTest {
 
-    private static final String DEFAULT_DIR =
-            "/home/michael/git/kmymoney/kmymoney/plugins/views/reports/core/tests/data";
+    /** Die mitgelieferten Dateien; der Test läuft im Modulordner. */
+    private static final String ORDNER = "src/test/resources/kmy/corpus";
+
+    /**
+     * So viele Dateien müssen mindestens geprüft und beschrieben worden sein. Der Ordner enthält gut 40;
+     * deutlich weniger hieße, er ist leer, verschoben, oder der Filter greift zu scharf.
+     */
+    private static final int MINDESTENS = 20;
 
     private final Context ctx = ApplicationProvider.getApplicationContext();
 
-    private static File[] corpus() {
-        File dir = new File(System.getProperty("kmy.corpus", DEFAULT_DIR));
-        Assume.assumeTrue("KMyMoney-Testdaten nicht vorhanden: " + dir, dir.isDirectory());
+    private static List<File> xmlDateien(File dir) {
         File[] files = dir.listFiles((d, n) -> n.endsWith(".xml"));
-        Assume.assumeTrue(files != null && files.length > 0);
+        assertNotNull(dir + " ist kein lesbarer Ordner", files);
         Arrays.sort(files);
-        return files;
+        return Arrays.asList(files);
     }
 
     @Test
     public void everyFileSurvivesReadWriteDelete() throws Exception {
+        File dir = new File(ORDNER);
+        assertTrue("mitgelieferte KMyMoney-Testdaten fehlen: " + dir.getAbsolutePath(), dir.isDirectory());
+        int[] gezaehlt = pruefe(xmlDateien(dir));
+        assertTrue("nur " + gezaehlt[0] + " Dateien geprüft", gezaehlt[0] >= MINDESTENS);
+        assertTrue("nur " + gezaehlt[1] + " Dateien beschrieben", gezaehlt[1] >= MINDESTENS);
+
+        // Optionale Zusatzquelle, etwa ein frischer Stand aus dem KMyMoney-Repo oder eigene Dateien.
+        String extra = System.getProperty("kmy.corpus");
+        if (extra != null && !extra.trim().isEmpty()) {
+            int[] zusaetzlich = pruefe(xmlDateien(new File(extra)));
+            assertTrue("in " + extra + " keine KMyMoney-Datei gefunden", zusaetzlich[0] >= 1);
+        }
+    }
+
+    /** @return {@code [geprüft, beschrieben]} */
+    private int[] pruefe(List<File> dateien) throws Exception {
         int checked = 0;
         int written = 0;
-        for (File f : corpus()) {
+        for (File f : dateien) {
             byte[] raw = Files.readAllBytes(f.toPath());
             if (!KmyDocument.looksLikeKmyXml(new String(raw, StandardCharsets.UTF_8))) {
                 continue; // im selben Ordner liegen auch Berichtsdefinitionen o. Ä.
@@ -65,11 +85,7 @@ public class KmyCorpusTest {
             written += checkFile(f.getName(), raw) ? 1 : 0;
             checked++;
         }
-        // Der Standardordner enthält gut 40 Dateien; deutlich weniger hieße, der Filter greift zu scharf.
-        // Bei selbst gesetztem Ordner (-Dkmy.corpus) genügt eine Datei.
-        int min = System.getProperty("kmy.corpus") == null ? 20 : 1;
-        assertTrue("nur " + checked + " Dateien geprüft", checked >= min);
-        assertTrue("nur " + written + " Dateien beschrieben", written >= min);
+        return new int[]{checked, written};
     }
 
     /** @return {@code true}, wenn die Datei auch beschrieben und wieder bereinigt wurde */
@@ -136,7 +152,62 @@ public class KmyCorpusTest {
         assertWellFormed(name, dr.xml);
         assertCountMatches(name, dr.xml);
         KmyExportCheck.pruefen(r.xml, dr.xml, KmyDocument.gzip(dr.xml), dr.aenderungen);
+        assertEquals(name + ": nach Schreiben und Löschen steht die Datei nicht mehr da wie zuvor",
+                doc.xml(), ohneSpuren(doc.xml(), dr.xml, r.aenderungen));
         return true;
+    }
+
+    /**
+     * Nimmt aus {@code danach} heraus, was ein Lauf „schreiben und wieder löschen" zu Recht hinterlässt –
+     * und nur das. Was dann übrig ist, muss Zeichen für Zeichen das Original sein.
+     *
+     * <ul>
+     *   <li>der für die Testbuchung neu angelegte Empfänger samt dem hochgezählten {@code count},</li>
+     *   <li>das Datum der letzten Änderung im Dateikopf,</li>
+     *   <li>ein leerer Behälter, der vorher selbstschließend dastand ({@code <PAYEES/>}) und zum
+     *       Einfügen aufgeklappt wurde.</li>
+     * </ul>
+     */
+    private static String ohneSpuren(String original, String danach, KmyAenderungen geschrieben)
+            throws Exception {
+        KmyGliederung.Inhalt alt = KmyGliederung.lesen(original).wurzel.inhalt();
+        String out = danach;
+        // Von hinten nach vorn ersetzen, damit die Stellen der vorderen Bereiche gültig bleiben.
+        List<KmyGliederung.Element> bereiche = KmyGliederung.lesen(danach).wurzel.inhalt().kinder;
+        for (int i = bereiche.size() - 1; i >= 0; i--) {
+            KmyGliederung.Element neu = bereiche.get(i);
+            KmyGliederung.Element vorher = alt.kind(neu.name);
+            if (vorher == null) {
+                continue;
+            }
+            String ersatz = null;
+            if ("FILEINFO".equals(neu.name)) {
+                KmyGliederung.Element datumNeu = neu.inhalt().kind("LAST_MODIFIED_DATE");
+                KmyGliederung.Element datumAlt = vorher.inhalt().kind("LAST_MODIFIED_DATE");
+                if (datumNeu != null && datumAlt != null) {
+                    ersatz = danach.substring(neu.start, datumNeu.start) + datumAlt.text()
+                            + danach.substring(datumNeu.ende, neu.ende);
+                }
+            } else if ("PAYEES".equals(neu.name) || "TRANSACTIONS".equals(neu.name)) {
+                StringBuilder kinder = new StringBuilder();
+                KmyGliederung.Inhalt inhalt = neu.inhalt();
+                for (int k = 0; k < inhalt.kinder.size(); k++) {
+                    kinder.append(inhalt.luecken.get(k));
+                    KmyGliederung.Element kind = inhalt.kinder.get(k);
+                    if (!geschrieben.neueEmpfaenger().contains(kind.id())) {
+                        kinder.append(kind.text());
+                    }
+                }
+                kinder.append(inhalt.luecken.get(inhalt.kinder.size()));
+                ersatz = vorher.leer && kinder.length() == 0
+                        ? vorher.text()
+                        : vorher.oeffnung() + kinder + "</" + neu.name + ">";
+            }
+            if (ersatz != null) {
+                out = out.substring(0, neu.start) + ersatz + out.substring(neu.ende);
+            }
+        }
+        return out;
     }
 
     /** Erste Kategorie in der Währung des Kontos (sonst überspringt der Export sie zu Recht). */
