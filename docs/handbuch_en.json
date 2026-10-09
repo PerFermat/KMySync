@@ -812,7 +812,7 @@
     {
       "type": "p",
       "id": "b-0062f",
-      "text": "Once you have <b>reconciled</b> a booking in KMyMoney, that is, confirmed it against the bank statement, it belongs to a closed period. KMySync adopts this status when it reads the .kmy file and from then on only displays the booking: in the list it carries a small lock, and in the form the fields, categories, receipt and deletion are locked. It can only be changed in KMyMoney. If you undo the reconciliation there, the booking is editable again after the next import; bookings that are merely «cleared» stay editable anyway. If a booking was reconciled only after you had changed or deleted it in the app, KMySync does not transfer that change and tells you so. Import the file again and make the change in KMyMoney."
+      "text": "Once you have <b>reconciled</b> a booking in KMyMoney, that is, confirmed it against the bank statement, it belongs to a closed period. KMySync adopts this status when it reads the .kmy file and from then on only displays the booking: in the list it carries a small lock, and the form offers neither «Update booking» nor «Delete». It can only be changed in KMyMoney. It remains usable as a template: «New booking» creates a copy and leaves the original untouched. If you undo the reconciliation there, the booking is editable again after the next import; bookings that are merely «cleared» stay editable anyway. If a booking was reconciled only after you had changed or deleted it in the app, KMySync does not transfer that change and tells you so. Import the file again and make the change in KMyMoney."
     },
     {
       "type": "h1",

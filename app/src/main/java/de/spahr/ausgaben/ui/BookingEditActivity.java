@@ -100,9 +100,10 @@ public class BookingEditActivity extends LocalizedActivity {
     private boolean csvLocked;
     /**
      * true = in KMyMoney abgeglichene Buchung – oder eine, die ein gerade laufender Export schon
-     * erfasst hat ({@link de.spahr.ausgaben.db.ExportLock}): nur zur Ansicht, erzwingt
-     * {@link #readOnly}, s. {@link de.spahr.ausgaben.db.ReconciledGuard}. Anders als bei {@link #csvLocked} bleibt auch
-     * „Neue Buchung" mit diesen Daten weg – die Maske ist dann eine reine Ansicht.
+     * erfasst hat ({@link de.spahr.ausgaben.db.ExportLock}), s.
+     * {@link de.spahr.ausgaben.db.ReconciledGuard}. Wie bei {@link #csvLocked} heißt gesperrt: weder
+     * ändern noch löschen. Als Vorlage bleibt die Buchung nutzbar – „Neue Buchung" legt eine Kopie an
+     * und lässt das Original, wie es ist.
      */
     private boolean reconciledLocked;
     /**
@@ -828,13 +829,14 @@ public class BookingEditActivity extends LocalizedActivity {
         // Gesperrt heißt hier nur: nicht mehr änderbar/löschbar (siehe unten bei btnUpdate/btnDelete) –
         // die Daten bleiben als Vorlage für „Neue Buchung" nutzbar, deshalb kein genereller readOnly.
         csvLocked = CsvModeGuard.lockedForEdit(b, settings.isKmyMode());
-        // In KMyMoney abgeglichen: gleichgültig, wie die Maske geöffnet wurde, bleibt sie Ansicht.
-        // Ebenso, solange ein Export läuft, der diese Buchung schon erfasst hat: bis er durch ist,
-        // ersetzt das Aktualisieren danach jede Änderung (siehe ExportLock).
+        // In KMyMoney abgeglichen: ebenso gesperrt, mit einem Hinweis, warum. Dasselbe gilt, solange
+        // ein Export läuft, der diese Buchung schon erfasst hat – bis er durch ist, ersetzt das
+        // Aktualisieren danach jede Änderung (siehe ExportLock).
         boolean abgeglichen = de.spahr.ausgaben.db.ReconciledGuard.locked(b);
         reconciledLocked = abgeglichen || de.spahr.ausgaben.db.ExportLock.locked(b);
         if (reconciledLocked) {
-            readOnly = true;
+            // Ab hier wie die CSV-Sperre: „Aktualisieren" und „Löschen" weg, „Neue Buchung" bleibt.
+            csvLocked = true;
             android.widget.TextView hint = findViewById(R.id.textReconciledHint);
             hint.setText(abgeglichen ? R.string.reconciled_locked : R.string.export_locked);
             hint.setVisibility(View.VISIBLE);
@@ -869,10 +871,6 @@ public class BookingEditActivity extends LocalizedActivity {
         if (readOnly) {
             applyReadOnly();
         }
-        if (reconciledLocked) {
-            // Die Kategoriezeilen sind schon aufgebaut – der Schalter beim Anlegen kam dafür zu früh.
-            splitCtl.lockRows();
-        }
         applyNotesOnlyIfNeeded();
     }
 
@@ -901,7 +899,7 @@ public class BookingEditActivity extends LocalizedActivity {
                     if (tx != null && !isFinishing() && !notesOnly) {
                         lockAsSecurityBooking();
                         securityTxFound = true;
-                        btnDelete.setVisibility(View.VISIBLE);
+                        btnDelete.setVisibility(csvLocked ? View.GONE : View.VISIBLE);
                     }
                 });
             }
@@ -921,7 +919,7 @@ public class BookingEditActivity extends LocalizedActivity {
         repository.getSecurityTxForBooking(booking, tx -> {
             if (tx != null && !isFinishing()) {
                 securityTxFound = true;
-                btnDelete.setVisibility(View.VISIBLE);
+                btnDelete.setVisibility(csvLocked ? View.GONE : View.VISIBLE);
             }
         });
     }
@@ -1161,9 +1159,6 @@ public class BookingEditActivity extends LocalizedActivity {
         if (booking == null || booking.id <= 0
                 || getIntent().getLongExtra(EXTRA_SCHEDULED_ID, -1) >= 0) {
             return;
-        }
-        if (reconciledLocked) {
-            return; // in KMyMoney abgeglichen: es gibt kein Bearbeiten, also auch keinen Stift
         }
         toolbar.inflateMenu(R.menu.booking_view_menu);
         toolbar.setOnMenuItemClickListener(item -> {
