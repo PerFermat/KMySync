@@ -664,7 +664,8 @@ public class DepotActivity extends LocalizedActivity {
         importBanner.start(getString(R.string.import_running_banner));
         new Thread(() -> {
             try {
-                byte[] raw = RemoteStorage.from(settings).downloadBytes(RemotePath.folderOf(path), RemotePath.fileOf(path),
+                byte[] raw = RemoteStorage.waiting(settings,
+                        getString(R.string.kmy_result_background), null).downloadBytes(RemotePath.folderOf(path), RemotePath.fileOf(path),
                         importBanner.phase(getString(R.string.import_stage_download),
                                 de.spahr.ausgaben.export.ImportPhase.DOWNLOAD_FROM,
                                 de.spahr.ausgaben.export.ImportPhase.DOWNLOAD_TO));

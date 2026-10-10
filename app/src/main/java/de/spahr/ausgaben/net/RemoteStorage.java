@@ -161,6 +161,18 @@ public interface RemoteStorage {
      * aus der mDNS-Auskunft des Servers und ist manchmal falsch), wird die gespeicherte Adresse hier
      * gleich korrigiert – sonst liefe jeder weitere Zugriff wieder in den Fehlversuch.</p>
      */
+    /**
+     * Wie {@link #from(SettingsStore)}, aber geduldig: Ist die App im Hintergrund, wartet jeder
+     * Zugriff, bis sie wieder vorn ist, statt am gedrosselten Netz zu scheitern (siehe
+     * {@link WaitingStorage}). Für Läufe, die der Nutzer angestoßen hat und die zu Ende gehen sollen.
+     *
+     * @param zuLange    Text der Ausnahme, wenn das Warten die Frist überschreitet
+     * @param beobachter erfährt, wann gewartet wird; darf {@code null} sein
+     */
+    static RemoteStorage waiting(SettingsStore s, String zuLange, WaitingStorage.Beobachter beobachter) {
+        return new WaitingStorage(from(s), WaitingStorage.FRIST_MS, zuLange, beobachter);
+    }
+
     static RemoteStorage from(SettingsStore s) {
         if (SettingsStore.SERVER_SMB.equals(s.getServerType())) {
             return new SmbStorage(s.getUrl(), s.getUser(), s.getPassword())

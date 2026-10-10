@@ -211,7 +211,8 @@ public class ScheduledActivity extends LocalizedActivity {
         final String file = RemotePath.fileOf(path);
         new Thread(() -> {
             try {
-                byte[] raw = RemoteStorage.from(settings).downloadBytes(folder, file,
+                byte[] raw = RemoteStorage.waiting(settings,
+                        getString(R.string.kmy_result_background), null).downloadBytes(folder, file,
                         importBanner.phase(getString(R.string.import_stage_download),
                                 de.spahr.ausgaben.export.ImportPhase.DOWNLOAD_FROM,
                                 de.spahr.ausgaben.export.ImportPhase.DOWNLOAD_TO));

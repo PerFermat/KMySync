@@ -52,7 +52,8 @@ final class BudgetImportFlow {
 
         new Thread(() -> {
             try {
-                byte[] raw = RemoteStorage.from(settings).downloadBytes(RemotePath.folderOf(path), RemotePath.fileOf(path));
+                byte[] raw = RemoteStorage.waiting(settings,
+                        activity.getString(R.string.kmy_result_background), null).downloadBytes(RemotePath.folderOf(path), RemotePath.fileOf(path));
                 KmyImporter importer = new KmyImporter(
                         new KmyDocument(raw, activity.getApplicationContext()),
                         activity.getApplicationContext());

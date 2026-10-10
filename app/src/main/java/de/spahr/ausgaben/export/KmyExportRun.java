@@ -4,7 +4,6 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 
-import java.io.IOException;
 import java.util.List;
 
 import de.spahr.ausgaben.R;
@@ -12,7 +11,6 @@ import de.spahr.ausgaben.db.ExportLock;
 import de.spahr.ausgaben.db.Repository;
 import de.spahr.ausgaben.net.RemoteStorage;
 import de.spahr.ausgaben.settings.SettingsStore;
-import de.spahr.ausgaben.util.ForegroundGate;
 import de.spahr.ausgaben.util.ProgressListener;
 
 /**
@@ -39,9 +37,6 @@ public final class KmyExportRun {
          */
         void onEnd(String message, boolean failed, boolean refresh);
     }
-
-    /** So lange wartet der Lauf nach dem Schreiben darauf, dass die App wieder nach vorn kommt. */
-    private static final long WARTEN_MS = 10 * 60 * 1000L;
 
     /** Anteile des Bandes: der Export selbst, das Zurücklesen, das Aktualisieren. */
     private static final int BIS_GESCHRIEBEN = 45;
@@ -125,13 +120,15 @@ public final class KmyExportRun {
             // Zurücklesen, was jetzt wirklich auf dem Server liegt. Im Hintergrund drosselt Android das
             // Netz; dann lieber warten, bis die App wieder vorn ist, als einen Fehler zu melden, den es
             // nicht gibt.
-            final RemoteStorage storage = RemoteStorage.from(settings);
+            // Im Hintergrund drosselt Android das Netz; der Speicher wartet dann, bis die App wieder
+            // vorn ist, statt einen Fehler zu melden, den es nicht gibt.
+            final String lesen = r.getString(R.string.kmy_progress_readback);
+            final String wartet = r.getString(R.string.kmy_progress_waiting);
+            final RemoteStorage storage = RemoteStorage.waiting(settings,
+                    r.getString(R.string.kmy_result_background),
+                    ja -> melde(ja ? wartet : lesen, 0));
             final byte[] gelesen;
             try {
-                if (!ForegroundGate.awaitForeground(WARTEN_MS)) {
-                    throw new IOException(r.getString(R.string.kmy_result_background));
-                }
-                final String lesen = r.getString(R.string.kmy_progress_readback);
                 ProgressListener fortschritt = (done, total) -> melde(lesen,
                         ImportPhase.map(done, total, BIS_GESCHRIEBEN, BIS_GELESEN));
                 gelesen = storage.downloadBytes(o.folder, o.file, fortschritt);

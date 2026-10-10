@@ -339,12 +339,23 @@ final class StatementImport {
         }
         Toast.makeText(activity, activity.getString(R.string.statement_batch_reading, uris.size()),
                 Toast.LENGTH_SHORT).show();
+        // Viele Abrechnungen zu lesen dauert; bis die Liste steht, bleibt das Display an. Sonst schickt
+        // Android die App mitten im Lauf in den Hintergrund und friert sie dort ein.
+        final android.view.Window fenster = activity.getWindow();
+        fenster.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         // Die Wertpapiere einmal holen statt je Datei: zugeordnet wird danach im Speicher.
         repository.getAllSecurities(securities -> repository.executor().execute(() -> {
-            StatementTemplates store = new StatementTemplates(activity);
             java.util.ArrayList<StatementDraft> drafts = new java.util.ArrayList<>();
-            for (int i = 0; i < uris.size(); i++) {
-                drafts.add(read(activity, store, securities, uris.get(i), i));
+            try {
+                StatementTemplates store = new StatementTemplates(activity);
+                for (int i = 0; i < uris.size(); i++) {
+                    drafts.add(read(activity, store, securities, uris.get(i), i));
+                }
+            } finally {
+                // Auch nach einem Fehler: Das Fenster darf die Sperre nicht behalten. Ist die Maske
+                // inzwischen zu, gibt es nichts mehr zurückzunehmen.
+                Ui.post(activity, () -> fenster.clearFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON));
             }
             Ui.post(activity, () -> fillDefaults(activity, repository, drafts));
         }));

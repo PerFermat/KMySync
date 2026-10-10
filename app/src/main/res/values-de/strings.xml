@@ -738,6 +738,7 @@
     <string name="kmy_result_refresh_failed">Die Datei ist geschrieben, die Konten ließen sich danach aber nicht aktualisieren: %1$s</string>
     <string name="kmy_result_readback_failed">Die Datei ist geschrieben, ließ sich danach aber nicht zurücklesen: %1$s</string>
     <string name="kmy_result_background">die App war zu lange im Hintergrund</string>
+    <string name="kmy_progress_waiting">Wartet, bis die App wieder im Vordergrund ist</string>
     <string name="kmy_result_new_payees">, neue Empfänger: %1$d</string>
     <string name="kmy_result_deleted">, %1$d gelöscht</string>
     <string name="kmy_result_scheduled">, geplante Buchungen weitergestellt: %1$d</string>

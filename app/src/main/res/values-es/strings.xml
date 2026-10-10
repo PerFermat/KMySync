@@ -732,6 +732,7 @@
     <string name="kmy_result_refresh_failed">El archivo se ha escrito, pero después no se pudieron actualizar las cuentas: %1$s</string>
     <string name="kmy_result_readback_failed">El archivo se ha escrito, pero después no se pudo releer: %1$s</string>
     <string name="kmy_result_background">la app estuvo demasiado tiempo en segundo plano</string>
+    <string name="kmy_progress_waiting">Esperando a que la aplicación vuelva a primer plano</string>
     <string name="kmy_result_new_payees">, beneficiarios nuevos: %1$d</string>
     <string name="kmy_result_deleted">, eliminados: %1$d</string>
     <string name="kmy_result_scheduled">, programas avanzados: %1$d</string>

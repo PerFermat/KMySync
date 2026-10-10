@@ -94,7 +94,8 @@ public final class KmyAccountImport {
         new Thread(() -> {
             try {
                 String path = settings.getKmyPath();
-                byte[] raw = RemoteStorage.from(settings).downloadBytes(folderOf(path), fileOf(path),
+                byte[] raw = RemoteStorage.waiting(settings,
+                        app.getString(R.string.kmy_result_background), null).downloadBytes(folderOf(path), fileOf(path),
                         ui.phase(app.getString(R.string.import_stage_download),
                                 ImportPhase.DOWNLOAD_FROM, ImportPhase.DOWNLOAD_TO));
                 importRaw(app, repository, raw, knownAccounts, account, depots, schedules, ui);

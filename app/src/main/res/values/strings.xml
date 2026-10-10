@@ -764,6 +764,7 @@
     <string name="kmy_result_refresh_failed">The file has been written, but the accounts could not be refreshed afterwards: %1$s</string>
     <string name="kmy_result_readback_failed">The file has been written, but could not be read back afterwards: %1$s</string>
     <string name="kmy_result_background">the app was in the background for too long</string>
+    <string name="kmy_progress_waiting">Waiting until the app is in the foreground again</string>
     <string name="kmy_result_new_payees">, new payees: %1$d</string>
     <!-- liest sich auch bei 1 richtig; nur das spanische Pendant war zu beugen -->
     <string name="kmy_result_deleted" tools:ignore="PluralsCandidate">, %1$d deleted</string>

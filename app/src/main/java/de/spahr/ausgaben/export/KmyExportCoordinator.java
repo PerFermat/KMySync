@@ -171,7 +171,18 @@ public class KmyExportCoordinator {
             return Outcome.done(r.getString(de.spahr.ausgaben.R.string.export_none), false);
         }
 
-        RemoteStorage storage = RemoteStorage.from(settings);
+        // Geht die App währenddessen in den Hintergrund, wartet der Lauf, statt am gedrosselten Netz
+        // zu scheitern; das Band sagt es so lange und zeigt danach wieder den laufenden Schritt.
+        final String[] schritt = {""};
+        final Fortschritt aussen = fortschritt;
+        fortschritt = (stage, percent) -> {
+            schritt[0] = stage;
+            aussen.melde(stage, percent);
+        };
+        final String wartet = r.getString(de.spahr.ausgaben.R.string.kmy_progress_waiting);
+        RemoteStorage storage = RemoteStorage.waiting(settings,
+                r.getString(de.spahr.ausgaben.R.string.kmy_result_background),
+                ja -> aussen.melde(ja ? wartet : schritt[0], 0));
         try {
             fortschritt.melde(r.getString(de.spahr.ausgaben.R.string.progress_download), 5);
             byte[] raw = storage.downloadBytes(folder, file);

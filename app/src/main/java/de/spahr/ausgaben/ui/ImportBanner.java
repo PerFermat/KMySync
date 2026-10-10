@@ -96,6 +96,9 @@ public final class ImportBanner {
         label = startLabel == null ? "" : startLabel;
         if (banner != null) {
             banner.setVisibility(View.VISIBLE);
+            // Solange das Band zu sehen ist, schaltet sich das Display nicht von selbst ab – der Lauf
+            // holt viel vom Netz, und im Hintergrund drosselt Android es.
+            banner.setKeepScreenOn(true);
         }
         if (shimmer != null) {
             shimmer.start();
@@ -151,6 +154,7 @@ public final class ImportBanner {
             shimmer.stop();
         }
         if (banner != null) {
+            banner.setKeepScreenOn(false);
             banner.setVisibility(View.GONE);
         }
     }

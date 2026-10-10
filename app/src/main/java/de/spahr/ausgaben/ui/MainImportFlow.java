@@ -123,7 +123,8 @@ class MainImportFlow {
         host.showProgress(activity.getString(R.string.progress_download));
         new Thread(() -> {
             try {
-                byte[] raw = RemoteStorage.from(settings).downloadBytes(RemotePath.folderOf(path), RemotePath.fileOf(path));
+                byte[] raw = RemoteStorage.waiting(settings,
+                        activity.getString(R.string.kmy_result_background), null).downloadBytes(RemotePath.folderOf(path), RemotePath.fileOf(path));
                 KmyImporter importer = new KmyImporter(
                         new KmyDocument(raw, activity.getApplicationContext()), activity.getApplicationContext());
                 // Stichwortliste der Datei übernehmen – nur was dort steht, ist in der App wählbar.
@@ -300,7 +301,8 @@ class MainImportFlow {
         importBanner.start(activity.getString(R.string.import_running_banner));
         new Thread(() -> {
             try {
-                byte[] raw = RemoteStorage.from(settings).downloadBytes(RemotePath.folderOf(path), RemotePath.fileOf(path),
+                byte[] raw = RemoteStorage.waiting(settings,
+                        activity.getString(R.string.kmy_result_background), null).downloadBytes(RemotePath.folderOf(path), RemotePath.fileOf(path),
                         importBanner.phase(activity.getString(R.string.import_stage_download),
                                 de.spahr.ausgaben.export.ImportPhase.DOWNLOAD_FROM,
                                 de.spahr.ausgaben.export.ImportPhase.DOWNLOAD_TO));
@@ -465,7 +467,8 @@ class MainImportFlow {
         // würde dort jede andere Abfrage der App mit blockieren, bis der Timeout greift.
         new Thread(() -> {
             try {
-                String content = RemoteStorage.from(settings).downloadText(folder, fileName);
+                String content = RemoteStorage.waiting(settings,
+                        activity.getString(R.string.kmy_result_background), null).downloadText(folder, fileName);
                 processImport(content);
             } catch (Exception e) {
                 importFehlgeschlagen(e);
