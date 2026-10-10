@@ -100,6 +100,11 @@ android {
                 it.systemProperty 'kmy.corpus', System.getProperty('kmy.corpus')
                 it.outputs.upToDateWhen { false }
             }
+            // KMyMoney-Datenbank für KmySqliteVergleichTest: ./gradlew … -Dkmy.sqlite=/pfad/test.anon.sqlite
+            if (System.getProperty('kmy.sqlite')) {
+                it.systemProperty 'kmy.sqlite', System.getProperty('kmy.sqlite')
+                it.outputs.upToDateWhen { false }
+            }
             // Ohne eigene Grenze erbt der Test-Worker die 2048 MB des Gradle-Daemons
             // (org.gradle.jvmargs) – zu knapp für BackupArchiveTest, der testweise ein
             // Gigabyte-Archiv entpackt (bricht bei 256 MB ab, aber ByteArrayOutputStream

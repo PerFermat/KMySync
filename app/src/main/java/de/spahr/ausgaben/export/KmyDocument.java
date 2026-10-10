@@ -39,6 +39,8 @@ public class KmyDocument implements KmyAbsicht.Konten {
     private static final int TYPE_STOCK = 15;     // Wertpapier im Depot
 
     private final String xml;
+    /** Die Quelle ist eine KMyMoney-Datenbank: ihr Abbild samt Zustand; sonst {@code null}. */
+    private final KmySqlite.Abbild sqlite;
     /** Lazy: alles hinter dem Hauptbuch, siehe {@link #xmlTail()}. */
     private String xmlTail;
 
@@ -113,7 +115,10 @@ public class KmyDocument implements KmyAbsicht.Konten {
     public KmyDocument(byte[] raw, android.content.Context context,
                        de.spahr.ausgaben.util.ProgressListener listener) throws IOException {
         this.ctx = de.spahr.ausgaben.i18n.LocaleManager.localizedContext(context);
-        this.xml = gunzip(raw);
+        // Eine KMyMoney-Datenbank (SQLite) wird als das XML abgebildet, das KMyMoney aus denselben Daten
+        // in eine .kmy schriebe – alles Weitere merkt keinen Unterschied. Siehe KmySqlite.
+        this.sqlite = KmySqlite.istSqlite(raw) ? KmySqlite.abbilden(context, raw) : null;
+        this.xml = sqlite != null ? sqlite.xml : gunzip(raw);
         String badEncoding = declaredNonUtf8Encoding(xml);
         if (badEncoding != null) {
             // Gelesen wird immer als UTF-8 (siehe gunzip); eine Datei, die selbst etwas anderes
@@ -225,6 +230,25 @@ public class KmyDocument implements KmyAbsicht.Konten {
 
     public String xml() {
         return xml;
+    }
+
+    /** Stammt dieses Dokument aus einer KMyMoney-Datenbank (SQLite) statt aus einer .kmy-Datei? */
+    public boolean istDatenbank() {
+        return sqlite != null;
+    }
+
+    /** Zustand der Datenbank (Schema-Version, geöffnet von, Schreibvorgang offen); {@code null} bei .kmy. */
+    public KmySqlite.Abbild datenbank() {
+        return sqlite;
+    }
+
+    /**
+     * Der Inhalt einer heruntergeladenen Datei als XML, gleich ob sie eine .kmy (gepackt oder nicht)
+     * oder eine KMyMoney-Datenbank ist. Für Stellen, die nur den Text brauchen – den Zeilenvergleich
+     * nach dem Export etwa.
+     */
+    public static String alsXml(android.content.Context context, byte[] raw) throws IOException {
+        return KmySqlite.istSqlite(raw) ? KmySqlite.abbilden(context, raw).xml : gunzip(raw);
     }
 
     /** Wählbare Konten (Anzeigenamen) in Dateireihenfolge. */
