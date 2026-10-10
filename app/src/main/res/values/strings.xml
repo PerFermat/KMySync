@@ -745,7 +745,16 @@
     <string name="kmy_changes_empty">No export with a comparison yet. After the next export you will see here which lines of the file changed.</string>
     <string name="kmy_changes_summary">Lines: +%1$d / −%2$d · %3$s</string>
     <string name="kmy_changes_none">No line changed.</string>
+    <string name="kmy_changes_summary_rows">Rows: +%1$d / −%2$d · %3$s</string>
+    <string name="kmy_changes_tables_hint">The tables of the database, before against after. A changed row appears twice: removed in its old form, added in its new one.</string>
+    <string name="kmy_changes_table_same">%1$s unchanged</string>
+    <string name="kmy_changes_table_changed">%1$s – added: %2$d, removed: %3$d</string>
     <string name="kmy_changes_differs">The file on the server does not match what was uploaded.</string>
+    <string name="kmy_changes_defect">The file arrived damaged on the server.</string>
+    <string name="kmy_changes_restored">The state from before the export has been restored.</string>
+    <string name="kmy_changes_not_restored">The state from before the export could not be restored. The backup is at %1$s.</string>
+    <string name="kmy_result_defect_restored">%1$s arrived damaged on the server. The state from before the export has been restored; the bookings remain queued for export. Details: profile settings, “Changes to the KMyMoney file”.</string>
+    <string name="kmy_result_defect_not_restored">%1$s arrived damaged on the server and could not be restored. The backup from before the export is at %2$s. The bookings remain queued for export.</string>
     <string name="kmy_changes_truncated">Display shortened – too many changes.</string>
     <string name="kmy_changes_gap">····</string>
     <string name="kmy_result_differs">Warning: the file read back does not match the one uploaded – see Profile settings, “Changes to the KMyMoney file”.</string>

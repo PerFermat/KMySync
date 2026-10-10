@@ -58,8 +58,45 @@ public final class ExportDiff {
      * geschrieben. Der Vergleich zeigt trotzdem, was jetzt auf dem Server liegt.
      */
     public boolean abweichung;
+    /**
+     * Die zurückgelesene Datei war nicht lesbar – abgeschnitten oder beschädigt. Die Zeilen zeigen,
+     * was sich von ihr noch entpacken ließ.
+     */
+    public boolean defekt;
+    /** Nach einem {@link #defekt}: der Stand von vor dem Export liegt wieder auf dem Server. */
+    public boolean wiederhergestellt;
     /** Es waren mehr als {@link #MAX_ZEILEN}; der Rest fehlt. */
     public boolean gekuerzt;
+    /**
+     * Der Vergleich einer KMyMoney-Datenbank: statt Zeilen die Tabellen ({@link #tabellen}).
+     * {@link #hinzu} und {@link #entfernt} zählen dann Sätze.
+     */
+    public boolean datenbank;
+    /** Nur bei {@link #datenbank}: alle Tabellen, auch die unveränderten. */
+    public final List<TabellenDiff.Tabelle> tabellen = new ArrayList<>();
+
+    /** Der Vergleich einer Datenbank aus dem, was {@link TabellenDiff} gefunden hat. */
+    public static ExportDiff ausTabellen(List<TabellenDiff.Tabelle> tabellen) {
+        ExportDiff out = new ExportDiff();
+        out.datenbank = true;
+        for (TabellenDiff.Tabelle t : tabellen) {
+            out.tabellen.add(t);
+            out.hinzu += t.hinzu;
+            out.entfernt += t.entfernt;
+            out.gekuerzt |= t.gekuerzt;
+        }
+        return out;
+    }
+
+    /** Die Tabelle dieses Namens, oder {@code null}. */
+    public TabellenDiff.Tabelle tabelle(String name) {
+        for (TabellenDiff.Tabelle t : tabellen) {
+            if (t.name.equals(name)) {
+                return t;
+            }
+        }
+        return null;
+    }
 
     public static ExportDiff von(String alt, String neu) {
         String[] a = LineDiff.zeilen(alt);
@@ -147,11 +184,69 @@ public final class ExportDiff {
         sb.append("entfernt=").append(entfernt).append('\n');
         sb.append("abweichung=").append(abweichung ? 1 : 0).append('\n');
         sb.append("gekuerzt=").append(gekuerzt ? 1 : 0).append('\n');
+        sb.append("defekt=").append(defekt ? 1 : 0).append('\n');
+        sb.append("wiederhergestellt=").append(wiederhergestellt ? 1 : 0).append('\n');
+        sb.append("datenbank=").append(datenbank ? 1 : 0).append('\n');
         sb.append(TRENNER).append('\n');
         for (Zeile z : zeilen) {
             sb.append(z.art).append(z.nummer).append('\t').append(z.text).append('\n');
         }
+        // Je Tabelle: Kopf (T), Spalten (S), dann ihre Sätze (+/-), die Werte durch Tab getrennt.
+        for (TabellenDiff.Tabelle t : tabellen) {
+            sb.append("T\t").append(maske(t.name)).append('\t').append(t.hinzu).append('\t')
+                    .append(t.entfernt).append('\t').append(t.gekuerzt ? 1 : 0).append('\n');
+            sb.append('S');
+            for (String s : t.spalten) {
+                sb.append('\t').append(maske(s));
+            }
+            sb.append('\n');
+            for (TabellenDiff.Satz s : t.saetze) {
+                sb.append(s.art);
+                for (String w : s.werte) {
+                    sb.append('\t').append(maske(w));
+                }
+                sb.append('\n');
+            }
+        }
         return sb.toString();
+    }
+
+    /** Ein Wert für die Ablage: ohne Tab und Zeilenende, NULL als {@code \N}, überlange gekappt. */
+    private static String maske(String w) {
+        if (w == null) {
+            return "\\N";
+        }
+        String s = w.length() > MAX_ZEICHEN ? w.substring(0, MAX_ZEICHEN) + " …" : w;
+        return s.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
+                .replace("\r", "\\r");
+    }
+
+    private static String klar(String s) {
+        if ("\\N".equals(s)) {
+            return null;
+        }
+        if (s.indexOf('\\') < 0) {
+            return s;
+        }
+        StringBuilder sb = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c != '\\' || i + 1 == s.length()) {
+                sb.append(c);
+                continue;
+            }
+            char n = s.charAt(++i);
+            sb.append(n == 't' ? '\t' : n == 'n' ? '\n' : n == 'r' ? '\r' : n);
+        }
+        return sb.toString();
+    }
+
+    private static String[] klar(String[] teile, int ab) {
+        String[] out = new String[teile.length - ab];
+        for (int i = ab; i < teile.length; i++) {
+            out[i - ab] = klar(teile[i]);
+        }
+        return out;
     }
 
     /**
@@ -194,6 +289,15 @@ public final class ExportDiff {
                     case "gekuerzt":
                         out.gekuerzt = "1".equals(wert);
                         break;
+                    case "defekt":
+                        out.defekt = "1".equals(wert);
+                        break;
+                    case "wiederhergestellt":
+                        out.wiederhergestellt = "1".equals(wert);
+                        break;
+                    case "datenbank":
+                        out.datenbank = "1".equals(wert);
+                        break;
                     default:
                         // Ein Feld einer späteren Fassung: überlesen.
                 }
@@ -201,8 +305,28 @@ public final class ExportDiff {
             if (nurKopf) {
                 return out;
             }
+            TabellenDiff.Tabelle t = null;
             for (k++; k < z.length; k++) {
                 int tab = z[k].indexOf('\t');
+                if (out.datenbank) {
+                    if (z[k].isEmpty()) {
+                        continue;
+                    }
+                    String[] teile = z[k].split("\t", -1);
+                    char art = z[k].charAt(0);
+                    if (art == 'T' && teile.length >= 5) {
+                        t = new TabellenDiff.Tabelle(klar(teile[1]));
+                        t.hinzu = Integer.parseInt(teile[2]);
+                        t.entfernt = Integer.parseInt(teile[3]);
+                        t.gekuerzt = "1".equals(teile[4]);
+                        out.tabellen.add(t);
+                    } else if (art == 'S' && t != null) {
+                        t.spalten = klar(teile, 1);
+                    } else if (t != null) {
+                        t.saetze.add(new TabellenDiff.Satz(art, klar(teile, 1)));
+                    }
+                    continue;
+                }
                 if (tab < 1) {
                     continue;
                 }

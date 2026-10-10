@@ -171,6 +171,31 @@ public class ExportDiffTest {
         assertNull(ExportDiff.ausText("irgendetwas anderes", false));
     }
 
+    @Test
+    public void defektUndWiederhergestellt_ueberstehenDieAblage() {
+        ExportDiff d = ExportDiff.von("a\nb\n", "a\n");
+        d.defekt = true;
+        d.wiederhergestellt = true;
+        ExportDiff zurueck = ExportDiff.ausText(d.alsText(), true);
+        assertTrue(zurueck.defekt);
+        assertTrue(zurueck.wiederhergestellt);
+
+        d.wiederhergestellt = false;
+        zurueck = ExportDiff.ausText(d.alsText(), true);
+        assertTrue(zurueck.defekt);
+        assertFalse(zurueck.wiederhergestellt);
+    }
+
+    @Test
+    public void eintragOhneDieNeuenKopfzeilen_liestSichAlsNichtDefekt() {
+        String alt = "KMYDIFF 1\nzeit=5\ndatei=m.kmy\nhinzu=1\nentfernt=0\nabweichung=0\ngekuerzt=0\n"
+                + "---\n+2\tb\n";
+        ExportDiff d = ExportDiff.ausText(alt, false);
+        assertFalse(d.defekt);
+        assertFalse(d.wiederhergestellt);
+        assertEquals(1, d.zeilen.size());
+    }
+
     private static ExportDiff einer(long zeit) {
         ExportDiff d = ExportDiff.von("a\n", "a\nb\n");
         d.zeit = zeit;

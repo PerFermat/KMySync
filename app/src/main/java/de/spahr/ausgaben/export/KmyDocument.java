@@ -977,6 +977,31 @@ public class KmyDocument implements KmyAbsicht.Konten {
         return new String(out.toByteArray(), StandardCharsets.UTF_8);
     }
 
+    /**
+     * Wie {@link #gunzip}, wirft aber nicht: Bricht der gzip-Strom mittendrin ab, kommt zurück, was
+     * sich bis dahin entpacken ließ. Für die Anzeige einer defekt angekommenen Datei.
+     */
+    public static String gunzipSoweitMoeglich(byte[] raw) {
+        if (raw == null || raw.length == 0) {
+            return "";
+        }
+        boolean gz = raw.length >= 2 && (raw[0] & 0xFF) == 0x1f && (raw[1] & 0xFF) == 0x8b;
+        if (!gz) {
+            return new String(raw, StandardCharsets.UTF_8);
+        }
+        ByteArrayOutputStream out = new ByteArrayOutputStream(Math.max(64, raw.length * 4));
+        try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(raw))) {
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) != -1) {
+                out.write(buf, 0, n);
+            }
+        } catch (IOException e) {
+            // Die Bruchstelle. Was bis hierher kam, steht in out.
+        }
+        return new String(out.toByteArray(), StandardCharsets.UTF_8);
+    }
+
     /** Packt XML als gzip (bleibt eine normale .kmy). */
     public static byte[] gzip(String content) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();

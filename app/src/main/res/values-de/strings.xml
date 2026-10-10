@@ -719,7 +719,16 @@
     <string name="kmy_changes_empty">Noch kein Export mit Vergleich. Nach dem nächsten Export steht hier, welche Zeilen der Datei sich geändert haben.</string>
     <string name="kmy_changes_summary">Zeilen: +%1$d / −%2$d · %3$s</string>
     <string name="kmy_changes_none">Keine Zeile geändert.</string>
+    <string name="kmy_changes_summary_rows">Sätze: +%1$d / −%2$d · %3$s</string>
+    <string name="kmy_changes_tables_hint">Die Tabellen der Datenbank, vorher gegen nachher. Ein geänderter Satz erscheint zweimal: in seiner alten Fassung als entfernt, in seiner neuen als hinzugefügt.</string>
+    <string name="kmy_changes_table_same">%1$s unverändert</string>
+    <string name="kmy_changes_table_changed">%1$s – hinzugefügt: %2$d, entfernt: %3$d</string>
     <string name="kmy_changes_differs">Die Datei auf dem Server stimmt nicht mit dem überein, was hochgeladen wurde.</string>
+    <string name="kmy_changes_defect">Die Datei kam defekt auf dem Server an.</string>
+    <string name="kmy_changes_restored">Der Stand von vor dem Export wurde wiederhergestellt.</string>
+    <string name="kmy_changes_not_restored">Der Stand von vor dem Export ließ sich nicht wiederherstellen. Die Sicherung liegt unter %1$s.</string>
+    <string name="kmy_result_defect_restored">%1$s kam defekt auf dem Server an. Der Stand von vor dem Export wurde wiederhergestellt; die Buchungen bleiben zum Export vorgemerkt. Einzelheiten: Profileinstellungen, „Änderungen an der KMyMoney-Datei“.</string>
+    <string name="kmy_result_defect_not_restored">%1$s kam defekt auf dem Server an und ließ sich nicht wiederherstellen. Die Sicherung von vor dem Export liegt unter %2$s. Die Buchungen bleiben zum Export vorgemerkt.</string>
     <string name="kmy_changes_truncated">Anzeige gekürzt – zu viele Änderungen.</string>
     <string name="kmy_changes_gap">····</string>
     <string name="kmy_result_differs">Achtung: Die zurückgelesene Datei stimmt nicht mit der hochgeladenen überein – siehe Profileinstellungen, „Änderungen an der KMyMoney-Datei“.</string>

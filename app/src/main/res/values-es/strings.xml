@@ -713,7 +713,16 @@
     <string name="kmy_changes_empty">Aún no hay ninguna exportación con comparación. Tras la próxima exportación verás aquí qué líneas del archivo cambiaron.</string>
     <string name="kmy_changes_summary">Líneas: +%1$d / −%2$d · %3$s</string>
     <string name="kmy_changes_none">No ha cambiado ninguna línea.</string>
+    <string name="kmy_changes_summary_rows">Registros: +%1$d / −%2$d · %3$s</string>
+    <string name="kmy_changes_tables_hint">Las tablas de la base de datos, antes y después. Un registro modificado aparece dos veces: eliminado en su versión antigua y añadido en la nueva.</string>
+    <string name="kmy_changes_table_same">%1$s sin cambios</string>
+    <string name="kmy_changes_table_changed">%1$s – añadidos: %2$d, eliminados: %3$d</string>
     <string name="kmy_changes_differs">El archivo del servidor no coincide con lo que se subió.</string>
+    <string name="kmy_changes_defect">El archivo llegó dañado al servidor.</string>
+    <string name="kmy_changes_restored">Se ha restaurado el estado anterior a la exportación.</string>
+    <string name="kmy_changes_not_restored">No se pudo restaurar el estado anterior a la exportación. La copia de seguridad está en %1$s.</string>
+    <string name="kmy_result_defect_restored">%1$s llegó dañado al servidor. Se ha restaurado el estado anterior a la exportación; los movimientos siguen pendientes de exportar. Detalles: ajustes del perfil, «Cambios en el archivo de KMyMoney».</string>
+    <string name="kmy_result_defect_not_restored">%1$s llegó dañado al servidor y no se pudo restaurar. La copia de seguridad anterior a la exportación está en %2$s. Los movimientos siguen pendientes de exportar.</string>
     <string name="kmy_changes_truncated">Vista abreviada: demasiados cambios.</string>
     <string name="kmy_changes_gap">····</string>
     <string name="kmy_result_differs">Atención: el archivo releído no coincide con el subido; consulta Ajustes del perfil, «Cambios en el archivo de KMyMoney».</string>

@@ -1,12 +1,14 @@
 package de.spahr.ausgaben.ui;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.content.Intent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,6 +23,7 @@ import org.robolectric.annotation.Config;
 import de.spahr.ausgaben.R;
 import de.spahr.ausgaben.export.ExportDiff;
 import de.spahr.ausgaben.export.ExportDiffStore;
+import de.spahr.ausgaben.export.TabellenDiff;
 import de.spahr.ausgaben.settings.ProfileManager;
 
 /**
@@ -56,6 +59,89 @@ public class ExportDiffActivityTest {
         ExportDiffActivity a = Robolectric.buildActivity(ExportDiffActivity.class).setup().get();
         TextView note = a.findViewById(R.id.diffNote);
         assertEquals(a.getString(R.string.kmy_changes_empty), note.getText().toString());
+    }
+
+    @Test
+    public void defektAngekommen_stehtInListeUndUeberDenZeilen() throws Exception {
+        String name = "michael.kmy.bak-20260601-100000";
+        ExportDiff d = beispiel();
+        d.defekt = true;
+        d.abweichung = true;
+        store().speichere(name, d);
+
+        ExportDiffActivity liste = Robolectric.buildActivity(ExportDiffActivity.class).setup().get();
+        RecyclerView list = liste.findViewById(R.id.diffList);
+        list.measure(View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.AT_MOST));
+        list.layout(0, 0, 1080, 1920);
+        String zeile = ((TextView) list.getChildAt(0).findViewById(R.id.diffSummary))
+                .getText().toString();
+        assertTrue(zeile.contains(ctx.getString(R.string.kmy_changes_defect)));
+        assertTrue(zeile.contains("Backup/" + name));
+
+        d.wiederhergestellt = true;
+        store().speichere(name, d);
+        ExportDiffActivity zeilen = Robolectric.buildActivity(ExportDiffActivity.class,
+                new Intent(ctx, ExportDiffActivity.class)
+                        .putExtra(ExportDiffActivity.EXTRA_NAME, name)).setup().get();
+        String note = ((TextView) zeilen.findViewById(R.id.diffNote)).getText().toString();
+        assertTrue(note.contains(ctx.getString(R.string.kmy_changes_defect)));
+        assertTrue(note.contains(ctx.getString(R.string.kmy_changes_restored)));
+        assertFalse(note.contains(ctx.getString(R.string.kmy_changes_differs)));
+    }
+
+    /** Eine Datenbank: erst die Tabellen – geänderte vorn, unveränderte grau –, dann die Sätze. */
+    @Test
+    public void datenbank_tabellenUndSaetze() throws Exception {
+        String name = "test.sqlite.bak-20260601-100000";
+        TabellenDiff.Tabelle gleich = new TabellenDiff.Tabelle("kmmPayees");
+        gleich.spalten = new String[]{"id", "name"};
+        TabellenDiff.Tabelle anders = new TabellenDiff.Tabelle("kmmSplits");
+        anders.spalten = new String[]{"transactionId", "splitId", "memo"};
+        anders.hinzu = 2;
+        anders.entfernt = 1;
+        anders.saetze.add(new TabellenDiff.Satz(TabellenDiff.ENTFERNT, new String[]{"T1", "0", "alt"}));
+        anders.saetze.add(new TabellenDiff.Satz(TabellenDiff.HINZU, new String[]{"T1", "0", null}));
+        anders.saetze.add(new TabellenDiff.Satz(TabellenDiff.HINZU, new String[]{"T2", "0", "neu"}));
+        ExportDiff d = ExportDiff.ausTabellen(java.util.Arrays.asList(gleich, anders));
+        d.zeit = 1_780_000_000_000L;
+        d.datei = "test.sqlite";
+        store().speichere(name, d);
+
+        ExportDiffActivity tabellen = Robolectric.buildActivity(ExportDiffActivity.class,
+                new Intent(ctx, ExportDiffActivity.class)
+                        .putExtra(ExportDiffActivity.EXTRA_NAME, name)).setup().get();
+        RecyclerView list = tabellen.findViewById(R.id.diffList);
+        assertEquals(2, list.getAdapter().getItemCount());
+        list.measure(View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.AT_MOST));
+        list.layout(0, 0, 1080, 1920);
+        TextView erste = list.getChildAt(0).findViewById(R.id.diffWhen);
+        TextView zweite = list.getChildAt(1).findViewById(R.id.diffWhen);
+        assertEquals(ctx.getString(R.string.kmy_changes_table_changed, "kmmSplits", 2, 1),
+                erste.getText().toString());
+        assertEquals(ctx.getString(R.string.kmy_changes_table_same, "kmmPayees"),
+                zweite.getText().toString());
+        assertTrue(list.getChildAt(0).isClickable());
+        assertFalse(list.getChildAt(1).isClickable());
+        assertTrue(erste.getCurrentTextColor() != zweite.getCurrentTextColor());
+
+        ExportDiffActivity saetze = Robolectric.buildActivity(ExportDiffActivity.class,
+                new Intent(ctx, ExportDiffActivity.class)
+                        .putExtra(ExportDiffActivity.EXTRA_NAME, name)
+                        .putExtra(ExportDiffActivity.EXTRA_TABLE, "kmmSplits")).setup().get();
+        assertEquals(View.VISIBLE, saetze.findViewById(R.id.diffScroll).getVisibility());
+        RecyclerView lines = saetze.findViewById(R.id.diffLines);
+        // Die Kopfzeile mit den Spaltennamen und drei Sätze.
+        assertEquals(4, lines.getAdapter().getItemCount());
+        lines.measure(View.MeasureSpec.makeMeasureSpec(2000, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.AT_MOST));
+        lines.layout(0, 0, 2000, 1920);
+        ViewGroup kopf = (ViewGroup) lines.getChildAt(0);
+        assertEquals("transactionId", ((TextView) kopf.getChildAt(1)).getText().toString());
+        ViewGroup zweiter = (ViewGroup) lines.getChildAt(2);
+        assertEquals("+", ((TextView) zweiter.getChildAt(0)).getText().toString());
+        assertEquals("NULL", ((TextView) zweiter.getChildAt(3)).getText().toString());
     }
 
     @Test

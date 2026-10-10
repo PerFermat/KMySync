@@ -40,7 +40,7 @@ public class KmyExportCoordinator {
     }
 
     /** Unterordner neben der .kmy, in dem die Sicherungen vor jedem Export abgelegt werden. */
-    private static final String BACKUP_DIR = "Backup";
+    public static final String BACKUP_DIR = "Backup";
 
     private final Repository repository;
     private final SettingsStore settings;
@@ -70,6 +70,16 @@ public class KmyExportCoordinator {
         public String oldXml;
         /** Die hochgeladenen Bytes; nur nach einem Schreiben. */
         public byte[] uploaded;
+        /** Die Datei, wie sie vor dem Export auf dem Server lag; nur nach einem Schreiben. */
+        public byte[] vorher;
+        /**
+         * Markiert lokal, was jetzt in der Datei steht (exportiert, Löschungen erledigt, Planungen
+         * weitergestellt). Nur nach einem Schreiben, und genau einmal zu rufen – es sei denn, die Datei
+         * wurde wieder auf {@link #vorher} gestellt: dann {@link #verwerfen}.
+         */
+        public Runnable nachziehen;
+        /** Der alte Stand liegt wieder auf dem Server: nur den Vermerk des Laufs wegnehmen. */
+        public Runnable verwerfen;
         /** Ordner und Name der Datei sowie der Name ihrer Sicherung; nur nach einem Schreiben. */
         public String folder;
         public String file;
@@ -102,6 +112,9 @@ public class KmyExportCoordinator {
         new Thread(() -> {
             Outcome o = exportNow((stage, percent) ->
                     repository.mainHandler().post(() -> listener.onProgress(stage)));
+            if (o.written) {
+                o.nachziehen.run();
+            }
             repository.mainHandler().post(() -> {
                 if (o.failed) {
                     listener.onFailed(o.message);
@@ -275,13 +288,20 @@ public class KmyExportCoordinator {
                 throw e;
             }
 
-            // Die Datei ist geschrieben; jetzt zieht der lokale Stand nach.
-            commitLocally(res, secRes, securityTx, delRes, schedRes, advances);
-            // Lokal nachgezogen: der Vermerk von oben hat seinen Zweck erfüllt.
-            PendingExport.clear(settings);
+            // Die Datei ist geschrieben. Der lokale Stand zieht erst nach, wenn der Aufrufer es sagt:
+            // Der Hintergrundlauf liest die Datei vorher zurück und spielt den alten Stand wieder
+            // ein, falls sie defekt ankam – dann darf nichts als exportiert gelten.
             Outcome ok = Outcome.done(buildMessage(r, res, secRes.writtenIds.size(),
                     delRes.resolvedIds.size(), schedRes.writtenIds.size(), file, backup), true);
+            final KmyExporter.Result geschrieben = res;
+            ok.nachziehen = () -> {
+                commitLocally(geschrieben, secRes, securityTx, delRes, schedRes, advances);
+                // Lokal nachgezogen: der Vermerk von oben hat seinen Zweck erfüllt.
+                PendingExport.clear(settings);
+            };
+            ok.verwerfen = () -> PendingExport.clear(settings);
             ok.oldXml = doc.xml();
+            ok.vorher = raw;
             ok.uploaded = packed;
             ok.folder = folder;
             ok.file = file;

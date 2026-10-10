@@ -22,6 +22,7 @@ import java.util.List;
 import de.spahr.ausgaben.R;
 import de.spahr.ausgaben.export.ExportDiff;
 import de.spahr.ausgaben.export.ExportDiffStore;
+import de.spahr.ausgaben.export.TabellenDiff;
 import de.spahr.ausgaben.settings.ProfileManager;
 
 /**
@@ -37,6 +38,11 @@ public class ExportDiffActivity extends LocalizedActivity {
 
     /** Name des anzuzeigenden Vergleichs (der Name der zugehörigen Sicherung). */
     public static final String EXTRA_NAME = "name";
+    /** Bei einer Datenbank: die Tabelle, deren Sätze gezeigt werden; ohne ihn die Liste der Tabellen. */
+    public static final String EXTRA_TABLE = "table";
+
+    /** Breiter wird keine Spalte der Tabellenansicht; längere Werte enden auf „…". */
+    private static final int MAX_ZELLE = 80;
 
     private ExportDiffStore store;
     private DateFormat datum;
@@ -61,7 +67,8 @@ public class ExportDiffActivity extends LocalizedActivity {
     }
 
     private String summary(ExportDiff d) {
-        return getString(R.string.kmy_changes_summary, d.hinzu, d.entfernt, d.datei);
+        return getString(d.datenbank ? R.string.kmy_changes_summary_rows
+                : R.string.kmy_changes_summary, d.hinzu, d.entfernt, d.datei);
     }
 
     // ---- Liste der Exporte ----
@@ -90,10 +97,24 @@ public class ExportDiffActivity extends LocalizedActivity {
                 ((TextView) h.itemView.findViewById(R.id.diffWhen))
                         .setText(datum.format(new Date(e.kopf.zeit)));
                 String text = summary(e.kopf);
-                if (e.kopf.abweichung) {
+                if (e.kopf.defekt) {
+                    text = text + "\n" + defektText(e.kopf, e.name);
+                } else if (e.kopf.abweichung) {
                     text = text + "\n" + getString(R.string.kmy_changes_differs);
                 }
-                ((TextView) h.itemView.findViewById(R.id.diffSummary)).setText(text);
+                TextView summary = h.itemView.findViewById(R.id.diffSummary);
+                summary.setText(text);
+                // Ein Defekt soll in der Liste auffallen; die Farbe muss auch wieder weg, wenn die
+                // Zeile für einen anderen Eintrag wiederverwendet wird.
+                if (h.itemView.getTag() == null) {
+                    h.itemView.setTag(summary.getTextColors());
+                }
+                if (e.kopf.defekt) {
+                    summary.setTextColor(com.google.android.material.color.MaterialColors.getColor(
+                            summary, androidx.appcompat.R.attr.colorError));
+                } else {
+                    summary.setTextColor((android.content.res.ColorStateList) h.itemView.getTag());
+                }
                 h.itemView.setOnClickListener(v -> startActivity(
                         new Intent(ExportDiffActivity.this, ExportDiffActivity.class)
                                 .putExtra(EXTRA_NAME, e.name)));
@@ -104,6 +125,14 @@ public class ExportDiffActivity extends LocalizedActivity {
                 return eintraege.size();
             }
         });
+    }
+
+    /** Der Hinweis zu einer defekt angekommenen Datei; {@code name} ist der Name ihrer Sicherung. */
+    private String defektText(ExportDiff d, String name) {
+        return getString(R.string.kmy_changes_defect) + " " + (d.wiederhergestellt
+                ? getString(R.string.kmy_changes_restored)
+                : getString(R.string.kmy_changes_not_restored,
+                        de.spahr.ausgaben.export.KmyExportCoordinator.BACKUP_DIR + "/" + name));
     }
 
     // ---- Zeilen eines Exports ----
@@ -120,13 +149,31 @@ public class ExportDiffActivity extends LocalizedActivity {
         // eine zweite Zeile dort nicht hinein und wird unten abgeschnitten.
         List<String> hinweise = new ArrayList<>();
         hinweise.add(summary(d));
-        if (d.abweichung) {
+        if (d.defekt) {
+            hinweise.add(defektText(d, name));
+        } else if (d.abweichung) {
             hinweise.add(getString(R.string.kmy_changes_differs));
         }
         if (d.gekuerzt) {
             hinweise.add(getString(R.string.kmy_changes_truncated));
         }
-        if (d.zeilen.isEmpty()) {
+        if (d.datenbank) {
+            if (!d.tabellen.isEmpty()) {
+                hinweise.add(getString(R.string.kmy_changes_tables_hint));
+            }
+            String tabelle = getIntent().getStringExtra(EXTRA_TABLE);
+            TabellenDiff.Tabelle t = tabelle == null ? null : d.tabelle(tabelle);
+            if (t == null) {
+                note.setText(android.text.TextUtils.join("\n", hinweise));
+                showTables(d, name);
+            } else {
+                note.setText(tabellenText(t)
+                        + (t.gekuerzt ? "\n" + getString(R.string.kmy_changes_truncated) : ""));
+                showRows(t);
+            }
+            return;
+        }
+        if (d.zeilen.isEmpty() && !d.defekt) {
             hinweise.add(getString(R.string.kmy_changes_none));
         }
         note.setText(android.text.TextUtils.join("\n", hinweise));
@@ -206,6 +253,157 @@ public class ExportDiffActivity extends LocalizedActivity {
         ViewGroup.LayoutParams lp = lines.getLayoutParams();
         lp.width = Math.max(getResources().getDisplayMetrics().widthPixels,
                 (int) (breiteste + nummernBreite + 24 * dichte));
+        lines.setLayoutParams(lp);
+    }
+    // ---- Datenbank: die Tabellen eines Exports ----
+
+    private String tabellenText(TabellenDiff.Tabelle t) {
+        return t.geaendert()
+                ? getString(R.string.kmy_changes_table_changed, t.name, t.hinzu, t.entfernt)
+                : getString(R.string.kmy_changes_table_same, t.name);
+    }
+
+    /** Erst die geänderten Tabellen, antippbar; darunter grau die unveränderten. */
+    private void showTables(ExportDiff d, final String name) {
+        final List<TabellenDiff.Tabelle> tabellen = new ArrayList<>();
+        for (TabellenDiff.Tabelle t : d.tabellen) {
+            if (t.geaendert()) {
+                tabellen.add(t);
+            }
+        }
+        for (TabellenDiff.Tabelle t : d.tabellen) {
+            if (!t.geaendert()) {
+                tabellen.add(t);
+            }
+        }
+        RecyclerView list = findViewById(R.id.diffList);
+        list.setVisibility(View.VISIBLE);
+        list.setLayoutManager(new LinearLayoutManager(this));
+        list.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
+        final int schwarz = com.google.android.material.color.MaterialColors.getColor(list,
+                com.google.android.material.R.attr.colorOnSurface);
+        final int grau = getColor(R.color.diff_number);
+        list.setAdapter(new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+            @NonNull
+            @Override
+            public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                View v = LayoutInflater.from(parent.getContext())
+                        .inflate(R.layout.item_export_diff, parent, false);
+                v.findViewById(R.id.diffSummary).setVisibility(View.GONE);
+                return new RecyclerView.ViewHolder(v) {
+                };
+            }
+
+            @Override
+            public void onBindViewHolder(@NonNull RecyclerView.ViewHolder h, int position) {
+                final TabellenDiff.Tabelle t = tabellen.get(position);
+                TextView text = h.itemView.findViewById(R.id.diffWhen);
+                text.setText(tabellenText(t));
+                text.setTextColor(t.geaendert() ? schwarz : grau);
+                if (t.geaendert()) {
+                    h.itemView.setOnClickListener(v -> startActivity(
+                            new Intent(ExportDiffActivity.this, ExportDiffActivity.class)
+                                    .putExtra(EXTRA_NAME, name).putExtra(EXTRA_TABLE, t.name)));
+                } else {
+                    h.itemView.setOnClickListener(null);
+                }
+                h.itemView.setClickable(t.geaendert());
+            }
+
+            @Override
+            public int getItemCount() {
+                return tabellen.size();
+            }
+        });
+    }
+
+    // ---- Datenbank: die Sätze einer Tabelle ----
+
+    private static String zelle(String wert) {
+        if (wert == null) {
+            return "NULL";
+        }
+        String s = wert.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ');
+        return s.length() > MAX_ZELLE ? s.substring(0, MAX_ZELLE) + "…" : s;
+    }
+
+    /**
+     * Die hinzugekommenen und entfernten Sätze als Tabelle: oben die Spaltennamen, darunter je Satz
+     * eine Zeile, grün oder rot. Jede Spalte so breit wie ihr längster Wert.
+     */
+    private void showRows(final TabellenDiff.Tabelle t) {
+        findViewById(R.id.diffScroll).setVisibility(View.VISIBLE);
+        RecyclerView lines = findViewById(R.id.diffLines);
+        lines.setLayoutManager(new LinearLayoutManager(this));
+        final float dichte = getResources().getDisplayMetrics().density;
+        final int rand = (int) (8 * dichte);
+        final int n = t.spalten.length;
+        final android.graphics.Paint stift = ((TextView) LayoutInflater.from(this)
+                .inflate(R.layout.item_export_diff_line, lines, false)
+                .findViewById(R.id.lineText)).getPaint();
+        final int[] breite = new int[n + 1];
+        breite[0] = (int) (stift.measureText("+") + 2 * rand);
+        int gesamt = breite[0];
+        for (int i = 0; i < n; i++) {
+            // Der Kopf steht fett da und braucht etwas mehr Platz.
+            float b = stift.measureText(t.spalten[i]) * 1.1f;
+            for (TabellenDiff.Satz s : t.saetze) {
+                if (i < s.werte.length) {
+                    b = Math.max(b, stift.measureText(zelle(s.werte[i])));
+                }
+            }
+            breite[i + 1] = (int) (b + 2 * rand);
+            gesamt += breite[i + 1];
+        }
+        final int added = getColor(R.color.diff_added_bg);
+        final int removed = getColor(R.color.diff_removed_bg);
+        final int kopf = getColor(R.color.diff_gap_bg);
+        final int schrift = getColor(R.color.diff_text);
+        lines.setAdapter(new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+            @NonNull
+            @Override
+            public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                android.widget.LinearLayout zeile = new android.widget.LinearLayout(parent.getContext());
+                zeile.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+                zeile.setLayoutParams(new RecyclerView.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                for (int i = 0; i <= n; i++) {
+                    TextView z = new TextView(parent.getContext());
+                    z.setTypeface(android.graphics.Typeface.MONOSPACE);
+                    z.setTextSize(12);
+                    z.setTextColor(schrift);
+                    z.setSingleLine(true);
+                    z.setPadding(rand, rand / 4, rand, rand / 4);
+                    zeile.addView(z, new android.widget.LinearLayout.LayoutParams(breite[i],
+                            ViewGroup.LayoutParams.WRAP_CONTENT));
+                }
+                return new RecyclerView.ViewHolder(zeile) {
+                };
+            }
+
+            @Override
+            public void onBindViewHolder(@NonNull RecyclerView.ViewHolder h, int position) {
+                ViewGroup zeile = (ViewGroup) h.itemView;
+                TabellenDiff.Satz s = position == 0 ? null : t.saetze.get(position - 1);
+                zeile.setBackgroundColor(s == null ? kopf
+                        : s.art == TabellenDiff.HINZU ? added : removed);
+                // Das Vorzeichen steht zusätzlich zur Farbe da.
+                ((TextView) zeile.getChildAt(0)).setText(s == null ? "" : String.valueOf(s.art));
+                for (int i = 0; i < n; i++) {
+                    TextView z = (TextView) zeile.getChildAt(i + 1);
+                    z.setTypeface(android.graphics.Typeface.MONOSPACE, s == null
+                            ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+                    z.setText(s == null ? t.spalten[i] : i < s.werte.length ? zelle(s.werte[i]) : "");
+                }
+            }
+
+            @Override
+            public int getItemCount() {
+                return t.saetze.size() + 1;
+            }
+        });
+        ViewGroup.LayoutParams lp = lines.getLayoutParams();
+        lp.width = Math.max(getResources().getDisplayMetrics().widthPixels, gesamt);
         lines.setLayoutParams(lp);
     }
 }

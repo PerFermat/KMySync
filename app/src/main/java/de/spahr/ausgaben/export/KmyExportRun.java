@@ -125,20 +125,47 @@ public final class KmyExportRun {
             // Zurücklesen, was jetzt wirklich auf dem Server liegt. Im Hintergrund drosselt Android das
             // Netz; dann lieber warten, bis die App wieder vorn ist, als einen Fehler zu melden, den es
             // nicht gibt.
-            final byte[] zurueck;
+            final RemoteStorage storage = RemoteStorage.from(settings);
+            final byte[] gelesen;
             try {
                 if (!ForegroundGate.awaitForeground(WARTEN_MS)) {
                     throw new IOException(r.getString(R.string.kmy_result_background));
                 }
                 final String lesen = r.getString(R.string.kmy_progress_readback);
-                ProgressListener gelesen = (done, total) -> melde(lesen,
+                ProgressListener fortschritt = (done, total) -> melde(lesen,
                         ImportPhase.map(done, total, BIS_GESCHRIEBEN, BIS_GELESEN));
-                zurueck = RemoteStorage.from(settings).downloadBytes(o.folder, o.file, gelesen);
+                gelesen = storage.downloadBytes(o.folder, o.file, fortschritt);
             } catch (Exception e) {
+                // Geschrieben ist geschrieben; dass sich nicht nachsehen ließ, ändert daran nichts.
+                o.nachziehen.run();
                 ende(o.message + "\n" + r.getString(R.string.kmy_result_readback_failed, grund(e)),
                         false, true);
                 return;
             }
+
+            // Kam die Datei defekt an, liegt danach wieder der Stand von vor dem Export auf dem
+            // Server – und nichts gilt als exportiert.
+            KmyRuecklesen.Ergebnis e = KmyRuecklesen.pruefe(storage, o.folder, o.file, gelesen,
+                    o.uploaded, o.vorher, raw -> KmyDocument.alsXml(app, raw),
+                    new java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US)
+                            .format(new java.util.Date()));
+            if (e.ausgang != KmyRuecklesen.Ausgang.LESBAR) {
+                boolean zurueckgespielt = e.ausgang == KmyRuecklesen.Ausgang.WIEDERHERGESTELLT;
+                vermerkeDefekt(app, o, e.bytes, zurueckgespielt);
+                String sicherung = KmyExportCoordinator.BACKUP_DIR + "/" + o.backupName;
+                if (zurueckgespielt) {
+                    o.verwerfen.run();
+                    ende(r.getString(R.string.kmy_result_defect_restored, o.file), true, false);
+                } else {
+                    // Der Vermerk des Laufs bleibt: Steht die Datei doch richtig da, erkennt der
+                    // nächste Export die Buchungen wieder, statt sie doppelt anzulegen.
+                    ende(r.getString(R.string.kmy_result_defect_not_restored, o.file, sicherung)
+                            + (e.grund.isEmpty() ? "" : "\n" + e.grund), true, false);
+                }
+                return;
+            }
+            o.nachziehen.run();
+            final byte[] zurueck = e.bytes;
 
             final String meldung = o.message + vergleiche(app, r, o, zurueck);
 
@@ -186,7 +213,12 @@ public final class KmyExportRun {
     private static String vergleiche(Context app, Context r, KmyExportCoordinator.Outcome o,
                                      byte[] zurueck) {
         try {
-            ExportDiff d = ExportDiff.von(o.oldXml, KmyDocument.alsXml(app, zurueck));
+            // Eine Datenbank wird als das verglichen, was sie ist: Tabelle gegen Tabelle. Über ihr
+            // XML-Abbild fiele alles weg, was die Abbildung nicht liest – Zähler, Salden –, und
+            // zwischen Datei und Anzeige läge Fachlogik.
+            ExportDiff d = KmySqlite.istSqlite(o.vorher) && KmySqlite.istSqlite(zurueck)
+                    ? ExportDiff.ausTabellen(TabellenDiff.von(app, o.vorher, zurueck))
+                    : ExportDiff.von(o.oldXml, KmyDocument.alsXml(app, zurueck));
             o.oldXml = null;   // mehrere Megabyte, die ab hier niemand mehr braucht
             d.zeit = System.currentTimeMillis();
             d.datei = o.file;
@@ -199,6 +231,32 @@ public final class KmyExportRun {
         } catch (Exception | OutOfMemoryError e) {
             android.util.Log.w("KmyExport", "Vergleich nach dem Export nicht möglich", e);
             return "";
+        }
+    }
+
+    /**
+     * Legt unter „Änderungen" ab, dass die Datei defekt ankam: der Stand vor dem Export gegen das, was
+     * sich von ihr noch entpacken ließ. Eine Datenbank hat keinen Text, der sich so zeigen ließe; dort
+     * steht nur der Hinweis.
+     */
+    private static void vermerkeDefekt(Context app, KmyExportCoordinator.Outcome o, byte[] defekt,
+                                       boolean wiederhergestellt) {
+        try {
+            ExportDiff d = KmySqlite.istSqlite(o.vorher) ? ExportDiff.ausTabellen(
+                    new java.util.ArrayList<>())
+                    : ExportDiff.von(o.oldXml, KmyDocument.gunzipSoweitMoeglich(defekt));
+            o.oldXml = null;
+            d.zeit = System.currentTimeMillis();
+            d.datei = o.file;
+            d.abweichung = true;
+            d.defekt = true;
+            d.wiederhergestellt = wiederhergestellt;
+            ExportDiffStore store = new ExportDiffStore(ExportDiffStore.ordnerFuer(app.getFilesDir(),
+                    new de.spahr.ausgaben.settings.ProfileManager(app).getActiveProfileId()));
+            store.speichere(o.backupName, d);
+            store.raeumeAuf(o.file, KmyBackups.KEEP);
+        } catch (Exception | OutOfMemoryError e) {
+            android.util.Log.w("KmyExport", "Defekt ließ sich nicht vermerken", e);
         }
     }
 
