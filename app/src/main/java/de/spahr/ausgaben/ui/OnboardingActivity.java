@@ -834,6 +834,7 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
         try {
             CsvImporter importer = new CsvImporter(this);
             List<Booking> bookings = importer.parse(content);
+            repository.resolveCsvSides(bookings);
             String account = importer.getParsedAccount();
             post(() -> repository.replaceImport(account, bookings, count -> finishImport(1)));
         } catch (Exception e) {

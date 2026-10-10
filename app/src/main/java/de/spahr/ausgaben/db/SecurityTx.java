@@ -294,7 +294,10 @@ public class SecurityTx {
             }
             // Ertrag kommt aufs Konto, Steuer/Gebühr geht davon ab.
             long teil = p.income ? p.amountCents : -p.amountCents;
-            teile.add(new BookingSplit(0, p.category.trim(), b.isIncome ? teil : -teil, p.income));
+            // Die Seite der Kategorie, nicht die Rolle der Zeile: Kapitalertragsteuer im Ertragsteil
+            // ist eine Ausgabekategorie.
+            teile.add(new BookingSplit(0, p.category.trim(), b.isIncome ? teil : -teil,
+                    p.categorySide()));
         }
         BookingSplit haupt = null;
         for (BookingSplit t : teile) {

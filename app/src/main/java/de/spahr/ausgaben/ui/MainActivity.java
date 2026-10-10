@@ -629,6 +629,8 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         b.payee = u.getString("payee", "");
         b.account = u.getString("account", "");
         b.category = u.getString("category", "");
+        int seite = u.getInt("categorySide", -1);
+        b.categoryIsIncome = seite < 0 || b.category.isEmpty() ? null : Boolean.valueOf(seite == 1);
         b.note = u.getString("note", "");
         b.amountCents = u.getLong("amount");
         b.isIncome = u.getBoolean("income");
@@ -648,8 +650,11 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         long[] amounts = u.getLongArray("splitAmounts");
         if (cats != null && amounts != null && cats.size() >= 2 && amounts.length == cats.size()) {
             List<de.spahr.ausgaben.db.BookingSplit> parts = new ArrayList<>();
+            int[] sides = u.getIntArray("splitSides");
             for (int i = 0; i < cats.size(); i++) {
-                parts.add(new de.spahr.ausgaben.db.BookingSplit(0, cats.get(i), amounts[i]));
+                Boolean s = sides == null || i >= sides.length || sides[i] < 0 ? null
+                        : Boolean.valueOf(sides[i] == 1);
+                parts.add(new de.spahr.ausgaben.db.BookingSplit(0, cats.get(i), amounts[i], s));
             }
             repository.saveSplitBooking(b, parts, place, done);
         } else {

@@ -896,7 +896,8 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         ctl.setSuppressEvents(true);
         ctl.clear();
         for (SecurityTxSplit part : parts) {
-            ctl.addRow(part.category, MoneyFormat.plain(part.amountCents), null, part.label);
+            ctl.addRow(part.category, MoneyFormat.plain(part.amountCents), part.categoryIsIncome,
+                    part.label);
         }
         ctl.ensureTrailingRow();
         ctl.setSuppressEvents(false);
@@ -1704,8 +1705,11 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         int sort = 0;
         for (SplitRowController.Part part : ctl.collectParts()) {
             // Ohne Betrag: das Vorzeichen gehört zur Zeile (siehe SecurityTxSplit).
+            // Mit der Kategorie ihre Seite: die der gewählten Gruppe der Auswahlliste bzw. die, mit
+            // der die Zeile geladen wurde. Kam die Kategorie ohne Seite (aus einer Abrechnungsvorlage),
+            // bleibt sie offen und wird nachgetragen – nach der Typtabelle, sonst nach der Rolle.
             out.add(new SecurityTxSplit(0, income, part.category, part.cents,
-                    part.label, sort++));
+                    part.label, sort++, part.categoryIsIncome));
         }
         return out;
     }

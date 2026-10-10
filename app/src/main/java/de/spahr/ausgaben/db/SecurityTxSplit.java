@@ -70,7 +70,32 @@ public class SecurityTxSplit {
     @ColumnInfo(name = "sort")
     public int sort;
 
+    /**
+     * Die Seite von {@link #category} ({@code true} = Einnahme-, {@code false} = Ausgabekategorie);
+     * {@code null}, solange sie nicht ermittelt ist. Nicht dasselbe wie {@link #income}: Das ist die
+     * Rolle der Zeile, und im Ertragsteil einer Dividende steht die Kapitalertragsteuer – eine
+     * Ausgabekategorie. Siehe {@link Booking#categoryIsIncome}.
+     */
+    @ColumnInfo(name = "category_is_income")
+    public Boolean categoryIsIncome;
+
+    /**
+     * Die Seite der Kategorie: die gespeicherte. Solange sie fehlt, sagt es die Rolle der Zeile – ein
+     * Ertrag in Laufrichtung kommt aus einer Einnahmekategorie; Steuer, Gebühr und der Abzug innerhalb
+     * eines Ertrags gehen auf eine Ausgabekategorie.
+     */
+    public boolean categorySide() {
+        return categoryIsIncome != null ? categoryIsIncome : income && amountCents >= 0;
+    }
+
     public SecurityTxSplit() {
+    }
+
+    @Ignore
+    public SecurityTxSplit(long txId, boolean income, String category, long amountCents,
+                           String label, int sort, Boolean categoryIsIncome) {
+        this(txId, income, category, amountCents, label, sort);
+        this.categoryIsIncome = categoryIsIncome;
     }
 
     @Ignore

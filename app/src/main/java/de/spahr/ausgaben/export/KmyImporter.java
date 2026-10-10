@@ -277,8 +277,9 @@ public class KmyImporter {
                     // Steuer (Erstattung) beim Einlesen ein Abzug.
                     boolean income = type == 12;
                     long value = income ? -valueToCents(s[1]) : valueToCents(s[1]);
+                    // Hier fallen Rolle und Seite zusammen: Die Rolle wird aus dem Kontotyp gelesen.
                     tx.parts.add(new de.spahr.ausgaben.db.SecurityTxSplit(0, income, category,
-                            value, "", tx.parts.size()));
+                            value, "", tx.parts.size(), income));
                 }
             } else if (tx.moneyAccount.isEmpty()) {
                 tx.moneyAccount = orEmpty(doc.accountNameById(s[0])).trim();
@@ -399,8 +400,8 @@ public class KmyImporter {
      * Kategorie-Pfad → Typ ({@code true} = Einnahme, {@code false} = Ausgabe) für alle Kategorien der
      * Datei (zum Klassifizieren aller Budget-Kategorien beim Import). Siehe {@code KmyDocument}.
      */
-    public java.util.Map<String, Boolean> categoryTypes() {
-        return doc.categoryTypesByPath();
+    public List<de.spahr.ausgaben.db.CategoryType> categoryTypes() {
+        return doc.categoryTypeList();
     }
 
     /**
@@ -837,13 +838,16 @@ public class KmyImporter {
                 endMs < 0 ? 0 : endMs);
         // Umbuchungs-Richtung: b.isIncome = Geld fließt IN das Primärkonto (dieses Konto ist „Nach").
         st.incoming = (b.isTransfer && b.isIncome) ? 1 : 0;
+        // Die Seite der Kategorie steht an der Buchung, aus der die Planung entsteht – mitnehmen.
+        st.counterpartyIsIncome = b.isTransfer || counterparty.isEmpty() ? null : b.categoryIsIncome;
         st.tags = b.tags; // toBooking hat die Stichwörter der Splits schon vereinigt
         // Splitbuchung: mehrere Kategorien → Kennzeichen + Kategorie-Teile für die Detail-Maske sichern.
         if (b.parts != null && b.parts.size() >= 2) {
             st.split = 1;
             st.splitParts = new ArrayList<>();
             for (BookingSplit part : b.parts) {
-                st.splitParts.add(new ScheduledSplit(0, orEmpty(part.category), part.amountCents));
+                st.splitParts.add(new ScheduledSplit(0, orEmpty(part.category), part.amountCents,
+                        part.categoryIsIncome));
             }
         }
         return st;

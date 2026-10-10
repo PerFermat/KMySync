@@ -82,10 +82,18 @@ public class KmyDocument implements KmyAbsicht.Konten {
 
     /** kleingeschriebener Kategorie-Pfad (bzw. Blattname) → id. */
     private final Map<String, String> categoryToId = new LinkedHashMap<>();
+    /**
+     * Dasselbe je Seite. KMyMoney erlaubt denselben Kategorie-Pfad im Einnahme- und im Ausgabebaum;
+     * in {@link #categoryToId} überschreibt dann der eine den anderen.
+     */
+    private final Map<String, String> incomeCategoryToId = new LinkedHashMap<>();
+    private final Map<String, String> expenseCategoryToId = new LinkedHashMap<>();
     /** id → Kategorie-Pfad (für den Import). */
     private final Map<String, String> categoryIdToPath = new LinkedHashMap<>();
     /** Kategorie-Pfad → Typ ({@code true} = Einnahme/Typ 12, {@code false} = Ausgabe/Typ 13). */
     private final Map<String, Boolean> categoryIncomeByPath = new LinkedHashMap<>();
+    /** Jede Kategorie der Datei mit ihrer Seite – auch beide, wenn es den Pfad in beiden Bäumen gibt. */
+    private final List<de.spahr.ausgaben.db.CategoryType> categoryTypes = new ArrayList<>();
 
     private final Map<String, String> payeeNameToId = new LinkedHashMap<>();
     private final Map<String, String> payeeIdToName = new LinkedHashMap<>();
@@ -279,6 +287,23 @@ public class KmyDocument implements KmyAbsicht.Konten {
         return pathOrName == null ? null : categoryToId.get(pathOrName.trim().toLowerCase(Locale.GERMANY));
     }
 
+    /**
+     * Wie {@link #categoryId(String)}, aber mit der Seite, auf der die Kategorie liegen soll
+     * ({@code true} = Einnahme, {@code false} = Ausgabe, {@code null} = unbekannt). Gibt es den Namen
+     * in beiden Bäumen, entscheidet die Seite. Gibt es ihn nur im anderen, wird der geliefert – ob er
+     * zur Buchung passt, beurteilt die Selbstprüfung.
+     */
+    @Override
+    public String categoryId(String pathOrName, Boolean einnahme) {
+        if (pathOrName == null) {
+            return null;
+        }
+        String key = pathOrName.trim().toLowerCase(Locale.GERMANY);
+        String id = einnahme == null ? null
+                : (einnahme ? incomeCategoryToId : expenseCategoryToId).get(key);
+        return id != null ? id : categoryToId.get(key);
+    }
+
     public String categoryPath(String id) {
         return categoryIdToPath.get(id);
     }
@@ -289,6 +314,22 @@ public class KmyDocument implements KmyAbsicht.Konten {
      */
     public Map<String, Boolean> categoryTypesByPath() {
         return new LinkedHashMap<>(categoryIncomeByPath);
+    }
+
+    /**
+     * Alle Kategorien der Datei, jede mit ihrer Seite. Anders als {@link #categoryTypesByPath()} geht
+     * hier nichts verloren, wenn derselbe Pfad im Einnahme- und im Ausgabebaum vorkommt: dann stehen
+     * beide da.
+     */
+    public List<de.spahr.ausgaben.db.CategoryType> categoryTypeList() {
+        return new ArrayList<>(categoryTypes);
+    }
+
+    /** Die Seite der Kategorie mit dieser Konto-id; {@code null}, wenn es keine Kategorie ist. */
+    public Boolean categorySideOf(String id) {
+        Integer type = id == null ? null : accountType.get(id);
+        return type == null || (type != TYPE_INCOME && type != TYPE_EXPENSE) ? null
+                : Boolean.valueOf(type == TYPE_INCOME);
     }
 
     public String payeeId(String name) {
@@ -821,6 +862,8 @@ public class KmyDocument implements KmyAbsicht.Konten {
         // der Export landete auf dem falschen Konto. Mehrdeutige Namen bekommen deshalb ihren Pfad.
         Map<String, Integer> accountNameCount = new LinkedHashMap<>();
         Map<String, Integer> categoryLeafCount = new LinkedHashMap<>();
+        Map<String, Integer> incomeLeafCount = new LinkedHashMap<>();
+        Map<String, Integer> expenseLeafCount = new LinkedHashMap<>();
         for (Map.Entry<String, String> e : accountName.entrySet()) {
             String id = e.getKey();
             if (id.startsWith("AStd::")) {
@@ -830,6 +873,7 @@ public class KmyDocument implements KmyAbsicht.Konten {
             String key = e.getValue().trim().toLowerCase(Locale.GERMANY);
             if (type == TYPE_EXPENSE || type == TYPE_INCOME) {
                 count(categoryLeafCount, key);
+                count(type == TYPE_INCOME ? incomeLeafCount : expenseLeafCount, key);
             } else if (type != TYPE_EQUITY && type != TYPE_STOCK) {
                 count(accountNameCount, key); // Konten und Depots teilen sich die Anzeigenamen
             }
@@ -869,8 +913,14 @@ public class KmyDocument implements KmyAbsicht.Konten {
                 if (one(categoryLeafCount, leaf)) {
                     categoryToId.put(leaf, id); // Blatt-Fallback nur, wenn er eindeutig ist
                 }
+                Map<String, String> seite = type == TYPE_INCOME ? incomeCategoryToId : expenseCategoryToId;
+                seite.put(path.toLowerCase(Locale.GERMANY), id);
+                if (one(type == TYPE_INCOME ? incomeLeafCount : expenseLeafCount, leaf)) {
+                    seite.put(leaf, id);
+                }
                 categoryIdToPath.put(id, path);
                 categoryIncomeByPath.put(path, type == TYPE_INCOME);
+                categoryTypes.add(new de.spahr.ausgaben.db.CategoryType(path, type == TYPE_INCOME));
             } else if (type != TYPE_INVESTMENT && type != TYPE_EQUITY && type != TYPE_STOCK) {
                 // Wertpapier-Unterkonten (Typ 15) NICHT als wählbare Konten führen.
                 String label = displayName(id, name, accountNameCount, takenLabels);

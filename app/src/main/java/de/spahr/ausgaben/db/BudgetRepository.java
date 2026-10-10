@@ -59,11 +59,20 @@ class BudgetRepository {
     /** Lädt die Kategorie-Typen (nur auf dem Executor-Thread aufrufen). */
     private java.util.Map<String, Boolean> loadTypeMap() {
         java.util.Map<String, Boolean> map = new java.util.HashMap<>();
+        java.util.Set<String> beide = new java.util.HashSet<>();
         for (CategoryType t : categoryTypeDao.getAll()) {
-            if (t.category != null && !t.category.isEmpty()) {
-                map.put(t.category, t.isIncome);
+            if (t.category == null || t.category.isEmpty()) {
+                continue;
+            }
+            Boolean vorher = map.put(t.category, t.isIncome);
+            if (vorher != null && vorher != t.isIncome) {
+                beide.add(t.category);
             }
         }
+        // Ein Name, den es im Einnahme- und im Ausgabebaum gibt, sagt allein nichts über die Seite.
+        // Wer hier nachschlägt, tut das für Zeilen ohne eigene Seite und fällt dann auf seine
+        // Richtung zurück – besser als eine der beiden zu würfeln.
+        map.keySet().removeAll(beide);
         return map;
     }
 

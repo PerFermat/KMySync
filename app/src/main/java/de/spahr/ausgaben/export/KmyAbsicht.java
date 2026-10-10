@@ -27,11 +27,56 @@ final class KmyAbsicht {
 
         String categoryId(String pathOrName);
 
+        /**
+         * Dasselbe mit der Seite, auf der die Kategorie liegen soll ({@code null} = unbekannt) – für
+         * Namen, die es im Einnahme- und im Ausgabebaum gibt.
+         */
+        default String categoryId(String pathOrName, Boolean einnahme) {
+            return categoryId(pathOrName);
+        }
+
         /** Konto des Wertpapiers unterhalb des Depots; {@code null}, wenn es dort keines gibt. */
         String wertpapierKontoId(String depot, String securityKmyId);
     }
 
     private KmyAbsicht() {
+    }
+
+    // ---- Auf welcher Seite die Kategorie gesucht wird ----
+    // Der Exporter fragt mit denselben Funktionen: Ansage und geschriebene Transaktion müssen bei
+    // einem Namen, den es in beiden Bäumen gibt, dasselbe Konto meinen.
+
+    /** Die Seite der Kategorie einer Buchung; ohne Angabe die Richtung der Buchung. */
+    static boolean seiteVon(Booking b) {
+        return b.categoryIsIncome != null ? b.categoryIsIncome : b.isIncome;
+    }
+
+    /** Die Seite eines Teils einer Splitbuchung; ohne Angabe die Richtung der Buchung. */
+    static boolean seiteVon(Booking b, BookingSplit t) {
+        return t.categoryIsIncome != null ? t.categoryIsIncome : b.isIncome;
+    }
+
+    /**
+     * Die Seite einer Kategoriezeile einer Depotbewegung: die gespeicherte. Fehlt sie – eine Zeile,
+     * die am Nachtragen vorbeikam –, bleibt die Rolle der Zeile: Ein Ertrag in Laufrichtung kommt aus
+     * einer Einnahmekategorie, alles andere – Steuer, Gebühr, der Abzug innerhalb eines Ertrags – geht
+     * auf eine Ausgabekategorie.
+     */
+    static boolean seiteVon(SecurityTxSplit z) {
+        return z.categorySide();
+    }
+
+    /** Wie {@link #seiten(KmyAenderungen.Absicht, Booking, List, Konten)}, für eine Depotbewegung. */
+    static void seiten(KmyAenderungen.Absicht ziel, SecurityTx tx, Konten konten) {
+        if (tx.parts == null) {
+            return;
+        }
+        for (SecurityTxSplit z : tx.parts) {
+            String name = z.category == null ? "" : z.category.trim();
+            if (!name.isEmpty()) {
+                seite(ziel, konten.categoryId(name, seiteVon(z)), z.categoryIsIncome);
+            }
+        }
     }
 
     private static void buche(Map<String, KmyBruch> soll, String kontoId, long cent) {
@@ -67,7 +112,8 @@ final class KmyAbsicht {
         buche(soll, konto, betrag);
         if (teile != null && teile.size() >= 2) {
             for (BookingSplit t : teile) {
-                String kategorie = konten.categoryId(t.category == null ? "" : t.category.trim());
+                String kategorie = konten.categoryId(t.category == null ? "" : t.category.trim(),
+                        seiteVon(b, t));
                 if (kategorie == null) {
                     return null;
                 }
@@ -77,7 +123,7 @@ final class KmyAbsicht {
         }
         String name = b.category == null ? "" : b.category.trim();
         if (!name.isEmpty()) {
-            String kategorie = konten.categoryId(name);
+            String kategorie = konten.categoryId(name, seiteVon(b));
             if (kategorie == null) {
                 return null;
             }
@@ -99,14 +145,14 @@ final class KmyAbsicht {
         }
         if (teile != null && teile.size() >= 2) {
             for (BookingSplit t : teile) {
-                seite(ziel, konten.categoryId(t.category == null ? "" : t.category.trim()),
-                        t.categoryIsIncome);
+                seite(ziel, konten.categoryId(t.category == null ? "" : t.category.trim(),
+                        seiteVon(b, t)), t.categoryIsIncome);
             }
             return;
         }
         String name = b.category == null ? "" : b.category.trim();
         if (!name.isEmpty()) {
-            seite(ziel, konten.categoryId(name), b.categoryIsIncome);
+            seite(ziel, konten.categoryId(name, seiteVon(b)), b.categoryIsIncome);
         }
     }
 
@@ -162,7 +208,8 @@ final class KmyAbsicht {
         long rest = summe;
         for (int i = 0; i < zeilen.size(); i++) {
             String name = zeilen.get(i).category.trim();
-            String kategorie = name.isEmpty() ? null : konten.categoryId(name);
+            String kategorie = name.isEmpty() ? null
+                    : konten.categoryId(name, seiteVon(zeilen.get(i)));
             if (kategorie == null) {
                 return false;
             }

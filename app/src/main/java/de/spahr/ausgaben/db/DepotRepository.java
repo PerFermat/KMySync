@@ -424,7 +424,7 @@ class DepotRepository {
                 continue;
             }
             target.parts.add(new SecurityTxSplit(0, part.income, part.category, 0,
-                    part.label, part.sort));
+                    part.label, part.sort, part.categoryIsIncome));
         }
     }
 

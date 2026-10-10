@@ -492,6 +492,7 @@ class MainImportFlow {
         try {
             CsvImporter importer = new CsvImporter(activity);
             List<Booking> bookings = importer.parse(content);
+            repository.resolveCsvSides(bookings);
             String account = importer.getParsedAccount();
             Ui.post(activity, () -> {
                 if (activity.isFinishing() || activity.isDestroyed()) {

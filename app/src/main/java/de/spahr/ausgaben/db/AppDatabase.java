@@ -17,7 +17,7 @@ import de.spahr.ausgaben.settings.ProfileManager;
         AnalysisExtra.class, SecurityTxValueOverride.class, KmyPendingDelete.class, SecurityPrice.class,
         ScheduledAdvance.class, AccountGroup.class, AccountGroupMember.class, AccountKindOrder.class,
         Tag.class, SecurityTxSplit.class},
-        version = 55, exportSchema = true)
+        version = 56, exportSchema = true)
 public abstract class AppDatabase extends RoomDatabase {
 
     /** v1 → v2: Notiz-Spalte ergänzen (bestehende Buchungen bleiben erhalten). */
@@ -758,6 +758,28 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    /**
+     * v55 → v56: Die Seite einer Kategorie (Einnahme/Ausgabe) überall dort, wo eine Kategorie steht.
+     * Die Typtabelle bekommt Pfad <b>und</b> Seite als Schlüssel – bisher verdrängte bei gleichem Pfad
+     * in beiden Bäumen der eine Eintrag den anderen. Planungen, ihre Teile und die Kategoriezeilen der
+     * Depotbewegungen bekommen die Spalte; gefüllt wird sie beim nächsten Einlesen bzw. einmalig von
+     * {@link CategorySideDao#fillMissing}.
+     */
+    static final Migration MIGRATION_55_56 = new Migration(55, 56) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("CREATE TABLE category_type_neu (category TEXT NOT NULL, "
+                    + "is_income INTEGER NOT NULL, PRIMARY KEY(category, is_income))");
+            db.execSQL("INSERT INTO category_type_neu (category, is_income) "
+                    + "SELECT category, is_income FROM category_type");
+            db.execSQL("DROP TABLE category_type");
+            db.execSQL("ALTER TABLE category_type_neu RENAME TO category_type");
+            db.execSQL("ALTER TABLE scheduled_transaction ADD COLUMN counterparty_is_income INTEGER");
+            db.execSQL("ALTER TABLE scheduled_split ADD COLUMN category_is_income INTEGER");
+            db.execSQL("ALTER TABLE security_tx_split ADD COLUMN category_is_income INTEGER");
+        }
+    };
+
     public abstract BookingDao bookingDao();
 
     public abstract AccountDao accountDao();
@@ -779,6 +801,8 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract BudgetDao budgetDao();
 
     public abstract CategoryTypeDao categoryTypeDao();
+
+    public abstract CategorySideDao categorySideDao();
 
     public abstract ScheduledTransactionDao scheduledTransactionDao();
 
@@ -827,7 +851,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                 MIGRATION_44_45, MIGRATION_45_46, MIGRATION_46_47,
                                 MIGRATION_47_48, MIGRATION_48_49, MIGRATION_49_50,
                                 MIGRATION_50_51, MIGRATION_51_52, MIGRATION_52_53,
-                                MIGRATION_53_54, MIGRATION_54_55)
+                                MIGRATION_53_54, MIGRATION_54_55, MIGRATION_55_56)
                         .build();
             }
             return instance;

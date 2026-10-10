@@ -46,6 +46,25 @@ public class DividendMoneyBookingTest {
                 b.parts.get(0).amountCents + b.parts.get(1).amountCents);
     }
 
+    /**
+     * Die Seite der Kategorie ist nicht die Rolle der Zeile: Steht die Kapitalertragsteuer als Abzug
+     * im Ertragsteil, bleibt sie eine Ausgabekategorie – und eine gespeicherte Seite geht vor.
+     */
+    @Test
+    public void abzugImErtragIstAusgabe_gespeicherteSeiteGehtVor() {
+        SecurityTx tx = dividende();
+        tx.parts.add(new SecurityTxSplit(0, true, "Zinsen:Dividende", 10_000L, "", 0));
+        tx.parts.add(new SecurityTxSplit(0, true, "Steuern:Kapitalertragssteuer", -2_000L, "", 1));
+        tx.parts.add(new SecurityTxSplit(0, false, "Versicherung:Krankenzusatz", 500L, "", 2,
+                Boolean.TRUE));
+
+        Booking b = tx.toMoneyBooking(7_500L);
+
+        assertEquals(Boolean.TRUE, b.parts.get(0).categoryIsIncome);
+        assertEquals(Boolean.FALSE, b.parts.get(1).categoryIsIncome);
+        assertEquals(Boolean.TRUE, b.parts.get(2).categoryIsIncome);
+    }
+
     /** Eine einzige Kategorie ist keine Splitbuchung. */
     @Test
     public void dividendeOhneSteuerIstEinfacheEinnahme() {

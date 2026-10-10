@@ -27,7 +27,18 @@ public class ScheduledSplit {
     @ColumnInfo(name = "amount_cents")
     public long amountCents;
 
+    /** Die Seite von {@link #category}; siehe {@link Booking#categoryIsIncome}. */
+    @ColumnInfo(name = "category_is_income")
+    public Boolean categoryIsIncome;
+
     public ScheduledSplit() {
+    }
+
+    @Ignore
+    public ScheduledSplit(long scheduledId, @NonNull String category, long amountCents,
+                          Boolean categoryIsIncome) {
+        this(scheduledId, category, amountCents);
+        this.categoryIsIncome = categoryIsIncome;
     }
 
     @Ignore

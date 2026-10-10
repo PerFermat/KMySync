@@ -1056,7 +1056,7 @@ public class BookingEditActivity extends LocalizedActivity {
                 b.parts = new ArrayList<>();
                 if (parts != null) {
                     for (de.spahr.ausgaben.db.ScheduledSplit p : parts) {
-                        b.parts.add(new BookingSplit(0, p.category, p.amountCents));
+                        b.parts.add(new BookingSplit(0, p.category, p.amountCents, p.categoryIsIncome));
                     }
                 }
                 bind.run();
@@ -1090,6 +1090,9 @@ public class BookingEditActivity extends LocalizedActivity {
             b.category = "";
         } else {
             b.category = st.counterparty;
+            // Die Planung trägt die Seite ihrer Kategorie aus der Datei; ohne sie (Altbestand vor
+            // dem nächsten Einlesen) schlägt die Maske wie bisher in der Auswahlliste nach.
+            b.categoryIsIncome = st.counterparty.isEmpty() ? null : st.counterpartyIsIncome;
         }
         return b;
     }
@@ -2087,6 +2090,9 @@ public class BookingEditActivity extends LocalizedActivity {
         b.putString("payee", booking.payee);
         b.putString("account", booking.account);
         b.putString("category", booking.category);
+        // Mit der Kategorie ihre Seite (−1 = unbekannt): Die wiederhergestellte Buchung soll auf
+        // derselben Kategorie liegen wie die gelöschte, auch wenn es den Namen zweimal gibt.
+        b.putInt("categorySide", booking.categoryIsIncome == null ? -1 : booking.categoryIsIncome ? 1 : 0);
         b.putString("note", booking.note);
         b.putLong("amount", booking.amountCents);
         b.putBoolean("income", booking.isIncome);
@@ -2105,12 +2111,16 @@ public class BookingEditActivity extends LocalizedActivity {
         if (parts.size() >= 2) {
             ArrayList<String> cats = new ArrayList<>();
             long[] amounts = new long[parts.size()];
+            int[] sides = new int[parts.size()];
             for (int i = 0; i < parts.size(); i++) {
                 cats.add(parts.get(i).category);
                 amounts[i] = parts.get(i).cents;
+                Boolean seite = seiteVon(parts.get(i));
+                sides[i] = seite == null ? -1 : seite ? 1 : 0;
             }
             b.putStringArrayList("splitCats", cats);
             b.putLongArray("splitAmounts", amounts);
+            b.putIntArray("splitSides", sides);
         }
         return b;
     }

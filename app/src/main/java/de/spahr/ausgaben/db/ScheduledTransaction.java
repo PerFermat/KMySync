@@ -83,6 +83,14 @@ public class ScheduledTransaction {
     @ColumnInfo(name = "tags", defaultValue = "")
     public String tags = "";
 
+    /**
+     * Die Seite der Kategorie in {@link #counterparty} ({@code true} = Einnahme-, {@code false} =
+     * Ausgabekategorie), wie sie in der Datei steht; {@code null} bei Umbuchungen und solange sie
+     * nicht ermittelt ist. Siehe {@link Booking#categoryIsIncome}.
+     */
+    @ColumnInfo(name = "counterparty_is_income")
+    public Boolean counterpartyIsIncome;
+
     /** Nur beim Import gefüllt (nicht persistiert) – wird in {@code scheduled_split} geschrieben. */
     @Ignore
     public java.util.List<ScheduledSplit> splitParts;

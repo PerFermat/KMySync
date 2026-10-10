@@ -927,7 +927,7 @@ public class KmyExporter {
         String cat = b.category == null ? "" : b.category.trim();
         String categoryId = null;
         if (!cat.isEmpty()) {
-            categoryId = doc.categoryId(cat);
+            categoryId = doc.categoryId(cat, KmyAbsicht.seiteVon(b));
             if (categoryId == null) {
                 result.skipped.add(label(b) + ": "
                         + ctx.getString(de.spahr.ausgaben.R.string.skip_category_not_found, cat));
@@ -1027,7 +1027,9 @@ public class KmyExporter {
             String txId = String.format(Locale.US, "T%018d", nextTx++);
             fragments.append(transactionElement(txId, dateFor(tx.date), today, "",
                     commodityOf(tx.moneyAccount), splits));
-            result.aenderungen.neu(txId).soll = KmyAbsicht.fuerBewegung(tx, doc);
+            KmyAenderungen.Absicht absicht = result.aenderungen.neu(txId);
+            absicht.soll = KmyAbsicht.fuerBewegung(tx, doc);
+            KmyAbsicht.seiten(absicht, tx, doc);
             written++;
             result.writtenIds.add(tx.id);
         }
@@ -1137,7 +1139,8 @@ public class KmyExporter {
         long rest = total;
         for (int i = 0; i < parts.size(); i++) {
             String category = parts.get(i).category.trim();
-            String categoryId = category.isEmpty() ? null : doc.categoryId(category);
+            String categoryId = category.isEmpty() ? null
+                    : doc.categoryId(category, KmyAbsicht.seiteVon(parts.get(i)));
             if (categoryId == null) {
                 result.skipped.add(label + ": " + ctx.getString(
                         de.spahr.ausgaben.R.string.skip_category_not_found, category));
@@ -1279,7 +1282,7 @@ public class KmyExporter {
         int idx = 2;
         for (BookingSplit p : parts) {
             String cat = p.category == null ? "" : p.category.trim();
-            String categoryId = doc.categoryId(cat);
+            String categoryId = doc.categoryId(cat, KmyAbsicht.seiteVon(b, p));
             if (categoryId == null) {
                 result.skipped.add(label(b) + ": "
                         + ctx.getString(de.spahr.ausgaben.R.string.skip_category_not_found, cat));

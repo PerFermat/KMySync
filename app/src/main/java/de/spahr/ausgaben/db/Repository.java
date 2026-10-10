@@ -36,6 +36,7 @@ public class Repository {
     private final SecurityDao securityDao;
     private final BudgetDao budgetDao;
     private final CategoryTypeDao categoryTypeDao;
+    private final CategorySideDao categorySideDao;
     private final ScheduledTransactionDao scheduledTransactionDao;
     private final ScheduledSplitDao scheduledSplitDao;
     private final AnalysisExtraDao analysisExtraDao;
@@ -69,6 +70,7 @@ public class Repository {
         this.securityDao = db.securityDao();
         this.budgetDao = db.budgetDao();
         this.categoryTypeDao = db.categoryTypeDao();
+        this.categorySideDao = db.categorySideDao();
         this.scheduledTransactionDao = db.scheduledTransactionDao();
         this.scheduledSplitDao = db.scheduledSplitDao();
         this.analysisExtraDao = db.analysisExtraDao();
@@ -174,17 +176,46 @@ public class Repository {
      * Übernimmt beim .kmy-Import den Typ <b>aller</b> Kategorien der Datei (Pfad → Einnahme/Ausgabe).
      * Verlässliche, einzige Typ-Quelle für die Budget-Einordnung. Reines Upsert (mergt, löscht nichts).
      */
-    public void applyCategoryTypes(final java.util.Map<String, Boolean> types) {
+    public void applyCategoryTypes(final List<CategoryType> types) {
         if (types == null || types.isEmpty()) {
             return;
         }
         executor.execute(() -> {
-            for (java.util.Map.Entry<String, Boolean> e : types.entrySet()) {
-                if (e.getKey() != null && !e.getKey().trim().isEmpty() && e.getValue() != null) {
-                    categoryTypeDao.upsert(new CategoryType(e.getKey().trim(), e.getValue()));
+            for (CategoryType t : types) {
+                if (t.category != null && !t.category.trim().isEmpty()) {
+                    categoryTypeDao.upsert(new CategoryType(t.category.trim(), t.isIncome));
                 }
             }
+            // Jetzt ist bekannt, welche Namen es auf welcher Seite gibt: Zeilen, die ihre Kategorie
+            // noch ohne Seite führen, bekommen sie – einmal, danach bleibt sie stehen.
+            categorySideDao.fillMissing();
         });
+    }
+
+    /**
+     * Für Buchungen aus einer CSV-Datei, die die Seite ihrer Kategorie nicht nennt: Kennt die
+     * Typtabelle den Namen auf genau einer Seite, gilt diese; sonst bleibt, was der Import aus dem
+     * Vorzeichen geschlossen hat. Nicht vom Main-Thread.
+     */
+    public void resolveCsvSides(List<Booking> bookings) {
+        java.util.Map<String, Boolean> bekannt = new java.util.HashMap<>();
+        for (Booking b : bookings) {
+            if (b.category == null || b.category.isEmpty()) {
+                continue;
+            }
+            if (!bekannt.containsKey(b.category)) {
+                bekannt.put(b.category, categoryTypeDao.isIncome(b.category));
+            }
+            Boolean seite = bekannt.get(b.category);
+            if (seite != null) {
+                b.categoryIsIncome = seite;
+            }
+        }
+    }
+
+    /** Für den Export, der die Seiten vollständig braucht, bevor er liest. Nicht vom Main-Thread. */
+    public CategorySideDao categorySideDao() {
+        return categorySideDao;
     }
 
     /**

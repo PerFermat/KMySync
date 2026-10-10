@@ -11,7 +11,7 @@ import java.util.List;
 @Dao
 public interface CategoryTypeDao {
 
-    /** Setzt/aktualisiert den Typ einer Kategorie (Pfad = Primärschlüssel). */
+    /** Trägt eine Kategorie mit ihrer Seite ein (Pfad und Seite = Primärschlüssel). */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void upsert(CategoryType type);
 
@@ -19,11 +19,12 @@ public interface CategoryTypeDao {
     List<CategoryType> getAll();
 
     /**
-     * Typ einer Kategorie nach ihrem Namen ({@code null} = unbekannt). Nur der Rückfall für Stellen,
-     * die eine Kategorie ohne ihre Seite gespeichert haben (alte Aliase, alte Kassensturz-Vorgabe):
-     * je Name gibt es hier nur einen Eintrag, bei gleichem Namen in beiden Bäumen also nur einen der
-     * beiden.
+     * Die Seite einer Kategorie nach ihrem Namen – aber nur, wenn sie daraus eindeutig hervorgeht:
+     * {@code null} heißt „unbekannt" <b>oder</b> „es gibt den Namen im Einnahme- und im Ausgabebaum".
+     * Der Rückfall für Stellen, die eine Kategorie ohne ihre Seite bekommen; wer die Seite kennt,
+     * fragt hier nicht.
      */
-    @Query("SELECT is_income FROM category_type WHERE category = :category COLLATE NOCASE LIMIT 1")
+    @Query("SELECT CASE WHEN COUNT(DISTINCT is_income) = 1 THEN MAX(is_income) END "
+            + "FROM category_type WHERE category = :category COLLATE NOCASE")
     Boolean isIncome(String category);
 }

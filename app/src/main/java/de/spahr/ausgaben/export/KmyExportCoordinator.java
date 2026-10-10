@@ -146,6 +146,10 @@ public class KmyExportCoordinator {
         String folder = RemotePath.folderOf(path);
         String file = RemotePath.fileOf(path);
 
+        // Keine Buchung geht ohne die Seite ihrer Kategorie hinaus: Was sie aus alter Zeit noch nicht
+        // trägt, bekommt sie jetzt – einmal, und gespeichert.
+        repository.categorySideDao().fillMissing();
+
         List<Booking> bookings = repository.bookingDao().getUnexported();
         // Nach dem Export geänderte Buchungen: ihre Transaktion wird in der Datei geändert, nicht neu
         // angelegt (siehe KmyExporter.build).
