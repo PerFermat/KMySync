@@ -224,4 +224,97 @@ public class KmySqliteVergleichTest {
         }
         return out;
     }
+
+    private static byte[] echteDatenbank() throws Exception {
+        String pfad = System.getProperty("kmy.sqlite");
+        Assume.assumeTrue("ohne -Dkmy.sqlite übersprungen", pfad != null && !pfad.isEmpty());
+        File sqlite = new File(pfad);
+        Assume.assumeTrue(sqlite + " fehlt", sqlite.isFile());
+        return Files.readAllBytes(sqlite.toPath());
+    }
+
+    /**
+     * Die Annahme hinter dem Nachziehen der Kontosalden, an KMyMoneys eigenen Zahlen gemessen: In
+     * einer von KMyMoney gespeicherten Datenbank ist {@code balance} jedes Kontos die Summe der
+     * {@code shares} seiner Buchungs-Splits, und {@code transactionCount} die Zahl seiner Buchungen.
+     */
+    @Test
+    public void kontosaldenFolgenDenSplits() throws Exception {
+        byte[] roh = echteDatenbank();
+        String konten = KmyTestDb.frage(ctx, roh,
+                "SELECT id, balance, transactionCount FROM kmmAccounts ORDER BY id");
+        Map<String, KmyBruch> summe = new TreeMap<>();
+        for (String zeile : KmyTestDb.frage(ctx, roh,
+                "SELECT accountId, shares FROM kmmSplits WHERE txType = 'N'").split("\n")) {
+            String[] t = zeile.split("\\|");
+            KmyBruch bisher = summe.get(t[0]);
+            summe.put(t[0], (bisher == null ? KmyBruch.NULL : bisher).plus(KmyBruch.lesen(t[1])));
+        }
+        List<String> falsch = new ArrayList<>();
+        int geprueft = 0;
+        for (String zeile : konten.split("\n")) {
+            String[] t = zeile.split("\\|");
+            KmyBruch soll = summe.get(t[0]) == null ? KmyBruch.NULL : summe.get(t[0]);
+            if ("∅".equals(t[1])) {
+                continue;
+            }
+            geprueft++;
+            if (!soll.equals(KmyBruch.lesen(t[1]))) {
+                falsch.add(t[0] + ": Datenbank " + t[1] + ", Splits " + soll);
+            }
+        }
+        assertTrue("nur " + geprueft + " Konten geprüft", geprueft > 50);
+        assertEquals("Konten, deren Saldo nicht die Summe ihrer Splits ist", "[]",
+                falsch.subList(0, Math.min(6, falsch.size())).toString() );
+    }
+
+    /**
+     * In eine Kopie der echten Datenbank schreiben: neue Buchung mit neuem Empfänger. Die Gegenprobe
+     * muss auch bei 8000 Buchungen aufgehen, und außer den angesagten Zeilen bleibt jede Tabelle gleich.
+     */
+    @Test
+    public void schreibenInDieEchteDatenbank() throws Exception {
+        byte[] roh = echteDatenbank();
+        KmyDocument d = new KmyDocument(roh, ctx);
+        String konto = sortiert(d.accountNames()).get(0);
+        Booking b = new Booking();
+        b.id = 1;
+        b.account = konto;
+        b.payee = "KMySync-Probe";
+        b.amountCents = 1240;
+        b.note = "erste\nzweite Zeile";
+        b.createdAt = KmyDocument.parseKmyDate("2026-10-01");
+        KmyExporter.Result r = new KmyExporter(d, ctx).build(Collections.singletonList(b),
+                Collections.emptyList(), new java.util.HashMap<>());
+        assertEquals(Collections.emptyList(), r.skipped);
+        KmyExportCheck.pruefen(d.xml(), r.xml, KmyDocument.gzip(r.xml), r.aenderungen);
+
+        byte[] neu = KmySqliteWriter.schreibe(ctx, roh, r.xml, r.aenderungen);
+        assertEquals(r.xml, KmyDocument.alsXml(ctx, neu));
+
+        String neueId = null;
+        for (KmyAenderungen.Absicht ab : r.aenderungen.transaktionen()) {
+            neueId = ab.txId;
+        }
+        for (String tabelle : new String[]{"kmmInstitutions", "kmmTags", "kmmSchedules", "kmmSecurities",
+                "kmmCurrencies", "kmmPrices", "kmmBudgetConfig", "kmmKeyValuePairs", "kmmTagSplits",
+                "kmmReportConfig", "kmmSchedulePaymentHistory", "kmmCostCenter", "kmmOnlineJobs"}) {
+            String alle = "SELECT * FROM " + tabelle;
+            assertTrue(tabelle + " verändert",
+                    KmyTestDb.frage(ctx, roh, alle).equals(KmyTestDb.frage(ctx, neu, alle)));
+        }
+        String andereSplits = "SELECT * FROM kmmSplits WHERE transactionId != '" + neueId + "'";
+        assertTrue("fremde Splits verändert",
+                KmyTestDb.frage(ctx, roh, andereSplits).equals(KmyTestDb.frage(ctx, neu, andereSplits)));
+        String andereBuchungen = "SELECT * FROM kmmTransactions WHERE id != '" + neueId + "'";
+        assertTrue("fremde Transaktionen verändert", KmyTestDb.frage(ctx, roh, andereBuchungen)
+                .equals(KmyTestDb.frage(ctx, neu, andereBuchungen)));
+        String andereKonten = "SELECT * FROM kmmAccounts WHERE id != '" + d.accountId(konto) + "'";
+        assertTrue("fremde Konten verändert",
+                KmyTestDb.frage(ctx, roh, andereKonten).equals(KmyTestDb.frage(ctx, neu, andereKonten)));
+        assertEquals("8374|17940|8375", KmyTestDb.frage(ctx, neu,
+                "SELECT transactions, splits, hiTransactionId FROM kmmFileInfo"));
+        assertEquals("erste\nzweite Zeile", KmyTestDb.frage(ctx, neu,
+                "SELECT memo FROM kmmSplits WHERE transactionId = '" + neueId + "'"));
+    }
 }

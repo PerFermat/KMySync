@@ -53,6 +53,34 @@ final class KmyTestDb {
         return roh;
     }
 
+    /**
+     * Fragt die Datenbank in {@code roh} ab: je Zeile die Spalten mit „|" getrennt, die Zeilen mit
+     * Zeilenumbruch – wie die Ausgabe von {@code sqlite3}. {@code NULL} steht als „∅" da.
+     */
+    static String frage(Context ctx, byte[] roh, String sql) throws Exception {
+        File f = KmySqlite.zwischendatei(ctx, roh);
+        try {
+            SQLiteDatabase db = SQLiteDatabase.openDatabase(f.getPath(), null,
+                    SQLiteDatabase.OPEN_READONLY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
+            try (android.database.Cursor c = db.rawQuery(sql, null)) {
+                StringBuilder sb = new StringBuilder();
+                while (c.moveToNext()) {
+                    if (sb.length() > 0) {
+                        sb.append('\n');
+                    }
+                    for (int i = 0; i < c.getColumnCount(); i++) {
+                        sb.append(i == 0 ? "" : "|").append(c.isNull(i) ? "∅" : c.getString(i));
+                    }
+                }
+                return sb.toString();
+            } finally {
+                db.close();
+            }
+        } finally {
+            KmySqlite.entfernen(f);
+        }
+    }
+
     private static String a(XmlPullParser p, String name) {
         String v = p.getAttributeValue(null, name);
         return v == null ? "" : v;

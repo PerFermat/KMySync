@@ -75,6 +75,21 @@ public final class KmyBruch {
         return new KmyBruch(zaehler.negate(), nenner);
     }
 
+    /**
+     * Der Wert als Dezimalzahl mit Punkt. {@code stellen >= 0}: genau so viele Nachkommastellen,
+     * kaufmännisch gerundet. {@code stellen < 0}: so viele wie nötig, höchstens 20, ohne Nullen am
+     * Ende – so füllt KMyMoney die „…Formatted"-Spalten seiner Datenbank.
+     */
+    public String dezimal(int stellen) {
+        BigDecimal z = new BigDecimal(zaehler);
+        BigDecimal n = new BigDecimal(nenner);
+        if (stellen >= 0) {
+            return z.divide(n, stellen, java.math.RoundingMode.HALF_UP).toPlainString();
+        }
+        BigDecimal d = z.divide(n, 20, java.math.RoundingMode.DOWN).stripTrailingZeros();
+        return d.scale() < 0 ? d.setScale(0).toPlainString() : d.toPlainString();
+    }
+
     public boolean istNull() {
         return zaehler.signum() == 0;
     }
