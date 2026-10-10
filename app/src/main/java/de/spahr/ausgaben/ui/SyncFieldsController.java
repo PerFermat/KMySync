@@ -179,7 +179,21 @@ final class SyncFieldsController {
                 RemoteStorage.Entries entries = RemoteStorage.from(serverType, url, user, password)
                         .listEntries(folder, "kmy");
                 List<String> folders = entries.folders;
-                List<String> files = entries.files;
+                List<String> files = new java.util.ArrayList<>(entries.files);
+                // Auch eine KMyMoney-Datenbank (SQLite) kommt als Quelle in Frage. Gelingt das
+                // Nachfragen nicht, bleibt es bei den .kmy-Dateien.
+                for (String endung : new String[]{"sqlite", "db"}) {
+                    try {
+                        for (String f : RemoteStorage.from(serverType, url, user, password)
+                                .listFiles(folder, endung)) {
+                            if (!files.contains(f)) {
+                                files.add(f);
+                            }
+                        }
+                    } catch (Exception ignored) {
+                        // Beiwerk
+                    }
+                }
                 Collections.sort(folders, String.CASE_INSENSITIVE_ORDER);
                 Collections.sort(files, String.CASE_INSENSITIVE_ORDER);
                 imVordergrund(() -> {

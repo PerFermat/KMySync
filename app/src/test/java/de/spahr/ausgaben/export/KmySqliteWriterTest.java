@@ -296,6 +296,27 @@ public class KmySqliteWriterTest {
         }
     }
 
+    /**
+     * Die Datei bleibt, was sie für KMyMoney war: dasselbe Journal-Format im Dateikopf, keine von
+     * Android angelegte Tabelle, dieselben Tabellen und Indizes.
+     */
+    @Test
+    public void dateiformatUndSchemaBleiben() throws Exception {
+        byte[] roh = KmyTestDb.ausFixture(ctx, "edited.xml");
+        KmyDocument d = new KmyDocument(roh, ctx);
+        KmyExporter.Result r = new KmyExporter(d, ctx).build(
+                Collections.singletonList(ausgabe(5, 1240, "Kiosk")), Collections.emptyList(), new HashMap<>());
+        byte[] neu = schreibe(roh, d, r.xml, r.aenderungen);
+
+        assertEquals("Schreibformat im Dateikopf", roh[18], neu[18]);
+        assertEquals("Leseformat im Dateikopf", roh[19], neu[19]);
+        assertEquals(1, neu[18]);
+        String schema = "SELECT type, name, sql FROM sqlite_master ORDER BY type, name";
+        assertEquals(frage(roh, schema), frage(neu, schema));
+        assertEquals("0", frage(neu, "SELECT count(*) FROM sqlite_master WHERE name = 'android_metadata'"));
+        assertEquals(frage(roh, "PRAGMA user_version"), frage(neu, "PRAGMA user_version"));
+    }
+
     @Test
     public void maskierungAufheben() {
         assertEquals("a&b <c> \"d\" 'e'\nf\tg", KmySqliteWriter.klar(

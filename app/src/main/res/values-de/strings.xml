@@ -754,7 +754,11 @@
 
     <!-- Import-/Export-Detailmeldungen -->
     <string name="err_kmy_read">KMyMoney-Datei konnte nicht gelesen werden</string>
-    <string name="err_kmy_not_xml">Das ist keine KMyMoney-XML-Datei. Verschlüsselte (GPG) Dateien und SQL-Ablagen werden nicht unterstützt.</string>
+    <string name="err_kmy_not_xml">Das ist weder eine KMyMoney-XML-Datei noch eine unverschlüsselte KMyMoney-Datenbank. Verschlüsselte Dateien (GPG, SQLCipher) werden nicht unterstützt.</string>
+    <string name="kmy_db_open">KMyMoney hat die Datenbank „%1$s“ gerade geöffnet (%2$s). Bitte dort schließen und erneut übertragen. Es wurde nichts geschrieben. Ist KMyMoney nicht geöffnet, stammt der Eintrag von einem Absturz: die Datenbank einmal in KMyMoney öffnen und schließen räumt ihn ab.</string>
+    <string name="kmy_db_busy">Die Datenbank „%1$s“ steht mitten in einem Schreibvorgang von KMyMoney. Es wurde nichts geschrieben. Bitte einmal in KMyMoney öffnen und schließen, dann erneut übertragen.</string>
+    <string name="kmy_db_version">Die Datenbank hat die Schema-Version „%1$s“; KMySync ist nur mit Version %2$s geprüft. Es wurde nichts geschrieben.</string>
+    <string name="kmy_db_journal">Neben „%1$s“ liegt auf dem Server eine Journal-Datei – jemand schreibt gerade in die Datenbank, oder ein Schreibvorgang ist abgebrochen. Es wurde nichts geschrieben.</string>
     <string name="err_kmy_wrong_encoding">Diese Datei deklariert die Kodierung „%1$s“, die App unterstützt aber nur UTF-8.</string>
     <string name="err_target_not_writable">Zielordner nicht beschreibbar</string>
     <string name="err_file_create">Datei konnte nicht angelegt werden</string>

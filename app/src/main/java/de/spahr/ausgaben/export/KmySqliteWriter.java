@@ -51,6 +51,14 @@ public final class KmySqliteWriter {
             SQLiteDatabase db = SQLiteDatabase.openDatabase(f.getPath(), null,
                     SQLiteDatabase.OPEN_READWRITE | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
             try {
+                // Android öffnet Datenbanken je nach Gerät im WAL-Modus. Der stünde danach im Kopf der
+                // Datei, und KMyMoney legte fortan -wal und -shm neben sie – auf einem
+                // synchronisierten Ordner eine Einladung zu halben Ständen. Also ausdrücklich das
+                // klassische Journal, bevor irgendetwas geschrieben wird.
+                db.disableWriteAheadLogging();
+                try (Cursor c = db.rawQuery("PRAGMA journal_mode=DELETE", null)) {
+                    c.moveToFirst();
+                }
                 db.beginTransaction();
                 try {
                     uebertragen(db, neuXml, aenderungen);
@@ -71,7 +79,13 @@ public final class KmySqliteWriter {
             if (new File(f.getPath() + "-wal").length() > 0 || new File(f.getPath() + "-journal").length() > 0) {
                 throw new KmyExportCheck.Failed("Datenbank nicht sauber geschlossen");
             }
-            return Files.readAllBytes(f.toPath());
+            byte[] neu = Files.readAllBytes(f.toPath());
+            // Bytes 18 und 19 des Dateikopfs nennen das Schreib- und Leseformat (1 = Journal, 2 = WAL).
+            // Sie müssen sein, was sie waren.
+            if (neu.length < 20 || roh.length < 20 || neu[18] != roh[18] || neu[19] != roh[19]) {
+                throw new KmyExportCheck.Failed("Dateiformat der Datenbank hat sich geändert");
+            }
+            return neu;
         } catch (KmyGliederung.Fehler | android.database.SQLException | NumberFormatException e) {
             throw new KmyExportCheck.Failed("Datenbank nicht schreibbar (" + e.getMessage() + ")", e);
         } finally {

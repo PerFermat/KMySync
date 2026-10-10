@@ -81,6 +81,23 @@ final class KmyTestDb {
         }
     }
 
+    /** Führt {@code sql} auf der Datenbank in {@code roh} aus und liefert die geänderte Datenbank. */
+    static byte[] aendere(Context ctx, byte[] roh, String sql) throws Exception {
+        File f = KmySqlite.zwischendatei(ctx, roh);
+        try {
+            SQLiteDatabase db = SQLiteDatabase.openDatabase(f.getPath(), null,
+                    SQLiteDatabase.OPEN_READWRITE | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
+            try {
+                db.execSQL(sql);
+            } finally {
+                db.close();
+            }
+            return Files.readAllBytes(f.toPath());
+        } finally {
+            KmySqlite.entfernen(f);
+        }
+    }
+
     private static String a(XmlPullParser p, String name) {
         String v = p.getAttributeValue(null, name);
         return v == null ? "" : v;

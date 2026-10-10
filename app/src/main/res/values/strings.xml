@@ -782,7 +782,11 @@
 
     <!-- Import/export detail messages -->
     <string name="err_kmy_read">KMyMoney file could not be read</string>
-    <string name="err_kmy_not_xml">This is not a KMyMoney XML file. Encrypted (GPG) files and SQL storage are not supported.</string>
+    <string name="err_kmy_not_xml">This is neither a KMyMoney XML file nor an unencrypted KMyMoney database. Encrypted files (GPG, SQLCipher) are not supported.</string>
+    <string name="kmy_db_open">KMyMoney currently has the database “%1$s” open (%2$s). Please close it there and transfer again. Nothing was written. If KMyMoney is not open, the entry is left over from a crash: opening and closing the database once in KMyMoney clears it.</string>
+    <string name="kmy_db_busy">The database “%1$s” is in the middle of a write by KMyMoney. Nothing was written. Please open and close it once in KMyMoney, then transfer again.</string>
+    <string name="kmy_db_version">The database has schema version “%1$s”; KMySync is tested with version %2$s only. Nothing was written.</string>
+    <string name="kmy_db_journal">Next to “%1$s” there is a journal file on the server – someone is writing to the database or a write was interrupted. Nothing was written.</string>
     <string name="err_kmy_wrong_encoding">This file declares the encoding \"%1$s\", but the app only supports UTF-8.</string>
     <string name="err_target_not_writable">Target folder not writable</string>
     <string name="err_file_create">File could not be created</string>

@@ -753,7 +753,11 @@
 
     <!-- Mensajes detallados de importación/exportación -->
     <string name="err_kmy_read">No se pudo leer el archivo KMyMoney</string>
-    <string name="err_kmy_not_xml">Este no es un archivo XML de KMyMoney. No se admiten archivos cifrados (GPG) ni almacenamiento SQL.</string>
+    <string name="err_kmy_not_xml">No es un archivo XML de KMyMoney ni una base de datos de KMyMoney sin cifrar. No se admiten archivos cifrados (GPG, SQLCipher).</string>
+    <string name="kmy_db_open">KMyMoney tiene abierta la base de datos «%1$s» (%2$s). Ciérrala allí y vuelve a transferir. No se ha escrito nada. Si KMyMoney no está abierto, la marca procede de un cierre inesperado: abrir y cerrar la base de datos una vez en KMyMoney la elimina.</string>
+    <string name="kmy_db_busy">La base de datos «%1$s» está en mitad de una escritura de KMyMoney. No se ha escrito nada. Ábrela y ciérrala una vez en KMyMoney y vuelve a transferir.</string>
+    <string name="kmy_db_version">La base de datos tiene la versión de esquema «%1$s»; KMySync solo está probado con la versión %2$s. No se ha escrito nada.</string>
+    <string name="kmy_db_journal">Junto a «%1$s» hay un archivo de diario en el servidor: alguien está escribiendo en la base de datos o una escritura se interrumpió. No se ha escrito nada.</string>
     <string name="err_kmy_wrong_encoding">Este archivo declara la codificación «%1$s», pero la app solo admite UTF-8.</string>
     <string name="err_target_not_writable">La carpeta de destino no se puede escribir</string>
     <string name="err_file_create">No se pudo crear el archivo</string>

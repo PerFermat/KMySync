@@ -171,6 +171,12 @@ public class KmyExportCoordinator {
 
             fortschritt.melde(r.getString(de.spahr.ausgaben.R.string.kmy_progress_processing), 20);
             KmyDocument doc = new KmyDocument(raw, appContext);
+            // Eine KMyMoney-Datenbank trägt ihren Zustand in sich: Ist sie in KMyMoney geöffnet, mitten
+            // in einem Schreibvorgang oder von einer anderen Schema-Version, wird nicht geschrieben.
+            String hindernis = datenbankHindernis(r, doc, file);
+            if (hindernis != null) {
+                return Outcome.failed(hindernis);
+            }
             // Der Export liest die Datei ohnehin – dabei bleibt die Stichwortliste frisch, auch für
             // Nutzer, die nie zurückimportieren.
             repository.replaceTags(doc.tagNames());
@@ -214,10 +220,18 @@ public class KmyExportCoordinator {
             // Die neue Fassung einmal ganz durchlesen und gegen die alte halten, bevor irgendetwas
             // den Server erreicht. Gepackt wird schon hier, damit genau die Bytes geprüft sind,
             // die nachher hochgehen.
+            KmyAenderungen aenderungen = KmyAenderungen.zusammen(
+                    res.aenderungen, delRes.aenderungen, schedRes.aenderungen, secRes.aenderungen);
             byte[] packed = KmyDocument.gzip(res.xml);
-            KmyExportCheck.pruefen(doc.xml(), res.xml, packed, KmyAenderungen.zusammen(
-                    res.aenderungen, delRes.aenderungen, schedRes.aenderungen,
-                    secRes.aenderungen));
+            KmyExportCheck.pruefen(doc.xml(), res.xml, packed, aenderungen);
+            if (doc.istDatenbank()) {
+                // Die geprüften Änderungen in die Tabellen übertragen. Hochgeladen wird die Datenbank,
+                // nicht das XML – und nur, wenn sie abgebildet genau die geprüfte Fassung ergibt.
+                packed = KmySqliteWriter.schreibe(appContext, raw, res.xml, aenderungen);
+                if (KmyLock.hasJournal(storage, folder, file)) {
+                    return Outcome.failed(r.getString(de.spahr.ausgaben.R.string.kmy_db_journal, file));
+                }
+            }
 
             // Hat KMyMoney die Datei gerade offen, überschriebe es beim Speichern diesen Export –
             // still, und die App schickte die Buchungen nie wieder. Also gar nicht erst schreiben.
@@ -296,6 +310,27 @@ public class KmyExportCoordinator {
             String msg = e.getMessage() == null ? e.toString() : e.getMessage();
             return Outcome.failed(r.getString(de.spahr.ausgaben.R.string.export_failed, msg));
         }
+    }
+
+    /**
+     * Was dagegen spricht, in diese KMyMoney-Datenbank zu schreiben – als Meldung, oder {@code null}:
+     * nichts, oder die Quelle ist eine .kmy-Datei.
+     */
+    static String datenbankHindernis(Context r, KmyDocument doc, String file) {
+        KmySqlite.Abbild db = doc.datenbank();
+        if (db == null) {
+            return null;
+        }
+        if (!KmySqlite.SCHEMA.equals(db.version)) {
+            return r.getString(de.spahr.ausgaben.R.string.kmy_db_version, db.version, KmySqlite.SCHEMA);
+        }
+        if (db.updateInProgress) {
+            return r.getString(de.spahr.ausgaben.R.string.kmy_db_busy, file);
+        }
+        if (!db.logonUser.isEmpty()) {
+            return r.getString(de.spahr.ausgaben.R.string.kmy_db_open, file, db.logonUser);
+        }
+        return null;
     }
 
     /** Alle Kategorie-Teile (Splitbuchungen) nach Buchungs-ID gruppiert laden. */

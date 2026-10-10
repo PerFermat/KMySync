@@ -186,7 +186,7 @@ public final class KmyExportRun {
     private static String vergleiche(Context app, Context r, KmyExportCoordinator.Outcome o,
                                      byte[] zurueck) {
         try {
-            ExportDiff d = ExportDiff.von(o.oldXml, KmyDocument.gunzip(zurueck));
+            ExportDiff d = ExportDiff.von(o.oldXml, KmyDocument.alsXml(app, zurueck));
             o.oldXml = null;   // mehrere Megabyte, die ab hier niemand mehr braucht
             d.zeit = System.currentTimeMillis();
             d.datei = o.file;

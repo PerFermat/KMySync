@@ -103,6 +103,9 @@ android {
             // KMyMoney-Datenbank für KmySqliteVergleichTest: ./gradlew … -Dkmy.sqlite=/pfad/test.anon.sqlite
             if (System.getProperty('kmy.sqlite')) {
                 it.systemProperty 'kmy.sqlite', System.getProperty('kmy.sqlite')
+                if (System.getProperty('kmy.sqlite.out')) {
+                    it.systemProperty 'kmy.sqlite.out', System.getProperty('kmy.sqlite.out')
+                }
                 it.outputs.upToDateWhen { false }
             }
             // Ohne eigene Grenze erbt der Test-Worker die 2048 MB des Gradle-Daemons

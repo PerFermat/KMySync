@@ -44,4 +44,24 @@ public final class KmyLock {
             return false;
         }
     }
+
+    /**
+     * Liegt unter {@code names} ein Journal zu der Datenbank {@code file}? SQLite legt während eines
+     * Schreibvorgangs {@code -journal} bzw. {@code -wal} neben die Datei. Liegt so etwas auf dem
+     * Server, schreibt dort gerade jemand – oder ein Schreibvorgang ist abgebrochen, und die Datei
+     * allein ist nicht der ganze Stand.
+     */
+    public static boolean hasJournal(List<String> names, String file) {
+        return names != null && file != null
+                && (names.contains(file + "-journal") || names.contains(file + "-wal"));
+    }
+
+    /** Wie {@link #isOpenInKmyMoney}, für das Journal einer Datenbank; nicht auflistbar = frei. */
+    public static boolean hasJournal(RemoteStorage storage, String folder, String file) {
+        try {
+            return hasJournal(storage.listAllFiles(folder), file);
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

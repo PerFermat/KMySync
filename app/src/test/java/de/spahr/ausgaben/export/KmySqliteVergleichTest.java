@@ -291,6 +291,11 @@ public class KmySqliteVergleichTest {
 
         byte[] neu = KmySqliteWriter.schreibe(ctx, roh, r.xml, r.aenderungen);
         assertEquals(r.xml, KmyDocument.alsXml(ctx, neu));
+        // Auf Wunsch ablegen, um die geschriebene Datenbank in KMyMoney zu öffnen (-Dkmy.sqlite.out=…).
+        String ablage = System.getProperty("kmy.sqlite.out");
+        if (ablage != null && !ablage.isEmpty()) {
+            Files.write(new File(ablage).toPath(), neu);
+        }
 
         String neueId = null;
         for (KmyAenderungen.Absicht ab : r.aenderungen.transaktionen()) {
