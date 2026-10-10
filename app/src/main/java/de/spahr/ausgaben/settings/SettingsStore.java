@@ -43,6 +43,7 @@ public class SettingsStore {
     private static final String KEY_NIGHT_MODE = "night_mode";
     private static final String KEY_LOCAL_EXPORT_TREE = "local_export_tree";
     private static final String KEY_EXPORT_MODE = "export_mode";
+    private static final String KEY_KMY_DATABASE = "kmy_database";
     private static final String KEY_PENDING_EXPORT = "pending_export";
     private static final String KEY_KMY_PATH = "kmy_path";
     private static final String KEY_RECEIPT_FOLDER = "receipt_folder";
@@ -466,6 +467,19 @@ public class SettingsStore {
     /** {@link #MODE_CSV} (Standard), {@link #MODE_KMY} oder {@link #MODE_KMY_CSV}. */
     public String getExportMode() {
         return prefs.getString(pk(KEY_EXPORT_MODE), MODE_CSV);
+    }
+
+    /**
+     * Ist als Quelle eine KMyMoney-<b>Datenbank</b> (SQLite) gewählt statt einer .kmy-Datei? Das steuert
+     * nur die Auswahl und die Dateiliste (alle Dateien statt nur „.kmy"); was die Datei wirklich ist,
+     * erkennt die App beim Lesen am Dateikopf.
+     */
+    public boolean isKmyDatabase() {
+        return prefs.getBoolean(pk(KEY_KMY_DATABASE), false);
+    }
+
+    public void setKmyDatabase(boolean database) {
+        prefs.edit().putBoolean(pk(KEY_KMY_DATABASE), database).apply();
     }
 
     public void setExportMode(String exportMode) {

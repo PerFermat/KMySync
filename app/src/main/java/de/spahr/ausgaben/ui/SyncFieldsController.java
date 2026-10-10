@@ -58,6 +58,8 @@ final class SyncFieldsController {
     private final TextInputLayout passwordLayout;
 
     private String selectedServerType = SettingsStore.SERVER_NEXTCLOUD;
+    /** Die Dateiauswahl gilt einer KMyMoney-Datenbank: dann alle Dateien zeigen, nicht nur „.kmy". */
+    private boolean database;
 
     SyncFieldsController(AppCompatActivity activity, SettingsStore settings,
                          SmbWizardController smbWizard) {
@@ -167,7 +169,13 @@ final class SyncFieldsController {
         browseKmyAt(RemotePath.folderOf(Ui.trimmedText(editKmyPath)));
     }
 
+    /** Gilt die Dateiauswahl einer KMyMoney-Datenbank? Siehe {@link ExportFormat}. */
+    void setDatabase(boolean database) {
+        this.database = database;
+    }
+
     private void browseKmyAt(String folder) {
+        final boolean alle = database;
         final String serverType = selectedServerType;
         final String url = Ui.trimmedText(editUrl);
         final String user = Ui.trimmedText(editUser);
@@ -176,23 +184,18 @@ final class SyncFieldsController {
         new Thread(() -> {
             try {
                 // Ordner und Dateien in einem Aufruf: SMB meldet sich sonst zweimal hintereinander an.
-                RemoteStorage.Entries entries = RemoteStorage.from(serverType, url, user, password)
-                        .listEntries(folder, "kmy");
-                List<String> folders = entries.folders;
-                List<String> files = new java.util.ArrayList<>(entries.files);
-                // Auch eine KMyMoney-Datenbank (SQLite) kommt als Quelle in Frage. Gelingt das
-                // Nachfragen nicht, bleibt es bei den .kmy-Dateien.
-                for (String endung : new String[]{"sqlite", "db"}) {
-                    try {
-                        for (String f : RemoteStorage.from(serverType, url, user, password)
-                                .listFiles(folder, endung)) {
-                            if (!files.contains(f)) {
-                                files.add(f);
-                            }
-                        }
-                    } catch (Exception ignored) {
-                        // Beiwerk
-                    }
+                RemoteStorage storage = RemoteStorage.from(serverType, url, user, password);
+                List<String> folders;
+                List<String> files;
+                if (alle) {
+                    // Eine KMyMoney-Datenbank kann heißen, wie sie will – KMyMoney prüft die Endung
+                    // auch nicht. Also den ganzen Ordner zeigen.
+                    folders = storage.listFolders(folder);
+                    files = new java.util.ArrayList<>(storage.listAllFiles(folder));
+                } else {
+                    RemoteStorage.Entries entries = storage.listEntries(folder, "kmy");
+                    folders = entries.folders;
+                    files = entries.files;
                 }
                 Collections.sort(folders, String.CASE_INSENSITIVE_ORDER);
                 Collections.sort(files, String.CASE_INSENSITIVE_ORDER);

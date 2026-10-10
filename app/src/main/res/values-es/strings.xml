@@ -611,13 +611,15 @@
     <string name="kmy_browse">Seleccionar archivo</string>
     <string name="folder_browse">Explorar carpeta</string>
     <string name="folder_choose_this">✓  Usar esta carpeta</string>
-    <string name="kmy_browse_none">No se encontró ningún archivo de KMyMoney (.kmy, .sqlite, .db)</string>
+    <string name="kmy_browse_none">No se encontró ningún archivo</string>
     <string name="nextcloud_password_hint">Contraseña de la app</string>
     <string name="nextcloud_folder_hint">Carpeta de destino (opcional, p. ej. Finanzas)</string>
     <string name="export_mode_hint">Formato</string>
     <string name="export_mode_csv">CSV (importación kMyMoney)</string>
-    <string name="export_mode_kmy">Archivo KMyMoney (.kmy o SQLite)</string>
-    <string name="export_mode_kmy_csv">Leer .kmy o SQLite, exportar CSV</string>
+    <string name="export_mode_kmy">Archivo KMyMoney (.kmy)</string>
+    <string name="export_mode_sqlite">Base de datos KMyMoney (SQLite)</string>
+    <string name="export_mode_sqlite_csv">Leer base de datos SQLite, exportar CSV</string>
+    <string name="export_mode_kmy_csv">Leer .kmy, exportar CSV</string>
     <string name="export_mode_discard_title">¿Descartar transferencias pendientes?</string>
     <string name="export_mode_discard_intro">Solo llegan al archivo de KMyMoney en el modo .kmy. Al cambiar se descartan:</string>
     <string name="export_mode_discard_deletes">Eliminaciones: %1$d</string>
@@ -625,7 +627,7 @@
     <string name="export_mode_discard_security">Movimientos de cartera (se eliminarán): %1$d</string>
     <string name="export_mode_discard_edited">Apuntes modificados (el cambio no se transfiere): %1$d</string>
     <string name="export_mode_discard_confirm">Descartar y cambiar</string>
-    <string name="kmy_path_hint">Archivo KMyMoney (ruta, p. ej. KMyMoney/gdyx.kmy o KMyMoney/gdyx.sqlite)</string>
+    <string name="kmy_path_hint">Archivo o base de datos de KMyMoney (ruta, p. ej. KMyMoney/gdyx.kmy)</string>
     <string name="receipt_folder_hint">Carpeta de justificantes</string>
     <string name="receipt_folder_helper">Está junto al archivo KMyMoney. Si varios perfiles guardan su archivo en la misma carpeta, dé a cada uno un nombre propio.</string>
     <string name="receipt_folder_not_empty_title">La carpeta no está vacía</string>

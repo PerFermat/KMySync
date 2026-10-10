@@ -642,13 +642,15 @@
     <string name="kmy_browse">Select file</string>
     <string name="folder_browse">Browse folder</string>
     <string name="folder_choose_this">✓  Use this folder</string>
-    <string name="kmy_browse_none">No KMyMoney file found (.kmy, .sqlite, .db)</string>
+    <string name="kmy_browse_none">No file found</string>
     <string name="nextcloud_password_hint">App password</string>
     <string name="nextcloud_folder_hint">Target folder (optional, e.g. Finances)</string>
     <string name="export_mode_hint">Format</string>
     <string name="export_mode_csv">CSV (kMyMoney import)</string>
-    <string name="export_mode_kmy_csv">Read .kmy or SQLite, export CSV</string>
-    <string name="export_mode_kmy">KMyMoney file (.kmy or SQLite)</string>
+    <string name="export_mode_kmy_csv">Read .kmy, export CSV</string>
+    <string name="export_mode_kmy">KMyMoney file (.kmy)</string>
+    <string name="export_mode_sqlite">KMyMoney database (SQLite)</string>
+    <string name="export_mode_sqlite_csv">Read SQLite database, export CSV</string>
     <string name="export_mode_discard_title">Discard pending transfers?</string>
     <string name="export_mode_discard_intro">These only reach the KMyMoney file in .kmy mode. Switching discards them:</string>
     <string name="export_mode_discard_deletes">Deletions: %1$d</string>
@@ -656,7 +658,7 @@
     <string name="export_mode_discard_security">Portfolio entries (will be deleted): %1$d</string>
     <string name="export_mode_discard_edited">Changed bookings (the change is not transferred): %1$d</string>
     <string name="export_mode_discard_confirm">Discard and switch</string>
-    <string name="kmy_path_hint">KMyMoney file (path, e.g. KMyMoney/gdyx.kmy or KMyMoney/gdyx.sqlite)</string>
+    <string name="kmy_path_hint">KMyMoney file or database (path, e.g. KMyMoney/gdyx.kmy)</string>
     <string name="receipt_folder_hint">Receipt folder</string>
     <string name="receipt_folder_helper">Sits next to the KMyMoney file. Give each profile its own name if several profiles keep their file in the same folder.</string>
     <string name="receipt_folder_not_empty_title">Folder is not empty</string>

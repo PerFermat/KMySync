@@ -138,6 +138,8 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
 
     private List<Language> languages = new ArrayList<>();
     private String selectedExportMode = SettingsStore.MODE_CSV;
+    /** Zur gewählten Speicherart: ist die Quelle eine KMyMoney-Datenbank (SQLite)? Siehe {@link ExportFormat}. */
+    private boolean selectedDatabase;
 
     // ---- Weitere Profil-Einstellungen (Währung, Dividenden, Budget, Standardkonto, Orte, Alias) ----
     private MaterialAutoCompleteTextView editDefaultAccount;
@@ -430,30 +432,26 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
     }
 
     private void setupExportMode() {
-        String csvLabel = getString(R.string.export_mode_csv);
-        String kmyCsvLabel = getString(R.string.export_mode_kmy_csv);
-        String kmyLabel = getString(R.string.export_mode_kmy);
-        PickerAdapters.plain(editExportMode, java.util.Arrays.asList(csvLabel, kmyCsvLabel, kmyLabel));
+        final java.util.List<String> labels = ExportFormat.labels(this);
+        PickerAdapters.plain(editExportMode, labels);
         selectedExportMode = settings.getExportMode();
-        editExportMode.setText(exportModeLabel(selectedExportMode, csvLabel, kmyCsvLabel, kmyLabel), false);
+        selectedDatabase = settings.isKmyDatabase();
+        syncFields.setDatabase(selectedDatabase);
+        editExportMode.setText(
+                labels.get(ExportFormat.position(selectedExportMode, selectedDatabase)), false);
         applyExportModeVisibility();
         editExportMode.setOnItemClickListener((parent, view, position, id) -> {
-            String chosen = position == 2 ? SettingsStore.MODE_KMY
-                    : position == 1 ? SettingsStore.MODE_KMY_CSV : SettingsStore.MODE_CSV;
+            final String chosen = ExportFormat.mode(position);
+            final boolean database = ExportFormat.database(position);
             ExportModeSwitch.request(this, repository, settings, chosen, () -> {
                 selectedExportMode = chosen;
+                selectedDatabase = database;
+                settings.setKmyDatabase(database);
+                syncFields.setDatabase(database);
                 applyExportModeVisibility();
             }, () -> editExportMode.setText(
-                    exportModeLabel(selectedExportMode, csvLabel, kmyCsvLabel, kmyLabel), false));
+                    labels.get(ExportFormat.position(selectedExportMode, selectedDatabase)), false));
         });
-    }
-
-    private static String exportModeLabel(String mode, String csvLabel, String kmyCsvLabel,
-                                          String kmyLabel) {
-        if (SettingsStore.MODE_KMY.equals(mode)) {
-            return kmyLabel;
-        }
-        return SettingsStore.MODE_KMY_CSV.equals(mode) ? kmyCsvLabel : csvLabel;
     }
 
     /**
