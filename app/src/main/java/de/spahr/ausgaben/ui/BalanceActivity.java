@@ -562,7 +562,10 @@ public class BalanceActivity extends LocalizedActivity {
                     if (gewaehlt.isEmpty()) {
                         categoryIsIncome[0] = null;
                     } else if (item != null) {
-                        categoryIsIncome[0] = item.groupIsIncome;
+                        // Die Gruppe des gewählten Eintrags, nicht die des ersten gleichnamigen.
+                        Boolean seite = categories[0].sideIn(categoryField, gewaehlt);
+                        categoryIsIncome[0] = seite != null ? seite
+                                : gewaehlt.equalsIgnoreCase(category[0]) ? categoryIsIncome[0] : null;
                     } else if (!gewaehlt.equalsIgnoreCase(category[0])) {
                         categoryIsIncome[0] = null; // andere Kategorie, Liste noch nicht da: unbekannt
                     }

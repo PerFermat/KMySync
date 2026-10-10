@@ -39,12 +39,65 @@ public final class CategorySplits {
         public final long cents;
         /** Die Beschriftung aus der Abrechnung; leer, wenn es keine gibt. */
         public final String label;
+        /**
+         * Die Seite von {@link #category} ({@code true} = Einnahme-, {@code false} =
+         * Ausgabekategorie); {@code null}, solange sie niemand kennt.
+         */
+        public final Boolean categoryIsIncome;
 
         public Part(String category, long cents, String label) {
+            this(category, cents, label, null);
+        }
+
+        public Part(String category, long cents, String label, Boolean categoryIsIncome) {
             this.category = category == null ? "" : category;
             this.cents = cents;
             this.label = label == null ? "" : label;
+            this.categoryIsIncome = this.category.trim().isEmpty() ? null : categoryIsIncome;
         }
+
+        /** Die Seite als Zahl für Intent, Parcel und gemerkten Zustand: −1 unbekannt, 0 Ausgabe, 1 Einnahme. */
+        public static int alsZahl(Boolean seite) {
+            return seite == null ? -1 : seite ? 1 : 0;
+        }
+
+        public static Boolean ausZahl(int zahl) {
+            return zahl < 0 ? null : Boolean.valueOf(zahl == 1);
+        }
+    }
+
+    /**
+     * Gibt jeder Zeile die Seite ihrer Kategorie zurück. Beim Zuordnen wandern die Kategorien als Namen
+     * von Zeile zu Zeile; die Seite steht bei der Zeile, von der der Name stammt – in der Abrechnung
+     * ({@code found}, sie geht vor) oder in der letzten Buchung ({@code known}).
+     */
+    private static List<Part> mitSeiten(List<Part> out, List<Part> found, List<Part> known) {
+        for (int i = 0; i < out.size(); i++) {
+            Part part = out.get(i);
+            if (part.categoryIsIncome != null || part.category.trim().isEmpty()) {
+                continue;
+            }
+            Boolean seite = seiteVon(part.category, found);
+            if (seite == null) {
+                seite = seiteVon(part.category, known);
+            }
+            if (seite != null) {
+                out.set(i, new Part(part.category, part.cents, part.label, seite));
+            }
+        }
+        return out;
+    }
+
+    private static Boolean seiteVon(String category, List<Part> parts) {
+        if (parts != null) {
+            for (Part part : parts) {
+                if (part != null && part.categoryIsIncome != null
+                        && part.category.trim().equalsIgnoreCase(category.trim())) {
+                    return part.categoryIsIncome;
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -69,7 +122,8 @@ public final class CategorySplits {
             beträge = new ArrayList<>();
             beträge.add(new Part("", totalCents, ""));
         }
-        return allLabeled(beträge) ? byLabel(beträge, known) : byOrder(beträge, known);
+        return mitSeiten(allLabeled(beträge) ? byLabel(beträge, known) : byOrder(beträge, known),
+                found, known);
     }
 
     /**
@@ -89,7 +143,7 @@ public final class CategorySplits {
         List<Part> out = new ArrayList<>();
         for (Part part : known) {
             if (!part.category.trim().isEmpty()) {
-                out.add(new Part(part.category, 0, part.label));
+                out.add(new Part(part.category, 0, part.label, part.categoryIsIncome));
             }
         }
         return out;

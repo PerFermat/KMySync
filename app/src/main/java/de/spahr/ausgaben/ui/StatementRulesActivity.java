@@ -441,6 +441,10 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
         /** Nur bei der Gebühr sichtbar: ein Betrag, den die Bank nicht ausdruckt. */
         private final TextInputEditText fixedFee;
         private final PickerTextView fixedFeeCategory;
+        private String ursprungKategorie = "";
+        private Boolean ursprungSeite;
+        private String ursprungFest = "";
+        private Boolean ursprungFestSeite;
         /** Nur beim Gesamtbetrag sichtbar: steckt die feste Gebühr schon darin? */
         private final MaterialSwitch fixedFeeInTotal;
         /** Was die Regel dieses Bereichs in der Testabrechnung liest. */
@@ -493,6 +497,11 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
                         ? (part == null ? "" : part.category)
                         : (field == Field.FEE ? template.feeCategory : template.incomeCategory),
                         false);
+                // Die Seite, mit der die Kategorie hier ankam – sie gilt weiter, solange das Feld
+                // nicht neu belegt wird (siehe seiteIn).
+                ursprungKategorie = fieldCategory.getText().toString().trim();
+                ursprungSeite = isPart ? (part == null ? null : part.categoryIsIncome)
+                        : (field == Field.FEE ? template.seiten.fee : template.seiten.income);
             }
             container = view.findViewById(R.id.anchorContainer);
             direction = view.findViewById(R.id.editDirection);
@@ -515,6 +524,8 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
                     fixedFee.setText(MoneyFormat.plain(template.fixedFeeCents));
                 }
                 fixedFeeCategory.setText(template.fixedFeeCategory, false);
+                ursprungFest = template.fixedFeeCategory;
+                ursprungFestSeite = template.seiten.fixedFee;
                 // Der Schalter beim Gesamtbetrag hat erst einen Gegenstand, wenn hier etwas steht.
                 fixedFee.addTextChangedListener(new SimpleWatcher(
                         StatementRulesActivity.this::updateFixedFeeSwitch));
@@ -664,7 +675,7 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
         StatementTemplate.PartRule toPartRule() {
             AnchorRule rule = toRule();
             return rule == null ? null
-                    : new StatementTemplate.PartRule(partLabel(), rule, category());
+                    : new StatementTemplate.PartRule(partLabel(), rule, category(), categorySide());
         }
 
         /** Die eingetragenen Beschriftungen ohne die leeren Zeilen. */
@@ -912,6 +923,35 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
             return fieldCategory.getText() == null ? "" : fieldCategory.getText().toString().trim();
         }
 
+        /**
+         * Die Seite der Kategorie in {@code feld}: die Gruppe des gewählten Listeneintrags; wurde
+         * das Feld nicht neu belegt, die Seite, mit der die Kategorie ankam; sonst, was der Name
+         * hergibt ({@code null}, wenn es ihn im Einnahme- und im Ausgabebaum gibt).
+         */
+        private Boolean seiteIn(PickerTextView feld, String ursprung, Boolean seiteVorher) {
+            String wert = feld.getText() == null ? "" : feld.getText().toString().trim();
+            if (wert.isEmpty()) {
+                return null;
+            }
+            Object gewaehlt = PickerBehaviour.pickedItem(feld);
+            if (gewaehlt == null && wert.equalsIgnoreCase(ursprung) && seiteVorher != null) {
+                return seiteVorher;
+            }
+            Boolean seite = categoryAdapter == null ? null : categoryAdapter.sideIn(feld, wert);
+            return seite != null || !wert.equalsIgnoreCase(ursprung) ? seite : seiteVorher;
+        }
+
+        /** Die Seite der eingetragenen Kategorie dieses Bereichs. */
+        Boolean categorySide() {
+            return seiteIn(fieldCategory, ursprungKategorie, ursprungSeite);
+        }
+
+        /** Die Seite der Kategorie der festen Gebühr. */
+        Boolean fixedFeeCategorySide() {
+            return field != Field.FEE ? null
+                    : seiteIn(fixedFeeCategory, ursprungFest, ursprungFestSeite);
+        }
+
         /** Der feste Betrag in Cent; 0, wenn keiner eingetragen ist. */
         long fixedFeeCents() {
             if (field != Field.FEE) {
@@ -1102,21 +1142,29 @@ public class StatementRulesActivity extends LocalizedActivity implements HostedD
         String feeCategory = "";
         // Dieselbe Überlegung: die Ertragskategorie hängt am Brutto-Formular und überlebt dessen Fehlen.
         String incomeCategory = forms.containsKey(Field.GROSS) ? "" : bisher.incomeCategory;
+        // Mit jeder Kategorie ihre Seite.
+        Boolean fixedSide = null;
+        Boolean feeSide = null;
+        Boolean incomeSide = forms.containsKey(Field.GROSS) ? null : bisher.seiten.income;
         for (FieldForm form : forms.values()) {
             if (form.field() == Field.FEE) {
                 fixedFee = form.fixedFeeCents();
                 fixedCategory = form.fixedFeeCategory();
+                fixedSide = form.fixedFeeCategorySide();
                 feeCategory = form.category();
+                feeSide = form.categorySide();
             } else if (form.field() == Field.NET) {
                 inTotal = form.fixedFeeInTotal();
             } else if (form.field() == Field.GROSS) {
                 incomeCategory = form.category();
+                incomeSide = form.categorySide();
             }
         }
         return new StatementTemplate(templates.get(current).action, rules,
                 fixedFee, fixedCategory, inTotal,
                 partRules(feePartForms), partRules(incomePartForms),
-                feeCategory, incomeCategory);
+                feeCategory, incomeCategory,
+                new StatementTemplate.Seiten(feeSide, incomeSide, fixedSide));
     }
 
     /** Die Teilbetragsregeln eines Abschnitts; unfertige Bereiche fallen dabei weg. */

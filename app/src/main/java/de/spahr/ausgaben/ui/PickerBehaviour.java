@@ -80,6 +80,10 @@ final class PickerBehaviour {
             field.setTag(R.id.pickerCommitted, null);
             setPlaceholder(field, null);
             field.setText(gewaehlt, false);
+            // Den Eintrag selbst merken, nicht nur seinen Text: Zwei Einträge können gleich heißen
+            // (dieselbe Kategorie unter Einnahme und unter Ausgabe), und nur der Eintrag weiß, welcher
+            // gemeint war.
+            field.setTag(R.id.pickerItem, item);
             report(field, gewaehlt);
             // Die Liste klappt beim Antippen von selbst zu; die Tastatur blieb bisher stehen und
             // verdeckte die halbe Seite, obwohl die Eingabe fertig ist.
@@ -127,6 +131,15 @@ final class PickerBehaviour {
 
     interface Committed {
         void onCommitted(String value);
+    }
+
+    /**
+     * Der Listeneintrag, der zuletzt in diesem Feld gewählt wurde – angetippt oder als einziger
+     * Treffer übernommen; {@code null}, wenn noch keiner. Wer ihn benutzt, prüft, ob er noch zum Text
+     * des Feldes gehört: nach einem getippten Wert steht hier noch der frühere.
+     */
+    static Object pickedItem(AutoCompleteTextView field) {
+        return field == null ? null : field.getTag(R.id.pickerItem);
     }
 
     private static void report(AutoCompleteTextView field, String value) {
@@ -188,6 +201,7 @@ final class PickerBehaviour {
         String value = convert(field, item);
         if (!value.trim().isEmpty()) {
             field.setText(value, false);
+            field.setTag(R.id.pickerItem, item);
         }
     }
 

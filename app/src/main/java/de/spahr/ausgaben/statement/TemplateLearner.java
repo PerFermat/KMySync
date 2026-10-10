@@ -56,6 +56,8 @@ public final class TemplateLearner {
         public Long feeCents;
         /** Kategorie der Gebühr — nur gebraucht, wenn daraus eine feste Ordergebühr wird. */
         public String feeCategory = "";
+        /** Die Seite von {@link #feeCategory}; {@code null} = unbekannt. */
+        public Boolean feeCategoryIsIncome;
         public Long netCents;
         /**
          * Der Bruttobetrag einer Dividende — nur gesetzt, wenn der Nutzer für ihn <b>ausdrücklich</b>
@@ -169,7 +171,9 @@ public final class TemplateLearner {
         return new StatementTemplate(known.action, rules, fixedFee,
                 fixedFee > 0 ? gebuehrenteile.restKategorie(known.feeCategory) : "", false,
                 gebuehrenteile.rules, ertragsteile.rules,
-                wholeCategory(known.feeParts), wholeCategory(known.incomeParts));
+                wholeCategory(known.feeParts), wholeCategory(known.incomeParts),
+                new StatementTemplate.Seiten(wholeSide(known.feeParts), wholeSide(known.incomeParts),
+                        fixedFee > 0 ? gebuehrenteile.restSeite(known.feeCategoryIsIncome) : null));
     }
 
     /**
@@ -202,6 +206,16 @@ public final class TemplateLearner {
             }
             return vorgabe;
         }
+
+        /** Die Seite zu {@link #restKategorie}: die der Zeile, deren Kategorie dort genommen wird. */
+        Boolean restSeite(Boolean vorgabe) {
+            for (StatementTemplate.Part part : ungefunden) {
+                if (!part.category.trim().isEmpty()) {
+                    return part.categoryIsIncome;
+                }
+            }
+            return vorgabe;
+        }
     }
 
     /**
@@ -212,6 +226,11 @@ public final class TemplateLearner {
      */
     private static String wholeCategory(List<StatementTemplate.Part> parts) {
         return parts != null && parts.size() == 1 ? parts.get(0).category : "";
+    }
+
+    /** Die Seite zu {@link #wholeCategory}. */
+    private static Boolean wholeSide(List<StatementTemplate.Part> parts) {
+        return parts != null && parts.size() == 1 ? parts.get(0).categoryIsIncome : null;
     }
 
     /**
@@ -257,7 +276,8 @@ public final class TemplateLearner {
             }
             // Die Kategorie kommt aus der Maske mit: gelernt wird nicht nur, wo der Betrag steht,
             // sondern auch, wohin er gebucht gehört.
-            out.rules.add(new StatementTemplate.PartRule(label, rule, part.category));
+            out.rules.add(new StatementTemplate.PartRule(label, rule, part.category,
+                    part.categoryIsIncome));
             out.gefunden += Math.abs(part.cents);
         }
         return out;

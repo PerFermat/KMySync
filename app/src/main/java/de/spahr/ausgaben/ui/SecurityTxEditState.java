@@ -135,6 +135,8 @@ final class SecurityTxEditState {
     String savedStatementTag;
     /** Kategorie einer festen Gebühr aus der Regel; sie schlägt die erschlossene (siehe Extra). */
     String fixedFeeCategory = "";
+    /** Die Seite von {@link #fixedFeeCategory}; {@code null} = unbekannt. */
+    Boolean fixedFeeCategoryIsIncome;
     /** Der Hinweis, den die Erkennungsliste mitgab, und der Stand, für den er galt. */
     int listHint;
     String listHintKey;
@@ -184,6 +186,8 @@ final class SecurityTxEditState {
         out.putSerializable(STATE_VALUE_RULES, regeln);
         out.putString(STATE_STATEMENT_TAG, savedStatementTag);
         out.putString(STATE_FIXED_FEE_CATEGORY, fixedFeeCategory);
+        out.putInt(STATE_FIXED_FEE_CATEGORY + "Side",
+                de.spahr.ausgaben.util.CategorySplits.Part.alsZahl(fixedFeeCategoryIsIncome));
         out.putInt(STATE_LIST_HINT, listHint);
         out.putString(STATE_LIST_HINT_KEY, listHintKey);
         out.putString(STATE_LAST_DUP_KEY, lastDupKey);
@@ -238,6 +242,8 @@ final class SecurityTxEditState {
         savedStatementTag = in.getString(STATE_STATEMENT_TAG);
         String fee = in.getString(STATE_FIXED_FEE_CATEGORY);
         fixedFeeCategory = fee == null ? "" : fee;
+        fixedFeeCategoryIsIncome = de.spahr.ausgaben.util.CategorySplits.Part.ausZahl(
+                in.getInt(STATE_FIXED_FEE_CATEGORY + "Side", -1));
         listHint = in.getInt(STATE_LIST_HINT, 0);
         listHintKey = in.getString(STATE_LIST_HINT_KEY);
         lastDupKey = in.getString(STATE_LAST_DUP_KEY);

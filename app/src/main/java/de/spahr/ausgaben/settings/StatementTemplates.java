@@ -208,6 +208,28 @@ public class StatementTemplates {
     }
 
     /**
+     * Trägt in allen Vorlagen dieses Profils die Seite der Kategorien nach, die noch keine haben
+     * (siehe {@link StatementTemplate#mitNachgetragenenSeiten}). Geschrieben wird nur, wenn etwas
+     * fehlte; ein zweiter Lauf findet nichts mehr vor.
+     *
+     * @return ob etwas nachgetragen wurde
+     */
+    public boolean fillMissingSides(StatementTemplate.Seitenwissen wissen) {
+        List<Entry> alle = entries();
+        List<Entry> neu = new ArrayList<>();
+        boolean geaendert = false;
+        for (Entry e : alle) {
+            StatementTemplate t = e.template.mitNachgetragenenSeiten(wissen);
+            geaendert |= t != e.template;
+            neu.add(new Entry(e.depot, t));
+        }
+        if (geaendert) {
+            write(neu);
+        }
+        return geaendert;
+    }
+
+    /**
      * Alles Gelernte dieses Profils verwerfen (Auslieferungszustand).
      *
      * <p>Nur die beiden Einträge dieses Profils, nicht die ganze Datei: die Vorlagen aller Profile

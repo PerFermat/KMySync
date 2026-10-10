@@ -293,6 +293,8 @@ final class StatementImport {
         // wenn die Gebühr auch wirklich angesetzt wurde.
         if (e.feeCategory != null && !e.feeCategory.isEmpty()) {
             i.putExtra(SecurityTxEditActivity.EXTRA_PREFILL_FIXED_FEE_CATEGORY, e.feeCategory);
+            i.putExtra(SecurityTxEditActivity.EXTRA_PREFILL_FIXED_FEE_SIDE,
+                    de.spahr.ausgaben.util.CategorySplits.Part.alsZahl(e.feeCategoryIsIncome));
         }
         // Die Aufteilung von Steuer und Ertrag, soweit die Abrechnung sie hergab — noch ohne
         // Kategorien: die schlägt die Maske in der letzten Bewegung derselben Art nach.
@@ -381,6 +383,7 @@ final class StatementImport {
         // Die Kategorie einer festen Gebühr steht in der Regel und schlägt die aus der letzten Bewegung
         // geratene; sie wird deshalb erst nach fillDefaults gesetzt (siehe dort).
         d.fixedFeeCategory = e.feeCategory == null ? "" : e.feeCategory;
+        d.fixedFeeCategoryIsIncome = d.fixedFeeCategory.isEmpty() ? null : e.feeCategoryIsIncome;
         // Vorerst nur die Beträge: welche Kategorie dazugehört, sagt erst die letzte Buchung.
         d.feeParts = asParts(e.feeParts);
         d.incomeParts = asParts(e.incomeParts);
@@ -404,7 +407,7 @@ final class StatementImport {
         java.util.List<de.spahr.ausgaben.util.CategorySplits.Part> out = new java.util.ArrayList<>();
         for (StatementTemplate.Part part : parts) {
             out.add(new de.spahr.ausgaben.util.CategorySplits.Part(
-                    part.category, part.cents, part.label));
+                    part.category, part.cents, part.label, part.categoryIsIncome));
         }
         return out;
     }
@@ -476,7 +479,8 @@ final class StatementImport {
         if (last != null) {
             for (de.spahr.ausgaben.db.SecurityTxSplit part : last.parts) {
                 (part.income ? incomeKnown : feeKnown).add(
-                        new de.spahr.ausgaben.util.CategorySplits.Part(part.category, 0, part.label));
+                        new de.spahr.ausgaben.util.CategorySplits.Part(part.category, 0, part.label,
+                                part.categoryIsIncome));
             }
         }
         long fee = d.isDividend()
@@ -490,7 +494,7 @@ final class StatementImport {
         if (!d.fixedFeeCategory.isEmpty() && !d.feeParts.isEmpty()) {
             de.spahr.ausgaben.util.CategorySplits.Part erste = d.feeParts.get(0);
             d.feeParts.set(0, new de.spahr.ausgaben.util.CategorySplits.Part(
-                    d.fixedFeeCategory, erste.cents, erste.label));
+                    d.fixedFeeCategory, erste.cents, erste.label, d.fixedFeeCategoryIsIncome));
         }
     }
 
@@ -577,6 +581,7 @@ final class StatementImport {
             // Die Kategorie gehört zu der Gebühr, die hier gerade übernommen wird – ohne sie käme der
             // Betrag ohne seine Zuordnung an. Der Gesamtbetrag hat weiter unten seinen eigenen Zweig.
             e.feeCategory = von.feeCategory;
+            e.feeCategoryIsIncome = von.feeCategoryIsIncome;
         }
         if (e.netCents == null) {
             e.netCents = von.netCents;

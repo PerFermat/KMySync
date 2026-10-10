@@ -80,6 +80,8 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
      * deshalb die aus der letzten Bewegung erschlossene.
      */
     public static final String EXTRA_PREFILL_FIXED_FEE_CATEGORY = "prefillFixedFeeCategory";
+    /** Die Seite dieser Kategorie: −1 unbekannt, 0 Ausgabe, 1 Einnahme. */
+    public static final String EXTRA_PREFILL_FIXED_FEE_SIDE = "prefillFixedFeeSide";
     /**
      * Die Maske gehört zu einem Eintrag der Erkennungsliste ({@link StatementBatchActivity}): dort wird
      * nicht gespeichert, sondern berichtigt. Gebucht wird der ganze Stapel erst am Ende.
@@ -708,6 +710,8 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         st.dupBooked = st.listHint == R.string.statement_dup_booked;
         prefillPicker(editAccount, in.getStringExtra(EXTRA_PREFILL_ACCOUNT));
         st.fixedFeeCategory = orEmptyText(in.getStringExtra(EXTRA_PREFILL_FIXED_FEE_CATEGORY));
+        st.fixedFeeCategoryIsIncome = CategorySplits.Part.ausZahl(
+                in.getIntExtra(EXTRA_PREFILL_FIXED_FEE_SIDE, -1));
         foundFeeParts.clear();
         foundFeeParts.addAll(readParts(in, EXTRA_PREFILL_FEE_PARTS));
         foundIncomeParts.clear();
@@ -735,14 +739,17 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         String[] categories = new String[parts.size()];
         long[] cents = new long[parts.size()];
         String[] labels = new String[parts.size()];
+        int[] sides = new int[parts.size()];
         for (int i = 0; i < parts.size(); i++) {
             categories[i] = parts.get(i).category;
             cents[i] = parts.get(i).cents;
             labels[i] = parts.get(i).label;
+            sides[i] = CategorySplits.Part.alsZahl(parts.get(i).categoryIsIncome);
         }
         out.putExtra(key + "Cat", categories);
         out.putExtra(key + "Cents", cents);
         out.putExtra(key + "Label", labels);
+        out.putExtra(key + "Side", sides);
     }
 
     /** Die Gegenrichtung zu {@link #putParts}; leere Liste, wenn nichts mitgegeben wurde. */
@@ -755,8 +762,10 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                 || categories.length != cents.length || labels.length != cents.length) {
             return out;
         }
+        int[] sides = in.getIntArrayExtra(key + "Side");
         for (int i = 0; i < cents.length; i++) {
-            out.add(new CategorySplits.Part(categories[i], cents[i], labels[i]));
+            out.add(new CategorySplits.Part(categories[i], cents[i], labels[i],
+                    sides == null || i >= sides.length ? null : CategorySplits.Part.ausZahl(sides[i])));
         }
         return out;
     }
@@ -774,7 +783,8 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                 CategorySplits.rows(foundFeeParts, orZero(money(Field.FEE)), knownFeeParts);
         if (!st.fixedFeeCategory.isEmpty() && !gebuehr.isEmpty()) {
             CategorySplits.Part erste = gebuehr.get(0);
-            gebuehr.set(0, new CategorySplits.Part(st.fixedFeeCategory, erste.cents, erste.label));
+            gebuehr.set(0, new CategorySplits.Part(st.fixedFeeCategory, erste.cents, erste.label,
+                    st.fixedFeeCategoryIsIncome));
         }
         fillMatched(feeSplits, gebuehr);
         fillMatched(incomeSplits, dividend
@@ -797,8 +807,9 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
         for (CategorySplits.Part part : parts) {
             // Ohne Betrag bleibt das Feld leer statt „0,00": die Zeile wartet auf ihren Betrag, und
             // eine geschriebene Null sähe aus wie eine Angabe.
+            // Mit der Kategorie ihre Seite – aus der Vorlage oder aus der letzten Buchung.
             ctl.addRow(part.category, part.cents == 0 ? null : MoneyFormat.plain(part.cents),
-                    null, part.label);
+                    part.categoryIsIncome, part.label);
         }
         ctl.ensureTrailingRow();
         ctl.setSuppressEvents(false);
@@ -1478,7 +1489,8 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                 knownIncomeParts.clear();
                 for (SecurityTxSplit part : last.parts) {
                     (part.income ? knownIncomeParts : knownFeeParts)
-                            .add(new CategorySplits.Part(part.category, 0, part.label));
+                            .add(new CategorySplits.Part(part.category, 0, part.label,
+                                    part.categoryIsIncome));
                 }
                 applySplitRows();
             }
@@ -1726,7 +1738,8 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     private List<StatementTemplate.Part> lernbareTeile(SplitRowController ctl) {
         List<StatementTemplate.Part> out = new ArrayList<>();
         for (SplitRowController.Part part : ctl.collectParts()) {
-            out.add(new StatementTemplate.Part("", Math.abs(part.cents), part.category, part.chosenRule));
+            out.add(new StatementTemplate.Part("", Math.abs(part.cents), part.category,
+                    part.chosenRule, part.categoryIsIncome));
         }
         return out;
     }
@@ -1759,7 +1772,8 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
     private List<CategorySplits.Part> collectedParts(SplitRowController ctl) {
         List<CategorySplits.Part> out = new ArrayList<>();
         for (SplitRowController.Part part : ctl.collectParts()) {
-            out.add(new CategorySplits.Part(part.category, part.cents, part.label));
+            out.add(new CategorySplits.Part(part.category, part.cents, part.label,
+                    part.categoryIsIncome));
         }
         return out;
     }
@@ -1852,6 +1866,10 @@ public class SecurityTxEditActivity extends LocalizedActivity implements HostedD
                 ? grossCents : null;
         // Wird aus der Gebühr eine feste Ordergebühr, braucht sie eine Kategorie – und die steht hier.
         known.feeCategory = firstCategory(feeSplits);
+        for (SplitRowController.Part part : feeSplits.collectParts()) {
+            known.feeCategoryIsIncome = part.categoryIsIncome;   // die Zeile, die firstCategory nimmt
+            break;
+        }
         // Die Aufteilung wird immer gelernt, gleich ob es schon eine Vorlage gibt: sie steht nur dann
         // in der Maske, wenn der Nutzer sie selbst so eingetragen hat.
         known.feeParts = lernbareTeile(feeSplits);

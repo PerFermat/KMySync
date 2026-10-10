@@ -194,11 +194,8 @@ class SplitRowController {
         }));
         // Über PickerBehaviour: die Kategorie kann auch getippt und stehengelassen werden, dann fällt
         // kein Antippen eines Listeneintrags an und die Richtung (Einnahme/Ausgabe) bliebe unbekannt.
-        PickerBehaviour.onCommitted(cat, value -> {
-            CategoryFilterAdapter.CatItem item =
-                    categoryAdapter != null ? categoryAdapter.itemFor(value) : null;
-            cat.setTag(item != null ? item.groupIsIncome : null);
-        });
+        PickerBehaviour.onCommitted(cat, value ->
+                cat.setTag(categoryAdapter != null ? categoryAdapter.sideIn(cat, value) : null));
         amt.addTextChangedListener(new SimpleWatcher(() -> {
             if (!prefilling && !suppressSplitEvents && !syncingAmounts) {
                 // Ein echter Handgriff des Nutzers: der Betrag hat sich geändert, eine vorher gezeigte
@@ -427,9 +424,7 @@ class SplitRowController {
      * noch nicht da). Der Rückfall für Kategorien, die ohne ihre Seite ankommen.
      */
     Boolean sideOf(String category) {
-        CategoryFilterAdapter.CatItem item =
-                categoryAdapter != null ? categoryAdapter.itemFor(category) : null;
-        return item != null && !item.value.isEmpty() ? item.groupIsIncome : null;
+        return categoryAdapter != null ? categoryAdapter.sideOfName(category) : null;
     }
 
     /** Reicht den Vorspann des Empfängers an die gemeinsame Kategorieliste aller Zeilen weiter. */

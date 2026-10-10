@@ -148,7 +148,7 @@ public class KmyExportCoordinator {
 
         // Keine Buchung geht ohne die Seite ihrer Kategorie hinaus: Was sie aus alter Zeit noch nicht
         // trägt, bekommt sie jetzt – einmal, und gespeichert.
-        repository.categorySideDao().fillMissing();
+        repository.fillMissingCategorySides();
 
         List<Booking> bookings = repository.bookingDao().getUnexported();
         // Nach dem Export geänderte Buchungen: ihre Transaktion wird in der Datei geändert, nicht neu

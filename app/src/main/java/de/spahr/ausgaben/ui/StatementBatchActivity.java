@@ -307,7 +307,8 @@ public class StatementBatchActivity extends LocalizedActivity {
             de.spahr.ausgaben.db.SecurityTx last, boolean income) {
         java.util.List<de.spahr.ausgaben.util.CategorySplits.Part> out = new java.util.ArrayList<>();
         for (de.spahr.ausgaben.db.SecurityTxSplit part : last.partsOf(income)) {
-            out.add(new de.spahr.ausgaben.util.CategorySplits.Part(part.category, 0, part.label));
+            out.add(new de.spahr.ausgaben.util.CategorySplits.Part(part.category, 0, part.label,
+                    part.categoryIsIncome));
         }
         return out;
     }

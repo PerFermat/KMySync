@@ -182,6 +182,37 @@ public class CategoryFilterAdapter extends ArrayAdapter<CategoryFilterAdapter.Ca
         return null;
     }
 
+    /**
+     * Die Seite der Kategorie, die in {@code field} steht ({@code true} = Einnahme, {@code false} =
+     * Ausgabe). Wurde sie aus der Liste gewählt, ist es die Gruppe des gewählten Eintrags – auch wenn
+     * es denselben Namen in der anderen Gruppe gibt. Wurde sie getippt, sagt es der Name, sofern er nur
+     * in einer Gruppe steht; sonst {@code null}.
+     */
+    Boolean sideIn(android.widget.AutoCompleteTextView field, String value) {
+        String q = value == null ? "" : value.trim();
+        Object gewaehlt = PickerBehaviour.pickedItem(field);
+        if (gewaehlt instanceof CatItem && !q.isEmpty()
+                && ((CatItem) gewaehlt).value.equalsIgnoreCase(q)) {
+            return ((CatItem) gewaehlt).groupIsIncome;
+        }
+        return sideOfName(q);
+    }
+
+    /** Die Seite laut Name – nur, wenn er in genau einer der beiden Gruppen steht; sonst {@code null}. */
+    Boolean sideOfName(String value) {
+        String q = value == null ? "" : value.trim();
+        Boolean seite = null;
+        for (CatItem item : all) {
+            if ((item.kind == KIND_MAIN || item.kind == KIND_SUB) && item.value.equalsIgnoreCase(q)) {
+                if (seite != null && seite != item.groupIsIncome) {
+                    return null;   // in beiden Bäumen: der Name allein entscheidet nichts
+                }
+                seite = item.groupIsIncome;
+            }
+        }
+        return seite;
+    }
+
     String knownForm(String value) {
         String q = value == null ? "" : value.trim();
         if (q.isEmpty()) {

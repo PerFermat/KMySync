@@ -180,6 +180,10 @@ public final class StatementRulesIo {
             if (!t.incomeCategory.isEmpty()) {
                 o.put("icat", t.incomeCategory);
             }
+            // Die Seiten der Kategorien (true = Einnahme); fehlt eine, ist sie noch nicht ermittelt.
+            putSeite(o, "fcs", t.fixedFeeCents > 0 ? t.seiten.fixedFee : null);
+            putSeite(o, "fcats", t.feeCategory.isEmpty() ? null : t.seiten.fee);
+            putSeite(o, "icats", t.incomeCategory.isEmpty() ? null : t.seiten.income);
             return o;
         } catch (Exception e) {
             return null;
@@ -205,7 +209,18 @@ public final class StatementRulesIo {
         return new StatementTemplate(o.optString("a", ""), rules,
                 o.optLong("ff", 0L), o.optString("fc", ""), o.optBoolean("fi", false),
                 partsFromJson(o.optJSONArray("fp")), partsFromJson(o.optJSONArray("ip")),
-                o.optString("fcat", ""), o.optString("icat", ""));
+                o.optString("fcat", ""), o.optString("icat", ""),
+                new StatementTemplate.Seiten(seite(o, "fcats"), seite(o, "icats"), seite(o, "fcs")));
+    }
+
+    private static void putSeite(JSONObject o, String key, Boolean seite) throws JSONException {
+        if (seite != null) {
+            o.put(key, seite.booleanValue());
+        }
+    }
+
+    private static Boolean seite(JSONObject o, String key) {
+        return o.has(key) ? Boolean.valueOf(o.optBoolean(key)) : null;
     }
 
     public static JSONObject ruleToJson(AnchorRule r) throws JSONException {
@@ -269,6 +284,7 @@ public final class StatementRulesIo {
             po.put("r", ruleToJson(part.rule));
             if (!part.category.isEmpty()) {
                 po.put("k", part.category);
+                putSeite(po, "ks", part.categoryIsIncome);
             }
             arr.put(po);
         }
@@ -289,7 +305,8 @@ public final class StatementRulesIo {
             String label = po.optString("l", "");
             // Ohne Beschriftung wäre der Teil nicht wiederzuerkennen und ohne Regel nicht zu lesen.
             if (rule != null && !label.trim().isEmpty()) {
-                out.add(new StatementTemplate.PartRule(label, rule, po.optString("k", "")));
+                out.add(new StatementTemplate.PartRule(label, rule, po.optString("k", ""),
+                        seite(po, "ks")));
             }
         }
         return out;

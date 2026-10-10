@@ -188,8 +188,19 @@ public class Repository {
             }
             // Jetzt ist bekannt, welche Namen es auf welcher Seite gibt: Zeilen, die ihre Kategorie
             // noch ohne Seite führen, bekommen sie – einmal, danach bleibt sie stehen.
-            categorySideDao.fillMissing();
+            fillMissingCategorySides();
         });
+    }
+
+    /**
+     * Trägt überall die Seite der Kategorie nach, wo sie noch fehlt: in den Tabellen
+     * ({@link CategorySideDao#fillMissing}) und in den Abrechnungsvorlagen dieses Profils. Was einmal
+     * dasteht, bleibt. Nicht vom Main-Thread.
+     */
+    public void fillMissingCategorySides() {
+        categorySideDao.fillMissing();
+        new de.spahr.ausgaben.settings.StatementTemplates(appContext)
+                .fillMissingSides(categoryTypeDao::isIncome);
     }
 
     /**

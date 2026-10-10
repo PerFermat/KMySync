@@ -61,15 +61,26 @@ public final class StatementTemplate {
          * beim Buchen gelernt wurde, ist eine Festlegung, die Historie nur ein Schluss daraus.</p>
          */
         public final String category;
+        /**
+         * Die Seite von {@link #category} ({@code true} = Einnahme-, {@code false} =
+         * Ausgabekategorie); {@code null}, solange sie nicht ermittelt ist oder keine Kategorie
+         * dasteht. Denselben Pfad kann es in KMyMoney in beiden Bäumen geben.
+         */
+        public final Boolean categoryIsIncome;
 
         public PartRule(String label, AnchorRule rule) {
             this(label, rule, "");
         }
 
         public PartRule(String label, AnchorRule rule, String category) {
+            this(label, rule, category, null);
+        }
+
+        public PartRule(String label, AnchorRule rule, String category, Boolean categoryIsIncome) {
             this.label = label == null ? "" : label.trim();
             this.rule = rule;
             this.category = category == null ? "" : category.trim();
+            this.categoryIsIncome = this.category.isEmpty() ? null : categoryIsIncome;
         }
 
         @Override
@@ -79,7 +90,8 @@ public final class StatementTemplate {
             }
             PartRule other = (PartRule) o;
             return label.equals(other.label) && rule.equals(other.rule)
-                    && category.equals(other.category);
+                    && category.equals(other.category)
+                    && seiteGleich(categoryIsIncome, other.categoryIsIncome);
         }
 
         @Override
@@ -103,6 +115,8 @@ public final class StatementTemplate {
          * für dasselbe Prinzip bei den Hauptfeldern.
          */
         public final AnchorRule chosenRule;
+        /** Die Seite von {@link #category}; {@code null} = unbekannt. Siehe {@link PartRule}. */
+        public final Boolean categoryIsIncome;
 
         public Part(String label, long cents) {
             this(label, cents, "");
@@ -113,10 +127,16 @@ public final class StatementTemplate {
         }
 
         public Part(String label, long cents, String category, AnchorRule chosenRule) {
+            this(label, cents, category, chosenRule, null);
+        }
+
+        public Part(String label, long cents, String category, AnchorRule chosenRule,
+                    Boolean categoryIsIncome) {
             this.label = label == null ? "" : label;
             this.cents = cents;
             this.category = category == null ? "" : category;
             this.chosenRule = chosenRule;
+            this.categoryIsIncome = this.category.trim().isEmpty() ? null : categoryIsIncome;
         }
     }
 
@@ -153,6 +173,30 @@ public final class StatementTemplate {
      */
     public final boolean fixedFeeInTotal;
 
+    /**
+     * Die Seiten der drei Kategorien, die an der Vorlage selbst hängen ({@link #feeCategory},
+     * {@link #incomeCategory}, {@link #fixedFeeCategory}); je {@code null} = noch nicht ermittelt.
+     */
+    public static final class Seiten {
+        public static final Seiten LEER = new Seiten(null, null, null);
+        public final Boolean fee;
+        public final Boolean income;
+        public final Boolean fixedFee;
+
+        public Seiten(Boolean fee, Boolean income, Boolean fixedFee) {
+            this.fee = fee;
+            this.income = income;
+            this.fixedFee = fixedFee;
+        }
+    }
+
+    public final Seiten seiten;
+
+    /** Zwei Seiten widersprechen sich nur, wenn beide bekannt und verschieden sind. */
+    static boolean seiteGleich(Boolean a, Boolean b) {
+        return a == null || b == null || a.equals(b);
+    }
+
     public StatementTemplate(String action, Map<Field, AnchorRule> rules) {
         this(action, rules, 0L, "", false);
     }
@@ -166,6 +210,15 @@ public final class StatementTemplate {
                              String fixedFeeCategory, boolean fixedFeeInTotal,
                              List<PartRule> feeParts, List<PartRule> incomeParts,
                              String feeCategory, String incomeCategory) {
+        this(action, rules, fixedFeeCents, fixedFeeCategory, fixedFeeInTotal, feeParts, incomeParts,
+                feeCategory, incomeCategory, Seiten.LEER);
+    }
+
+    public StatementTemplate(String action, Map<Field, AnchorRule> rules, long fixedFeeCents,
+                             String fixedFeeCategory, boolean fixedFeeInTotal,
+                             List<PartRule> feeParts, List<PartRule> incomeParts,
+                             String feeCategory, String incomeCategory, Seiten seiten) {
+        this.seiten = seiten == null ? Seiten.LEER : seiten;
         this.action = action;
         this.feeCategory = feeCategory == null ? "" : feeCategory.trim();
         this.incomeCategory = incomeCategory == null ? "" : incomeCategory.trim();
@@ -184,14 +237,72 @@ public final class StatementTemplate {
 
     /** Dieselbe Vorlage mit anderer fester Gebühr – für die Regelseite. */
     public StatementTemplate withFixedFee(long cents, String category, boolean inTotal) {
+        return withFixedFee(cents, category, inTotal, null);
+    }
+
+    /** Wie {@link #withFixedFee(long, String, boolean)}, mit der Seite der Kategorie. */
+    public StatementTemplate withFixedFee(long cents, String category, boolean inTotal,
+                                          Boolean categoryIsIncome) {
         return new StatementTemplate(action, rules, cents, category, inTotal, feeParts, incomeParts,
-                feeCategory, incomeCategory);
+                feeCategory, incomeCategory,
+                new Seiten(seiten.fee, seiten.income, categoryIsIncome));
+    }
+
+    /** Dieselbe Vorlage mit anderen Seiten ihrer Kategorien – für das einmalige Nachtragen. */
+    public StatementTemplate withSeiten(Seiten neu, List<PartRule> newFeeParts,
+                                        List<PartRule> newIncomeParts) {
+        return new StatementTemplate(action, rules, fixedFeeCents, fixedFeeCategory, fixedFeeInTotal,
+                newFeeParts, newIncomeParts, feeCategory, incomeCategory, neu);
+    }
+
+    /** Sagt zu einem Kategorienamen die Seite, wenn sie daraus eindeutig hervorgeht; sonst {@code null}. */
+    public interface Seitenwissen {
+        Boolean eindeutig(String category);
+    }
+
+    /**
+     * Dieselbe Vorlage, in der jede Kategorie ihre Seite trägt. Angefasst wird nur, was noch keine
+     * hat: Dann gilt, was {@code wissen} über den Namen sagt, und sonst die Rolle – was unter Steuer
+     * und Gebühr steht, ist eine Ausgabe, was unter dem Ertrag steht, eine Einnahme.
+     *
+     * @return {@code this}, wenn nichts fehlte
+     */
+    public StatementTemplate mitNachgetragenenSeiten(Seitenwissen wissen) {
+        boolean[] geaendert = new boolean[1];
+        List<PartRule> fee = nachgetragen(feeParts, false, wissen, geaendert);
+        List<PartRule> income = nachgetragen(incomeParts, true, wissen, geaendert);
+        Seiten neu = new Seiten(
+                nachgetragen(feeCategory, seiten.fee, false, wissen, geaendert),
+                nachgetragen(incomeCategory, seiten.income, true, wissen, geaendert),
+                nachgetragen(fixedFeeCents > 0 ? fixedFeeCategory : "", seiten.fixedFee, false,
+                        wissen, geaendert));
+        return geaendert[0] ? withSeiten(neu, fee, income) : this;
+    }
+
+    private static Boolean nachgetragen(String category, Boolean seite, boolean rolle,
+                                        Seitenwissen wissen, boolean[] geaendert) {
+        if (seite != null || category == null || category.trim().isEmpty()) {
+            return seite;
+        }
+        Boolean bekannt = wissen == null ? null : wissen.eindeutig(category.trim());
+        geaendert[0] = true;
+        return bekannt != null ? bekannt : Boolean.valueOf(rolle);
+    }
+
+    private static List<PartRule> nachgetragen(List<PartRule> parts, boolean rolle,
+                                               Seitenwissen wissen, boolean[] geaendert) {
+        List<PartRule> out = new ArrayList<>();
+        for (PartRule p : parts) {
+            Boolean seite = nachgetragen(p.category, p.categoryIsIncome, rolle, wissen, geaendert);
+            out.add(seite == p.categoryIsIncome ? p : new PartRule(p.label, p.rule, p.category, seite));
+        }
+        return out;
     }
 
     /** Dieselbe Vorlage mit anderen Teilbetragsregeln – für die Regelseite. */
     public StatementTemplate withParts(List<PartRule> newFeeParts, List<PartRule> newIncomeParts) {
         return new StatementTemplate(action, rules, fixedFeeCents, fixedFeeCategory, fixedFeeInTotal,
-                newFeeParts, newIncomeParts, feeCategory, incomeCategory);
+                newFeeParts, newIncomeParts, feeCategory, incomeCategory, seiten);
     }
 
     /**
@@ -216,7 +327,7 @@ public final class StatementTemplate {
             }
         }
         return new StatementTemplate(action, gemischt, fixedFeeCents, fixedFeeCategory,
-                fixedFeeInTotal, feeParts, incomeParts, feeCategory, incomeCategory);
+                fixedFeeInTotal, feeParts, incomeParts, feeCategory, incomeCategory, seiten);
     }
 
     public Map<Field, AnchorRule> rules() {
@@ -298,7 +409,7 @@ public final class StatementTemplate {
                 keptFixedCategory(older), keptFixedInTotal(older),
                 keptParts(feeParts, older.feeParts), keptParts(incomeParts, older.incomeParts),
                 keptCategory(feeCategory, older.feeCategory),
-                keptCategory(incomeCategory, older.incomeCategory));
+                keptCategory(incomeCategory, older.incomeCategory), keptSeiten(older));
     }
 
     /**
@@ -310,6 +421,13 @@ public final class StatementTemplate {
      * verteilte die Steuer auf zu wenige Kategorien — ohne dass die Summe es verriete, denn die liest
      * ja eine eigene Regel.</p>
      */
+    /** Die Seite wandert mit der Kategorie, von der sie stammt (siehe die {@code kept…}-Methoden). */
+    private Seiten keptSeiten(StatementTemplate older) {
+        return new Seiten(feeCategory.isEmpty() ? older.seiten.fee : seiten.fee,
+                incomeCategory.isEmpty() ? older.seiten.income : seiten.income,
+                fixedFeeCents > 0 ? seiten.fixedFee : older.seiten.fixedFee);
+    }
+
     /** Eine einmal festgelegte Kategorie geht beim Lernen nicht verloren. */
     private static String keptCategory(String newer, String older) {
         return newer.isEmpty() ? older : newer;
@@ -419,7 +537,7 @@ public final class StatementTemplate {
                 keptFixedCategory(older), keptFixedInTotal(older),
                 keptParts(feeParts, older.feeParts), keptParts(incomeParts, older.incomeParts),
                 keptCategory(feeCategory, older.feeCategory),
-                keptCategory(incomeCategory, older.incomeCategory));
+                keptCategory(incomeCategory, older.incomeCategory), keptSeiten(older));
     }
 
     private static boolean isExcerptOf(AnchorRule newer, AnchorRule older) {
@@ -457,9 +575,10 @@ public final class StatementTemplate {
         // Stehen Teilzeilen daneben, ist die feste Gebühr eine weitere davon und keine Kategorie für
         // das Ganze — sonst ergäben die Zeilen zusammen nicht mehr den Betrag darüber.
         if (fest && !teile.isEmpty()) {
-            teile.add(new Part("", fixedFeeCents, fixedFeeCategory));
+            teile.add(new Part("", fixedFeeCents, fixedFeeCategory, null, seiten.fixedFee));
         }
         e.feeCategory = fest && teile.isEmpty() ? fixedFeeCategory : "";
+        e.feeCategoryIsIncome = e.feeCategory.isEmpty() ? null : seiten.fixedFee;
         // Eine Regel, die gesucht und nichts gefunden hat, sagt etwas anderes als eine fehlende Regel:
         // „stand nicht drin" statt „weiß ich nicht". Bei einer Dividende macht das den Unterschied — sonst
         // gilt die Steuer als unbekannt, und der Steuersatz aus den Einstellungen erfindet eine, obwohl
@@ -478,8 +597,9 @@ public final class StatementTemplate {
             e.netCents += ("sell".equals(action) ? -1 : 1) * fixedFeeCents;
         }
         e.dateMillis = date == null ? -1 : date.readDate(text);
-        e.feeParts = orWhole(teile, feeCategory, e.feeCents);
-        e.incomeParts = orWhole(readParts(incomeParts, text), incomeCategory, e.grossCents);
+        e.feeParts = orWhole(teile, feeCategory, seiten.fee, e.feeCents);
+        e.incomeParts = orWhole(readParts(incomeParts, text), incomeCategory, seiten.income,
+                e.grossCents);
         return e;
     }
 
@@ -493,7 +613,8 @@ public final class StatementTemplate {
         for (PartRule part : parts) {
             Long cents = part.rule.readCents(text);
             if (cents != null) {
-                out.add(new Part(part.label, Math.abs(cents), part.category));
+                out.add(new Part(part.label, Math.abs(cents), part.category, null,
+                        part.categoryIsIncome));
             }
         }
         return out;
@@ -503,9 +624,10 @@ public final class StatementTemplate {
      * Nichts aufzuteilen, aber eine Kategorie für das Ganze: dann ist der ganze Betrag die eine Zeile.
      * So gilt für Banken ohne Aufteilung dieselbe Mechanik wie für die mit.
      */
-    private static List<Part> orWhole(List<Part> parts, String wholeCategory, Long wholeCents) {
+    private static List<Part> orWhole(List<Part> parts, String wholeCategory, Boolean wholeSide,
+                                      Long wholeCents) {
         if (parts.isEmpty() && !wholeCategory.isEmpty() && wholeCents != null && wholeCents != 0) {
-            parts.add(new Part("", Math.abs(wholeCents), wholeCategory));
+            parts.add(new Part("", Math.abs(wholeCents), wholeCategory, null, wholeSide));
         }
         return parts;
     }
@@ -561,7 +683,10 @@ public final class StatementTemplate {
         return rules.equals(other.rules) && feeParts.equals(other.feeParts)
                 && incomeParts.equals(other.incomeParts)
                 && feeCategory.equals(other.feeCategory)
-                && incomeCategory.equals(other.incomeCategory);
+                && incomeCategory.equals(other.incomeCategory)
+                && seiteGleich(seiten.fee, other.seiten.fee)
+                && seiteGleich(seiten.income, other.seiten.income)
+                && seiteGleich(seiten.fixedFee, other.seiten.fixedFee);
     }
 
     /** Das Ergebnis einer Auslese. Nicht Erkanntes ist {@code null} bzw. -1. */
@@ -574,6 +699,8 @@ public final class StatementTemplate {
         public Long feeCents;
         /** Kategorie einer festen Gebühr; leer, wenn keine angesetzt wurde. */
         public String feeCategory = "";
+        /** Die Seite von {@link #feeCategory}; {@code null} = unbekannt. */
+        public Boolean feeCategoryIsIncome;
         public Long netCents;
         /** Nur gesetzt, wenn von Hand eine Brutto-Regel angelegt wurde (siehe {@link Field#GROSS}). */
         public Long grossCents;

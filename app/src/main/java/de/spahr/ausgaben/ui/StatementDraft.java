@@ -61,6 +61,8 @@ public class StatementDraft implements Parcelable {
      * geratene: sie ist von Hand festgelegt, die andere nur erschlossen.</p>
      */
     public String fixedFeeCategory = "";
+    /** Die Seite von {@link #fixedFeeCategory}; {@code null} = unbekannt. */
+    public Boolean fixedFeeCategoryIsIncome;
     /**
      * Die Kategoriezeilen der Steuer bzw. Gebühr und des Ertrags — dieselbe Aufteilung, die auch die
      * fertige Bewegung trägt (siehe {@link de.spahr.ausgaben.db.SecurityTxSplit}).
@@ -236,7 +238,7 @@ public class StatementDraft implements Parcelable {
                 continue;
             }
             tx.parts.add(new SecurityTxSplit(0, income, part.category.trim(), part.cents,
-                    part.label, tx.parts.size()));
+                    part.label, tx.parts.size(), part.categoryIsIncome));
         }
     }
 
@@ -268,6 +270,7 @@ public class StatementDraft implements Parcelable {
         netCents = (Long) in.readValue(Long.class.getClassLoader());
         moneyAccount = orEmpty(in.readString());
         fixedFeeCategory = orEmpty(in.readString());
+        fixedFeeCategoryIsIncome = CategorySplits.Part.ausZahl(in.readInt());
         feeParts = readParts(in);
         incomeParts = readParts(in);
         failure = in.readInt();
@@ -295,6 +298,7 @@ public class StatementDraft implements Parcelable {
         out.writeValue(netCents);
         out.writeString(moneyAccount);
         out.writeString(fixedFeeCategory);
+        out.writeInt(CategorySplits.Part.alsZahl(fixedFeeCategoryIsIncome));
         writeParts(out, feeParts);
         writeParts(out, incomeParts);
         out.writeInt(failure);
@@ -325,13 +329,14 @@ public class StatementDraft implements Parcelable {
         return s == null ? "" : s;
     }
 
-    /** Kategoriezeilen im Parcel: Anzahl, dann je Zeile Kategorie, Betrag und Beschriftung. */
+    /** Kategoriezeilen im Parcel: Anzahl, dann je Zeile Kategorie, Betrag, Beschriftung und Seite. */
     private static void writeParts(Parcel out, List<CategorySplits.Part> parts) {
         out.writeInt(parts.size());
         for (CategorySplits.Part part : parts) {
             out.writeString(part.category);
             out.writeLong(part.cents);
             out.writeString(part.label);
+            out.writeInt(CategorySplits.Part.alsZahl(part.categoryIsIncome));
         }
     }
 
@@ -339,8 +344,11 @@ public class StatementDraft implements Parcelable {
         List<CategorySplits.Part> out = new ArrayList<>();
         int count = in.readInt();
         for (int i = 0; i < count; i++) {
-            out.add(new CategorySplits.Part(orEmpty(in.readString()), in.readLong(),
-                    orEmpty(in.readString())));
+            String category = orEmpty(in.readString());
+            long cents = in.readLong();
+            String label = orEmpty(in.readString());
+            out.add(new CategorySplits.Part(category, cents, label,
+                    CategorySplits.Part.ausZahl(in.readInt())));
         }
         return out;
     }

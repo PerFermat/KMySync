@@ -91,7 +91,9 @@ final class FilterDialog {
             if (it != null) {
                 catValue[0] = it.value;
                 catIsMain[0] = it.isMain;
-                catIsIncome[0] = it.value.isEmpty() ? null : it.groupIsIncome;
+                // Die Gruppe des gewählten Eintrags: Bei gleichem Namen unter Einnahme und Ausgabe
+                // filtert die Liste sonst immer auf die erste der beiden.
+                catIsIncome[0] = it.value.isEmpty() ? null : catAdapter.sideIn(fCategory, value);
             }
         });
 
