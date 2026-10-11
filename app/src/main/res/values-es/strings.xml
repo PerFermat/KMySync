@@ -378,6 +378,7 @@
     <string name="receipt_switch">Fotos de justificantes (capturar y sincronizar)</string>
     <string name="receipt_add">Justificante</string>
     <string name="receipt_attached">Justificante ✓</string>
+    <string name="receipt_source_scan">Escanear</string>
     <string name="receipt_source_camera">Tomar foto</string>
     <string name="receipt_source_gallery">Elegir de la galería</string>
     <string name="receipt_source_document">Elegir documento PDF</string>

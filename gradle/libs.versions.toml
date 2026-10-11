@@ -19,6 +19,8 @@ targetSdk = "34"
 # --- Von :app und :wear gemeinsam geführt ---
 appcompat = "1.8.0"
 wearable = "20.0.1"
+# Nur :app, nur Variante „full": Dokumentenscanner der Google-Play-Dienste für den Belegscanner.
+mlkitDocumentScanner = "16.0.0"
 junit = "4.13.2"
 
 # --- Alle drei Module MÜSSEN dieselbe Fassung tragen (siehe oben) ---
@@ -87,6 +89,7 @@ security-crypto = { module = "androidx.security:security-crypto", version.ref = 
 biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
 
 play-services-wearable = { module = "com.google.android.gms:play-services-wearable", version.ref = "wearable" }
+play-services-mlkit-document-scanner = { module = "com.google.android.gms:play-services-mlkit-document-scanner", version.ref = "mlkitDocumentScanner" }
 wear = { module = "androidx.wear:wear", version.ref = "wear" }
 tiles = { module = "androidx.wear.tiles:tiles", version.ref = "tiles" }
 concurrent-futures = { module = "androidx.concurrent:concurrent-futures", version.ref = "concurrentFutures" }

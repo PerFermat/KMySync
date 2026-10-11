@@ -402,6 +402,7 @@
     <string name="receipt_switch">Receipt photos (capture &amp; sync)</string>
     <string name="receipt_add">Receipt</string>
     <string name="receipt_attached">Receipt ✓</string>
+    <string name="receipt_source_scan">Scan</string>
     <string name="receipt_source_camera">Take photo</string>
     <string name="receipt_source_gallery">Choose from gallery</string>
     <string name="receipt_source_document">Choose PDF document</string>

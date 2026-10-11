@@ -379,6 +379,7 @@
     <string name="receipt_switch">Belegfotos (aufnehmen &amp; synchronisieren)</string>
     <string name="receipt_add">Beleg</string>
     <string name="receipt_attached">Beleg ✓</string>
+    <string name="receipt_source_scan">Scannen</string>
     <string name="receipt_source_camera">Foto aufnehmen</string>
     <string name="receipt_source_gallery">Aus Galerie wählen</string>
     <string name="receipt_source_document">PDF-Dokument wählen</string>

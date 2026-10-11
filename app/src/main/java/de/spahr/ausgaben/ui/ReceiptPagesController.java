@@ -87,6 +87,8 @@ class ReceiptPagesController {
     private java.io.File cameraTempFile;
     private final ActivityResultLauncher<android.net.Uri> takePictureLauncher;
     private final ActivityResultLauncher<String> pickImageLauncher;
+    /** Der Dokumentenscanner der Google-Dienste; nur in der Variante „full" vorhanden. */
+    private final DocumentScan documentScan;
     /** Dateiauswahl des Systems für ein PDF-Dokument. */
     private final ActivityResultLauncher<String[]> pickPdfLauncher;
     /** Zuschneiden/Begradigen/Aufhellen eines Belegs ({@link ReceiptEditActivity}). */
@@ -117,6 +119,7 @@ class ReceiptPagesController {
                     cameraTempUri = null;
                     cameraTempFile = null;
                 });
+        documentScan = new DocumentScan(activity, this::ingestScan);
         pickImageLauncher = activity.registerForActivityResult(
                 new ActivityResultContracts.GetContent(), uri -> {
                     if (uri != null) {
@@ -291,11 +294,16 @@ class ReceiptPagesController {
      * Eintrag ist deshalb abgeblendet, bis alle vorhandenen Seiten gelöscht sind.
      */
     void showSourceDialog() {
-        String[] items = {
-                activity.getString(R.string.receipt_source_camera),
-                activity.getString(R.string.receipt_source_gallery),
-                activity.getString(R.string.receipt_source_document)
-        };
+        // Mit Dokumentenscanner steht er an erster Stelle; alles andere rückt um eins nach unten.
+        final int scan = DocumentScan.available() ? 1 : 0;
+        java.util.List<String> eintraege = new java.util.ArrayList<>();
+        if (scan == 1) {
+            eintraege.add(activity.getString(R.string.receipt_source_scan));
+        }
+        eintraege.add(activity.getString(R.string.receipt_source_camera));
+        eintraege.add(activity.getString(R.string.receipt_source_gallery));
+        eintraege.add(activity.getString(R.string.receipt_source_document));
+        String[] items = eintraege.toArray(new String[0]);
         final boolean pdf = hasPdfPages();
         final boolean photo = hasPhotoPages();
         // Ein ArrayAdapter statt setItems: nur er kann einzelne Einträge sperren (die Liste des Dialogs
@@ -304,7 +312,7 @@ class ReceiptPagesController {
                 activity, android.R.layout.simple_list_item_1, items) {
             @Override
             public boolean isEnabled(int position) {
-                return position == 2 ? !photo : !pdf;
+                return position == scan + 2 ? !photo : !pdf;
             }
 
             @Override
@@ -317,6 +325,13 @@ class ReceiptPagesController {
         new AppDialog(activity)
                 .setTitle(R.string.receipt_add)
                 .setAdapter(adapter, (d, which) -> {
+                    if (which < scan) {
+                        // Lässt sich der Scanner nicht starten (keine Play-Dienste, Modul nicht
+                        // ladbar), bleibt der bisherige Weg über die Kamera.
+                        documentScan.start(this::startReceiptCamera);
+                        return;
+                    }
+                    which -= scan;
                     if (which == 0) {
                         startReceiptCamera();
                     } else if (which == 1) {
@@ -363,6 +378,45 @@ class ReceiptPagesController {
         } catch (Exception e) {
             Toast.makeText(activity, R.string.receipt_error, Toast.LENGTH_SHORT).show();
         }
+    }
+
+    /**
+     * Übernimmt die Seiten eines Scans. Nacheinander in einem Lauf, damit sie in der gescannten
+     * Reihenfolge an der Buchung hängen; ohne die Frage nach dem Zuschneiden, denn das hat der
+     * Scanner schon getan. Der Knopf dafür an jeder Seite bleibt.
+     */
+    private void ingestScan(final java.util.List<android.net.Uri> seiten) {
+        if (seiten == null || seiten.isEmpty()) {
+            return;
+        }
+        new Thread(() -> {
+            final java.util.List<Page> neu = new java.util.ArrayList<>();
+            boolean fehler = false;
+            for (android.net.Uri src : seiten) {
+                java.io.File tmp = new java.io.File(Receipts.dir(activity),
+                        "pend_" + java.util.UUID.randomUUID() + ".jpg");
+                try {
+                    ReceiptImage.saveScaledJpeg(activity, src, tmp, 2000, 75);
+                    if (tmp.exists() && tmp.length() > 0) {
+                        neu.add(new Page(null, tmp));
+                        continue;
+                    }
+                } catch (Exception e) {
+                    // unten als Fehler gemeldet
+                }
+                tmp.delete();
+                fehler = true;
+            }
+            final boolean ffehler = fehler;
+            post(() -> {
+                if (!neu.isEmpty()) {
+                    receiptPages.addAll(neu);
+                    host.onReceiptPagesChanged();
+                }
+                Toast.makeText(activity, ffehler ? R.string.receipt_error : R.string.receipt_attached,
+                        Toast.LENGTH_SHORT).show();
+            });
+        }).start();
     }
 
     /** Komprimiert die Quelle sofort in ein Temp (Berechtigung ist jetzt gültig); Finalisierung erst beim Speichern. */

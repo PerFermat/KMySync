@@ -179,6 +179,9 @@ dependencies {
     // Nur im „full"-Flavor: Wear Data Layer (Google Play Services, proprietär). Der „foss"-Flavor (F-Droid)
     // enthält kein GMS – siehe src/foss/.../wear/LanguageSync.java (No-op) und das fehlende full-Manifest.
     fullImplementation libs.play.services.wearable
+    // Ebenfalls nur „full": der Dokumentenscanner der Play-Dienste für Belege (proprietär). „foss" hat
+    // unter demselben Namen eine Klasse ohne ihn – siehe src/foss/.../ui/DocumentScan.java.
+    fullImplementation libs.play.services.mlkit.document.scanner
 
     testImplementation libs.junit
     // Nur für Tests: KmyDocument/KmyImporter/KmyExporter brauchen android.util.Xml, TextUtils und einen
