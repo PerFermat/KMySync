@@ -16,8 +16,8 @@ import de.spahr.ausgaben.settings.ProfileManager;
         Budget.class, CategoryType.class, ScheduledTransaction.class, ScheduledSplit.class,
         AnalysisExtra.class, SecurityTxValueOverride.class, KmyPendingDelete.class, SecurityPrice.class,
         ScheduledAdvance.class, AccountGroup.class, AccountGroupMember.class, AccountKindOrder.class,
-        Tag.class, SecurityTxSplit.class},
-        version = 56, exportSchema = true)
+        Tag.class, SecurityTxSplit.class, NotificationTemplateRow.class},
+        version = 57, exportSchema = true)
 public abstract class AppDatabase extends RoomDatabase {
 
     /** v1 → v2: Notiz-Spalte ergänzen (bestehende Buchungen bleiben erhalten). */
@@ -780,7 +780,28 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    /**
+     * v56 → v57: Vorlagen für Buchungen aus Benachrichtigungen.
+     *
+     * <p>Nur die Vorlagen — die aufgehobenen Benachrichtigungen selbst stehen bewusst <b>nicht</b> in
+     * dieser Datenbank ({@code NotificationBuffer}): sie wird als ganze Datei gesichert, und die Texte
+     * fremder Apps gehören in keine Sicherung.</p>
+     */
+    static final Migration MIGRATION_56_57 = new Migration(56, 57) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS notification_template ("
+                    + "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, package_name TEXT NOT NULL, "
+                    + "discriminator TEXT NOT NULL, account TEXT NOT NULL, is_income INTEGER NOT NULL, "
+                    + "amount_rule TEXT NOT NULL, payee_rule TEXT)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_notification_template_package_name_discriminator "
+                    + "ON notification_template (package_name, discriminator)");
+        }
+    };
+
     public abstract BookingDao bookingDao();
+
+    public abstract NotificationTemplateDao notificationTemplateDao();
 
     public abstract AccountDao accountDao();
 
@@ -851,7 +872,8 @@ public abstract class AppDatabase extends RoomDatabase {
                                 MIGRATION_44_45, MIGRATION_45_46, MIGRATION_46_47,
                                 MIGRATION_47_48, MIGRATION_48_49, MIGRATION_49_50,
                                 MIGRATION_50_51, MIGRATION_51_52, MIGRATION_52_53,
-                                MIGRATION_53_54, MIGRATION_54_55, MIGRATION_55_56)
+                                MIGRATION_53_54, MIGRATION_54_55, MIGRATION_55_56,
+                                MIGRATION_56_57)
                         .build();
             }
             return instance;

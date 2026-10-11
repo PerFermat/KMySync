@@ -481,6 +481,82 @@ public final class AnchorRule implements java.io.Serializable {
     }
 
     /**
+     * Als Ende eines Textfelds: der Text reicht bis zur ersten Zahl oder zum ersten Währungskennzeichen.
+     * Ein Wort kann das nicht sein — {@link #readText} sucht Wörter, und „#" steht in keiner Meldung als
+     * eigenes.
+     */
+    public static final String UNTIL_NUMBER = "#";
+
+    /**
+     * Der <b>Text</b> an der angeankerten Stelle — für Felder, die keine Zahl sind, also den Empfänger.
+     * {@code null}, wenn keine Beschriftung anschlägt oder das Ende fehlt.
+     *
+     * <p>Gelesen wird wie bei den Zahlen: hinter der Beschriftung, in der Zeile darunter oder darüber,
+     * die unterste Fundstelle gewinnt. {@link #position}, {@link #nth} und {@link #currency} haben hier
+     * keine Bedeutung.</p>
+     *
+     * <p>{@code until} sagt, wo der Text aufhört: leer heißt am Zeilenende, {@link #UNTIL_NUMBER} vor
+     * der ersten Zahl, sonst vor diesem Wort. Fehlt das Wort, gibt es <b>keinen</b> Text und nicht etwa
+     * den Rest der Zeile: die Meldung ist dann anders gebaut als die, aus der gelernt wurde, und was
+     * dahinter steht, ist nicht der Empfänger.</p>
+     */
+    public String readText(PdfText text, String until) {
+        if (text == null) {
+            return null;
+        }
+        for (String anchor : anchors) {
+            String found = textOf(text, anchor, until == null ? "" : until.trim());
+            if (found != null) {
+                return found;   // die erste Beschriftung, die trägt
+            }
+        }
+        return null;
+    }
+
+    /** Der Text zu <b>einer</b> Beschriftung; passt sie auf mehrere Zeilen, gilt die unterste. */
+    private String textOf(PdfText text, String anchor, String until) {
+        List<PdfText.Line> lines = text.lines();
+        String result = null;
+        for (int i = 0; i < lines.size(); i++) {
+            for (Target target : targets(lines, i, anchor)) {
+                String cut = cutAt(target.text.trim(), until);
+                if (cut != null && !cut.isEmpty()) {
+                    result = cut;
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    /** Der Anfang von {@code line} bis vor {@code until}; {@code null}, wenn das Ende darin fehlt. */
+    static String cutAt(String line, String until) {
+        if (until.isEmpty()) {
+            return line;
+        }
+        if (!UNTIL_NUMBER.equals(until)) {
+            int end = afterAnchor(line, until);
+            return end < 0 ? null : line.substring(0, end - until.length()).trim();
+        }
+        StringBuilder out = new StringBuilder();
+        for (String token : line.split("\\s+")) {
+            if (endsText(token)) {
+                return out.toString();
+            }
+            if (out.length() > 0) {
+                out.append(' ');
+            }
+            out.append(token);
+        }
+        return null;   // keine Zahl in der Zeile – dann ist es nicht die gelernte Form
+    }
+
+    /** Ob das Wort eine Zahl oder ein Währungskennzeichen ist und damit ein Textfeld beendet. */
+    static boolean endsText(String token) {
+        return TextValues.toDecimal(token) != null || !currencyOf(token).isEmpty();
+    }
+
+    /**
      * Ob die Zeile die Beschriftung als eigenes Wort enthält.
      *
      * <p>Hieß bis 1.12 {@code startsWithAnchor} und trug den Kommentar „Ob die Zeile mit genau dieser

@@ -488,6 +488,9 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                 importFlow.runKmyImport(selectedAccount.isEmpty() ? null : selectedAccount);
             } else {
                 refreshBookings();
+                // Ohne KMyMoney-Quelle gibt es keine Aktualisierung, die scheitern könnte: der
+                // Benachrichtigungs-Durchlauf folgt direkt.
+                NotificationBatchActivity.startIfAny(this, repository);
             }
         });
 

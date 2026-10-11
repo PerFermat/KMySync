@@ -7,6 +7,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import de.spahr.ausgaben.pdf.PdfText;
+import de.spahr.ausgaben.util.PayeeMatch;
 import de.spahr.ausgaben.util.TextValues;
 
 /**
@@ -766,6 +767,203 @@ public final class TemplateLearner {
         merke(out, aboveLine(text, gesucht, epsilon, bindCurrency, used));
         merke(out, summedLines(text, gesucht, epsilon, bindCurrency, used));
         return out;
+    }
+
+    /** So viele Wörter direkt vor dem Wert trägt ein Anker im Fließtext höchstens. */
+    private static final int MAX_ANKERWOERTER = 2;
+
+    /**
+     * Die Wege zu einem Betrag in einem <b>Satz</b> statt in einer Abrechnung — für Benachrichtigungen.
+     *
+     * <p>{@link #kandidaten} nimmt als Beschriftung, was vor dem Wert steht, zurück bis zur nächsten
+     * Zahl. In einer Abrechnung ist das die Beschriftung. In „Kartenzahlung bei REWE Markt über
+     * 12,34 EUR" ist es der halbe Satz samt Händler, und die Regel träfe nur noch Zahlungen bei REWE.
+     * Hier gilt deshalb nur das eine Wort unmittelbar vor dem Wert, dann die zwei — und keines davon
+     * darf zu {@code meiden} gehören, dem Empfänger dieser einen Meldung.</p>
+     *
+     * <p>Gelesen wird die <b>erste</b> Zahl hinter dem Anker, nicht die letzte: dahinter kann noch eine
+     * Kartenendung oder ein Restbetrag stehen. Jeder Kandidat ist zurückgelesen.</p>
+     */
+    public static List<AnchorRule> kandidatenImFliesstext(PdfText text, Double value, String meiden) {
+        List<AnchorRule> out = new ArrayList<>();
+        if (text == null || value == null) {
+            return out;
+        }
+        double gesucht = Math.abs(value);
+        List<String> tabu = meiden == null ? java.util.Collections.<String>emptyList()
+                : java.util.Arrays.asList(PayeeMatch.normalizeTokens(meiden));
+        for (PdfText.Line line : text.lines()) {
+            String zeile = line.text();
+            String[] tokens = zeile.split(" ");
+            for (int i = 0; i < tokens.length; i++) {
+                Double zahl = TextValues.toDecimal(tokens[i]);
+                if (zahl == null || Math.abs(Math.abs(zahl) - gesucht) > MONEY_EPSILON) {
+                    continue;
+                }
+                // „über EUR 12,34": das Kürzel steht zwischen Beschriftung und Wert und gehört zu keinem.
+                int ende = i > 0 && !AnchorRule.currencyOf(tokens[i - 1]).isEmpty() ? i - 1 : i;
+                for (int n = 1; n <= MAX_ANKERWOERTER && ende - n >= 0; n++) {
+                    if (!istAnkerwort(tokens[ende - n], tabu)) {
+                        break;   // weiter links wird es nicht besser
+                    }
+                    String label = join(tokens, ende - n, ende);
+                    if (!isUsable(label, java.util.Collections.<String>emptyList(),
+                            AnchorRule.Position.FIRST)) {
+                        continue;   // „an" allein ist zu kurz, „Zahlung an" nicht
+                    }
+                    AnchorRule regel = AnchorRule.single(label, AnchorRule.Direction.SAME_LINE,
+                            AnchorRule.currencyOf(AnchorRule.afterAnchorText(zeile, label)),
+                            AnchorRule.Position.FIRST, 1);
+                    if (liestSichSelbst(regel, text, gesucht, MONEY_EPSILON)) {
+                        merke(out, regel);
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Die Regel für ein Textfeld — den Empfänger —, abgeleitet aus dem Namen, den der Nutzer gebucht
+     * hat. {@code null}, wenn der Name in der Meldung nicht steht oder sich nicht anankern lässt.
+     *
+     * <p>Der gebuchte Name ist selten der gedruckte: gebucht wird „Rewe", in der Meldung steht „REWE
+     * Markt GmbH". Der Text reicht deshalb vom gefundenen Wort nach rechts, solange Namensteile folgen —
+     * Wörter, die nicht klein beginnen und keine Zahl sind. Das Wort dahinter ist das Ende der Regel
+     * ({@link TextRule#until}).</p>
+     *
+     * <p>Geankert wird am Wort davor („bei"). Führt der Name die Zeile an, an der Beschriftung der
+     * Zeile darüber oder darunter — so steht es, wenn der Titel der Meldung der Händler ist.</p>
+     */
+    public static TextRule textregel(PdfText text, String gesucht) {
+        if (text == null || gesucht == null || gesucht.trim().isEmpty()) {
+            return null;
+        }
+        List<PdfText.Line> lines = text.lines();
+        List<String> keine = java.util.Collections.emptyList();
+        for (int i = 0; i < lines.size(); i++) {
+            String[] tokens = lines.get(i).text().split(" ");
+            int[] span = nameIn(tokens, gesucht);
+            if (span == null) {
+                continue;
+            }
+            int to = span[1];
+            while (to < tokens.length && istNamensteil(tokens[to])) {
+                to++;
+            }
+            String until = to == tokens.length ? ""
+                    : AnchorRule.endsText(tokens[to]) ? AnchorRule.UNTIL_NUMBER : tokens[to];
+            String soll = join(tokens, span[0], to);
+            List<AnchorRule> wege = new ArrayList<>();
+            for (int n = 1; n <= MAX_ANKERWOERTER && span[0] - n >= 0; n++) {
+                if (!istAnkerwort(tokens[span[0] - n], keine)) {
+                    break;
+                }
+                String label = join(tokens, span[0] - n, span[0]);
+                if (isUsable(label, keine, AnchorRule.Position.LAST)) {
+                    wege.add(AnchorRule.single(label, AnchorRule.Direction.SAME_LINE));
+                }
+            }
+            if (span[0] == 0) {
+                for (int d = 1; d <= AnchorRule.MAX_DISTANCE; d++) {
+                    textzeile(wege, lines, i - d, AnchorRule.Direction.LINE_BELOW, d);
+                    textzeile(wege, lines, i + d, AnchorRule.Direction.LINE_ABOVE, d);
+                }
+            }
+            for (AnchorRule weg : wege) {
+                TextRule regel = new TextRule(weg, until);
+                if (soll.equalsIgnoreCase(regel.read(text))) {
+                    return regel;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Die Beschriftung der Zeile {@code j} als Anker für ein Textfeld {@code distance} Zeilen weiter. */
+    private static void textzeile(List<AnchorRule> out, List<PdfText.Line> lines, int j,
+                                  AnchorRule.Direction direction, int distance) {
+        if (j < 0 || j >= lines.size()) {
+            return;
+        }
+        String label = labelOf(lines.get(j).text());
+        if (isUsable(label, java.util.Collections.<String>emptyList(), AnchorRule.Position.LAST)) {
+            out.add(new AnchorRule(java.util.Collections.singletonList(label), direction, false, "",
+                    AnchorRule.Position.LAST, 1, distance));
+        }
+    }
+
+    /**
+     * Wo der gebuchte Name unter den Wörtern steht: {@code {von, bis}}, bis ausschließlich. Erst alle
+     * Wörter des Namens hintereinander, sonst eines davon allein — „Rewe Köln" findet „REWE Markt".
+     */
+    private static int[] nameIn(String[] tokens, String gesucht) {
+        String[] name = PayeeMatch.normalizeTokens(gesucht);
+        if (name.length == 0) {
+            return null;
+        }
+        String[] norm = new String[tokens.length];
+        for (int i = 0; i < tokens.length; i++) {
+            norm[i] = String.join("", PayeeMatch.normalizeTokens(tokens[i]));
+        }
+        for (int i = 0; i + name.length <= norm.length; i++) {
+            boolean alle = true;
+            for (int k = 0; k < name.length && alle; k++) {
+                alle = name[k].equals(norm[i + k]);
+            }
+            if (alle) {
+                return new int[]{i, i + name.length};
+            }
+        }
+        // Kein ganzer Treffer: dann jedes Wort des Namens für sich, das längste zuerst. Ein kurzes
+        // Wort allein träfe zu viel.
+        String[] nachLaenge = name.clone();
+        java.util.Arrays.sort(nachLaenge, (a, b) -> b.length() - a.length());
+        for (String wort : nachLaenge) {
+            if (wort.length() < 4) {
+                break;
+            }
+            for (int i = 0; i < norm.length; i++) {
+                if (wort.equals(norm[i])) {
+                    return new int[]{i, i + 1};
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Ob das Wort einen Namen fortsetzt: keine Zahl, keine Währung, kein klein geschriebenes Wort. */
+    private static boolean istNamensteil(String token) {
+        return !token.isEmpty() && !AnchorRule.endsText(token)
+                && !Character.isLowerCase(token.charAt(0));
+    }
+
+    /** Ob das Wort in einen Anker gehört: ohne Ziffer, kein Währungskürzel, kein Teil des Empfängers. */
+    private static boolean istAnkerwort(String token, List<String> tabu) {
+        if (token.isEmpty() || hasDigit(token) || !AnchorRule.currencyOf(token).isEmpty()) {
+            return false;
+        }
+        String[] teile = PayeeMatch.normalizeTokens(token);
+        if (teile.length == 0) {
+            return false;   // nur Satzzeichen
+        }
+        for (String teil : teile) {
+            if (tabu.contains(teil)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static String join(String[] tokens, int from, int to) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = from; i < to; i++) {
+            if (sb.length() > 0) {
+                sb.append(' ');
+            }
+            sb.append(tokens[i]);
+        }
+        return sb.toString();
     }
 
     /**

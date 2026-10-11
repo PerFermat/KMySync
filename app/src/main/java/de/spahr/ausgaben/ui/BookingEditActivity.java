@@ -46,7 +46,7 @@ import de.spahr.ausgaben.settings.DateFormats;
  * Unterstützt drei Typen: Ausgabe / Umbuchung / Einnahme. Bei Ausgabe/Einnahme können mehrere
  * Kategorien mit Teilbeträgen erfasst werden (Splitbuchung); bei Umbuchung zwei Konten (Von/Nach).
  */
-public class BookingEditActivity extends LocalizedActivity {
+public class BookingEditActivity extends LocalizedActivity implements HostedDialog.Host {
 
     public static final String EXTRA_BOOKING_ID = "booking_id";
     /** Öffnet den Editor als NEUE Buchung, vorbefüllt aus dieser Vorlage-Buchung (Sprach-Schnellerfassung). */
@@ -61,6 +61,26 @@ public class BookingEditActivity extends LocalizedActivity {
     public static final String EXTRA_ALIAS_ID = "alias_id";
     /** Neue Buchung mit vorbelegtem Konto (das in der Buchungsliste angezeigte). */
     public static final String EXTRA_PRESET_ACCOUNT = "preset_account";
+    /**
+     * Stapelmodus für die Liste der Buchungen aus Benachrichtigungen: die Maske speichert nicht,
+     * sondern gibt zurück, was der Nutzer eingetragen hat ({@code RESULT_*}). Gebucht wird erst in der
+     * Liste, alles zusammen. Das Vorbild ist {@code SecurityTxEditActivity.EXTRA_BATCH}.
+     */
+    public static final String EXTRA_BATCH = "batch";
+    /** Vorbelegung des Buchungsdatums (epoch millis) – im Stapelmodus die Zeit der Meldung. */
+    public static final String EXTRA_PREFILL_DATE_MS = "prefill_date_ms";
+    /** Vorbelegung der Buchungsart: {@code true} = Einnahme. */
+    public static final String EXTRA_PREFILL_INCOME = "prefill_income";
+    public static final String RESULT_PAYEE = "result_payee";
+    public static final String RESULT_CENTS = "result_cents";
+    public static final String RESULT_INCOME = "result_income";
+    public static final String RESULT_ACCOUNT = "result_account";
+    public static final String RESULT_DATE_MS = "result_date_ms";
+    public static final String RESULT_CATEGORY = "result_category";
+    /** -1 unbekannt, 0 Ausgabekategorie, 1 Einnahmekategorie. */
+    public static final String RESULT_CATEGORY_SIDE = "result_category_side";
+    public static final String RESULT_NOTE = "result_note";
+    public static final String RESULT_TAGS = "result_tags";
     /**
      * Bei einer per Alias/Vorlage aufgelösten Umbuchung: das in der Buchungsliste angezeigte Konto
      * (Nutzereingabe). Steckt es bereits als Von- oder Nach-Konto in Alias/Vorlage, bleiben beide Konten
@@ -96,6 +116,8 @@ public class BookingEditActivity extends LocalizedActivity {
     private Booking booking; // null = Neu-Modus
     /** true = reine Ansicht (kurzer Druck): alle Felder gesperrt, keine Aktionsknöpfe. */
     private boolean readOnly;
+    /** Stapelmodus ({@link #EXTRA_BATCH}): zurückgeben statt speichern. */
+    private boolean batch;
     /** true = bereits exportierte Buchung im CSV-Modus: erzwingt {@link #readOnly}, s. {@link CsvModeGuard}. */
     private boolean csvLocked;
     /**
@@ -313,6 +335,7 @@ public class BookingEditActivity extends LocalizedActivity {
         // feststehen, damit auch die Kategorie-Zeilen nicht editierbar sind.
         readOnly = getIntent().getBooleanExtra(EXTRA_READ_ONLY, false)
                 || getIntent().getLongExtra(EXTRA_SCHEDULED_ID, -1) >= 0;
+        batch = getIntent().getBooleanExtra(EXTRA_BATCH, false);
         splitLocked = CsvModeGuard.splitBlocked(settings.isKmyMode());
         splitCtl = new SplitRowController(splitContainer, editAmount, getLayoutInflater(),
                 readOnly, splitLocked, this::updateSaveEnabled);
@@ -464,7 +487,9 @@ public class BookingEditActivity extends LocalizedActivity {
         // Standort vorwärmen, wenn GPS aktiv ist und die Buchung bearbeitbar ist (nicht in der reinen Ansicht/
         // Vorschau). So kann auch „Als neue speichern" aus einer bestehenden Buchung aktuelle Koordinaten
         // anhängen. Die Berechtigung wird nur bei einer echten Neu-/Vorlage-Buchung aktiv angefragt.
-        if (settings.isGpsEnabled() && !readOnly && scheduledId < 0) {
+        // Im Stapelmodus auch nicht: die Buchung entstand dort, wo die Karte war, nicht wo das Handy
+        // gerade liegt.
+        if (settings.isGpsEnabled() && !readOnly && scheduledId < 0 && !batch) {
             locationTagger = new LocationTagger(this);
             locationTagger.setOnLocationUpdate(this::refreshNoteLocation);
             locationPermissionLauncher = registerForActivityResult(
@@ -516,6 +541,14 @@ public class BookingEditActivity extends LocalizedActivity {
             prefilledPayee = prefillPayee == null ? "" : prefillPayee;
             if (voiceAmount >= 0) {
                 editAmount.setText(de.spahr.ausgaben.settings.MoneyFormat.plain(voiceAmount));
+            }
+            long prefillDate = getIntent().getLongExtra(EXTRA_PREFILL_DATE_MS, -1);
+            if (prefillDate > 0) {
+                selectedDate.setTimeInMillis(prefillDate);
+                updateDateField();
+            }
+            if (getIntent().getBooleanExtra(EXTRA_PREFILL_INCOME, false)) {
+                toggleType.check(R.id.btnIncome);
             }
             // Alias-Treffer: bevorzugte Buchungsart setzen und Konto/Kategorien/Von-Bis vorbelegen.
             long aliasId = getIntent().getLongExtra(EXTRA_ALIAS_ID, -1);
@@ -1007,16 +1040,41 @@ public class BookingEditActivity extends LocalizedActivity {
      * gewählt wurde: die Regel hängt am Plan, nicht am Zahltag.
      */
     private void finishAfterSave() {
+        finishAfterSave(null);
+    }
+
+    /**
+     * @param saved die gerade neu angelegte Buchung, wenn zu ihr noch nach einer Benachrichtigung
+     *              gesucht werden soll ({@link NotificationLearnFlow}); sonst {@code null}
+     */
+    private void finishAfterSave(final Booking saved) {
+        // Erst die Planung weiterstellen, dann fragen: der Dialog übersteht eine Drehung, das Feld
+        // bookedSchedule nicht.
+        final Runnable close = saved == null ? this::finish
+                : () -> NotificationLearnFlow.afterSave(this, repository, saved, this::finish);
         // Ohne Schreibziel kmy bleibt die Buchung selbst normal gespeichert (per CSV exportierbar) –
         // nur die Weiterstell-Vormerkung entfällt, sie würde ohnehin nie in die .kmy geschrieben.
         if (bookedSchedule == null || !settings.isKmyMode()) {
             bookedSchedule = null;
-            finish();
+            close.run();
             return;
         }
         de.spahr.ausgaben.db.ScheduledTransaction st = bookedSchedule;
         bookedSchedule = null;
-        repository.advanceScheduled(st, bookedScheduleDueMs, true, this::finish);
+        repository.advanceScheduled(st, bookedScheduleDueMs, true, close);
+    }
+
+    @Override
+    public android.app.Dialog buildDialog(String key, Bundle args) {
+        return NotificationLearnFlow.build(this, repository, key, args);
+    }
+
+    @Override
+    public void onDialogCancelled(String key, Bundle args) {
+        // Die Buchung steht schon; weggetippt heißt „Nein".
+        if (NotificationLearnFlow.owns(key)) {
+            finish();
+        }
     }
 
     /**
@@ -1647,6 +1705,10 @@ public class BookingEditActivity extends LocalizedActivity {
     // ---- Speichern (neu) ----
 
     private void saveAsNew() {
+        if (batch && isTransferType()) {
+            Toast.makeText(this, R.string.notify_batch_simple_only, Toast.LENGTH_LONG).show();
+            return;
+        }
         if (isTransferType()) {
             saveTransferNew();
             return;
@@ -1657,6 +1719,10 @@ public class BookingEditActivity extends LocalizedActivity {
         }
         b.exported = false;
         final List<SplitRowController.Part> parts = splitCtl.collectParts();
+        if (batch) {
+            returnToList(b, parts);
+            return;
+        }
         b.category = parts.isEmpty() ? "" : parts.get(0).category;
         b.categoryIsIncome = parts.isEmpty() ? null : resolvePartType(parts.get(0));
         final String place = Ui.text(editPlace);
@@ -1664,6 +1730,30 @@ public class BookingEditActivity extends LocalizedActivity {
             b.createdAt = composeTimestamp();
             persistNew(b, place, parts);
         }));
+    }
+
+    /**
+     * Stapelmodus: gibt die Eingaben an die Liste zurück, statt zu buchen. Nur einfache Buchungen —
+     * eine Aufteilung trüge die Liste nicht, und eine halbe zurückzugeben wäre schlimmer als keine.
+     */
+    private void returnToList(Booking b, List<SplitRowController.Part> parts) {
+        if (parts.size() >= 2) {
+            Toast.makeText(this, R.string.notify_batch_simple_only, Toast.LENGTH_LONG).show();
+            return;
+        }
+        Boolean side = parts.isEmpty() ? null : resolvePartType(parts.get(0));
+        Intent out = new Intent();
+        out.putExtra(RESULT_PAYEE, b.payee);
+        out.putExtra(RESULT_CENTS, b.amountCents);
+        out.putExtra(RESULT_INCOME, b.isIncome);
+        out.putExtra(RESULT_ACCOUNT, b.account);
+        out.putExtra(RESULT_DATE_MS, b.createdAt);
+        out.putExtra(RESULT_CATEGORY, parts.isEmpty() ? "" : parts.get(0).category);
+        out.putExtra(RESULT_CATEGORY_SIDE, side == null ? -1 : side ? 1 : 0);
+        out.putExtra(RESULT_NOTE, b.note);
+        out.putExtra(RESULT_TAGS, b.tags);
+        setResult(RESULT_OK, out);
+        finish();
     }
 
     private void saveTransferNew() {
@@ -1700,7 +1790,7 @@ public class BookingEditActivity extends LocalizedActivity {
         final String fp = place;
         Runnable done = () -> {
             Toast.makeText(this, R.string.booking_saved, Toast.LENGTH_SHORT).show();
-            finishAfterSave();
+            finishAfterSave(b);
         };
         // Neue Buchung: Notiz = freier Text + aktuelle GPS-Position; Beleg nur, wenn neu angehängt.
         b.note = composeNoteForSave(true);

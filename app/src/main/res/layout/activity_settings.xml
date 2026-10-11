@@ -84,6 +84,24 @@
             android:layout_marginTop="8dp"
             android:text="@string/statement_switch" />
 
+        <!-- Buchungen aus Benachrichtigungen: braucht den Benachrichtigungszugriff des Systems. -->
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchNotifyLearn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/notify_learn_switch" />
+
+        <!-- Welche Apps dafür gelesen werden. Zur Auswahl stehen die, die schon eine Meldung mit
+             Betrag geschickt haben. -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNotifyApps"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/notify_apps_button" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

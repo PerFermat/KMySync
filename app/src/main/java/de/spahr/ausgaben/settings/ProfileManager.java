@@ -408,6 +408,10 @@ public class ProfileManager {
         // samt Inhalt liegen – niemand räumte ihn je auf, denn der Aufräumlauf sieht nur den Ordner
         // des aktiven Profils.
         de.spahr.ausgaben.receipt.Receipts.deleteProfile(context, profileId);
+        // Die Vorlagen für Buchungen aus Benachrichtigungen gingen mit der Datenbank; ihr Schatten für
+        // den Dienst im Hintergrund muss mit, sonst hielte er Meldungen für ein Profil fest, das es
+        // nicht mehr gibt.
+        new de.spahr.ausgaben.notify.KnownApps(context).remove(profileId);
     }
 
     private void deleteProfileFiles(Context context, String dbFileName) {

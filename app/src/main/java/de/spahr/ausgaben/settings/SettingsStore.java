@@ -66,6 +66,8 @@ public class SettingsStore {
     private static final String KEY_BUDGET_INTERNAL = "budget_internal";
     private static final String KEY_STATEMENT_ENABLED = "statement_enabled";
     private static final String KEY_FONT_SIZE = "font_size";
+    private static final String KEY_NOTIFY_LEARN = "notify_learn";
+    private static final String KEY_NOTIFY_APPS = "notify_apps";
     private static final String KEY_SMB_KNOWN_HOSTS = "smb_known_hosts";
     private static final String KEY_RECONCILE_PAYEE = "reconcile_payee";
     private static final String KEY_RECONCILE_CATEGORY = "reconcile_category";
@@ -836,6 +838,51 @@ public class SettingsStore {
 
     public void setStatementEnabled(boolean enabled) {
         prefs.edit().putBoolean(KEY_STATEMENT_ENABLED, enabled).apply();
+    }
+
+    /**
+     * Aus Benachrichtigungen lernen (Standard: aus). Gilt für das ganze Gerät, nicht je Profil — der
+     * Dienst im Hintergrund weiß nicht, für welches Profil eine Meldung gedacht ist.
+     */
+    public boolean isNotifyLearnEnabled() {
+        return prefs.getBoolean(KEY_NOTIFY_LEARN, false);
+    }
+
+    public void setNotifyLearnEnabled(boolean enabled) {
+        prefs.edit().putBoolean(KEY_NOTIFY_LEARN, enabled).apply();
+    }
+
+    /**
+     * Dasselbe ohne ein {@code SettingsStore}: der Benachrichtigungsdienst fragt bei jeder Meldung
+     * jeder App, und der Konstruktor hier öffnet den Schlüsselspeicher.
+     */
+    public static boolean isNotifyLearnEnabled(Context context) {
+        return context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getBoolean(KEY_NOTIFY_LEARN, false);
+    }
+
+    /**
+     * Die Apps, deren Benachrichtigungen aufgehoben werden dürfen (Paketnamen). Wie der Schalter gilt
+     * die Liste für das ganze Gerät. Als eine Zeichenkette abgelegt, je Zeile ein Name — so reist sie
+     * durch jede Sicherung, die Zeichenketten kennt.
+     */
+    public static java.util.Set<String> notifyApps(Context context) {
+        String raw = context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getString(KEY_NOTIFY_APPS, "");
+        java.util.Set<String> out = new java.util.HashSet<>();
+        for (String name : raw.split("\n")) {
+            if (!name.trim().isEmpty()) {
+                out.add(name.trim());
+            }
+        }
+        return out;
+    }
+
+    public static void setNotifyApps(Context context, java.util.Set<String> packages) {
+        context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putString(KEY_NOTIFY_APPS, android.text.TextUtils.join("\n",
+                        new java.util.TreeSet<>(packages)))
+                .apply();
     }
 
     /** Budget app-intern aus dem Verlauf berechnen (true) statt aus KMyMoney importieren (false, Standard). */

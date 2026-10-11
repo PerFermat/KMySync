@@ -54,6 +54,7 @@ public class Repository {
     private final LanguageRepository languageRepo;
     private final PlaceRepository placeRepo;
     private final AliasResolver aliasResolver;
+    private final NotificationTemplateStore notificationTemplates;
 
     public Repository(Context context) {
         this.appContext = context.getApplicationContext();
@@ -84,6 +85,7 @@ public class Repository {
         this.languageRepo = new LanguageRepository(translationDao, executor, mainHandler);
         this.placeRepo = new PlaceRepository(placeEntryDao, bookingDao, executor, mainHandler);
         this.aliasResolver = new AliasResolver(bookingDao, correctionDao, accountDao, executor, mainHandler);
+        this.notificationTemplates = new NotificationTemplateStore(appContext, db);
     }
 
     // ---- Mehrsprachigkeit ----
@@ -1512,6 +1514,7 @@ public class Repository {
                 analysisExtraDao.deleteByAccount(account.trim());
                 placeEntryDao.deleteByAccount(account.trim());
                 accountDao.deleteByName(account.trim());
+                notificationTemplates.deleteForAccount(account.trim());
             }
             if (onDone != null) {
                 mainHandler.post(onDone);
@@ -1684,6 +1687,7 @@ public class Repository {
                             bookingDao.deleteAllByAccount(account.trim());
                             placeEntryDao.deleteByAccount(account.trim());
                             accountDao.deleteByName(account.trim());
+                            notificationTemplates.deleteForAccount(account.trim());
                         }
                     }
                 }
@@ -2265,6 +2269,74 @@ public class Repository {
 
     public void deletePlaceEntries(final String account, final String place, final Runnable onDone) {
         placeRepo.deletePlaceEntries(account, place, onDone);
+    }
+
+    // ---- Buchungen aus Benachrichtigungen ----
+
+    /** Die gelernten Vorlagen des aktiven Profils. */
+    public void getNotificationTemplates(
+            final Callback<List<de.spahr.ausgaben.statement.NotificationTemplate>> callback) {
+        executor.execute(() -> {
+            final List<de.spahr.ausgaben.statement.NotificationTemplate> all =
+                    notificationTemplates.all();
+            mainHandler.post(() -> callback.onResult(all));
+        });
+    }
+
+    public void saveNotificationTemplate(final de.spahr.ausgaben.statement.NotificationTemplate template,
+                                         final Runnable onDone) {
+        executor.execute(() -> {
+            notificationTemplates.save(template);
+            if (onDone != null) {
+                mainHandler.post(onDone);
+            }
+        });
+    }
+
+    /**
+     * Legt mehrere Buchungen als <b>einen</b> Vorgang an — alle oder keine. Arbeitet sofort; nur für
+     * Hintergrund-Aufgaben. Ohne Ort: gedacht für Kartenumsätze aus Benachrichtigungen, und die haben
+     * mit den Bargeld-Orten nichts zu tun.
+     */
+    public void insertBookingsNow(final List<Booking> bookings) {
+        db.runInTransaction(() -> {
+            for (Booking b : bookings) {
+                rememberPayee(b.payee);
+                accountDao.insertIfAbsent(new Account(b.account));
+                bookingDao.insert(b);
+            }
+        });
+    }
+
+    /** Löscht die gelernten Regeln einer App (aktives Profil, alle Konten). */
+    public void deleteNotificationTemplates(final String packageName, final Runnable onDone) {
+        executor.execute(() -> {
+            notificationTemplates.deleteForPackage(packageName);
+            if (onDone != null) {
+                mainHandler.post(onDone);
+            }
+        });
+    }
+
+    /** Eine Arbeit, die auf dem Hintergrundfaden rechnet und ihr Ergebnis auf dem Hauptfaden abgibt. */
+    public interface Work<T> {
+        T run();
+    }
+
+    /**
+     * Lässt {@code work} in der Reihe der Datenbankaufträge laufen und gibt das Ergebnis auf dem
+     * Hauptfaden ab — für Abläufe, die mehrere Quellen zusammen lesen (Puffer und Vorlagen).
+     */
+    public <T> void runInBackground(final Work<T> work, final Callback<T> callback) {
+        executor.execute(() -> {
+            final T result = work.run();
+            mainHandler.post(() -> callback.onResult(result));
+        });
+    }
+
+    /** Für Hintergrund-Aufgaben, die schon auf ihrem eigenen Faden laufen. */
+    public NotificationTemplateStore notificationTemplates() {
+        return notificationTemplates;
     }
 
     /**

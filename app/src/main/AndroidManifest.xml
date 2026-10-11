@@ -164,6 +164,11 @@
             android:parentActivityName=".ui.DepotActivity" />
 
         <activity
+            android:name=".ui.NotificationBatchActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity" />
+
+        <activity
             android:name=".ui.SecurityTxEditActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize"
@@ -218,6 +223,20 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <!-- Buchungen aus Benachrichtigungen: hebt Meldungen anderer Apps auf, die einen Geldbetrag
+             nennen. Gebunden wird der Dienst vom System, und nur, wenn der Nutzer den
+             Benachrichtigungszugriff erteilt hat; exported ist dafür Pflicht, die Berechtigung hält
+             alle anderen fern. -->
+        <service
+            android:name=".notify.BankNotificationListener"
+            android:exported="true"
+            android:label="@string/notify_listener_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
         <!-- Homescreen-Widgets (drei Größen: klein/mittel/groß). -->
         <receiver

@@ -71,6 +71,8 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
     private MaterialSwitch switchDarkMode;
     private MaterialSwitch switchScheduledReminder;
     private MaterialSwitch switchAppLock;
+    private MaterialSwitch switchNotifyLearn;
+    private MaterialButton btnNotifyApps;
 
     private MaterialAutoCompleteTextView editLanguage;
     private com.google.android.material.slider.Slider sliderFontSize;
@@ -165,6 +167,15 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
             }
         });
 
+        // Aus Benachrichtigungen lernen. An ist der Schalter nur, wenn auch der Zugriff erteilt ist –
+        // sonst zeigte er etwas an, das nicht geschieht.
+        switchNotifyLearn = findViewById(R.id.switchNotifyLearn);
+        switchNotifyLearn.setChecked(settings.isNotifyLearnEnabled() && hasNotificationAccess());
+        switchNotifyLearn.setOnCheckedChangeListener(this::onNotifyLearnToggled);
+        btnNotifyApps = findViewById(R.id.btnNotifyApps);
+        btnNotifyApps.setOnClickListener(v -> pickNotifyApps());
+        btnNotifyApps.setVisibility(switchNotifyLearn.isChecked() ? View.VISIBLE : View.GONE);
+
         MaterialSwitch switchReceipt = findViewById(R.id.switchReceipt);
         switchReceipt.setChecked(settings.isReceiptEnabled());
         switchReceipt.setOnCheckedChangeListener((b, checked) -> settings.setReceiptEnabled(checked));
@@ -216,6 +227,173 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
             settings.setAppLockEnabled(false);
             ((AusgabenApp) getApplication()).markUnlocked();
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Zurück aus den Systemeinstellungen, oder der Zugriff wurde dort später entzogen: ohne ihn
+        // bleibt der Schalter nicht an.
+        if (settings.isNotifyLearnEnabled() && !hasNotificationAccess() && !notifyNoticeOpen) {
+            Toast.makeText(this, R.string.notify_learn_no_access, Toast.LENGTH_LONG).show();
+            setNotifyLearn(false);
+        }
+    }
+
+    /** Der Hinweis vor dem Absprung steht offen – dann ist der fehlende Zugriff noch kein Befund. */
+    private boolean notifyNoticeOpen;
+
+    private boolean hasNotificationAccess() {
+        return androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(this)
+                .contains(getPackageName());
+    }
+
+    private void onNotifyLearnToggled(CompoundButton button, boolean checked) {
+        if (!checked) {
+            setNotifyLearn(false);
+            return;
+        }
+        settings.setNotifyLearnEnabled(true);
+        btnNotifyApps.setVisibility(View.VISIBLE);
+        if (hasNotificationAccess()) {
+            return;
+        }
+        notifyNoticeOpen = true;
+        new AppDialog(this)
+                .setTitle(R.string.notify_learn_switch)
+                .setMessage(R.string.notify_learn_notice)
+                .setPositiveButton(android.R.string.ok, (d, w) -> {
+                    notifyNoticeOpen = false;
+                    try {
+                        startActivity(new Intent(
+                                android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
+                    } catch (android.content.ActivityNotFoundException e) {
+                        Toast.makeText(this, R.string.notify_learn_no_access, Toast.LENGTH_LONG).show();
+                        setNotifyLearn(false);
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, (d, w) -> {
+                    notifyNoticeOpen = false;
+                    setNotifyLearn(false);
+                })
+                .setOnCancelListener(d -> {
+                    notifyNoticeOpen = false;
+                    setNotifyLearn(false);
+                })
+                .show();
+    }
+
+    /**
+     * Die Auswahl der Apps, deren Benachrichtigungen aufgehoben werden. Angeboten werden die, die seit
+     * dem Einschalten eine Meldung mit Betrag geschickt haben – eine Liste aller installierten Apps
+     * bräuchte eine Berechtigung, die diese Funktion nicht wert ist.
+     *
+     * <p>Hinter jeder App, für die schon etwas gelernt ist, steht der Papierkorb für ihre Regeln. Er
+     * wirkt sofort und für sich; der Haken davor gilt erst mit OK.</p>
+     */
+    private void pickNotifyApps() {
+        repository.getNotificationTemplates(templates -> {
+            if (!isFinishing() && !isDestroyed()) {
+                showNotifyApps(templates);
+            }
+        });
+    }
+
+    private void showNotifyApps(List<de.spahr.ausgaben.statement.NotificationTemplate> templates) {
+        // Auch Apps, für die es nur noch Regeln gibt, gehören in die Liste – sonst ließen die sich
+        // nicht mehr löschen.
+        java.util.Set<String> names = new java.util.TreeSet<>(
+                de.spahr.ausgaben.notify.AppSelection.candidates(this));
+        final Map<String, java.util.Set<String>> accountsByApp = new java.util.HashMap<>();
+        for (de.spahr.ausgaben.statement.NotificationTemplate t : templates) {
+            names.add(t.packageName);
+            java.util.Set<String> accounts = accountsByApp.get(t.packageName);
+            if (accounts == null) {
+                accounts = new java.util.TreeSet<>();
+                accountsByApp.put(t.packageName, accounts);
+            }
+            accounts.add(t.account);
+        }
+        final List<String> packages = new ArrayList<>(names);
+        if (packages.isEmpty()) {
+            new AppDialog(this)
+                    .setTitle(R.string.notify_apps_button)
+                    .setMessage(R.string.notify_apps_none)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show();
+            return;
+        }
+        java.util.Set<String> allowed = de.spahr.ausgaben.notify.AppSelection.allowed(this);
+        final boolean[] checked = new boolean[packages.size()];
+        android.widget.LinearLayout list = new android.widget.LinearLayout(this);
+        list.setOrientation(android.widget.LinearLayout.VERTICAL);
+        int pad = Math.round(16 * getResources().getDisplayMetrics().density);
+        list.setPadding(pad, pad / 2, pad / 2, 0);
+        for (int i = 0; i < packages.size(); i++) {
+            final int index = i;
+            final String packageName = packages.get(i);
+            final String label = NotificationLearnFlow.appLabel(this, packageName);
+            View row = getLayoutInflater().inflate(R.layout.item_notify_app, list, false);
+            final android.widget.CheckBox check = row.findViewById(R.id.checkNotifyApp);
+            checked[i] = allowed.contains(packageName);
+            check.setChecked(checked[i]);
+            check.setOnCheckedChangeListener((b, isChecked) -> checked[index] = isChecked);
+            row.findViewById(R.id.notifyAppTexts).setOnClickListener(v -> check.toggle());
+            ((android.widget.TextView) row.findViewById(R.id.textNotifyApp)).setText(label);
+            final android.widget.TextView rules = row.findViewById(R.id.textNotifyAppRules);
+            final View forget = row.findViewById(R.id.btnNotifyAppForget);
+            java.util.Set<String> accounts = accountsByApp.get(packageName);
+            if (accounts != null) {
+                rules.setText(getString(R.string.notify_rules_for,
+                        android.text.TextUtils.join(", ", accounts)));
+                rules.setVisibility(View.VISIBLE);
+                forget.setVisibility(View.VISIBLE);
+                forget.setOnClickListener(v -> AppDialog.destructive(this)
+                        .setTitle(R.string.notify_rules_delete)
+                        .setMessage(getString(R.string.notify_rules_delete_message, label))
+                        .setPositiveButton(R.string.delete, (d, w) ->
+                                repository.deleteNotificationTemplates(packageName, () -> {
+                                    rules.setVisibility(View.GONE);
+                                    forget.setVisibility(View.GONE);
+                                    Toast.makeText(this, R.string.notify_rules_deleted,
+                                            Toast.LENGTH_SHORT).show();
+                                }))
+                        .setNegativeButton(R.string.cancel, null)
+                        .show());
+            }
+            list.addView(row);
+        }
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        scroll.addView(list);
+        new AppDialog(this)
+                .setTitle(R.string.notify_apps_button)
+                .setView(scroll)
+                .setPositiveButton(android.R.string.ok, (d, w) -> {
+                    List<String> chosen = new ArrayList<>();
+                    for (int i = 0; i < checked.length; i++) {
+                        if (checked[i]) {
+                            chosen.add(packages.get(i));
+                        }
+                    }
+                    de.spahr.ausgaben.notify.AppSelection.setAllowed(this, chosen);
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /** Schaltet aus (oder ein), ohne dass der Schalter sich dabei selbst wieder aufruft. */
+    private void setNotifyLearn(boolean enabled) {
+        settings.setNotifyLearnEnabled(enabled);
+        if (!enabled) {
+            // Ausgeschaltet heißt auch: was schon aufgehoben wurde, ist weg – und die Liste der
+            // Apps, die sich gemeldet haben. Die Freigabe selbst bleibt für das nächste Einschalten.
+            de.spahr.ausgaben.notify.NotificationBuffer.get(this).clear();
+            de.spahr.ausgaben.notify.AppSelection.clearSeen(this);
+        }
+        btnNotifyApps.setVisibility(enabled ? View.VISIBLE : View.GONE);
+        switchNotifyLearn.setOnCheckedChangeListener(null);
+        switchNotifyLearn.setChecked(enabled);
+        switchNotifyLearn.setOnCheckedChangeListener(this::onNotifyLearnToggled);
     }
 
     private void registerLaunchers() {
@@ -431,6 +609,9 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
         // resetAll, nicht reset: Seit die Belege je Profil liegen, räumt reset() nur noch das aktive
         // Profil – für den Werksreset zu wenig.
         de.spahr.ausgaben.receipt.Receipts.resetAll(this);
+        de.spahr.ausgaben.notify.NotificationBuffer.get(this).clear();
+        new de.spahr.ausgaben.notify.KnownApps(this).clear();
+        de.spahr.ausgaben.notify.AppSelection.clearSeen(this);
         // commit() statt apply(): siehe oben.
         getSharedPreferences("widget_selection", MODE_PRIVATE).edit().clear().commit();
         Toast.makeText(this, R.string.reset_done, Toast.LENGTH_LONG).show();

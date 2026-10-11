@@ -9,6 +9,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import de.spahr.ausgaben.util.PayeeMatch;
+
 /**
  * Zerlegt einen gesprochenen Buchungssatz wie „Frisör 20€" in Empfänger-Suchbegriff und Betrag.
  *
@@ -147,7 +149,7 @@ public final class VoiceInput {
         if (term == null || candidates == null) {
             return null;
         }
-        String[] spoken = normalizeTokens(term);
+        String[] spoken = PayeeMatch.normalizeTokens(term);
         if (spoken.length == 0) {
             return null;
         }
@@ -157,67 +159,13 @@ public final class VoiceInput {
             if (cand == null || cand.trim().isEmpty()) {
                 continue;
             }
-            double score = tokenSimilarity(spoken, normalizeTokens(cand));
+            double score = PayeeMatch.tokenSimilarity(spoken, PayeeMatch.normalizeTokens(cand));
             if (score > bestScore) {
                 bestScore = score;
                 best = cand;
             }
         }
-        return bestScore >= 0.70 ? best : null;
-    }
-
-    /** Beste Wort-zu-Wort-Ähnlichkeit (0..1) zwischen zwei Token-Listen; zu kurze Tokens ignoriert. */
-    private static double tokenSimilarity(String[] a, String[] b) {
-        double best = 0;
-        for (String ta : a) {
-            if (ta.length() < 4) {
-                continue;
-            }
-            for (String tb : b) {
-                if (tb.length() < 4) {
-                    continue;
-                }
-                int d = levenshtein(ta, tb);
-                int max = Math.max(ta.length(), tb.length());
-                double s = max == 0 ? 1.0 : 1.0 - (double) d / max;
-                if (s > best) {
-                    best = s;
-                }
-            }
-        }
-        return best;
-    }
-
-    /** Kleinschreibung, Umlaute → ae/oe/ue/ss, nur Buchstaben/Ziffern; in Wörter zerlegt. */
-    private static String[] normalizeTokens(String s) {
-        String x = s.toLowerCase(Locale.GERMANY)
-                .replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss");
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < x.length(); i++) {
-            char c = x.charAt(i);
-            sb.append(Character.isLetterOrDigit(c) ? c : ' ');
-        }
-        String norm = sb.toString().trim();
-        return norm.isEmpty() ? new String[0] : norm.split("\\s+");
-    }
-
-    private static int levenshtein(String a, String b) {
-        int[] prev = new int[b.length() + 1];
-        int[] cur = new int[b.length() + 1];
-        for (int j = 0; j <= b.length(); j++) {
-            prev[j] = j;
-        }
-        for (int i = 1; i <= a.length(); i++) {
-            cur[0] = i;
-            for (int j = 1; j <= b.length(); j++) {
-                int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
-                cur[j] = Math.min(Math.min(cur[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
-            }
-            int[] tmp = prev;
-            prev = cur;
-            cur = tmp;
-        }
-        return prev[b.length()];
+        return bestScore >= PayeeMatch.THRESHOLD ? best : null;
     }
 
     private static Long toCents(String number) {

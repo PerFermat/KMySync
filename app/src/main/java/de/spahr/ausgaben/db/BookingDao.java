@@ -40,6 +40,15 @@ public interface BookingDao {
             + "ORDER BY created_at DESC, id DESC")
     List<Booking> findByPayeeLike(String term);
 
+    /**
+     * Wie viele Buchungen dieses Kontos in der Zeitspanne genau diesen Betrag tragen – für den Hinweis
+     * „mögliches Duplikat" bei Buchungen aus Benachrichtigungen. Die Richtung zählt nicht mit: der
+     * Hinweis hält nichts auf und soll lieber einmal zu oft kommen.
+     */
+    @Query("SELECT COUNT(*) FROM booking WHERE account = :account COLLATE NOCASE "
+            + "AND amount_cents = :cents AND created_at BETWEEN :from AND :to")
+    int countSameAmount(String account, long cents, long from, long to);
+
     /** Vorhandene Empfängernamen (je einmal), neueste Buchung zuerst – für die unscharfe Sprachsuche. */
     @Query("SELECT payee FROM booking WHERE payee != '' GROUP BY payee ORDER BY MAX(created_at) DESC")
     List<String> getDistinctPayees();

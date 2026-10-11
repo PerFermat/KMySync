@@ -363,6 +363,12 @@ class MainImportFlow {
                     @Override
                     public void finished() {
                         completeImport();
+                        // Erst jetzt, und nur hier: Der Benachrichtigungs-Durchlauf folgt auf eine
+                        // geglückte Aktualisierung. failed() und noMatchingAccount() kommen hier nicht
+                        // vorbei – dann bleibt der Puffer, wie er ist. Bewusst nicht in
+                        // completeImport(), das auch nach „Konto hinzufügen" und dem Neueinlesen eines
+                        // Depots läuft.
+                        NotificationBatchActivity.startIfAny(activity, repository);
                     }
                 });
     }
