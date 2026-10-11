@@ -1,6 +1,7 @@
 package de.spahr.ausgaben.export;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -85,8 +86,210 @@ public class KmyBackupsTest {
         assertTrue(KmyBackups.obsolete(sicherungen("michael.kmy", 3), null, 20).isEmpty());
     }
 
+    /** 0 heißt: dauerhaft aufheben. */
     @Test
-    public void deckelNullRaeumtAllesWeg() {
-        assertEquals(3, KmyBackups.obsolete(sicherungen("michael.kmy", 3), "michael.kmy", 0).size());
+    public void deckelNullLoeschtNichts() {
+        assertTrue(KmyBackups.obsolete(sicherungen("michael.kmy", 30), "michael.kmy", 0).isEmpty());
+        assertEquals(27, KmyBackups.obsolete(sicherungen("michael.kmy", 30), "michael.kmy", 3).size());
+        assertEquals(0, KmyBackups.begrenzt(-4));
+        assertEquals(KmyBackups.MAX_KEEP, KmyBackups.begrenzt(5000));
+    }
+
+    // ---- Monatssicherungen ----
+
+    private static final String F = "michael.kmy";
+
+    private static String name(String stempel) {
+        return F + ".bak-" + stempel;
+    }
+
+    @Test
+    public void monatAusDemNamen() {
+        assertEquals("202609", KmyBackups.monat(name("20260914-111705"), F));
+        assertEquals("", KmyBackups.monat("anders.kmy.bak-20260914-111705", F));
+        assertEquals("", KmyBackups.monat(name("kaputt"), F));
+        assertTrue(KmyBackups.hatMonat(Arrays.asList(name("20260901-080000")), F, "202609"));
+        assertFalse(KmyBackups.hatMonat(Arrays.asList(name("20260801-080000")), F, "202609"));
+        // Die Sicherung eines anderen Profils zählt nicht.
+        assertFalse(KmyBackups.hatMonat(
+                Arrays.asList("anders.kmy.bak-20260901-080000"), F, "202609"));
+    }
+
+    @Test
+    public void verschobenWirdDieAeltesteIhresMonatsWennDerMonatFehlt() {
+        List<String> alle = Arrays.asList(
+                name("20260703-100000"), name("20260720-100000"),
+                name("20260805-100000"), name("20260806-100000"),
+                name("20260901-100000"), name("20260902-100000"));
+        // Zwei bleiben, vier sollen weg.
+        List<String> weg = KmyBackups.obsolete(alle, F, 2);
+        assertEquals(4, weg.size());
+
+        // Juli fehlt im Monatsordner, August ist schon da.
+        List<String> monatlich = Arrays.asList(name("20260801-090000"));
+        assertEquals(Arrays.asList(name("20260703-100000")),
+                KmyBackups.zuVerschieben(weg, alle, monatlich, F));
+
+        // Ist die älteste eines Monats nicht unter den zu löschenden, wird aus dem Monat nichts
+        // verschoben – auch nicht die zweitälteste.
+        List<String> nurZweite = Arrays.asList(name("20260720-100000"));
+        assertTrue(KmyBackups.zuVerschieben(nurZweite, alle, new ArrayList<>(), F).isEmpty());
+    }
+
+    @Test
+    public void aufraeumenVerschiebtInDenMonatsordnerUndLoeschtDenRest() {
+        Ablage s = new Ablage();
+        for (String n : Arrays.asList(name("20260703-100000"), name("20260720-100000"),
+                name("20260805-100000"), name("20260901-100000"), name("20260902-100000"))) {
+            s.put("Backup", n);
+        }
+        s.put("Backup", "anders.kmy.bak-20260101-100000");
+        s.put("Backup/Monat", name("20260601-100000"));
+
+        int geloescht = KmyBackups.prune(s, "Backup", "Backup/Monat", F, 2);
+
+        assertEquals(1, geloescht);   // nur die zweite vom Juli
+        assertEquals(Arrays.asList("anders.kmy.bak-20260101-100000",
+                name("20260901-100000"), name("20260902-100000")), s.namen("Backup"));
+        // Juli und August sind dazugekommen, der Juni liegt unverändert da.
+        assertEquals(Arrays.asList(name("20260601-100000"), name("20260703-100000"),
+                name("20260805-100000")), s.namen("Backup/Monat"));
+    }
+
+    @Test
+    public void verschiebenScheitert_dieSicherungBleibtLiegen() {
+        Ablage s = new Ablage();
+        s.put("Backup", name("20260703-100000"));
+        s.put("Backup", name("20260901-100000"));
+        s.verschiebenScheitert = true;
+
+        assertEquals(0, KmyBackups.prune(s, "Backup", "Backup/Monat", F, 1));
+        assertEquals(2, s.namen("Backup").size());
+    }
+
+    @Test
+    public void ohneBlickInDenMonatsordnerWirdNichtsGeloescht() {
+        Ablage s = new Ablage();
+        s.put("Backup", name("20260703-100000"));
+        s.put("Backup", name("20260901-100000"));
+        s.auflistenScheitertIn = "Backup/Monat";
+
+        assertEquals(0, KmyBackups.prune(s, "Backup", "Backup/Monat", F, 1));
+        assertEquals(2, s.namen("Backup").size());
+    }
+
+    @Test
+    public void ersterExportDesMonatsLegtDieMonatssicherungAn_derZweiteNicht() {
+        Ablage s = new Ablage();
+        byte[] inhalt = {1, 2, 3};
+
+        assertTrue(KmyBackups.sichereMonat(s, "Backup", "Backup/Monat", F, name("20261003-080000"), inhalt));
+        assertFalse(KmyBackups.sichereMonat(s, "Backup", "Backup/Monat", F, name("20261004-080000"), inhalt));
+        assertTrue(KmyBackups.sichereMonat(s, "Backup", "Backup/Monat", F, name("20261101-080000"), inhalt));
+
+        assertEquals(Arrays.asList(name("20261003-080000"), name("20261101-080000")),
+                s.namen("Backup/Monat"));
+        // Kopiert wurde auf dem Server; durch die Leitung ging nichts.
+        assertEquals(2, s.kopiert);
+        assertEquals(0, s.hochgeladen);
+    }
+
+    /** Kann der Server nicht kopieren, wird hochgeladen – die Monatssicherung entsteht trotzdem. */
+    @Test
+    public void ohneKopierenAufDemServerWirdHochgeladen() {
+        Ablage s = new Ablage();
+        s.kopierenScheitert = true;
+
+        assertTrue(KmyBackups.sichereMonat(s, "Backup", "Backup/Monat", F,
+                name("20261003-080000"), new byte[]{1}));
+
+        assertEquals(Arrays.asList(name("20261003-080000")), s.namen("Backup/Monat"));
+        assertEquals(1, s.hochgeladen);
+    }
+
+    /** Ordner mit Dateinamen im Speicher; kann beim Verschieben oder Auflisten scheitern. */
+    private static final class Ablage implements de.spahr.ausgaben.net.RemoteStorage {
+        final java.util.Map<String, java.util.TreeSet<String>> ordner = new java.util.HashMap<>();
+        boolean verschiebenScheitert;
+        boolean kopierenScheitert;
+        int kopiert;
+        int hochgeladen;
+        String auflistenScheitertIn;
+
+        void put(String folder, String name) {
+            ordner.computeIfAbsent(folder, k -> new java.util.TreeSet<>()).add(name);
+        }
+
+        List<String> namen(String folder) {
+            return new ArrayList<>(ordner.getOrDefault(folder, new java.util.TreeSet<>()));
+        }
+
+        @Override
+        public List<String> listAllFiles(String folder) throws java.io.IOException {
+            if (folder.equals(auflistenScheitertIn)) {
+                throw new java.io.IOException("offline");
+            }
+            return namen(folder);
+        }
+
+        @Override
+        public List<String> listFiles(String folder, String ext) {
+            return namen(folder);
+        }
+
+        @Override
+        public void ensureFolder(String folder) {
+            ordner.computeIfAbsent(folder, k -> new java.util.TreeSet<>());
+        }
+
+        @Override
+        public void delete(String folder, String fileName) {
+            ordner.get(folder).remove(fileName);
+        }
+
+        @Override
+        public void move(String fromFolder, String fromName, String toFolder, String toName)
+                throws java.io.IOException {
+            if (verschiebenScheitert) {
+                throw new java.io.IOException("nicht erlaubt");
+            }
+            ordner.get(fromFolder).remove(fromName);
+            put(toFolder, toName);
+        }
+
+        @Override
+        public void copy(String fromFolder, String fromName, String toFolder, String toName)
+                throws java.io.IOException {
+            if (kopierenScheitert) {
+                throw new java.io.IOException("nicht unterstützt");
+            }
+            kopiert++;
+            put(toFolder, toName);
+        }
+
+        @Override
+        public void uploadBytes(String folder, String fileName, byte[] content) {
+            hochgeladen++;
+            put(folder, fileName);
+        }
+
+        @Override
+        public void uploadText(String folder, String fileName, String content) {
+            put(folder, fileName);
+        }
+
+        @Override
+        public String downloadText(String folder, String fileName) {
+            return "";
+        }
+
+        @Override
+        public byte[] downloadBytes(String folder, String fileName) {
+            return new byte[0];
+        }
+
+        @Override
+        public void testConnection() {
+        }
     }
 }

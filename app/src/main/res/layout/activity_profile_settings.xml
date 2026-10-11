@@ -349,6 +349,24 @@
                 android:layout_marginTop="8dp"
                 android:text="@string/kmy_changes_title" />
 
+            <!-- Wie viele Sicherungen (und Vergleiche) bleiben; 0 = dauerhaft. -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/kmyBackupKeepLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:helperTextEnabled="true"
+                app:helperText="@string/kmy_backup_keep_helper"
+                android:hint="@string/kmy_backup_keep_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editKmyBackupKeep"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:maxLength="3" />
+            </com.google.android.material.textfield.TextInputLayout>
+
             <!-- Inline-Fortschritt beim Import -->
             <LinearLayout
                 android:id="@+id/importStatus"

@@ -211,6 +211,15 @@ public final class WaitingStorage implements RemoteStorage {
     }
 
     @Override
+    public void copy(String fromFolder, String fromName, String toFolder, String toName)
+            throws IOException {
+        einmal(() -> {
+            innen.copy(fromFolder, fromName, toFolder, toName);
+            return null;
+        });
+    }
+
+    @Override
     public void moveNoReplace(String folder, String fromName, String toName, String expectedVersion)
             throws IOException {
         einmal(() -> {

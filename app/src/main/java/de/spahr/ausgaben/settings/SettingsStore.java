@@ -44,6 +44,7 @@ public class SettingsStore {
     private static final String KEY_LOCAL_EXPORT_TREE = "local_export_tree";
     private static final String KEY_EXPORT_MODE = "export_mode";
     private static final String KEY_KMY_DATABASE = "kmy_database";
+    private static final String KEY_KMY_BACKUP_KEEP = "kmy_backup_keep";
     private static final String KEY_PENDING_EXPORT = "pending_export";
     private static final String KEY_KMY_PATH = "kmy_path";
     private static final String KEY_RECEIPT_FOLDER = "receipt_folder";
@@ -480,6 +481,21 @@ public class SettingsStore {
 
     public void setKmyDatabase(boolean database) {
         prefs.edit().putBoolean(pk(KEY_KMY_DATABASE), database).apply();
+    }
+
+    /**
+     * Wie viele Sicherungen der KMyMoney-Datei – und ebenso viele gespeicherte Vergleiche – dieses
+     * Profil aufhebt; 0 = dauerhaft. Die erste Sicherung jedes Monats bleibt davon unabhängig liegen
+     * (siehe {@code KmyBackups}).
+     */
+    public int getKmyBackupKeep() {
+        return de.spahr.ausgaben.export.KmyBackups.begrenzt(prefs.getInt(pk(KEY_KMY_BACKUP_KEEP),
+                de.spahr.ausgaben.export.KmyBackups.DEFAULT_KEEP));
+    }
+
+    public void setKmyBackupKeep(int keep) {
+        prefs.edit().putInt(pk(KEY_KMY_BACKUP_KEEP),
+                de.spahr.ausgaben.export.KmyBackups.begrenzt(keep)).apply();
     }
 
     public void setExportMode(String exportMode) {

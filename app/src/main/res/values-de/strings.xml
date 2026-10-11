@@ -715,6 +715,9 @@
     <string name="export_busy">Es läuft bereits ein Export.</string>
     <string name="export_wait">Bitte warten Sie, bis der laufende Export fertig ist.</string>
     <string name="kmy_changes_title">Änderungen an der KMyMoney-Datei</string>
+    <string name="kmy_backup_monthly_folder">Monatssicherungen</string>
+    <string name="kmy_backup_keep_hint">Sicherungen aufheben</string>
+    <string name="kmy_backup_keep_helper">0 = dauerhaft aufheben</string>
     <string name="kmy_changes_hint">Zu jedem Export: die Zeilen, die sich in der Datei wirklich geändert haben – verglichen, nachdem sie vom Server zurückgelesen wurde.</string>
     <string name="kmy_changes_empty">Noch kein Export mit Vergleich. Nach dem nächsten Export steht hier, welche Zeilen der Datei sich geändert haben.</string>
     <string name="kmy_changes_summary">Zeilen: +%1$d / −%2$d · %3$s</string>

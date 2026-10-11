@@ -69,6 +69,12 @@ public class WebDavStorage implements RemoteStorage {
     }
 
     @Override
+    public void copy(String fromFolder, String fromName, String toFolder, String toName)
+            throws IOException {
+        uploader.copy(baseUrl, user, password, fromFolder, fromName, toFolder, toName);
+    }
+
+    @Override
     public void moveNoReplace(String folder, String fromName, String toName, String expectedVersion)
             throws IOException {
         uploader.moveNoReplace(baseUrl, user, password, folder, fromName, toName, expectedVersion);

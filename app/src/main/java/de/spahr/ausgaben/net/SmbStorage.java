@@ -161,6 +161,28 @@ public class SmbStorage implements RemoteStorage {
         });
     }
 
+    /** Kopie auf dem Server ({@code FSCTL_SRV_COPYCHUNK}); ein vorhandenes Ziel wird nicht ersetzt. */
+    @Override
+    public void copy(String fromFolder, String fromName, String toFolder, String toName)
+            throws IOException {
+        final String from = joinPath(joinPath(base, fromFolder), fromName);
+        final String to = joinPath(joinPath(base, toFolder), toName);
+        withShare(disk -> {
+            try (com.hierynomus.smbj.share.File quelle = disk.openFile(from,
+                    EnumSet.of(AccessMask.GENERIC_READ), null,
+                    SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_OPEN, null);
+                 com.hierynomus.smbj.share.File ziel = disk.openFile(to,
+                         EnumSet.of(AccessMask.GENERIC_WRITE, AccessMask.GENERIC_READ), null,
+                         SMB2ShareAccess.ALL, SMB2CreateDisposition.FILE_CREATE, null)) {
+                quelle.remoteCopyTo(ziel);
+            } catch (com.hierynomus.smbj.common.SMBRuntimeException
+                     | com.hierynomus.protocol.transport.TransportException e) {
+                throw new IOException(e.getMessage(), e);
+            }
+            return null;
+        });
+    }
+
     /**
      * Umbenennen ohne Ersetzen. Stand-Prüfung und Umbenennen laufen in <b>einer</b> Sitzung – SMB kennt
      * kein {@code If-Match}, das Restrisiko schrumpft so auf den Abstand zweier Anfragen.

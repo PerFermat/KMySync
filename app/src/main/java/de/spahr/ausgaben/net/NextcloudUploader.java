@@ -207,6 +207,26 @@ public class NextcloudUploader {
         }
     }
 
+    /** Kopiert per WebDAV-COPY auf dem Server; ein vorhandenes Ziel bleibt ({@code Overwrite: F}). */
+    public void copy(String baseUrl, String user, String password, String fromFolder,
+                     String fromName, String toFolder, String toName) throws IOException {
+        Request request = new Request.Builder()
+                .url(buildUrl(baseUrl, user, fromFolder, fromName))
+                .header("Authorization", Credentials.basic(user, password))
+                .header("Destination", buildUrl(baseUrl, user, toFolder, toName))
+                .header("Overwrite", "F")
+                .method("COPY", null)
+                .build();
+        try (Response response = client.newCall(request).execute()) {
+            if (response.code() == 412) {
+                throw new RemoteConflictException("HTTP 412 (COPY " + fromName + "): Ziel belegt");
+            }
+            if (!response.isSuccessful()) {
+                throw new HttpStatusException(response.code(), response.message());
+            }
+        }
+    }
+
     /**
      * Benennt per WebDAV-MOVE um, ohne ein vorhandenes Ziel zu ersetzen ({@code Overwrite: F}). Ist
      * {@code expectedEtag} gesetzt, verschiebt der Server nur, wenn die <b>Quelle</b> noch diesen ETag

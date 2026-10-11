@@ -84,6 +84,8 @@ public class KmyExportCoordinator {
         public String folder;
         public String file;
         public String backupName;
+        /** Wie viele Sicherungen und Vergleiche das Profil aufhebt (0 = dauerhaft). */
+        public int keep = KmyBackups.DEFAULT_KEEP;
 
         private Outcome(String message, boolean failed, boolean written) {
             this.message = message;
@@ -275,9 +277,14 @@ public class KmyExportCoordinator {
             String backup = BACKUP_DIR + "/" + backupName;
             storage.ensureFolder(backupFolder);
             storage.uploadBytes(backupFolder, backupName, raw);
-            // Erst nach der neuen Sicherung aufräumen: Geht das Löschen der alten schief, steht die
-            // frische schon da. Beiwerk – Fehler dabei bleiben folgenlos.
-            KmyBackups.prune(storage, backupFolder, file, KmyBackups.KEEP);
+            // Die erste Sicherung jedes Monats bleibt für immer – in einem eigenen Unterordner, dessen
+            // Name sich übersetzen lässt. Dann erst aufräumen: Geht das Löschen der alten schief,
+            // steht die frische schon da. Beides Beiwerk – Fehler dabei bleiben folgenlos.
+            String monatsOrdner = backupFolder + "/"
+                    + r.getString(de.spahr.ausgaben.R.string.kmy_backup_monthly_folder);
+            int keep = settings.getKmyBackupKeep();
+            KmyBackups.sichereMonat(storage, backupFolder, monatsOrdner, file, backupName, raw);
+            KmyBackups.prune(storage, backupFolder, monatsOrdner, file, keep);
 
             fortschritt.melde(r.getString(de.spahr.ausgaben.R.string.kmy_progress_writing), 40);
             // Vermerken, mit welcher Signatur die gleich neu geschriebenen Buchungen in der Datei
@@ -321,6 +328,7 @@ public class KmyExportCoordinator {
             ok.folder = folder;
             ok.file = file;
             ok.backupName = backupName;
+            ok.keep = keep;
             return ok;
         } catch (de.spahr.ausgaben.net.RemoteConflictException e) {
             // Fremdänderung erkannt: nichts geschrieben, nichts als exportiert markiert.

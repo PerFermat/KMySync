@@ -709,6 +709,9 @@
     <string name="export_busy">Ya hay una exportación en curso.</string>
     <string name="export_wait">Espera a que termine la exportación en curso.</string>
     <string name="kmy_changes_title">Cambios en el archivo de KMyMoney</string>
+    <string name="kmy_backup_monthly_folder">Copias mensuales</string>
+    <string name="kmy_backup_keep_hint">Copias de seguridad que se conservan</string>
+    <string name="kmy_backup_keep_helper">0 = conservar siempre</string>
     <string name="kmy_changes_hint">Para cada exportación: las líneas que realmente cambiaron en el archivo, comparadas tras releerlo del servidor.</string>
     <string name="kmy_changes_empty">Aún no hay ninguna exportación con comparación. Tras la próxima exportación verás aquí qué líneas del archivo cambiaron.</string>
     <string name="kmy_changes_summary">Líneas: +%1$d / −%2$d · %3$s</string>

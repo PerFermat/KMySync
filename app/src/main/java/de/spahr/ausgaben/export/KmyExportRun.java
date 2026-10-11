@@ -223,7 +223,7 @@ public final class KmyExportRun {
             ExportDiffStore store = new ExportDiffStore(ExportDiffStore.ordnerFuer(app.getFilesDir(),
                     new de.spahr.ausgaben.settings.ProfileManager(app).getActiveProfileId()));
             store.speichere(o.backupName, d);
-            store.raeumeAuf(o.file, KmyBackups.KEEP);
+            store.raeumeAuf(o.file, o.keep);
             return d.abweichung ? "\n" + r.getString(R.string.kmy_result_differs) : "";
         } catch (Exception | OutOfMemoryError e) {
             android.util.Log.w("KmyExport", "Vergleich nach dem Export nicht möglich", e);
@@ -251,7 +251,7 @@ public final class KmyExportRun {
             ExportDiffStore store = new ExportDiffStore(ExportDiffStore.ordnerFuer(app.getFilesDir(),
                     new de.spahr.ausgaben.settings.ProfileManager(app).getActiveProfileId()));
             store.speichere(o.backupName, d);
-            store.raeumeAuf(o.file, KmyBackups.KEEP);
+            store.raeumeAuf(o.file, o.keep);
         } catch (Exception | OutOfMemoryError e) {
             android.util.Log.w("KmyExport", "Defekt ließ sich nicht vermerken", e);
         }

@@ -133,6 +133,17 @@ public interface RemoteStorage {
         throw new IOException("Umbenennen ohne Ersetzen wird von diesem Server nicht unterstützt");
     }
 
+    /**
+     * Kopiert eine Datei <b>auf dem Server</b>, ohne sie über das Gerät zu schicken. Ein vorhandenes
+     * Ziel wird nicht ersetzt.
+     *
+     * <p>Standard: nicht unterstützt – der Aufrufer lädt dann selbst hoch.</p>
+     */
+    default void copy(String fromFolder, String fromName, String toFolder, String toName)
+            throws IOException {
+        throw new IOException("Kopieren auf dem Server wird nicht unterstützt");
+    }
+
     /** Größe der Datei in Bytes; {@code -1}, wenn das Backend sie nicht nennen kann. */
     default long fileSize(String folder, String fileName) throws IOException {
         return -1;

@@ -113,6 +113,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
     private TextInputEditText editImportFolder;
     private TextInputEditText editKmyPath;
     private TextInputEditText editReceiptFolder;
+    private TextInputEditText editKmyBackupKeep;
     /**
      * Der Belegpfad, wie er beim Öffnen der Maske galt. Nur wenn er sich beim Speichern
      * <b>geändert</b> hat, wird gewarnt und umgezogen – sonst bekäme jeder, der seine Einstellungen
@@ -224,6 +225,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         editImportFolder = findViewById(R.id.editImportFolder);
         editKmyPath = findViewById(R.id.editKmyPath);
         editReceiptFolder = findViewById(R.id.editReceiptFolder);
+        editKmyBackupKeep = findViewById(R.id.editKmyBackupKeep);
         editCsvSeparator = findViewById(R.id.editCsvSeparator);
         urlLayout = findViewById(R.id.urlLayout);
         userLayout = findViewById(R.id.userLayout);
@@ -469,6 +471,8 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
                 SettingsStore.MODE_CSV.equals(selectedExportMode) ? View.VISIBLE : View.GONE);
         // Der Zeilenvergleich entsteht nur, wo die App die .kmy-Datei selbst schreibt.
         findViewById(R.id.btnKmyChanges).setVisibility(kmy ? View.VISIBLE : View.GONE);
+        // Sicherungen legt nur an, wer die Datei schreibt.
+        findViewById(R.id.kmyBackupKeepLayout).setVisibility(kmy ? View.VISIBLE : View.GONE);
     }
 
     /** Dropdown „CSV-Trennzeichen" (nur im CSV-Block sichtbar): Semikolon (Standard) oder Komma. */
@@ -569,6 +573,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         editImportFolder.setText(settings.getImportFolder());
         editKmyPath.setText(settings.getKmyPath());
         editReceiptFolder.setText(settings.getReceiptFolder());
+        editKmyBackupKeep.setText(String.valueOf(settings.getKmyBackupKeep()));
         belegPfadBeimOeffnen = de.spahr.ausgaben.receipt.ReceiptSync.remoteBase(settings);
         // Passwort bleibt leer: leer speichern lässt ein vorhandenes unverändert. Ist bereits eines
         // gespeichert, unter dem Feld „••••••" anzeigen (wie in den Einstellungen).
@@ -688,6 +693,12 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
                 Ui.trimmedText(editKmyPath),
                 syncFields.serverType());
         settings.setCsvSeparator(selectedCsvSeparator);
+        // Ein leeres oder unlesbares Feld lässt die gespeicherte Zahl stehen.
+        try {
+            settings.setKmyBackupKeep(Integer.parseInt(Ui.trimmedText(editKmyBackupKeep)));
+        } catch (NumberFormatException e) {
+            // bleibt, wie es war
+        }
         belegordnerUebernehmen();
 
         repository.ensureAccount(defaultAccount);

@@ -741,6 +741,9 @@
     <string name="export_busy">An export is already running.</string>
     <string name="export_wait">Please wait until the running export has finished.</string>
     <string name="kmy_changes_title">Changes to the KMyMoney file</string>
+    <string name="kmy_backup_monthly_folder">Monthly backups</string>
+    <string name="kmy_backup_keep_hint">Backups to keep</string>
+    <string name="kmy_backup_keep_helper">0 = keep permanently</string>
     <string name="kmy_changes_hint">For each export: the lines that actually changed in the file, compared after reading it back from the server.</string>
     <string name="kmy_changes_empty">No export with a comparison yet. After the next export you will see here which lines of the file changed.</string>
     <string name="kmy_changes_summary">Lines: +%1$d / −%2$d · %3$s</string>
