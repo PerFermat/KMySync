@@ -581,14 +581,14 @@ class AliasResolver {
     }
 
     /**
-     * Hängt „GPS: lat, lon" an die Notiz an (gleiche Form wie am Phone), durch eine Leerzeile getrennt;
+     * Hängt „GPS: lat, lon" an die Notiz an (gleiche Form wie am Phone), in einer eigenen Zeile;
      * ersetzt einen alten GPS-Zusatz.
      */
     static String appendGps(String note, String coords) {
         if (coords == null || coords.trim().isEmpty()) {
             return note == null ? "" : note;
         }
-        // (?s): der Punkt greift über Zeilenenden – seit die Zusätze durch Leerzeilen getrennt sind,
+        // (?s): der Punkt greift über Zeilenenden – seit jeder Zusatz in einer eigenen Zeile steht,
         // steht hinter dem alten GPS-Zusatz womöglich noch eine Zeile.
         String base = (note == null ? "" : note).replaceAll("(?s)\\s*GPS:.*$", "");
         return de.spahr.ausgaben.receipt.NoteReceipt.append(base, "GPS: " + coords.trim());

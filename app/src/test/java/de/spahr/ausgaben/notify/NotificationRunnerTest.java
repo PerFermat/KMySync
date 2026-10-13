@@ -277,7 +277,7 @@ public class NotificationRunnerTest {
         imHintergrund(() -> db.bookingDao().insert(alt));
         meldung(HEUTE, zahlung("Lidl", "7,50"), "a");
         ArrayList<NotificationDraft> drafts = vorbereiten();
-        String wortlaut = "Kartenzahlung\n\n" + zahlung("Lidl", "7,50");
+        String wortlaut = "Kartenzahlung\n" + zahlung("Lidl", "7,50");
         // Schon die Vorschau zeigt ihn …
         assertEquals(wortlaut, drafts.get(0).note);
         assertEquals("Lebensmittel", drafts.get(0).category);
@@ -288,7 +288,7 @@ public class NotificationRunnerTest {
         assertEquals(wortlaut, neu.note);
     }
 
-    /** Mit Standort steht der GPS-Zusatz hinter dem Wortlaut, durch eine Leerzeile getrennt. */
+    /** Mit Standort steht der GPS-Zusatz hinter dem Wortlaut, in einer eigenen Zeile. */
     @Test
     public void standortHaengtHinterDemWortlaut() throws Exception {
         new de.spahr.ausgaben.settings.SettingsStore(ctx).setGpsEnabled(true);
@@ -298,7 +298,7 @@ public class NotificationRunnerTest {
         ArrayList<NotificationDraft> drafts = vorbereiten();
         abschliessen(drafts, ids(drafts));
         Booking b = imHintergrund(() -> db.bookingDao().getAllBookings()).get(0);
-        assertEquals("Kartenzahlung\n\n" + zahlung("Lidl", "7,50") + "\n\nGPS: 50.123456, 8.654321",
+        assertEquals("Kartenzahlung\n" + zahlung("Lidl", "7,50") + "\nGPS: 50.123456, 8.654321",
                 b.note);
     }
 
@@ -313,8 +313,8 @@ public class NotificationRunnerTest {
         assertTrue(drafts.get(0).recognized);
         abschliessen(drafts, ids(drafts));
         Booking b = imHintergrund(() -> db.bookingDao().getAllBookings()).get(0);
-        assertEquals("Kartenzahlung\n\n" + zahlung("Lidl", "7,50")
-                + "\nKarte *1234\n\nGPS: 50.123456, 8.654321", b.note);
+        assertEquals("Kartenzahlung\n" + zahlung("Lidl", "7,50")
+                + "\nKarte *1234\nGPS: 50.123456, 8.654321", b.note);
     }
 
     /** Auch eine nicht erkannte Zeile bringt ihren Wortlaut mit – für die Maske hinter dem Stift. */
@@ -322,7 +322,7 @@ public class NotificationRunnerTest {
     public void nichtErkannteZeileTraegtIhrenWortlaut() throws Exception {
         vorlageLernen();
         meldung(HEUTE, "Gutschrift von 20,00 EUR von Amazon", "a");
-        assertEquals("Kartenzahlung\n\nGutschrift von 20,00 EUR von Amazon",
+        assertEquals("Kartenzahlung\nGutschrift von 20,00 EUR von Amazon",
                 vorbereiten().get(0).note);
     }
 

@@ -263,8 +263,8 @@ public class NotificationRunTest {
     }
 
     @Test
-    public void wortlautIstUeberschriftLeerzeileText() {
-        assertEquals("Neuer Umsatz\n\nSie haben kontaktlos 23,45 € bei Rewe-Markt bezahlt.",
+    public void wortlautIstUeberschriftUndTextInZweiZeilen() {
+        assertEquals("Neuer Umsatz\nSie haben kontaktlos 23,45 € bei Rewe-Markt bezahlt.",
                 meldungMit("Neuer Umsatz", "Sie haben kontaktlos 23,45 € bei Rewe-Markt bezahlt.")
                         .wording());
     }
@@ -272,7 +272,7 @@ public class NotificationRunTest {
     /** Exakt heißt: mit Satzzeichen – nicht die Fassung, an der die Erkennung arbeitet. */
     @Test
     public void wortlautBehaeltDieSatzzeichen() {
-        assertEquals("Umsatz!\n\nZahlung bei \u201EREWE\u201C, Köln: 12,34 EUR.",
+        assertEquals("Umsatz!\nZahlung bei \u201EREWE\u201C, Köln: 12,34 EUR.",
                 meldungMit("Umsatz!", "Zahlung bei \u201EREWE\u201C, Köln: 12,34 EUR.").wording());
     }
 
@@ -291,7 +291,7 @@ public class NotificationRunTest {
     /** Zeilenumbrüche gehören zum Wortlaut und bleiben; nur ihre Schreibweise wird einheitlich. */
     @Test
     public void zeilenumbruecheBleiben() {
-        assertEquals("Neuer Umsatz\n\n12,34 €\nbei REWE\nKarte *1234",
+        assertEquals("Neuer Umsatz\n12,34 €\nbei REWE\nKarte *1234",
                 meldungMit("Neuer Umsatz", "12,34 €\r\nbei REWE\rKarte *1234\n").wording());
     }
 }

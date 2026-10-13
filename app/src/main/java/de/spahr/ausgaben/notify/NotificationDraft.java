@@ -101,8 +101,8 @@ public class NotificationDraft implements Parcelable {
     }
 
     /**
-     * Der Wortlaut der Meldung, wie er in die Notiz der Buchung kommt: die Überschrift, eine Leerzeile,
-     * der Text — so, wie die Meldung selbst gegliedert ist.
+     * Der Wortlaut der Meldung, wie er in die Notiz der Buchung kommt: die Überschrift und in der
+     * nächsten Zeile der Text — so, wie die Meldung selbst gegliedert ist.
      *
      * <p>Unverändert, samt Satzzeichen und Zeilenumbrüchen — ausdrücklich nicht die Fassung, an der die
      * Erkennung arbeitet. Die Umbrüche dürfen bleiben: das Notizfeld ist mehrzeilig, der Export in die
@@ -117,7 +117,7 @@ public class NotificationDraft implements Parcelable {
         if (t.isEmpty() || x.startsWith(t)) {
             return x;
         }
-        return x.isEmpty() ? t : t + "\n\n" + x;
+        return x.isEmpty() ? t : t + "\n" + x;
     }
 
     private static String clean(String s) {
