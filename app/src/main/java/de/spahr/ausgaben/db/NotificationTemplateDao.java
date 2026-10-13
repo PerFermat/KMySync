@@ -16,6 +16,12 @@ public interface NotificationTemplateDao {
     @Insert
     long insert(NotificationTemplateRow row);
 
+    @androidx.room.Update
+    void update(NotificationTemplateRow row);
+
+    @Query("DELETE FROM notification_template WHERE id = :id")
+    void deleteById(long id);
+
     /** Ein Konto gehört zu genau einer App: lernt es von einer anderen, gehen die alten Vorlagen. */
     @Query("DELETE FROM notification_template WHERE account = :account AND package_name <> :packageName")
     void deleteOtherApps(String account, String packageName);

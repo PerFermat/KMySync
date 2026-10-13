@@ -168,6 +168,12 @@
             android:parentActivityName=".ui.DepotActivity" />
 
         <activity
+            android:name=".ui.NotificationRulesActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".ui.ProfileSettingsActivity" />
+
+        <activity
             android:name=".ui.NotificationBatchActivity"
             android:exported="false"
             android:parentActivityName=".ui.MainActivity" />

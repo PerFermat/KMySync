@@ -30,6 +30,8 @@ public final class NotificationTemplate {
         }
     }
 
+    /** Die Nummer der gespeicherten Regel – gebraucht, um sie zu ändern oder zu löschen; sonst 0. */
+    public final long id;
     public final String packageName;
     /** Ein Wort, das in der Meldung stehen muss — etwa die Kartenendung; {@code ""}, wenn keines. */
     public final String discriminator;
@@ -41,6 +43,13 @@ public final class NotificationTemplate {
 
     public NotificationTemplate(String packageName, String discriminator, String account,
                                 boolean isIncome, AnchorRule amountRule, TextRule payeeRule) {
+        this(0, packageName, discriminator, account, isIncome, amountRule, payeeRule);
+    }
+
+    /** @param id die Nummer der gespeicherten Regel; 0, solange sie noch nicht gespeichert ist */
+    public NotificationTemplate(long id, String packageName, String discriminator, String account,
+                                boolean isIncome, AnchorRule amountRule, TextRule payeeRule) {
+        this.id = id;
         this.packageName = packageName == null ? "" : packageName;
         this.discriminator = discriminator == null ? "" : discriminator.trim();
         this.account = account == null ? "" : account;

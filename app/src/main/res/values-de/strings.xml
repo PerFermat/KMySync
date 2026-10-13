@@ -987,9 +987,9 @@
     <string name="statement_rules_nth_right">die %1$d. von rechts</string>
     <string name="statement_rules_nth_left">die %1$d. von links</string>
     <string name="statement_rules_column">die Zahl in der Spalte der Beschriftung</string>
-    <string name="notify_learn_switch">Aus Benachrichtigungen lernen</string>
-    <string name="notify_learn_notice">KMySync hebt Benachrichtigungen der Apps auf, die Sie dafür auswählen, sofern sie einen Geldbetrag nennen, und schlägt daraus beim Aktualisieren Buchungen vor. Wird aus einer Meldung eine Buchung, steht ihr Wortlaut in der Notiz der Buchung und wird mit ihr exportiert. Alle anderen aufgehobenen Texte bleiben auf diesem Gerät und werden nach der Verarbeitung gelöscht. Von nicht ausgewählten Apps wird kein Text aufgehoben.\n\nDafür braucht die App den Benachrichtigungszugriff. Mit OK öffnen sich die Systemeinstellungen – schalten Sie dort KMySync ein. Welche Apps gelesen werden, legen Sie danach je Profil in den Profileinstellungen fest.</string>
-    <string name="notify_learn_no_access">Ohne Benachrichtigungszugriff kann die App nicht aus Benachrichtigungen lernen.</string>
+    <string name="notify_learn_switch">Buchungen aus Benachrichtigungen</string>
+    <string name="notify_learn_notice">KMySync erzeugt Buchungen aus den Benachrichtigungen Ihrer Bank-Apps. Dafür hebt die App Benachrichtigungen der Apps auf, die Sie auswählen, sofern sie einen Geldbetrag nennen.\n\nLesen kann sie eine Meldung erst, nachdem sie es einmal gelernt hat: Legen Sie zur ersten Meldung die Buchung von Hand an und bestätigen Sie die Nachfrage. Ab dann schlägt die App beim Aktualisieren Buchungen vor, die Sie ändern, entfernen oder übernehmen.\n\nWird aus einer Meldung eine Buchung, steht ihr Wortlaut in der Notiz der Buchung und wird mit ihr exportiert. Alle anderen aufgehobenen Texte bleiben auf diesem Gerät und werden nach der Verarbeitung gelöscht. Von nicht ausgewählten Apps wird kein Text aufgehoben.\n\nDafür braucht die App den Benachrichtigungszugriff. Mit OK öffnen sich die Systemeinstellungen – schalten Sie dort KMySync ein. Welche Apps gelesen werden, legen Sie danach je Profil in den Profileinstellungen fest.</string>
+    <string name="notify_learn_no_access">Ohne Benachrichtigungszugriff lassen sich keine Buchungen aus Benachrichtigungen erzeugen.</string>
     <string name="notify_listener_label">Buchungen aus Benachrichtigungen</string>
     <string name="notify_offer_title">Benachrichtigung zu dieser Buchung</string>
     <string name="notify_offer_message">%1$s hat diesen Umsatz gemeldet:\n\n%2$s\n\nKünftige Benachrichtigungen dieser App für das Konto „%3$s“ verarbeiten?</string>
@@ -1020,4 +1020,42 @@
     <string name="notify_app_remove_message">%1$s wird aus dieser Liste entfernt, und was von dieser App aufgehoben wurde, wird gelöscht. Sie erscheint wieder, sobald sie eine Benachrichtigung mit einem Geldbetrag schickt.</string>
     <string name="notify_apps_imported">Übernommene Benachrichtigungen: %1$d</string>
     <string name="notify_location_notice">Soll KMySync sich merken, wo das Handy war, als eine Bank-Benachrichtigung eintraf? Damit findet die App bei mehreren gleichnamigen Empfängern den nächstgelegenen, wie bei der Spracheingabe, und die Buchung bekommt den Standort in die Notiz.\n\nDafür braucht die App den Standortzugriff „Immer zulassen“, weil die Benachrichtigung im Hintergrund eintrifft. Der Standort bleibt auf diesem Gerät. Ohne den Zugriff funktioniert alles wie bisher, nur ohne Standort.</string>
+    <string name="notify_rules_title">Regeln für Benachrichtigungen</string>
+    <string name="notify_rules_edit">Gelernte Regeln ändern</string>
+    <string name="notify_rules_rule">Regel</string>
+    <string name="notify_rules_test">Testmeldung</string>
+    <string name="notify_rules_test_title">Überschrift der Meldung</string>
+    <string name="notify_rules_test_text">Text der Meldung</string>
+    <string name="notify_rules_test_pick">Aufgehobene Meldung einsetzen</string>
+    <string name="notify_rules_test_none">Von dieser App ist gerade keine Meldung aufgehoben.</string>
+    <string name="notify_rules_booking">Buchung</string>
+    <string name="notify_rules_income">Einnahme (sonst Ausgabe)</string>
+    <string name="notify_rules_discriminator">Merkmal, z. B. Kartenendung</string>
+    <string name="notify_rules_discriminator_help">Dieses Wort muss in der Meldung stehen. Leer lassen, wenn die App nur für ein Konto meldet.</string>
+    <string name="notify_rules_amount">Betrag</string>
+    <string name="notify_rules_anchors">Beschriftungen</string>
+    <string name="notify_rules_anchors_help">Eine je Zeile. Gelesen wird hinter der ersten, die in der Meldung steht – weitere Zeilen sind Rückfälle.</string>
+    <string name="notify_rules_position">Welche Zahl</string>
+    <string name="notify_rules_pos_first">die erste</string>
+    <string name="notify_rules_pos_last">die letzte</string>
+    <string name="notify_rules_pos_left">Stelle von links: %1$d</string>
+    <string name="notify_rules_pos_right">Stelle von rechts: %1$d</string>
+    <string name="notify_rules_currency">Währung der Zeile</string>
+    <string name="notify_rules_currency_help">Wie sie in der Meldung steht, z. B. € oder EUR. Leer = jede.</string>
+    <string name="notify_rules_payee">Empfänger</string>
+    <string name="notify_rules_payee_anchors_help">Eine je Zeile, z. B. „bei“. Leer = die Regel liest keinen Empfänger.</string>
+    <string name="notify_rules_payee_direction">Der Empfänger steht</string>
+    <string name="notify_rules_dir_below">in der Zeile darunter</string>
+    <string name="notify_rules_dir_above">in der Zeile darüber</string>
+    <string name="notify_rules_until">Der Empfänger endet vor</string>
+    <string name="notify_rules_until_help">Ein Wort, z. B. „bezahlt“. Leer = am Zeilenende, # = vor der ersten Zahl.</string>
+    <string name="notify_rules_read_amount">Betrag: %1$s</string>
+    <string name="notify_rules_read_payee">Empfänger: %1$s</string>
+    <string name="notify_rules_read_nothing">nicht gelesen</string>
+    <string name="notify_rules_read_no_payee">wird nicht gelesen</string>
+    <string name="notify_rules_read_mark_missing">Das Merkmal „%1$s“ steht nicht in der Meldung – die Regel greift hier nicht.</string>
+    <string name="notify_rules_invalid">Konto und mindestens eine Beschriftung für den Betrag sind nötig.</string>
+    <string name="notify_rules_saved">Regel gespeichert</string>
+    <string name="notify_rule_delete">Diese Regel löschen</string>
+    <string name="notify_rule_delete_message">Die gewählte Regel wird gelöscht. Andere Regeln dieser App bleiben.</string>
 </resources>

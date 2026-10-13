@@ -37,7 +37,17 @@ public class BankNotificationListener extends NotificationListenerService {
     public void onListenerConnected() {
         running = this;
         if (SettingsStore.isNotifyLearnEnabled(this)) {
-            io.execute(() -> NotificationBuffer.purgeNow(this));
+            io.execute(() -> {
+                // Welche Apps Regeln haben, steht bewusst nicht in der Sicherung. Nach dem Einspielen
+                // einer Sicherung stimmt die Liste deshalb erst wieder, wenn sie aus den Regeln des
+                // aktiven Profils neu aufgebaut ist – sonst verfielen dessen Meldungen nach einem Tag.
+                try {
+                    new de.spahr.ausgaben.db.Repository(this).notificationTemplates().syncKnownApps();
+                } catch (RuntimeException e) {
+                    // Datenbank gerade nicht zu öffnen (Profilwechsel): beim nächsten Aktualisieren.
+                }
+                NotificationBuffer.purgeNow(this);
+            });
         }
     }
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Eine Zeile der App-Auswahl für „Buchungen aus Benachrichtigungen": Haken, Name, darunter die Konten,
-     für die schon Regeln gelernt sind, und hinten der Papierkorb für diese Regeln. -->
+     für die schon Regeln gelernt sind, dahinter der Stift zum Ändern dieser Regeln und der Papierkorb. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -35,6 +35,15 @@
             android:textSize="13sp"
             android:visibility="gone" />
     </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/btnNotifyAppRules"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/notify_rules_edit"
+        android:src="@android:drawable/ic_menu_edit"
+        android:visibility="gone" />
 
     <ImageButton
         android:id="@+id/btnNotifyAppForget"

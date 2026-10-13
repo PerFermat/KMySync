@@ -980,9 +980,9 @@
     <string name="statement_rules_nth_right">el %1$d.º desde la derecha</string>
     <string name="statement_rules_nth_left">el %1$d.º desde la izquierda</string>
     <string name="statement_rules_column">el número en la columna de la etiqueta</string>
-    <string name="notify_learn_switch">Aprender de las notificaciones</string>
-    <string name="notify_learn_notice">KMySync guarda las notificaciones de las aplicaciones que selecciones para ello, siempre que mencionen un importe, y al actualizar propone apuntes a partir de ellas. Cuando un mensaje se convierte en apunte, su texto queda en la nota del apunte y se exporta con él. Los demás textos guardados permanecen en este dispositivo y se borran una vez procesados. De las aplicaciones no seleccionadas no se guarda ningún texto.\n\nPara ello la aplicación necesita acceso a las notificaciones. Con Aceptar se abren los ajustes del sistema: activa KMySync allí. Después, en los ajustes de cada perfil, eliges qué aplicaciones se leen.</string>
-    <string name="notify_learn_no_access">Sin acceso a las notificaciones, la aplicación no puede aprender de ellas.</string>
+    <string name="notify_learn_switch">Apuntes a partir de notificaciones</string>
+    <string name="notify_learn_notice">KMySync crea apuntes a partir de las notificaciones de las aplicaciones de tu banco. Para ello guarda las notificaciones de las aplicaciones que selecciones, siempre que mencionen un importe.\n\nSolo puede leer un mensaje después de haberlo aprendido una vez: con el primer mensaje, crea el apunte a mano y confirma la pregunta que aparece. A partir de entonces la aplicación propone apuntes al actualizar, que puedes cambiar, quitar o aceptar.\n\nCuando un mensaje se convierte en apunte, su texto queda en la nota del apunte y se exporta con él. Los demás textos guardados permanecen en este dispositivo y se borran una vez procesados. De las aplicaciones no seleccionadas no se guarda ningún texto.\n\nPara ello la aplicación necesita acceso a las notificaciones. Con Aceptar se abren los ajustes del sistema: activa KMySync allí. Después, en los ajustes de cada perfil, eliges qué aplicaciones se leen.</string>
+    <string name="notify_learn_no_access">Sin acceso a las notificaciones no se pueden crear apuntes a partir de ellas.</string>
     <string name="notify_listener_label">Apuntes a partir de notificaciones</string>
     <string name="notify_offer_title">Notificación de este apunte</string>
     <string name="notify_offer_message">%1$s ha comunicado este movimiento:\n\n%2$s\n\n¿Procesar las futuras notificaciones de esta aplicación para la cuenta «%3$s»?</string>
@@ -1013,4 +1013,42 @@
     <string name="notify_app_remove_message">%1$s se quitará de esta lista y se borrará lo que se haya guardado de esta aplicación. Volverá a aparecer en cuanto envíe una notificación con un importe.</string>
     <string name="notify_apps_imported">Notificaciones recogidas: %1$d</string>
     <string name="notify_location_notice">¿Debe KMySync recordar dónde estaba el teléfono cuando llegó una notificación del banco? Así la aplicación encuentra el más cercano entre varios beneficiarios con el mismo nombre, como con la entrada por voz, y el apunte recibe la ubicación en su nota.\n\nPara ello hace falta el acceso a la ubicación «Permitir siempre», porque la notificación llega en segundo plano. La ubicación permanece en este dispositivo. Sin él todo funciona como antes, solo que sin ubicación.</string>
+    <string name="notify_rules_title">Reglas para notificaciones</string>
+    <string name="notify_rules_edit">Editar las reglas aprendidas</string>
+    <string name="notify_rules_rule">Regla</string>
+    <string name="notify_rules_test">Mensaje de prueba</string>
+    <string name="notify_rules_test_title">Título del mensaje</string>
+    <string name="notify_rules_test_text">Texto del mensaje</string>
+    <string name="notify_rules_test_pick">Insertar un mensaje guardado</string>
+    <string name="notify_rules_test_none">Ahora mismo no hay ningún mensaje guardado de esta aplicación.</string>
+    <string name="notify_rules_booking">Apunte</string>
+    <string name="notify_rules_income">Ingreso (si no, gasto)</string>
+    <string name="notify_rules_discriminator">Marca, p. ej. final de la tarjeta</string>
+    <string name="notify_rules_discriminator_help">Esta palabra debe aparecer en el mensaje. Déjalo vacío si la aplicación informa de una sola cuenta.</string>
+    <string name="notify_rules_amount">Importe</string>
+    <string name="notify_rules_anchors">Rótulos</string>
+    <string name="notify_rules_anchors_help">Uno por línea. Se lee detrás del primero que aparezca en el mensaje; las demás líneas son alternativas.</string>
+    <string name="notify_rules_position">Qué número</string>
+    <string name="notify_rules_pos_first">el primero</string>
+    <string name="notify_rules_pos_last">el último</string>
+    <string name="notify_rules_pos_left">Posición desde la izquierda: %1$d</string>
+    <string name="notify_rules_pos_right">Posición desde la derecha: %1$d</string>
+    <string name="notify_rules_currency">Moneda de la línea</string>
+    <string name="notify_rules_currency_help">Tal como aparece en el mensaje, p. ej. € o EUR. Vacío = cualquiera.</string>
+    <string name="notify_rules_payee">Beneficiario</string>
+    <string name="notify_rules_payee_anchors_help">Uno por línea, p. ej. «en». Vacío = la regla no lee beneficiario.</string>
+    <string name="notify_rules_payee_direction">El beneficiario está</string>
+    <string name="notify_rules_dir_below">en la línea de abajo</string>
+    <string name="notify_rules_dir_above">en la línea de arriba</string>
+    <string name="notify_rules_until">El beneficiario termina antes de</string>
+    <string name="notify_rules_until_help">Una palabra, p. ej. «pagado». Vacío = al final de la línea, # = antes del primer número.</string>
+    <string name="notify_rules_read_amount">Importe: %1$s</string>
+    <string name="notify_rules_read_payee">Beneficiario: %1$s</string>
+    <string name="notify_rules_read_nothing">no leído</string>
+    <string name="notify_rules_read_no_payee">no se lee</string>
+    <string name="notify_rules_read_mark_missing">La marca «%1$s» no está en el mensaje: la regla no se aplica aquí.</string>
+    <string name="notify_rules_invalid">Hacen falta una cuenta y al menos un rótulo para el importe.</string>
+    <string name="notify_rules_saved">Regla guardada</string>
+    <string name="notify_rule_delete">Borrar esta regla</string>
+    <string name="notify_rule_delete_message">Se borrará la regla seleccionada. Las demás reglas de esta aplicación se conservan.</string>
 </resources>

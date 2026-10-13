@@ -167,7 +167,7 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
             }
         });
 
-        // Aus Benachrichtigungen lernen. An ist der Schalter nur, wenn auch der Zugriff erteilt ist –
+        // Buchungen aus Benachrichtigungen. An ist der Schalter nur, wenn auch der Zugriff erteilt ist –
         // sonst zeigte er etwas an, das nicht geschieht.
         switchNotifyLearn = findViewById(R.id.switchNotifyLearn);
         switchNotifyLearn.setChecked(settings.isNotifyLearnEnabled() && hasNotificationAccess());

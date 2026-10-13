@@ -75,6 +75,23 @@ public final class NotificationTemplateStore {
         syncKnownApps();
     }
 
+    /** Schreibt eine von Hand geänderte Regel zurück; sie behält ihre Nummer. */
+    public void update(NotificationTemplate template) {
+        NotificationTemplateRow row = toRow(template);
+        if (row == null || template.id <= 0) {
+            return;
+        }
+        row.id = template.id;
+        dao.update(row);
+        syncKnownApps();
+    }
+
+    /** Löscht eine einzelne Regel. */
+    public void delete(long id) {
+        dao.deleteById(id);
+        syncKnownApps();
+    }
+
     /** Vergisst alles, was für diese App gelernt wurde — für jedes Konto des aktiven Profils. */
     public void deleteForPackage(String packageName) {
         dao.deleteForPackage(packageName);
@@ -121,7 +138,7 @@ public final class NotificationTemplateStore {
                 }
                 payee = new TextRule(rule, o.optString(KEY_UNTIL, ""));
             }
-            return new NotificationTemplate(row.packageName, row.discriminator, row.account,
+            return new NotificationTemplate(row.id, row.packageName, row.discriminator, row.account,
                     row.isIncome, amount, payee);
         } catch (JSONException e) {
             return null;

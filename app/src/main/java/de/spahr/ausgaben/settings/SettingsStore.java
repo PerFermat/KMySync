@@ -842,7 +842,7 @@ public class SettingsStore {
     }
 
     /**
-     * Aus Benachrichtigungen lernen (Standard: aus). Gilt für das ganze Gerät, nicht je Profil — der
+     * Buchungen aus Benachrichtigungen (Standard: aus). Gilt für das ganze Gerät, nicht je Profil — der
      * Dienst im Hintergrund weiß nicht, für welches Profil eine Meldung gedacht ist.
      */
     public boolean isNotifyLearnEnabled() {

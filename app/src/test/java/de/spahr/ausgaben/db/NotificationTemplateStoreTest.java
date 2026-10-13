@@ -143,6 +143,36 @@ public class NotificationTemplateStoreTest {
         assertEquals(new HashSet<>(Collections.singletonList("de.andere")), new KnownApps(ctx).all());
     }
 
+    /** Die Regelseite schreibt eine geänderte Regel zurück: dieselbe Nummer, neuer Inhalt, keine zweite. */
+    @Test
+    public void geaenderteRegelErsetztDieAlte() {
+        store.save(gelernt("de.bank", "Kreditkarte"));
+        NotificationTemplate alt = store.all().get(0);
+        assertTrue(alt.id > 0);
+        de.spahr.ausgaben.statement.NotificationRuleForm f =
+                de.spahr.ausgaben.statement.NotificationRuleForm.of(alt);
+        f.account = "Zweitkarte";
+        f.amountAnchors = "über\nvon";
+        store.update(f.toTemplate(alt.id, alt.packageName));
+        List<NotificationTemplate> all = store.all();
+        assertEquals(1, all.size());
+        assertEquals(alt.id, all.get(0).id);
+        assertEquals("Zweitkarte", all.get(0).account);
+        assertEquals(Arrays.asList("über", "von"), all.get(0).amountRule.anchors);
+    }
+
+    /** Eine einzelne Regel löschen lässt die übrigen derselben App stehen. */
+    @Test
+    public void einzelneRegelLaesstSichLoeschen() {
+        store.save(gelernt("de.bank", "Kreditkarte"));
+        store.save(gelernt("de.bank", "Girokonto"));
+        store.delete(store.all().get(0).id);
+        List<NotificationTemplate> all = store.all();
+        assertEquals(1, all.size());
+        assertEquals("Girokonto", all.get(0).account);
+        assertEquals(new HashSet<>(Collections.singletonList("de.bank")), new KnownApps(ctx).all());
+    }
+
     /** Der Dienst im Hintergrund muss wissen, welche Apps eine Vorlage haben. */
     @Test
     public void bekannteAppsFolgenDenVorlagen() {

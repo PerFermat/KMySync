@@ -1021,9 +1021,9 @@
     <string name="statement_rules_nth_right">the %1$d. from the right</string>
     <string name="statement_rules_nth_left">the %1$d. from the left</string>
     <string name="statement_rules_column">the number in the label\'s column</string>
-    <string name="notify_learn_switch">Learn from notifications</string>
-    <string name="notify_learn_notice">KMySync keeps notifications from the apps you select for this, provided they mention an amount of money, and suggests transactions from them when you refresh. When a message becomes a transaction, its wording is stored in the note of that transaction and exported with it. All other kept texts stay on this device and are deleted once processed. No text is kept from apps you have not selected.\n\nThe app needs notification access for this. OK opens the system settings – switch KMySync on there. Which apps are read is then set per profile in the profile settings.</string>
-    <string name="notify_learn_no_access">Without notification access the app cannot learn from notifications.</string>
+    <string name="notify_learn_switch">Transactions from notifications</string>
+    <string name="notify_learn_notice">KMySync creates transactions from the notifications of your banking apps. To do so it keeps notifications from the apps you select, provided they mention an amount of money.\n\nIt can read a message only after learning it once: for the first message, enter the transaction by hand and confirm the question that follows. From then on the app suggests transactions when you refresh, which you can change, remove or accept.\n\nWhen a message becomes a transaction, its wording is stored in the note of that transaction and exported with it. All other kept texts stay on this device and are deleted once processed. No text is kept from apps you have not selected.\n\nThe app needs notification access for this. OK opens the system settings – switch KMySync on there. Which apps are read is then set per profile in the profile settings.</string>
+    <string name="notify_learn_no_access">Without notification access no transactions can be created from notifications.</string>
     <string name="notify_listener_label">Transactions from notifications</string>
     <string name="notify_offer_title">Notification for this transaction</string>
     <string name="notify_offer_message">%1$s reported this transaction:\n\n%2$s\n\nProcess future notifications from this app for the account “%3$s”?</string>
@@ -1054,4 +1054,42 @@
     <string name="notify_app_remove_message">%1$s will be removed from this list, and whatever was kept from this app will be deleted. It will appear again as soon as it sends a notification with an amount of money.</string>
     <string name="notify_apps_imported">Notifications taken over: %1$d</string>
     <string name="notify_location_notice">Should KMySync remember where the phone was when a bank notification arrived? The app then finds the nearest of several payees with the same name, as with voice input, and the transaction gets the location in its note.\n\nThis needs the location access “Allow all the time”, because the notification arrives in the background. The location stays on this device. Without it everything works as before, just without a location.</string>
+    <string name="notify_rules_title">Rules for notifications</string>
+    <string name="notify_rules_edit">Edit learned rules</string>
+    <string name="notify_rules_rule">Rule</string>
+    <string name="notify_rules_test">Test message</string>
+    <string name="notify_rules_test_title">Heading of the message</string>
+    <string name="notify_rules_test_text">Text of the message</string>
+    <string name="notify_rules_test_pick">Insert a kept message</string>
+    <string name="notify_rules_test_none">No message from this app is being kept at the moment.</string>
+    <string name="notify_rules_booking">Transaction</string>
+    <string name="notify_rules_income">Income (otherwise expense)</string>
+    <string name="notify_rules_discriminator">Marker, e.g. card ending</string>
+    <string name="notify_rules_discriminator_help">This word must appear in the message. Leave empty if the app reports for one account only.</string>
+    <string name="notify_rules_amount">Amount</string>
+    <string name="notify_rules_anchors">Labels</string>
+    <string name="notify_rules_anchors_help">One per line. The value is read after the first one found in the message – further lines are fallbacks.</string>
+    <string name="notify_rules_position">Which number</string>
+    <string name="notify_rules_pos_first">the first</string>
+    <string name="notify_rules_pos_last">the last</string>
+    <string name="notify_rules_pos_left">Position from the left: %1$d</string>
+    <string name="notify_rules_pos_right">Position from the right: %1$d</string>
+    <string name="notify_rules_currency">Currency of the line</string>
+    <string name="notify_rules_currency_help">As written in the message, e.g. € or EUR. Empty = any.</string>
+    <string name="notify_rules_payee">Payee</string>
+    <string name="notify_rules_payee_anchors_help">One per line, e.g. “at”. Empty = the rule reads no payee.</string>
+    <string name="notify_rules_payee_direction">The payee is</string>
+    <string name="notify_rules_dir_below">in the line below</string>
+    <string name="notify_rules_dir_above">in the line above</string>
+    <string name="notify_rules_until">The payee ends before</string>
+    <string name="notify_rules_until_help">A word, e.g. “paid”. Empty = at the end of the line, # = before the first number.</string>
+    <string name="notify_rules_read_amount">Amount: %1$s</string>
+    <string name="notify_rules_read_payee">Payee: %1$s</string>
+    <string name="notify_rules_read_nothing">not read</string>
+    <string name="notify_rules_read_no_payee">is not read</string>
+    <string name="notify_rules_read_mark_missing">The marker “%1$s” is not in the message – the rule does not apply here.</string>
+    <string name="notify_rules_invalid">An account and at least one label for the amount are required.</string>
+    <string name="notify_rules_saved">Rule saved</string>
+    <string name="notify_rule_delete">Delete this rule</string>
+    <string name="notify_rule_delete_message">The selected rule will be deleted. Other rules of this app are kept.</string>
 </resources>

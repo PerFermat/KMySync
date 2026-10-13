@@ -22,6 +22,9 @@ import de.spahr.ausgaben.statement.NotificationTemplate;
  * <p>Angeboten werden die Apps, die seit dem Einschalten eine Meldung mit Betrag geschickt haben; eine
  * Liste aller installierten Apps bräuchte eine Berechtigung, die diese Funktion nicht wert ist.</p>
  *
+ * <p>Hat das Profil für eine App schon Regeln, führt der Stift auf ihre Regelseite
+ * ({@link NotificationRulesActivity}).</p>
+ *
  * <p>Hinter jeder App steht ein Papierkorb. Er löscht zuerst, was dieses Profil für sie gelernt hat,
  * und beim nächsten Tipp die App selbst aus der Liste. Beides wirkt sofort und für sich; der Haken
  * davor gilt erst mit OK.</p>
@@ -68,6 +71,7 @@ final class NotifyAppsDialog {
             return;
         }
         java.util.Set<String> allowed = AppSelection.allowed(activity);
+        final androidx.appcompat.app.AlertDialog[] dialog = new androidx.appcompat.app.AlertDialog[1];
         final boolean[] checked = new boolean[packages.size()];
         final boolean[] removed = new boolean[packages.size()];
         android.widget.LinearLayout list = new android.widget.LinearLayout(activity);
@@ -88,12 +92,22 @@ final class NotifyAppsDialog {
             ((android.widget.TextView) row.findViewById(R.id.textNotifyApp)).setText(label);
             final android.widget.TextView rules = row.findViewById(R.id.textNotifyAppRules);
             final View forget = row.findViewById(R.id.btnNotifyAppForget);
+            final View editRules = row.findViewById(R.id.btnNotifyAppRules);
             java.util.Set<String> accounts = accountsByApp.get(packageName);
             final boolean[] hasRules = {accounts != null};
             if (accounts != null) {
                 rules.setText(activity.getString(R.string.notify_rules_for,
                         android.text.TextUtils.join(", ", accounts)));
                 rules.setVisibility(View.VISIBLE);
+                // Der Stift führt auf die Regelseite dieser App. Der Dialog schließt dabei: was er
+                // über die Regeln zeigt, stimmt nach dem Ändern nicht mehr.
+                editRules.setVisibility(View.VISIBLE);
+                editRules.setOnClickListener(v -> {
+                    if (dialog[0] != null) {
+                        dialog[0].dismiss();
+                    }
+                    NotificationRulesActivity.start(activity, packageName);
+                });
             }
             // Der Papierkorb in zwei Stufen: erst die gelernten Regeln, und wenn keine (mehr) da
             // sind, die App selbst – samt dem, was von ihr aufgehoben wurde.
@@ -109,6 +123,7 @@ final class NotifyAppsDialog {
                                     repository.deleteNotificationTemplates(packageName, () -> {
                                         hasRules[0] = false;
                                         rules.setVisibility(View.GONE);
+                                        editRules.setVisibility(View.GONE);
                                         forget.setContentDescription(
                                                 activity.getString(R.string.notify_app_remove));
                                         Toast.makeText(activity, R.string.notify_rules_deleted,
@@ -135,7 +150,7 @@ final class NotifyAppsDialog {
         }
         android.widget.ScrollView scroll = new android.widget.ScrollView(activity);
         scroll.addView(list);
-        new AppDialog(activity)
+        dialog[0] = new AppDialog(activity)
                 .setTitle(R.string.notify_apps_button)
                 .setView(scroll)
                 .setPositiveButton(android.R.string.ok, (d, w) -> {
@@ -159,6 +174,7 @@ final class NotifyAppsDialog {
                     }
                 })
                 .setNegativeButton(android.R.string.cancel, null)
-                .show();
+                .create();
+        dialog[0].show();
     }
 }
