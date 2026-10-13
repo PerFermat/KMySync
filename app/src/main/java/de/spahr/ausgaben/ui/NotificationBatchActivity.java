@@ -189,7 +189,7 @@ public class NotificationBatchActivity extends LocalizedActivity {
         // Empfänger (BookingLabel). Von einer nicht erkannten Meldung steht nur die App fest.
         name.setText(d.problem() == NotificationDraft.PROBLEM_UNRECOGNIZED
                 ? NotificationLearnFlow.appLabel(this, d.packageName)
-                : BookingLabel.title(this, d.toBooking(), false));
+                : BookingLabel.title(this, d.toBooking(), d.isSplit()));
         String currency = d.account.isEmpty() ? Currencies.getDefault() : Currencies.forAccount(d.account);
         amount.setText(d.cents <= 0 ? ""
                 : MoneyFormat.display(d.isIncome ? d.cents : -d.cents, currency));
@@ -221,7 +221,9 @@ public class NotificationBatchActivity extends LocalizedActivity {
         if (!d.account.isEmpty()) {
             b.append(" · ").append(d.account);
         }
-        if (!d.category.isEmpty()) {
+        if (d.isSplit()) {
+            b.append(" · ").append(android.text.TextUtils.join(" + ", d.splitCategories));
+        } else if (!d.category.isEmpty()) {
             b.append(" · ").append(d.category);
         }
         // Der Wortlaut steht dabei, sobald die Zeile eine Frage aufwirft – dann muss der Nutzer
@@ -260,15 +262,33 @@ public class NotificationBatchActivity extends LocalizedActivity {
 
     // ---- Ändern ----
 
-    private void edit(int index) {
+    /**
+     * Öffnet die Buchungsmaske so, wie die Spracheingabe am Handy es nach einem Diktat tut
+     * ({@code VoiceEntryController.openVoiceEditor}): mit der gefundenen Vorlagebuchung oder dem Alias
+     * und dem Erkannten als Ausgangsname für einen neuen Alias. Dazu Stapelmodus, Konto und Datum der
+     * Regel.
+     */
+    private void edit(final int index) {
         if (saving || index < 0 || index >= drafts.size()) {
             return;
         }
-        NotificationDraft d = drafts.get(index);
+        final NotificationDraft d = drafts.get(index);
+        // Schon einmal in der Maske gewesen oder ohne Empfänger in der Meldung: nichts aufzulösen.
+        if (d.edited || d.rawPayee.isEmpty()) {
+            openEditor(index, d, null);
+            return;
+        }
+        repository.resolveVoice(d.rawPayee, d.coords.isEmpty() ? null : d.coords, res -> {
+            if (!isFinishing() && !isDestroyed()) {
+                openEditor(index, d, res);
+            }
+        });
+    }
+
+    private void openEditor(int index, NotificationDraft d, Repository.VoiceResolution res) {
         editing = index;
         Intent intent = new Intent(this, BookingEditActivity.class)
                 .putExtra(BookingEditActivity.EXTRA_BATCH, true)
-                .putExtra(BookingEditActivity.EXTRA_PREFILL_PAYEE, d.payee)
                 .putExtra(BookingEditActivity.EXTRA_PREFILL_DATE_MS, d.dateMillis)
                 .putExtra(BookingEditActivity.EXTRA_PREFILL_INCOME, d.isIncome);
         if (!d.account.isEmpty()) {
@@ -276,6 +296,23 @@ public class NotificationBatchActivity extends LocalizedActivity {
         }
         if (d.cents > 0) {
             intent.putExtra(BookingEditActivity.EXTRA_VOICE_AMOUNT_CENTS, d.cents);
+        }
+        if (!d.rawPayee.isEmpty()) {
+            intent.putExtra(BookingEditActivity.EXTRA_VOICE_SPOKEN_PAYEE, d.rawPayee);
+        }
+        // Der Wortlaut der Meldung als Notiz – beim ersten Öffnen. Danach gilt, was die Maske
+        // zurückgegeben hat: der Nutzer kann ihn dort geändert oder gelöscht haben.
+        intent.putExtra(BookingEditActivity.EXTRA_PREFILL_NOTE, d.edited ? d.note : d.wording());
+        if (res != null && res.booking != null) {
+            intent.putExtra(BookingEditActivity.EXTRA_TEMPLATE_BOOKING_ID, res.booking.id);
+        } else {
+            String payee = res == null ? d.payee : res.payee;
+            if (!payee.isEmpty()) {
+                intent.putExtra(BookingEditActivity.EXTRA_PREFILL_PAYEE, payee);
+            }
+            if (res != null && res.alias != null) {
+                intent.putExtra(BookingEditActivity.EXTRA_ALIAS_ID, res.alias.id);
+            }
         }
         editLauncher.launch(intent);
     }
@@ -295,6 +332,13 @@ public class NotificationBatchActivity extends LocalizedActivity {
         d.categoryIsIncome = side < 0 ? null : Boolean.valueOf(side == 1);
         d.note = text(data, BookingEditActivity.RESULT_NOTE);
         d.tags = text(data, BookingEditActivity.RESULT_TAGS);
+        ArrayList<String> categories =
+                data.getStringArrayListExtra(BookingEditActivity.RESULT_SPLIT_CATEGORIES);
+        long[] cents = data.getLongArrayExtra(BookingEditActivity.RESULT_SPLIT_CENTS);
+        int[] sides = data.getIntArrayExtra(BookingEditActivity.RESULT_SPLIT_SIDES);
+        d.splitCategories = categories == null ? new ArrayList<String>() : categories;
+        d.splitCents = cents == null ? new long[0] : cents;
+        d.splitSides = sides == null ? new int[0] : sides;
         d.edited = true;
         // Eine nicht erkannte Meldung, die der Nutzer selbst gebucht hat, ist das Lernbeispiel für
         // die nächste dieser Art.

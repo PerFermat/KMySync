@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -14,7 +13,6 @@ import java.util.Set;
 
 import de.spahr.ausgaben.statement.NotificationSource;
 import de.spahr.ausgaben.statement.NotificationTemplate;
-import de.spahr.ausgaben.util.PayeeMatch;
 
 /**
  * Der Durchlauf beim Aktualisieren, soweit er reines Rechnen ist: aus dem Puffer und den Vorlagen die
@@ -57,6 +55,18 @@ public final class NotificationRun {
         return out;
     }
 
+    /** Nur die Meldungen der genannten Apps — die Grenze zwischen den Profilen. */
+    public static List<NotificationBuffer.Entry> ofApps(List<NotificationBuffer.Entry> buffer,
+                                                        Set<String> packages) {
+        List<NotificationBuffer.Entry> out = new ArrayList<>();
+        for (NotificationBuffer.Entry e : buffer) {
+            if (packages.contains(e.packageName)) {
+                out.add(e);
+            }
+        }
+        return out;
+    }
+
     private static NotificationDraft draft(NotificationBuffer.Entry e, List<NotificationTemplate> ofApp,
                                            AccountCurrency currencies) {
         NotificationDraft d = new NotificationDraft();
@@ -66,6 +76,7 @@ public final class NotificationRun {
         d.postTime = e.postTime;
         d.title = e.title;
         d.text = e.text;
+        d.coords = e.coords;
         d.dateMillis = e.postTime;
 
         NotificationSource source = new NotificationSource(e.packageName, e.postTime, e.title, e.text);
@@ -83,6 +94,7 @@ public final class NotificationRun {
             d.cents = first.cents;
             d.isIncome = first.template.isIncome;
             d.payee = first.payee;
+            d.rawPayee = first.payee;
             d.account = commonAccount(hits);
         } else {
             // Nicht erkannt. Vorbelegt wird nur, was ohne Raten feststeht: das Konto, wenn die App nur
@@ -180,45 +192,5 @@ public final class NotificationRun {
                 d.dupBuffer = true;
             }
         }
-    }
-
-    /**
-     * Der bekannte Empfänger, den die Meldung meint; {@code null}, wenn keiner eindeutig passt.
-     *
-     * <p>Strenger als der Vergleich beim Diktieren: <b>jedes</b> Wort des bekannten Namens muss in der
-     * Meldung stehen. Dort heißt es „REWE Markt GmbH"; „Rewe" passt, „Media Markt" nicht — obwohl
-     * „Markt" in beiden steht. Passen mehrere gleich gut, bleibt der Text der Meldung stehen.</p>
-     */
-    public static String knownPayee(String raw, List<String> known) {
-        if (raw == null || raw.trim().isEmpty() || known == null) {
-            return null;
-        }
-        Set<String> words = new HashSet<>(Arrays.asList(PayeeMatch.normalizeTokens(raw)));
-        String best = null;
-        int bestLength = 0;
-        boolean tie = false;
-        for (String candidate : known) {
-            if (candidate == null) {
-                continue;
-            }
-            String[] name = PayeeMatch.normalizeTokens(candidate);
-            int length = 0;
-            boolean all = name.length > 0;
-            for (String word : name) {
-                all &= words.contains(word);
-                length += word.length();
-            }
-            if (!all || length < 4) {
-                continue;
-            }
-            if (length > bestLength) {
-                best = candidate;
-                bestLength = length;
-                tie = false;
-            } else if (length == bestLength && !candidate.equalsIgnoreCase(best)) {
-                tie = true;
-            }
-        }
-        return tie ? null : best;
     }
 }

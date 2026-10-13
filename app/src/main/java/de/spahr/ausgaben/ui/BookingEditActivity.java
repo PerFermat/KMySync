@@ -71,6 +71,8 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
     public static final String EXTRA_PREFILL_DATE_MS = "prefill_date_ms";
     /** Vorbelegung der Buchungsart: {@code true} = Einnahme. */
     public static final String EXTRA_PREFILL_INCOME = "prefill_income";
+    /** Vorbelegung der Notiz – im Stapelmodus der Wortlaut der Benachrichtigung. */
+    public static final String EXTRA_PREFILL_NOTE = "prefill_note";
     public static final String RESULT_PAYEE = "result_payee";
     public static final String RESULT_CENTS = "result_cents";
     public static final String RESULT_INCOME = "result_income";
@@ -81,6 +83,10 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
     public static final String RESULT_CATEGORY_SIDE = "result_category_side";
     public static final String RESULT_NOTE = "result_note";
     public static final String RESULT_TAGS = "result_tags";
+    /** Bei einer Aufteilung zusätzlich, gleich lang: Kategorien, Cent, Seiten (-1/0/1). */
+    public static final String RESULT_SPLIT_CATEGORIES = "result_split_categories";
+    public static final String RESULT_SPLIT_CENTS = "result_split_cents";
+    public static final String RESULT_SPLIT_SIDES = "result_split_sides";
     /**
      * Bei einer per Alias/Vorlage aufgelösten Umbuchung: das in der Buchungsliste angezeigte Konto
      * (Nutzereingabe). Steckt es bereits als Von- oder Nach-Konto in Alias/Vorlage, bleiben beide Konten
@@ -550,6 +556,10 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
             if (getIntent().getBooleanExtra(EXTRA_PREFILL_INCOME, false)) {
                 toggleType.check(R.id.btnIncome);
             }
+            String prefillNote = getIntent().getStringExtra(EXTRA_PREFILL_NOTE);
+            if (prefillNote != null) {
+                editNote.setText(prefillNote);
+            }
             // Alias-Treffer: bevorzugte Buchungsart setzen und Konto/Kategorien/Von-Bis vorbelegen.
             long aliasId = getIntent().getLongExtra(EXTRA_ALIAS_ID, -1);
             if (aliasId >= 0) {
@@ -559,6 +569,7 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
                         toggleType.check(aliasTypeButton(a.type));
                     }
                     applyAlias();
+                    applyBatchPresets();
                 });
             }
         }
@@ -685,6 +696,10 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
                 .setPositiveButton(R.string.correction_save, (d, w) -> {
                     // Lernen: die Buchungsposition an die GPS-Liste des Alias anhängen (nicht ersetzen).
                     repository.saveAlias(buildAliasFromForm(spoken, corrected), true);
+                    // Der Alias steht: der erkannte Text an der Buchung hat seinen Zweck erfüllt.
+                    if (booking != null) {
+                        booking.spokenText = "";
+                    }
                     proceed.run();
                 })
                 .setNegativeButton(R.string.correction_discard, (d, w) -> proceed.run())
@@ -859,6 +874,11 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
             return;
         }
         booking = b;
+        // Entstand die Buchung aus Gesprochenem oder einer Benachrichtigung, geht ein jetzt gelernter
+        // Alias vom damals Erkannten aus – nicht vom Empfänger, den die Suche daraus gemacht hat.
+        if (b.spokenText != null && !b.spokenText.trim().isEmpty()) {
+            voiceSpokenPayee = b.spokenText;
+        }
         // Gesperrt heißt hier nur: nicht mehr änderbar/löschbar (siehe unten bei btnUpdate/btnDelete) –
         // die Daten bleiben als Vorlage für „Neue Buchung" nutzbar, deshalb kein genereller readOnly.
         csvLocked = CsvModeGuard.lockedForEdit(b, settings.isKmyMode());
@@ -1307,6 +1327,7 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
         btnDelete.setVisibility(View.GONE);
         populateFrom(b, amountCents);
         refreshNoteLocation();
+        applyBatchPresets();
     }
 
     /**
@@ -1720,7 +1741,10 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
         b.exported = false;
         final List<SplitRowController.Part> parts = splitCtl.collectParts();
         if (batch) {
-            returnToList(b, parts);
+            // Wie nach einem Diktat: wurde der Empfänger berichtigt, den Alias anbieten – dann löst er
+            // beim nächsten Mal die Schreibweise der Bank auf.
+            b.createdAt = composeTimestamp();
+            maybeAskCorrection(b.payee, () -> returnToList(b, parts));
             return;
         }
         b.category = parts.isEmpty() ? "" : parts.get(0).category;
@@ -1733,14 +1757,10 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
     }
 
     /**
-     * Stapelmodus: gibt die Eingaben an die Liste zurück, statt zu buchen. Nur einfache Buchungen —
-     * eine Aufteilung trüge die Liste nicht, und eine halbe zurückzugeben wäre schlimmer als keine.
+     * Stapelmodus: gibt die Eingaben an die Liste zurück, statt zu buchen – auch eine Aufteilung (eine
+     * Splitvorlage ließe sich sonst nicht bestätigen). Nur die Umbuchung ist dort ausgeschlossen.
      */
     private void returnToList(Booking b, List<SplitRowController.Part> parts) {
-        if (parts.size() >= 2) {
-            Toast.makeText(this, R.string.notify_batch_simple_only, Toast.LENGTH_LONG).show();
-            return;
-        }
         Boolean side = parts.isEmpty() ? null : resolvePartType(parts.get(0));
         Intent out = new Intent();
         out.putExtra(RESULT_PAYEE, b.payee);
@@ -1752,8 +1772,47 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
         out.putExtra(RESULT_CATEGORY_SIDE, side == null ? -1 : side ? 1 : 0);
         out.putExtra(RESULT_NOTE, b.note);
         out.putExtra(RESULT_TAGS, b.tags);
+        if (parts.size() >= 2) {
+            ArrayList<String> categories = new ArrayList<>();
+            long[] cents = new long[parts.size()];
+            int[] sides = new int[parts.size()];
+            for (int i = 0; i < parts.size(); i++) {
+                Boolean s = resolvePartType(parts.get(i));
+                categories.add(parts.get(i).category);
+                cents[i] = parts.get(i).cents;
+                sides[i] = s == null ? -1 : s ? 1 : 0;
+            }
+            out.putStringArrayListExtra(RESULT_SPLIT_CATEGORIES, categories);
+            out.putExtra(RESULT_SPLIT_CENTS, cents);
+            out.putExtra(RESULT_SPLIT_SIDES, sides);
+        }
         setResult(RESULT_OK, out);
         finish();
+    }
+
+    /**
+     * Stapelmodus: Konto und Datum kommen von der Regel der Benachrichtigung und gelten auch dann,
+     * wenn eine Vorlagebuchung oder ein Alias die Maske gefüllt hat – deren Konto ist ein anderes.
+     */
+    private void applyBatchPresets() {
+        if (!batch || isTransferType()) {
+            return;
+        }
+        String account = getIntent().getStringExtra(EXTRA_PRESET_ACCOUNT);
+        if (account != null && !account.isEmpty()) {
+            editAccount.setText(account, false);
+            setupPlaceDropdown(account);
+            applyTypeVisibility();
+        }
+        long date = getIntent().getLongExtra(EXTRA_PREFILL_DATE_MS, -1);
+        if (date > 0) {
+            selectedDate.setTimeInMillis(date);
+            updateDateField();
+        }        // Die Notiz ist der Wortlaut der Meldung, nicht die der Vorlagebuchung.
+        String note = getIntent().getStringExtra(EXTRA_PREFILL_NOTE);
+        if (note != null) {
+            editNote.setText(note);
+        }
     }
 
     private void saveTransferNew() {
@@ -1898,7 +1957,7 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
             coords = gps.coords();
         }
         if (coords != null && !coords.trim().isEmpty()) {
-            free = free.isEmpty() ? "GPS: " + coords : free + " GPS: " + coords;
+            free = NoteReceipt.append(free, "GPS: " + coords);
         }
         return free;
     }

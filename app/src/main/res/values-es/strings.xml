@@ -981,7 +981,7 @@
     <string name="statement_rules_nth_left">el %1$d.º desde la izquierda</string>
     <string name="statement_rules_column">el número en la columna de la etiqueta</string>
     <string name="notify_learn_switch">Aprender de las notificaciones</string>
-    <string name="notify_learn_notice">KMySync guarda las notificaciones de las aplicaciones que selecciones para ello, siempre que mencionen un importe, y al actualizar propone apuntes a partir de ellas. Los textos permanecen en este dispositivo y se borran una vez procesados. De las aplicaciones no seleccionadas no se guarda ningún texto.\n\nPara ello la aplicación necesita acceso a las notificaciones. Con Aceptar se abren los ajustes del sistema: activa KMySync allí y después selecciona aquí las aplicaciones.</string>
+    <string name="notify_learn_notice">KMySync guarda las notificaciones de las aplicaciones que selecciones para ello, siempre que mencionen un importe, y al actualizar propone apuntes a partir de ellas. Cuando un mensaje se convierte en apunte, su texto queda en la nota del apunte y se exporta con él. Los demás textos guardados permanecen en este dispositivo y se borran una vez procesados. De las aplicaciones no seleccionadas no se guarda ningún texto.\n\nPara ello la aplicación necesita acceso a las notificaciones. Con Aceptar se abren los ajustes del sistema: activa KMySync allí. Después, en los ajustes de cada perfil, eliges qué aplicaciones se leen.</string>
     <string name="notify_learn_no_access">Sin acceso a las notificaciones, la aplicación no puede aprender de ellas.</string>
     <string name="notify_listener_label">Apuntes a partir de notificaciones</string>
     <string name="notify_offer_title">Notificación de este apunte</string>
@@ -993,7 +993,7 @@
     <string name="notify_learn_failed">No se ha podido derivar una plantilla de esta notificación.</string>
     <string name="notify_batch_title">Apuntes a partir de notificaciones</string>
     <string name="notify_batch_saved">Apuntes creados: %1$d</string>
-    <string name="notify_batch_simple_only">En esta lista solo son posibles apuntes sencillos: ni traspasos ni desgloses.</string>
+    <string name="notify_batch_simple_only">En esta lista no son posibles los traspasos.</string>
     <string name="notify_batch_cancel_title">¿Cerrar la lista?</string>
     <string name="notify_batch_cancel_message">No se apunta nada. Las notificaciones se conservan y volverán a aparecer la próxima vez que actualices.</string>
     <string name="notify_batch_cancel">Cerrar</string>
@@ -1004,9 +1004,13 @@
     <string name="notify_dup_booked">Posible duplicado: la cuenta ya tiene un apunte por este importe</string>
     <string name="notify_dup_buffer">Posible duplicado: el mismo mensaje está más de una vez</string>
     <string name="notify_apps_button">Seleccionar aplicaciones para notificaciones</string>
-    <string name="notify_apps_none">Ninguna aplicación ha enviado todavía una notificación con un importe. En cuanto lo haga la aplicación de tu banco, aparecerá aquí. Solo se recopila a partir de que la marques: el mensaje anterior no se guarda.</string>
+    <string name="notify_apps_none">Ninguna aplicación ha enviado todavía una notificación con un importe. En cuanto lo haga la aplicación de tu banco, aparecerá aquí. No descartes la notificación hasta haber marcado la aplicación: así se recogerá enseguida.</string>
     <string name="notify_rules_for">Aprendido para: %1$s</string>
     <string name="notify_rules_delete">Borrar las reglas aprendidas</string>
     <string name="notify_rules_delete_message">Se borrarán todas las reglas de %1$s. Las notificaciones de esta aplicación dejarán de reconocerse hasta que vuelvas a apuntar un movimiento a mano y dejes que la aplicación aprenda de él. Los apuntes ya creados se conservan.</string>
     <string name="notify_rules_deleted">Reglas borradas</string>
+    <string name="notify_app_remove">Quitar la aplicación de la lista</string>
+    <string name="notify_app_remove_message">%1$s se quitará de esta lista y se borrará lo que se haya guardado de esta aplicación. Volverá a aparecer en cuanto envíe una notificación con un importe.</string>
+    <string name="notify_apps_imported">Notificaciones recogidas: %1$d</string>
+    <string name="notify_location_notice">¿Debe KMySync recordar dónde estaba el teléfono cuando llegó una notificación del banco? Así la aplicación encuentra el más cercano entre varios beneficiarios con el mismo nombre, como con la entrada por voz, y el apunte recibe la ubicación en su nota.\n\nPara ello hace falta el acceso a la ubicación «Permitir siempre», porque la notificación llega en segundo plano. La ubicación permanece en este dispositivo. Sin él todo funciona como antes, solo que sin ubicación.</string>
 </resources>

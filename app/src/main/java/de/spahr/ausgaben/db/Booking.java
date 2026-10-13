@@ -159,6 +159,19 @@ public class Booking {
     @ColumnInfo(name = "transfer_group")
     public String transferGroup = "";
 
+    /**
+     * Was erkannt wurde, bevor Alias oder Vorlagebuchung den Empfänger daraus machten — der gesprochene
+     * Begriff, bei einer Buchung aus einer Benachrichtigung der Wortlaut der Bank. Leer, wenn die
+     * Buchung von Hand entstand.
+     *
+     * <p>Gebraucht für den Alias: Wurde „Rewe Markt" gesagt, „Media Markt" gefunden und später auf
+     * „Rewe-Zell" berichtigt, muss der Alias „Rewe Markt → Rewe-Zell" heißen. Ohne dieses Feld kennt
+     * die Maske nur noch den Fehlgriff. Bleibt auf dem Gerät und wird mit dem Export geleert.</p>
+     */
+    @NonNull
+    @ColumnInfo(name = "spoken_text", defaultValue = "")
+    public String spokenText = "";
+
     /** Transient: Kategorie-Teile einer Splitbuchung (nicht in dieser Tabelle gespeichert, siehe {@link BookingSplit}). */
     @Ignore
     public List<BookingSplit> parts;

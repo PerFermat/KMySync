@@ -17,7 +17,7 @@ import de.spahr.ausgaben.settings.ProfileManager;
         AnalysisExtra.class, SecurityTxValueOverride.class, KmyPendingDelete.class, SecurityPrice.class,
         ScheduledAdvance.class, AccountGroup.class, AccountGroupMember.class, AccountKindOrder.class,
         Tag.class, SecurityTxSplit.class, NotificationTemplateRow.class},
-        version = 57, exportSchema = true)
+        version = 58, exportSchema = true)
 public abstract class AppDatabase extends RoomDatabase {
 
     /** v1 → v2: Notiz-Spalte ergänzen (bestehende Buchungen bleiben erhalten). */
@@ -799,6 +799,17 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    /**
+     * v57 → v58: der erkannte Text an der Buchung ({@link Booking#spokenText}), damit ein später
+     * gelernter Alias vom Gesagten ausgeht und nicht vom Empfänger, den die Suche daraus gemacht hat.
+     */
+    static final Migration MIGRATION_57_58 = new Migration(57, 58) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("ALTER TABLE booking ADD COLUMN spoken_text TEXT NOT NULL DEFAULT ''");
+        }
+    };
+
     public abstract BookingDao bookingDao();
 
     public abstract NotificationTemplateDao notificationTemplateDao();
@@ -873,7 +884,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                 MIGRATION_47_48, MIGRATION_48_49, MIGRATION_49_50,
                                 MIGRATION_50_51, MIGRATION_51_52, MIGRATION_52_53,
                                 MIGRATION_53_54, MIGRATION_54_55, MIGRATION_55_56,
-                                MIGRATION_56_57)
+                                MIGRATION_56_57, MIGRATION_57_58)
                         .build();
             }
             return instance;

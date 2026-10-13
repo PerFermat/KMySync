@@ -72,7 +72,7 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
     private MaterialSwitch switchScheduledReminder;
     private MaterialSwitch switchAppLock;
     private MaterialSwitch switchNotifyLearn;
-    private MaterialButton btnNotifyApps;
+    private ActivityResultLauncher<String> backgroundLocationLauncher;
 
     private MaterialAutoCompleteTextView editLanguage;
     private com.google.android.material.slider.Slider sliderFontSize;
@@ -172,9 +172,6 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
         switchNotifyLearn = findViewById(R.id.switchNotifyLearn);
         switchNotifyLearn.setChecked(settings.isNotifyLearnEnabled() && hasNotificationAccess());
         switchNotifyLearn.setOnCheckedChangeListener(this::onNotifyLearnToggled);
-        btnNotifyApps = findViewById(R.id.btnNotifyApps);
-        btnNotifyApps.setOnClickListener(v -> pickNotifyApps());
-        btnNotifyApps.setVisibility(switchNotifyLearn.isChecked() ? View.VISIBLE : View.GONE);
 
         MaterialSwitch switchReceipt = findViewById(R.id.switchReceipt);
         switchReceipt.setChecked(settings.isReceiptEnabled());
@@ -238,10 +235,38 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
             Toast.makeText(this, R.string.notify_learn_no_access, Toast.LENGTH_LONG).show();
             setNotifyLearn(false);
         }
+        // Zurück aus den Systemeinstellungen mit erteiltem Zugriff: jetzt die zweite Frage.
+        if (settings.isNotifyLearnEnabled() && hasNotificationAccess() && !notifyNoticeOpen) {
+            maybeAskBackgroundLocation();
+        }
     }
 
     /** Der Hinweis vor dem Absprung steht offen – dann ist der fehlende Zugriff noch kein Befund. */
     private boolean notifyNoticeOpen;
+
+    /**
+     * Für den Standort beim Eintreffen einer Bank-Meldung braucht der Dienst den Zugriff „immer". Gefragt
+     * wird einmal, und nur, wenn der GPS-Schalter an ist und der gewöhnliche Standortzugriff schon
+     * erteilt wurde – sonst gäbe es nichts, worauf „immer" aufbauen könnte.
+     */
+    private void maybeAskBackgroundLocation() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || !settings.isGpsEnabled()
+                || settings.isNotifyLocationAsked()
+                || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED
+                || ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        settings.setNotifyLocationAsked(true);
+        new AppDialog(this)
+                .setTitle(R.string.notify_learn_switch)
+                .setMessage(R.string.notify_location_notice)
+                .setPositiveButton(android.R.string.ok, (d, w) -> backgroundLocationLauncher.launch(
+                        Manifest.permission.ACCESS_BACKGROUND_LOCATION))
+                .setNegativeButton(R.string.notify_offer_no, null)
+                .show();
+    }
 
     private boolean hasNotificationAccess() {
         return androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(this)
@@ -254,8 +279,10 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
             return;
         }
         settings.setNotifyLearnEnabled(true);
-        btnNotifyApps.setVisibility(View.VISIBLE);
+        // Ausdrücklich eingeschaltet: dann darf die Frage nach dem Standort noch einmal kommen.
+        settings.setNotifyLocationAsked(false);
         if (hasNotificationAccess()) {
+            maybeAskBackgroundLocation();
             return;
         }
         notifyNoticeOpen = true;
@@ -283,104 +310,6 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
                 .show();
     }
 
-    /**
-     * Die Auswahl der Apps, deren Benachrichtigungen aufgehoben werden. Angeboten werden die, die seit
-     * dem Einschalten eine Meldung mit Betrag geschickt haben – eine Liste aller installierten Apps
-     * bräuchte eine Berechtigung, die diese Funktion nicht wert ist.
-     *
-     * <p>Hinter jeder App, für die schon etwas gelernt ist, steht der Papierkorb für ihre Regeln. Er
-     * wirkt sofort und für sich; der Haken davor gilt erst mit OK.</p>
-     */
-    private void pickNotifyApps() {
-        repository.getNotificationTemplates(templates -> {
-            if (!isFinishing() && !isDestroyed()) {
-                showNotifyApps(templates);
-            }
-        });
-    }
-
-    private void showNotifyApps(List<de.spahr.ausgaben.statement.NotificationTemplate> templates) {
-        // Auch Apps, für die es nur noch Regeln gibt, gehören in die Liste – sonst ließen die sich
-        // nicht mehr löschen.
-        java.util.Set<String> names = new java.util.TreeSet<>(
-                de.spahr.ausgaben.notify.AppSelection.candidates(this));
-        final Map<String, java.util.Set<String>> accountsByApp = new java.util.HashMap<>();
-        for (de.spahr.ausgaben.statement.NotificationTemplate t : templates) {
-            names.add(t.packageName);
-            java.util.Set<String> accounts = accountsByApp.get(t.packageName);
-            if (accounts == null) {
-                accounts = new java.util.TreeSet<>();
-                accountsByApp.put(t.packageName, accounts);
-            }
-            accounts.add(t.account);
-        }
-        final List<String> packages = new ArrayList<>(names);
-        if (packages.isEmpty()) {
-            new AppDialog(this)
-                    .setTitle(R.string.notify_apps_button)
-                    .setMessage(R.string.notify_apps_none)
-                    .setPositiveButton(android.R.string.ok, null)
-                    .show();
-            return;
-        }
-        java.util.Set<String> allowed = de.spahr.ausgaben.notify.AppSelection.allowed(this);
-        final boolean[] checked = new boolean[packages.size()];
-        android.widget.LinearLayout list = new android.widget.LinearLayout(this);
-        list.setOrientation(android.widget.LinearLayout.VERTICAL);
-        int pad = Math.round(16 * getResources().getDisplayMetrics().density);
-        list.setPadding(pad, pad / 2, pad / 2, 0);
-        for (int i = 0; i < packages.size(); i++) {
-            final int index = i;
-            final String packageName = packages.get(i);
-            final String label = NotificationLearnFlow.appLabel(this, packageName);
-            View row = getLayoutInflater().inflate(R.layout.item_notify_app, list, false);
-            final android.widget.CheckBox check = row.findViewById(R.id.checkNotifyApp);
-            checked[i] = allowed.contains(packageName);
-            check.setChecked(checked[i]);
-            check.setOnCheckedChangeListener((b, isChecked) -> checked[index] = isChecked);
-            row.findViewById(R.id.notifyAppTexts).setOnClickListener(v -> check.toggle());
-            ((android.widget.TextView) row.findViewById(R.id.textNotifyApp)).setText(label);
-            final android.widget.TextView rules = row.findViewById(R.id.textNotifyAppRules);
-            final View forget = row.findViewById(R.id.btnNotifyAppForget);
-            java.util.Set<String> accounts = accountsByApp.get(packageName);
-            if (accounts != null) {
-                rules.setText(getString(R.string.notify_rules_for,
-                        android.text.TextUtils.join(", ", accounts)));
-                rules.setVisibility(View.VISIBLE);
-                forget.setVisibility(View.VISIBLE);
-                forget.setOnClickListener(v -> AppDialog.destructive(this)
-                        .setTitle(R.string.notify_rules_delete)
-                        .setMessage(getString(R.string.notify_rules_delete_message, label))
-                        .setPositiveButton(R.string.delete, (d, w) ->
-                                repository.deleteNotificationTemplates(packageName, () -> {
-                                    rules.setVisibility(View.GONE);
-                                    forget.setVisibility(View.GONE);
-                                    Toast.makeText(this, R.string.notify_rules_deleted,
-                                            Toast.LENGTH_SHORT).show();
-                                }))
-                        .setNegativeButton(R.string.cancel, null)
-                        .show());
-            }
-            list.addView(row);
-        }
-        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
-        scroll.addView(list);
-        new AppDialog(this)
-                .setTitle(R.string.notify_apps_button)
-                .setView(scroll)
-                .setPositiveButton(android.R.string.ok, (d, w) -> {
-                    List<String> chosen = new ArrayList<>();
-                    for (int i = 0; i < checked.length; i++) {
-                        if (checked[i]) {
-                            chosen.add(packages.get(i));
-                        }
-                    }
-                    de.spahr.ausgaben.notify.AppSelection.setAllowed(this, chosen);
-                })
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
-    }
-
     /** Schaltet aus (oder ein), ohne dass der Schalter sich dabei selbst wieder aufruft. */
     private void setNotifyLearn(boolean enabled) {
         settings.setNotifyLearnEnabled(enabled);
@@ -390,13 +319,15 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
             de.spahr.ausgaben.notify.NotificationBuffer.get(this).clear();
             de.spahr.ausgaben.notify.AppSelection.clearSeen(this);
         }
-        btnNotifyApps.setVisibility(enabled ? View.VISIBLE : View.GONE);
         switchNotifyLearn.setOnCheckedChangeListener(null);
         switchNotifyLearn.setChecked(enabled);
         switchNotifyLearn.setOnCheckedChangeListener(this::onNotifyLearnToggled);
     }
 
     private void registerLaunchers() {
+        // Die Antwort braucht keine Folge: ohne den Zugriff bleibt die Meldung einfach ohne Standort.
+        backgroundLocationLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(), granted -> { });
         // Benachrichtigungs-Berechtigung (ab Android 13) für die Erinnerung an fällige Buchungen.
         notificationPermissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(), granted -> {

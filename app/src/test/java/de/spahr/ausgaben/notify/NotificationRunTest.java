@@ -2,7 +2,6 @@ package de.spahr.ausgaben.notify;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -241,28 +240,58 @@ public class NotificationRunTest {
         assertFalse(drafts.get(0).dupBuffer);
     }
 
-    // ---- bekannter Empfänger ----
-
+    /** Die Grenze zwischen den Profilen: nur Meldungen der Apps, die das Profil freigegeben hat. */
     @Test
-    public void bekannterEmpfaengerMussGanzInDerMeldungStehen() {
-        List<String> bekannt = Arrays.asList("Media Markt", "Rewe", "Lidl sagt Danke");
-        assertEquals("Rewe", NotificationRun.knownPayee("REWE Markt GmbH", bekannt));
-        assertEquals("Media Markt", NotificationRun.knownPayee("MEDIA MARKT Köln", bekannt));
-        assertNull(NotificationRun.knownPayee("Lidl", bekannt));
-        assertNull(NotificationRun.knownPayee("Edeka", bekannt));
-        assertNull(NotificationRun.knownPayee("", bekannt));
+    public void nurMeldungenFreigegebenerApps() {
+        List<NotificationBuffer.Entry> buffer = Arrays.asList(
+                meldung(BANK, HEUTE, zahlung("Lidl", "7,50", "*1234"), "a"),
+                meldung("de.andere", HEUTE, zahlung("Aldi", "9,00", "*1234"), "b"));
+        List<NotificationBuffer.Entry> eigene = NotificationRun.ofApps(buffer,
+                Collections.singleton(BANK));
+        assertEquals(1, eigene.size());
+        assertEquals(BANK, eigene.get(0).packageName);
+        assertTrue(NotificationRun.ofApps(buffer, Collections.<String>emptySet()).isEmpty());
     }
 
-    /** Zwei bekannte Namen passen gleich gut: dann bleibt der Text der Meldung. */
-    @Test
-    public void gleichGutePassungenErgebenKeinen() {
-        assertNull(NotificationRun.knownPayee("Aral Esso Tankstelle",
-                Arrays.asList("Aral", "Esso")));
+    // ---- Wortlaut für die Notiz ----
+
+    private static NotificationDraft meldungMit(String title, String text) {
+        NotificationDraft d = new NotificationDraft();
+        d.title = title;
+        d.text = text;
+        return d;
     }
 
     @Test
-    public void derLaengereNameGewinnt() {
-        assertEquals("Rewe City", NotificationRun.knownPayee("REWE City Köln",
-                Arrays.asList("Rewe", "Rewe City")));
+    public void wortlautIstUeberschriftLeerzeileText() {
+        assertEquals("Neuer Umsatz\n\nSie haben kontaktlos 23,45 € bei Rewe-Markt bezahlt.",
+                meldungMit("Neuer Umsatz", "Sie haben kontaktlos 23,45 € bei Rewe-Markt bezahlt.")
+                        .wording());
+    }
+
+    /** Exakt heißt: mit Satzzeichen – nicht die Fassung, an der die Erkennung arbeitet. */
+    @Test
+    public void wortlautBehaeltDieSatzzeichen() {
+        assertEquals("Umsatz!\n\nZahlung bei \u201EREWE\u201C, Köln: 12,34 EUR.",
+                meldungMit("Umsatz!", "Zahlung bei \u201EREWE\u201C, Köln: 12,34 EUR.").wording());
+    }
+
+    @Test
+    public void wortlautOhneTitelIstNurDerText() {
+        assertEquals("12,34 € bei REWE", meldungMit("", "12,34 € bei REWE").wording());
+    }
+
+    /** Wiederholt der Text den Titel schon, steht er nicht doppelt da. */
+    @Test
+    public void titelDerSchonImTextStehtKommtNichtDoppelt() {
+        assertEquals("Neuer Umsatz über 12,34 €",
+                meldungMit("Neuer Umsatz", "Neuer Umsatz über 12,34 €").wording());
+    }
+
+    /** Zeilenumbrüche gehören zum Wortlaut und bleiben; nur ihre Schreibweise wird einheitlich. */
+    @Test
+    public void zeilenumbruecheBleiben() {
+        assertEquals("Neuer Umsatz\n\n12,34 €\nbei REWE\nKarte *1234",
+                meldungMit("Neuer Umsatz", "12,34 €\r\nbei REWE\rKarte *1234\n").wording());
     }
 }

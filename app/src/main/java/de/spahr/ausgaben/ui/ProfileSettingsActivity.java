@@ -301,6 +301,11 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         switchAliasPrompt.setChecked(settings.isAliasPromptEnabled());
         ((MaterialButton) findViewById(R.id.btnManageAliases)).setOnClickListener(
                 v -> startActivity(new Intent(this, AliasActivity.class)));
+        // Der Schalter dazu steht in den allgemeinen Einstellungen (der Zugriff gilt für das ganze
+        // Gerät); welche Apps gelesen werden, entscheidet jedes Profil für sich.
+        MaterialButton btnNotifyApps = findViewById(R.id.btnNotifyApps);
+        btnNotifyApps.setVisibility(SettingsStore.isNotifyLearnEnabled(this) ? View.VISIBLE : View.GONE);
+        btnNotifyApps.setOnClickListener(v -> NotifyAppsDialog.show(this, repository));
     }
 
     /**

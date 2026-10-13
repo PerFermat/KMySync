@@ -112,9 +112,14 @@ final class NotificationLearnFlow {
     private static List<NotificationBuffer.Entry> offers(FragmentActivity activity,
                                                          Repository repository, Booking b,
                                                          String account, String payee) {
+        // Nur Meldungen von Apps, die dieses Profil freigegeben hat, und die es noch nicht erledigt
+        // hat – sonst böte ein Profil an, aus der Bank-Meldung eines anderen zu lernen.
         List<NotificationBuffer.Entry> found = new ArrayList<>(NotificationMatcher.match(
-                NotificationBuffer.get(activity).all(), b.amountCents, b.createdAt, payee,
-                ZoneId.systemDefault()));
+                de.spahr.ausgaben.notify.NotificationRun.ofApps(
+                        NotificationBuffer.get(activity).allFor(
+                                de.spahr.ausgaben.notify.NotificationRunner.profileOf(activity)),
+                        de.spahr.ausgaben.notify.AppSelection.allowed(activity)),
+                b.amountCents, b.createdAt, payee, ZoneId.systemDefault()));
         if (found.isEmpty()) {
             return found;
         }
@@ -204,7 +209,9 @@ final class NotificationLearnFlow {
             }
             repository.notificationTemplates().save(template);
             // Aus dieser Meldung wurde gelernt, und die Buchung dazu steht schon da: erledigt.
-            NotificationBuffer.get(activity).delete(Collections.singletonList(entry.id));
+            NotificationBuffer.get(activity).markDone(Collections.singletonList(entry.id),
+                    de.spahr.ausgaben.notify.NotificationRunner.profileOf(activity));
+            NotificationBuffer.purgeNow(activity);
             return Boolean.TRUE;
         }, learned -> {
             Toast.makeText(activity.getApplicationContext(),

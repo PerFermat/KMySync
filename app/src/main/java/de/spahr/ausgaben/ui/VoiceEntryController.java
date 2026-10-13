@@ -129,11 +129,16 @@ class VoiceEntryController {
                 i.putExtra(BookingEditActivity.EXTRA_PRESET_ACCOUNT, account);
             }
             if (spokenPayee != null && !spokenPayee.isEmpty()) {
-                // Ursprünglich Gesprochenes: bei Änderung des Empfängers kann ein Alias gelernt werden.
-                i.putExtra(BookingEditActivity.EXTRA_VOICE_SPOKEN_PAYEE, spokenPayee);
                 Toast.makeText(activity, activity.getString(R.string.voice_not_found, res.payee),
                         Toast.LENGTH_SHORT).show();
             }
+        }
+        // Das Gesprochene reist immer mit, auch wenn eine Vorlagebuchung oder ein Alias gefunden wurde:
+        // Berichtigt der Nutzer den Empfänger, muss der Alias vom Gesagten ausgehen. Bis 2.2 fehlte es
+        // bei gefundener Vorlage – aus „Rewe Markt", als „Media Markt" gefunden und auf „Rewe-Zell"
+        // berichtigt, wurde der Alias „Media Markt → Rewe-Zell".
+        if (spokenPayee != null && !spokenPayee.isEmpty()) {
+            i.putExtra(BookingEditActivity.EXTRA_VOICE_SPOKEN_PAYEE, spokenPayee);
         }
         i.putExtra(BookingEditActivity.EXTRA_VOICE_AMOUNT_CENTS, amount);
         activity.startActivity(i);

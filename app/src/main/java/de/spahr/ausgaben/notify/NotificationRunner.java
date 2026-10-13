@@ -9,7 +9,6 @@ import java.util.List;
 
 import de.spahr.ausgaben.db.Booking;
 import de.spahr.ausgaben.db.BookingDao;
-import de.spahr.ausgaben.db.PayeeCategory;
 import de.spahr.ausgaben.db.Repository;
 import de.spahr.ausgaben.settings.Currencies;
 import de.spahr.ausgaben.statement.NotificationLearner;
@@ -37,26 +36,30 @@ public final class NotificationRunner {
         // Nach dem Einspielen einer Sicherung kennt der Dienst die Apps dieses Profils noch nicht.
         repository.notificationTemplates().syncKnownApps();
         List<NotificationTemplate> templates = repository.notificationTemplates().all();
+        // Nur was dieses Profil freigegeben und noch nicht erledigt hat.
         ArrayList<NotificationDraft> drafts = NotificationRun.drafts(
-                NotificationBuffer.get(context).all(), templates, Currencies::forAccount,
-                ZoneId.systemDefault());
+                NotificationRun.ofApps(NotificationBuffer.get(context).allFor(profileOf(context)),
+                        AppSelection.allowed(context)),
+                templates, Currencies::forAccount, ZoneId.systemDefault());
         if (drafts.isEmpty()) {
             return drafts;
         }
-        BookingDao dao = repository.bookingDao();
-        List<String> payees = dao.getDistinctPayees();
+        de.spahr.ausgaben.settings.SettingsStore settings =
+                new de.spahr.ausgaben.settings.SettingsStore(context);
+        String currency = settings.getCurrency();
+        // Meldungen ohne Standort vom Eintreffen (kein Zugriff „immer", aus der Leiste übernommen,
+        // Ortung misslungen) bekommen den vom Import – so, als wäre der Satz jetzt diktiert worden.
+        // Mit ausgeschaltetem GPS-Schalter gibt es gar keinen.
+        String here = settings.isGpsEnabled() ? importCoords(context) : "";
         for (NotificationDraft d : drafts) {
-            if (!d.recognized) {
-                continue;
+            if (d.coords.isEmpty()) {
+                d.coords = here;
             }
-            String known = NotificationRun.knownPayee(d.payee, payees);
-            if (known != null) {
-                d.payee = known;
-                List<PayeeCategory> usual = dao.getCategoriesByPayee(known, d.isIncome);
-                if (!usual.isEmpty()) {
-                    d.category = usual.get(0).category;
-                    d.categoryIsIncome = usual.get(0).isIncome;
-                }
+            // Die Notiz ist der Wortlaut der Meldung – auch für Zeilen, die nicht über die
+            // Sprachroutine gebucht werden.
+            d.note = d.wording();
+            if (d.recognized) {
+                propose(repository, d, currency);
             }
         }
         markBooked(repository, drafts);
@@ -83,25 +86,38 @@ public final class NotificationRunner {
     }
 
     /**
-     * Schließt den Durchlauf ab: bucht die buchbaren Zeilen, lernt aus den von Hand gebuchten und löscht
-     * dann die gezeigten Einträge aus dem Puffer.
+     * Schließt den Durchlauf ab: bucht die buchbaren Zeilen, lernt aus den von Hand gebuchten und
+     * vermerkt dann die gezeigten Einträge für dieses Profil als erledigt.
      *
      * @param remaining die Zeilen, die noch in der Liste stehen
      * @param shownIds  die Nummern <b>aller</b> Einträge, die die Liste gezeigt hat — auch der vom
      *                  Nutzer entfernten. Was später eintraf, steht nicht darin und bleibt.
      * @return wie viele Buchungen angelegt wurden; -1, wenn das Speichern scheiterte (dann ist nichts
-     *         gebucht und nichts gelöscht)
+     *         gebucht und nichts erledigt)
      */
     public static int complete(Context context, Repository repository,
                                List<NotificationDraft> remaining, long[] shownIds) {
-        List<Booking> bookings = new ArrayList<>();
-        for (NotificationDraft d : remaining) {
-            if (d.isBookable()) {
-                bookings.add(d.toBooking());
-            }
-        }
+        final String currency = new de.spahr.ausgaben.settings.SettingsStore(context).getCurrency();
+        final int[] booked = {0};
         try {
-            repository.insertBookingsNow(bookings);
+            // Alles oder nichts, wie bisher – auch wenn ein Teil über die Sprachroutine läuft.
+            repository.inTransaction(() -> {
+                List<Booking> direct = new ArrayList<>();
+                for (NotificationDraft d : remaining) {
+                    if (!d.isBookable()) {
+                        continue;
+                    }
+                    booked[0]++;
+                    if (d.viaVoice && !d.edited) {
+                        // Unverändert übernommen: bucht dieselbe Routine, die den Vorschlag gemacht hat.
+                        repository.voiceBookingBlocking(sentence(d, currency), d.account, d.isIncome,
+                                d.coords, d.dateMillis, true, d.wording());
+                    } else {
+                        direct.add(d.toBooking());
+                    }
+                }
+                repository.insertBookingsNow(direct);
+            });
         } catch (RuntimeException e) {
             return -1;
         }
@@ -119,7 +135,58 @@ public final class NotificationRunner {
         for (long id : shownIds) {
             ids.add(id);
         }
-        NotificationBuffer.get(context).delete(ids);
-        return bookings.size();
+        // Für dieses Profil erledigt. Hat ein anderes Profil dieselbe App freigegeben, bleibt die
+        // Meldung, bis auch es fertig ist.
+        NotificationBuffer.get(context).markDone(ids, profileOf(context));
+        NotificationBuffer.purgeNow(context);
+        return booked[0];
+    }
+
+    /**
+     * Der Satz, den man für diese Zeile diktiert hätte: „Lidl 12,13 €". Das Währungszeichen des Profils
+     * steht dabei, damit die Spracheingabe den Betrag auch dann findet, wenn der Händler Ziffern im
+     * Namen trägt („Shell 4711").
+     */
+    static String sentence(NotificationDraft d, String currency) {
+        String amount = String.format(java.util.Locale.ROOT, "%d,%02d", d.cents / 100, d.cents % 100);
+        return (d.rawPayee + " " + amount + " " + currency).trim();
+    }
+
+    /**
+     * Lässt die Spracheingabe den Satz lesen, ohne zu buchen, und trägt ihr Ergebnis in die Zeile ein:
+     * Empfänger (über Alias oder alte Buchungen, bei mehreren gleichnamigen der dem Standort beim
+     * Eintreffen nächste), Kategorie samt Seite, Aufteilung. Das Konto bleibt das der Regel, und die
+     * Notiz ist der Wortlaut der Meldung.
+     *
+     * <p>Liest sie einen anderen Betrag als die Regel, gilt die Regel und die Zeile bleibt, wie sie
+     * ist: der Betrag steht dann fest, nur die Zuordnung fehlt.</p>
+     */
+    private static void propose(Repository repository, NotificationDraft d, String currency) {
+        Booking v = repository.voiceBookingBlocking(sentence(d, currency), d.account, d.isIncome,
+                d.coords, d.dateMillis, false, d.wording());
+        if (v == null || v.amountCents != d.cents) {
+            return;
+        }
+        d.viaVoice = true;
+        d.payee = v.payee;
+        d.category = v.category == null ? "" : v.category;
+        d.categoryIsIncome = v.categoryIsIncome;
+        d.note = v.note == null ? "" : v.note;
+        d.setSplits(v.parts);
+    }
+
+    /** Der Standort jetzt, wie die Spracheingabe am Handy ihn liest; leer, wenn es keinen gibt. */
+    private static String importCoords(Context context) {
+        try {
+            String coords = new de.spahr.ausgaben.location.LocationTagger(context).currentCoordinates();
+            return coords == null ? "" : coords;
+        } catch (RuntimeException e) {
+            return "";
+        }
+    }
+
+    public static String profileOf(Context context) {
+        return new de.spahr.ausgaben.settings.ProfileManager(context.getApplicationContext())
+                .getActiveProfileId();
     }
 }

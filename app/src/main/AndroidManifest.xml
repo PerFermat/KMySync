@@ -6,6 +6,10 @@
     <!-- Für die optionalen GPS-Koordinaten in der Notiz (nur lokal, kein externer Dienst). -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Nur für „Buchungen aus Benachrichtigungen": der Dienst hält im Hintergrund fest, wo das Handy
+         beim Eintreffen einer Bank-Meldung war. Erbeten wird sie nur, wenn Funktion und GPS-Schalter
+         beide an sind; ohne sie läuft alles ohne Standort. -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <!-- osmdroid empfiehlt Netzwerkstatus für das Nachladen der Kartenkacheln. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Nur für die (standardmäßig ausgeschaltete) Erinnerung an fällige geplante Buchungen. -->

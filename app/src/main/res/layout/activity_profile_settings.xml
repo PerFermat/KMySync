@@ -649,6 +649,18 @@
                 app:strokeColor="@color/button_accent"
                 android:text="@string/alias_manage" />
 
+            <!-- Buchungen aus Benachrichtigungen: welche Apps dieses Profil liest. Nur sichtbar, wenn
+                 die Funktion in den Einstellungen eingeschaltet ist. -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNotifyApps"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/button_accent"
+                app:strokeColor="@color/button_accent"
+                android:text="@string/notify_apps_button" />
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"

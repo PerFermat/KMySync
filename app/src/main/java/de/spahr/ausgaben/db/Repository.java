@@ -1125,6 +1125,40 @@ public class Repository {
      */
     public boolean createVoiceBookingBlocking(String spokenText, String account, String place, String type,
                                               String coords, boolean noPayee) {
+        return voiceBooking(spokenText, account, place, type, coords, noPayee,
+                System.currentTimeMillis(), true, null) != null;
+    }
+
+    /**
+     * Dieselbe Routine für einen Satz, der nicht gesprochen wurde: die Zeile einer Benachrichtigung
+     * („Lidl 12,13 €"). Erkennung, Alias, Vorlagebuchung, Kategorie und Aufteilung laufen wie bei
+     * einer Spracheingabe von Uhr oder Widget — es gibt dafür keinen zweiten Weg.
+     *
+     * @param coords wo das Handy war, als die Meldung eintraf („lat, lon"), oder leer – wie der
+     *               Standort beim Diktieren: er wählt unter gleichnamigen Empfängern den nächsten
+     *               und kommt in die Notiz
+     * @param when   das Buchungsdatum (die Zeit der Meldung statt „jetzt")
+     * @param note   die Notiz der Buchung – der Wortlaut der Meldung. Sie tritt an die Stelle der
+     *               Notiz aus Alias oder Vorlagebuchung; der Standort hängt wie sonst dahinter
+     * @param insert {@code false} = nur vorschlagen: nichts wird angelegt, zurück kommt die Buchung,
+     *               wie sie angelegt würde (Aufteilung in {@link Booking#parts})
+     * @return die Buchung, oder {@code null}, wenn der Satz weder Empfänger noch Betrag hergab
+     */
+    public Booking voiceBookingBlocking(String sentence, String account, boolean income,
+                                        String coords, long when, boolean insert, String note) {
+        return voiceBooking(sentence, account, "", income ? VOICE_TYPE_INCOME : VOICE_TYPE_EXPENSE,
+                coords == null || coords.isEmpty() ? null : coords, false, when, insert, note);
+    }
+
+    /**
+     * @param now    der Zeitpunkt der Buchung
+     * @param insert siehe {@link #voiceBookingBlocking}; eine Umbuchung wird immer angelegt
+     * @param noteOverride siehe {@link #voiceBookingBlocking}; {@code null} = Notiz wie bisher
+     * @return {@code null}, wenn nichts zu buchen war
+     */
+    private Booking voiceBooking(String spokenText, String account, String place, String type,
+                                 String coords, boolean noPayee, final long now, boolean insert,
+                                 String noteOverride) {
         // Bei ausgeschaltetem GPS keinen Standort verwenden: reiner Betrag von der Uhr → leerer Empfänger,
         // keine GPS-Notiz. (Auf der Uhr bleibt die Betrag-only-Erfassung damit möglich.)
         de.spahr.ausgaben.settings.SettingsStore settings =
@@ -1137,9 +1171,10 @@ public class Repository {
         String term = parsed.payee == null ? "" : parsed.payee.trim();
         long amountCents = parsed.amountCents == null ? 0 : parsed.amountCents;
         if (term.isEmpty() && amountCents <= 0) {
-            return false;
+            return null;
         }
-        long now = System.currentTimeMillis();
+        // Was erkannt wurde, bevor Alias oder Vorlage es ersetzen – siehe Booking.spokenText.
+        final String recognized = term;
         String def = account == null ? "" : account.trim();
         String selPlace = place == null ? "" : place.trim();
 
@@ -1216,7 +1251,7 @@ public class Repository {
             // Sprach-/Widget-Erfassung: Stichwörter gibt es erst in der Bearbeitungsmaske.
             insertTransferPair(from, to, amount, payee, note, "", now, null,
                     UUID.randomUUID().toString(), fromPlace, toPlace);
-            return true;
+            return new Booking();
         }
 
         // Einnahme/Ausgabe: Richtung per Knopf erzwungen; Konto/Ort sind die Uhr-/Widget-Auswahl und
@@ -1256,18 +1291,27 @@ public class Repository {
             b.category = "";
             b.note = "";
         }
+        if (noteOverride != null) {
+            // Buchung aus einer Benachrichtigung: die Notiz ist deren Wortlaut, nicht die einer alten
+            // Buchung, die nur als Vorlage für Empfänger und Kategorie diente.
+            b.note = noteOverride;
+        }
         b.note = AliasResolver.appendGps(b.note, coords);
         // Ort ist die Uhr-/Widget-Auswahl (nie Alias/Vorlage); ohne Auswahl der Standardort des Kontos.
         String resolvedPlace = isRealPlace(selPlace) ? selPlace
                 : new de.spahr.ausgaben.settings.PlacesStore(appContext).getDefaultPlace(b.account);
         b.place = isRealPlace(resolvedPlace) ? resolvedPlace.trim() : "";
         b.placeManaged = true;
-        rememberPayee(b.payee);
-        if (!b.account.trim().isEmpty()) {
-            accountDao.insertIfAbsent(new Account(b.account));
+        b.spokenText = recognized;
+        long id = 0;
+        if (insert) {
+            rememberPayee(b.payee);
+            if (!b.account.trim().isEmpty()) {
+                accountDao.insertIfAbsent(new Account(b.account));
+            }
+            id = bookingDao.insert(b);
+            insertBookingMovement(b);
         }
-        long id = bookingDao.insert(b);
-        insertBookingMovement(b);
 
         // Splitbuchungs-Vorlage: Teilbeträge proportional auf den neuen Betrag skalieren (Rest in letzte
         // Zeile). Nur von einer typgleichen Vorlage übernehmen (eine typfremde korrigiert nur den Empfänger).
@@ -1284,11 +1328,21 @@ public class Repository {
                     } else {
                         part = amount - assigned;
                     }
-                    bookingDao.insertSplit(new BookingSplit(id, s.category, part, s.categoryIsIncome));
+                    BookingSplit teil = new BookingSplit(id, s.category, part, s.categoryIsIncome);
+                    if (insert) {
+                        bookingDao.insertSplit(teil);
+                    } else {
+                        // Nur vorschlagen: die Teile reisen an der Buchung mit, statt in der Tabelle
+                        // zu landen.
+                        if (b.parts == null) {
+                            b.parts = new ArrayList<>();
+                        }
+                        b.parts.add(teil);
+                    }
                 }
             }
         }
-        return true;
+        return b;
     }
 
     // Aliase + Sprach-/Standort-Auflösung → AliasResolver.
@@ -2303,7 +2357,13 @@ public class Repository {
             for (Booking b : bookings) {
                 rememberPayee(b.payee);
                 accountDao.insertIfAbsent(new Account(b.account));
-                bookingDao.insert(b);
+                long id = bookingDao.insert(b);
+                if (b.parts != null && b.parts.size() >= 2) {
+                    for (BookingSplit part : b.parts) {
+                        bookingDao.insertSplit(new BookingSplit(id, part.category, part.amountCents,
+                                part.categoryIsIncome));
+                    }
+                }
             }
         });
     }
@@ -2312,6 +2372,8 @@ public class Repository {
     public void deleteNotificationTemplates(final String packageName, final Runnable onDone) {
         executor.execute(() -> {
             notificationTemplates.deleteForPackage(packageName);
+            // Ohne Regel wartet dieses Profil nicht mehr unbegrenzt auf die Meldungen der App.
+            de.spahr.ausgaben.notify.NotificationBuffer.purgeNow(appContext);
             if (onDone != null) {
                 mainHandler.post(onDone);
             }

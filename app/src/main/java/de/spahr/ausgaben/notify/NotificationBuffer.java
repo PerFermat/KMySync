@@ -21,8 +21,8 @@ import java.util.Set;
  * nächste Durchlauf sie verarbeitet hat.</p>
  *
  * <p>Die Datei gilt für das ganze Gerät, nicht je Profil: der Dienst läuft im Hintergrund und weiß
- * nicht, für welches Profil eine Meldung gedacht ist. Welches Profil sie zeigt, entscheiden dessen
- * Vorlagen.</p>
+ * nicht, für welches Profil eine Meldung gedacht ist. Jedes Profil sieht die Meldungen der Apps, die
+ * es freigegeben hat, und erledigt sie für sich; gelöscht wird erst, wenn alle fertig sind.</p>
  */
 public final class NotificationBuffer extends SQLiteOpenHelper {
 
@@ -41,9 +41,17 @@ public final class NotificationBuffer extends SQLiteOpenHelper {
         public final String title;
         public final String text;
         public final String key;
+        /** Wo das Handy beim Eintreffen war („lat, lon"); leer, wenn unbekannt. */
+        public final String coords;
 
         public Entry(long id, String packageName, long postTime, String title, String text,
                      String key) {
+            this(id, packageName, postTime, title, text, key, "");
+        }
+
+        public Entry(long id, String packageName, long postTime, String title, String text,
+                     String key, String coords) {
+            this.coords = coords == null ? "" : coords;
             this.id = id;
             this.packageName = packageName;
             this.postTime = postTime;
@@ -62,19 +70,36 @@ public final class NotificationBuffer extends SQLiteOpenHelper {
 
     /** Für Tests: eine eigene Instanz statt der gemeinsamen. */
     NotificationBuffer(Context context) {
-        super(context, FILE, null, 1);
+        super(context, FILE, null, 3);
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE notification_buffer (id INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + "package_name TEXT NOT NULL, post_time INTEGER NOT NULL, title TEXT NOT NULL, "
-                + "text TEXT NOT NULL, notif_key TEXT NOT NULL, UNIQUE(notif_key, post_time))");
+                + "text TEXT NOT NULL, notif_key TEXT NOT NULL, coords TEXT NOT NULL DEFAULT '', "
+                + "UNIQUE(notif_key, post_time))");
+        createDone(db);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // Version 1 ist die erste.
+        if (oldVersion < 2) {
+            createDone(db);
+        }
+        if (oldVersion < 3) {
+            db.execSQL("ALTER TABLE notification_buffer ADD COLUMN coords TEXT NOT NULL DEFAULT ''");
+        }
+    }
+
+    /**
+     * Welches Profil welche Meldung schon erledigt hat. Dieselbe App kann in zwei Profilen freigegeben
+     * sein — eine gemeinsame Karte —, und dann darf der Abschluss im einen die Meldung dem anderen
+     * nicht wegnehmen.
+     */
+    private static void createDone(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS notification_done (entry_id INTEGER NOT NULL, "
+                + "profile_id TEXT NOT NULL, PRIMARY KEY(entry_id, profile_id))");
     }
 
     /**
@@ -97,24 +122,52 @@ public final class NotificationBuffer extends SQLiteOpenHelper {
                 SQLiteDatabase.CONFLICT_IGNORE);
     }
 
+    /**
+     * Trägt nach, wo das Handy beim Eintreffen der Meldung war. Getrennt vom Aufheben, weil die Ortung
+     * einige Sekunden braucht und die Meldung nicht darauf warten soll.
+     */
+    public synchronized void setCoords(long id, String coords) {
+        if (id <= 0 || coords == null || coords.isEmpty()) {
+            return;
+        }
+        ContentValues v = new ContentValues();
+        v.put("coords", coords);
+        getWritableDatabase().update("notification_buffer", v, "id = ?",
+                new String[]{String.valueOf(id)});
+    }
+
     /** Alle Einträge, die ältesten zuerst. */
     public synchronized List<Entry> all() {
+        return query("", null);
+    }
+
+    /** Die Einträge, die dieses Profil noch nicht erledigt hat, die ältesten zuerst. */
+    public synchronized List<Entry> allFor(String profileId) {
+        return query("WHERE id NOT IN (SELECT entry_id FROM notification_done WHERE profile_id = ?) ",
+                new String[]{profileId});
+    }
+
+    private List<Entry> query(String where, String[] args) {
         List<Entry> out = new ArrayList<>();
         try (Cursor c = getReadableDatabase().rawQuery("SELECT id, package_name, post_time, title, "
-                + "text, notif_key FROM notification_buffer ORDER BY post_time, id", null)) {
+                + "text, notif_key, coords FROM notification_buffer " + where + "ORDER BY post_time, id", args)) {
             while (c.moveToNext()) {
                 out.add(new Entry(c.getLong(0), c.getString(1), c.getLong(2), c.getString(3),
-                        c.getString(4), c.getString(5)));
+                        c.getString(4), c.getString(5), c.getString(6)));
             }
         }
         return out;
     }
 
     /**
-     * Löscht genau diese Einträge. Nur über die Nummern, nie „alles von dieser App": was eintrifft,
-     * während die Liste offen ist, hat der Nutzer nicht gesehen und muss bleiben.
+     * Vermerkt, dass dieses Profil mit diesen Einträgen fertig ist — gebucht, verworfen oder daraus
+     * gelernt. Nur über die Nummern, nie „alles von dieser App": was eintrifft, während die Liste
+     * offen ist, hat der Nutzer nicht gesehen und muss bleiben.
+     *
+     * <p>Gelöscht wird hier nichts. Das entscheidet {@link #purge}, sobald jedes beteiligte Profil
+     * fertig ist.</p>
      */
-    public synchronized void delete(Collection<Long> ids) {
+    public synchronized void markDone(Collection<Long> ids, String profileId) {
         if (ids == null || ids.isEmpty()) {
             return;
         }
@@ -122,7 +175,10 @@ public final class NotificationBuffer extends SQLiteOpenHelper {
         db.beginTransaction();
         try {
             for (Long id : ids) {
-                db.delete("notification_buffer", "id = ?", new String[]{String.valueOf(id)});
+                ContentValues v = new ContentValues();
+                v.put("entry_id", id);
+                v.put("profile_id", profileId);
+                db.insertWithOnConflict("notification_done", null, v, SQLiteDatabase.CONFLICT_IGNORE);
             }
             db.setTransactionSuccessful();
         } finally {
@@ -131,29 +187,87 @@ public final class NotificationBuffer extends SQLiteOpenHelper {
     }
 
     /**
-     * Lässt verfallen, was älter als {@link #UNKNOWN_TTL_MS} ist und von einer App stammt, für die es
-     * keine Vorlage gibt. Meldungen bekannter Apps bleiben bis zum nächsten Durchlauf.
+     * Löscht, was kein Profil mehr braucht — die einzige Stelle, die über das Löschen entscheidet.
+     *
+     * <p><b>Beteiligt</b> an einer Meldung ist jedes Profil, das ihre App freigegeben hat. <b>Fertig</b>
+     * ist ein Profil, wenn es die Meldung erledigt hat ({@link #markDone}) — oder wenn es für die App
+     * keine Regel hat und die Meldung älter als {@link #UNKNOWN_TTL_MS} ist: dann hatte es einen Tag
+     * Zeit, die Buchung dazu anzulegen, und wird sie in keiner Liste je sehen. Gelöscht wird, wenn
+     * alle Beteiligten fertig sind; ohne Beteiligte sofort.</p>
+     *
+     * @param allowedByProfile Profil → freigegebene Apps
+     * @param knownByProfile   Profil → Apps, für die es Regeln hat
+     * @return wie viele Einträge gelöscht wurden
      */
-    public synchronized int expire(long now, Set<String> knownPackages) {
-        int removed = 0;
-        List<Long> old = new ArrayList<>();
-        for (Entry e : all()) {
-            if (e.postTime < now - UNKNOWN_TTL_MS && !knownPackages.contains(e.packageName)) {
-                old.add(e.id);
-                removed++;
+    public synchronized int purge(long now, java.util.Map<String, Set<String>> allowedByProfile,
+                                  java.util.Map<String, Set<String>> knownByProfile) {
+        java.util.Map<Long, Set<String>> doneBy = new java.util.HashMap<>();
+        try (Cursor c = getReadableDatabase().rawQuery(
+                "SELECT entry_id, profile_id FROM notification_done", null)) {
+            while (c.moveToNext()) {
+                Set<String> profiles = doneBy.get(c.getLong(0));
+                if (profiles == null) {
+                    profiles = new java.util.HashSet<>();
+                    doneBy.put(c.getLong(0), profiles);
+                }
+                profiles.add(c.getString(1));
             }
         }
-        delete(old);
-        return removed;
+        List<Long> gone = new ArrayList<>();
+        for (Entry e : all()) {
+            boolean needed = false;
+            for (java.util.Map.Entry<String, Set<String>> profile : allowedByProfile.entrySet()) {
+                if (!profile.getValue().contains(e.packageName)) {
+                    continue;   // nicht beteiligt
+                }
+                Set<String> done = doneBy.get(e.id);
+                if (done != null && done.contains(profile.getKey())) {
+                    continue;
+                }
+                Set<String> known = knownByProfile.get(profile.getKey());
+                boolean hasRules = known != null && known.contains(e.packageName);
+                if (!hasRules && e.postTime < now - UNKNOWN_TTL_MS) {
+                    continue;
+                }
+                needed = true;
+                break;
+            }
+            if (!needed) {
+                gone.add(e.id);
+            }
+        }
+        delete(gone);
+        return gone.size();
     }
 
-    /** Löscht alles, was von dieser App aufgehoben wurde — wenn der Nutzer sie abwählt. */
-    public synchronized void deletePackage(String packageName) {
-        getWritableDatabase().delete("notification_buffer", "package_name = ?",
-                new String[]{packageName});
+    /** {@link #purge} mit dem, was Einstellungen und Regeln gerade sagen. */
+    public static void purgeNow(Context context) {
+        get(context).purge(System.currentTimeMillis(),
+                de.spahr.ausgaben.settings.SettingsStore.notifyAppsByProfile(context),
+                new KnownApps(context).byProfile());
+    }
+
+    /** Löscht genau diese Einträge samt ihren Erledigt-Vermerken. */
+    public synchronized void delete(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            for (Long id : ids) {
+                String[] arg = {String.valueOf(id)};
+                db.delete("notification_buffer", "id = ?", arg);
+                db.delete("notification_done", "entry_id = ?", arg);
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
     }
 
     public synchronized void clear() {
         getWritableDatabase().delete("notification_buffer", null, null);
+        getWritableDatabase().delete("notification_done", null, null);
     }
 }

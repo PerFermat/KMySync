@@ -15,7 +15,8 @@ import de.spahr.ausgaben.settings.SettingsStore;
  * Welche Apps der Nutzer für „Buchungen aus Benachrichtigungen" freigegeben hat — und welche sich
  * dafür anbieten.
  *
- * <p>Aufgehoben wird nur, was von einer <b>freigegebenen</b> App kommt. Von allen anderen merkt sich
+ * <p>Die Freigabe gilt je Profil; aufgehoben wird, was von einer App kommt, die <b>irgendein</b> Profil
+ * freigegeben hat, und jedes Profil sieht nur die seinen. Von allen anderen merkt sich
  * die App höchstens den Paketnamen, und auch den nur, wenn die Meldung einen Geldbetrag nannte: daraus
  * entsteht die Auswahlliste in den Einstellungen. Der Text einer nicht freigegebenen App liegt damit
  * zu keinem Zeitpunkt auf dem Gerät.</p>
@@ -34,6 +35,7 @@ public final class AppSelection {
     private AppSelection() {
     }
 
+    /** Die Freigabe des aktiven Profils. */
     public static Set<String> allowed(Context context) {
         return SettingsStore.notifyApps(context);
     }
@@ -42,19 +44,23 @@ public final class AppSelection {
         return allowed(context).contains(packageName);
     }
 
-    /**
-     * Setzt die Freigabe. Was im Puffer von einer App liegt, die nicht mehr dabei ist, wird sofort
-     * gelöscht — abgewählt heißt auch: was schon da ist, soll weg.
-     */
-    public static void setAllowed(Context context, Collection<String> packages) {
-        Set<String> before = allowed(context);
-        Set<String> now = new HashSet<>(packages);
-        SettingsStore.setNotifyApps(context, now);
-        for (String old : before) {
-            if (!now.contains(old)) {
-                NotificationBuffer.get(context).deletePackage(old);
+    /** Ob <b>irgendein</b> Profil die App freigegeben hat — die Frage des Dienstes, der kein Profil kennt. */
+    public static boolean isAllowedAnywhere(Context context, String packageName) {
+        for (Set<String> apps : SettingsStore.notifyAppsByProfile(context).values()) {
+            if (apps.contains(packageName)) {
+                return true;
             }
         }
+        return false;
+    }
+
+    /**
+     * Setzt die Freigabe des aktiven Profils. Was dadurch kein Profil mehr braucht, geht sofort —
+     * was ein anderes Profil noch freigegeben hat, bleibt.
+     */
+    public static void setAllowed(Context context, Collection<String> packages) {
+        SettingsStore.setNotifyApps(context, new HashSet<>(packages));
+        NotificationBuffer.purgeNow(context);
     }
 
     /** Merkt sich, dass diese App eine Meldung mit Betrag geschickt hat — nur den Namen. */
@@ -78,6 +84,25 @@ public final class AppSelection {
                 seenPrefs(context).getStringSet(KEY_SEEN, Collections.<String>emptySet()));
         out.addAll(allowed(context));
         return out;
+    }
+
+    /**
+     * Nimmt eine App aus der Auswahl des aktiven Profils: nicht mehr freigegeben und, wenn auch kein
+     * anderes Profil sie hält, nicht mehr angeboten. Schickt sie wieder eine Meldung mit Betrag, steht
+     * sie erneut zur Auswahl — vergessen heißt nicht sperren.
+     */
+    public static void forget(Context context, String packageName) {
+        Set<String> allowed = allowed(context);
+        allowed.remove(packageName);
+        SettingsStore.setNotifyApps(context, allowed);
+        if (!isAllowedAnywhere(context, packageName)) {
+            SharedPreferences prefs = seenPrefs(context);
+            Set<String> seen = new HashSet<>(
+                    prefs.getStringSet(KEY_SEEN, Collections.<String>emptySet()));
+            seen.remove(packageName);
+            prefs.edit().putStringSet(KEY_SEEN, seen).apply();
+        }
+        NotificationBuffer.purgeNow(context);
     }
 
     /** Beim Ausschalten der Funktion: auch die Liste der gesehenen Apps ist dann weg. */

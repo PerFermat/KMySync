@@ -356,21 +356,40 @@ class MainImportFlow {
                     }
 
                     @Override
-                    public void failed(Exception e) {
+                    public void failed(final Exception e) {
                         postImportError(e);
+                        // Kein Server erreichbar (unterwegs, anderes WLAN): dann läuft wenigstens der
+                        // Benachrichtigungs-Durchlauf – er braucht den Server nicht. Bei jedem anderen
+                        // Fehlschlag bleibt er aus und der Puffer, wie er ist.
+                        if (serverUnreachable(e)) {
+                            Ui.post(activity,
+                                    () -> NotificationBatchActivity.startIfAny(activity, repository));
+                        }
                     }
 
                     @Override
                     public void finished() {
                         completeImport();
-                        // Erst jetzt, und nur hier: Der Benachrichtigungs-Durchlauf folgt auf eine
-                        // geglückte Aktualisierung. failed() und noMatchingAccount() kommen hier nicht
-                        // vorbei – dann bleibt der Puffer, wie er ist. Bewusst nicht in
-                        // completeImport(), das auch nach „Konto hinzufügen" und dem Neueinlesen eines
-                        // Depots läuft.
+                        // Der Benachrichtigungs-Durchlauf folgt auf die Aktualisierung. Bewusst nicht
+                        // in completeImport(), das auch nach „Konto hinzufügen" und dem Neueinlesen
+                        // eines Depots läuft; noMatchingAccount() kommt hier nicht vorbei.
                         NotificationBatchActivity.startIfAny(activity, repository);
                     }
                 });
+    }
+
+    /**
+     * Ob die Aktualisierung an der Verbindung gescheitert ist: irgendwo in der Kette der Ursachen steht
+     * ein Ein-/Ausgabefehler. Netzlaufwerk und WebDAV melden so „nicht erreichbar", „Zeit abgelaufen"
+     * und „abgewiesen". Ein Fehler beim Verarbeiten der gelesenen Datei ist keiner davon.
+     */
+    static boolean serverUnreachable(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause() == t ? null : t.getCause()) {
+            if (t instanceof java.io.IOException) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void postImportError(Exception e) {

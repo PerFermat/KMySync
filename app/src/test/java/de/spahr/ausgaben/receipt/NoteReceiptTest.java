@@ -24,10 +24,10 @@ public class NoteReceiptTest {
     @Test
     public void withFileName_appendsAndReplaces() {
         String n1 = NoteReceipt.withFileName("Kaffee", "2025_a.jpg");
-        assertEquals("Kaffee BELEG: 2025_a.jpg", n1);
+        assertEquals("Kaffee\n\nBELEG: 2025_a.jpg", n1);
         // Ersetzen: kein doppelter Tag.
         String n2 = NoteReceipt.withFileName(n1, "2025_b.jpg");
-        assertEquals("Kaffee BELEG: 2025_b.jpg", n2);
+        assertEquals("Kaffee\n\nBELEG: 2025_b.jpg", n2);
     }
 
     @Test
@@ -61,7 +61,7 @@ public class NoteReceiptTest {
     @Test
     public void withPdfName_appendsAndKeepsGps() {
         String out = NoteReceipt.withPdfName("Rechnung GPS: 48.1, 11.5", "ab12");
-        assertEquals("Rechnung GPS: 48.1, 11.5 BELEG (PDF): ab12", out);
+        assertEquals("Rechnung GPS: 48.1, 11.5\n\nBELEG (PDF): ab12", out);
         assertEquals("ab12", NoteReceipt.pdfName(out));
     }
 
@@ -69,10 +69,10 @@ public class NoteReceiptTest {
     public void theTwoReceiptTagsExcludeEachOther() {
         // Eine Buchung trägt entweder Fotoseiten oder PDFs – der jeweils andere Tag fällt weg.
         String pdf = NoteReceipt.withPdfName("Kaffee BELEG: 2025_a.jpg", "ab12");
-        assertEquals("Kaffee BELEG (PDF): ab12", pdf);
+        assertEquals("Kaffee\n\nBELEG (PDF): ab12", pdf);
         assertNull(NoteReceipt.fileName(pdf));
         String foto = NoteReceipt.withFileName(pdf, "cd34_p1.jpg");
-        assertEquals("Kaffee BELEG: cd34_p1.jpg", foto);
+        assertEquals("Kaffee\n\nBELEG: cd34_p1.jpg", foto);
         assertNull(NoteReceipt.pdfName(foto));
     }
 
@@ -190,5 +190,23 @@ public class NoteReceiptTest {
         assertTrue(NoteReceipt.isOriginal("2026_ab12_original.jpg"));
         assertFalse(NoteReceipt.isOriginal("2026_ab12.jpg"));
         assertFalse(NoteReceipt.isOriginal(null));
+    }
+
+    /**
+     * Die Zusätze stehen durch eine Leerzeile getrennt – untereinander und vom eigenen Text. Gelesen
+     * werden sie in der neuen Form genauso wie in der alten einzeiligen, die im Bestand steht.
+     */
+    @Test
+    public void zusaetzeStehenDurchLeerzeilenGetrennt() {
+        String note = NoteReceipt.append("Wocheneinkauf", "GPS: 48.1, 11.5");
+        assertEquals("Wocheneinkauf\n\nGPS: 48.1, 11.5", note);
+        note = NoteReceipt.withFileName(note, "ab12");
+        assertEquals("Wocheneinkauf\n\nGPS: 48.1, 11.5\n\nBELEG: ab12", note);
+        assertEquals("ab12", NoteReceipt.fileName(note));
+        assertEquals("Wocheneinkauf\n\nGPS: 48.1, 11.5", NoteReceipt.strip(note));
+        // Ohne Text davor keine führende Leerzeile.
+        assertEquals("GPS: 48.1, 11.5", NoteReceipt.append("", "GPS: 48.1, 11.5"));
+        // Die alte Form bleibt lesbar.
+        assertEquals("ab12", NoteReceipt.fileName("Wocheneinkauf GPS: 48.1, 11.5 BELEG: ab12"));
     }
 }

@@ -68,6 +68,7 @@ public class SettingsStore {
     private static final String KEY_FONT_SIZE = "font_size";
     private static final String KEY_NOTIFY_LEARN = "notify_learn";
     private static final String KEY_NOTIFY_APPS = "notify_apps";
+    private static final String KEY_NOTIFY_LOCATION_ASKED = "notify_location_asked";
     private static final String KEY_SMB_KNOWN_HOSTS = "smb_known_hosts";
     private static final String KEY_RECONCILE_PAYEE = "reconcile_payee";
     private static final String KEY_RECONCILE_CATEGORY = "reconcile_category";
@@ -852,6 +853,15 @@ public class SettingsStore {
         prefs.edit().putBoolean(KEY_NOTIFY_LEARN, enabled).apply();
     }
 
+    /** Ob nach dem Standortzugriff „immer" für die Benachrichtigungen schon einmal gefragt wurde. */
+    public boolean isNotifyLocationAsked() {
+        return prefs.getBoolean(KEY_NOTIFY_LOCATION_ASKED, false);
+    }
+
+    public void setNotifyLocationAsked(boolean asked) {
+        prefs.edit().putBoolean(KEY_NOTIFY_LOCATION_ASKED, asked).apply();
+    }
+
     /**
      * Dasselbe ohne ein {@code SettingsStore}: der Benachrichtigungsdienst fragt bei jeder Meldung
      * jeder App, und der Konstruktor hier öffnet den Schlüsselspeicher.
@@ -862,13 +872,55 @@ public class SettingsStore {
     }
 
     /**
-     * Die Apps, deren Benachrichtigungen aufgehoben werden dürfen (Paketnamen). Wie der Schalter gilt
-     * die Liste für das ganze Gerät. Als eine Zeichenkette abgelegt, je Zeile ein Name — so reist sie
-     * durch jede Sicherung, die Zeichenketten kennt.
+     * Die Apps, deren Benachrichtigungen das <b>aktive Profil</b> lesen will (Paketnamen). Als eine
+     * Zeichenkette abgelegt, je Zeile ein Name — so reist die Auswahl durch jede Sicherung, die
+     * Zeichenketten kennt.
+     *
+     * <p>Statisch und ohne {@code SettingsStore}, weil auch der Benachrichtigungsdienst fragt, und
+     * der Konstruktor hier den Schlüsselspeicher öffnet.</p>
      */
     public static java.util.Set<String> notifyApps(Context context) {
-        String raw = context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getString(KEY_NOTIFY_APPS, "");
+        Context app = context.getApplicationContext();
+        SharedPreferences prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        // Bis zur Auswahl je Profil galt eine Liste für das ganze Gerät. Sie wird nicht übernommen:
+        // welchem Profil sie gehörte, lässt sich ihr nicht ansehen.
+        if (prefs.contains(KEY_NOTIFY_APPS)) {
+            prefs.edit().remove(KEY_NOTIFY_APPS).apply();
+        }
+        return namesOf(prefs.getString(notifyAppsKey(new ProfileManager(app).getActiveProfileId()), ""));
+    }
+
+    public static void setNotifyApps(Context context, java.util.Set<String> packages) {
+        Context app = context.getApplicationContext();
+        app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putString(notifyAppsKey(new ProfileManager(app).getActiveProfileId()),
+                        android.text.TextUtils.join("\n", new java.util.TreeSet<>(packages)))
+                .apply();
+    }
+
+    /**
+     * Dieselbe Auswahl für <b>alle</b> Profile: Profilkennung → Paketnamen. Für den Dienst im
+     * Hintergrund und für die Frage, welches Profil eine aufgehobene Meldung noch braucht.
+     */
+    public static java.util.Map<String, java.util.Set<String>> notifyAppsByProfile(Context context) {
+        java.util.Map<String, java.util.Set<String>> out = new java.util.HashMap<>();
+        String suffix = "_" + KEY_NOTIFY_APPS;
+        for (java.util.Map.Entry<String, ?> e : context.getApplicationContext()
+                .getSharedPreferences(PREFS, Context.MODE_PRIVATE).getAll().entrySet()) {
+            String key = e.getKey();
+            if (key.startsWith("p_") && key.endsWith(suffix) && e.getValue() instanceof String) {
+                out.put(key.substring(2, key.length() - suffix.length()),
+                        namesOf((String) e.getValue()));
+            }
+        }
+        return out;
+    }
+
+    private static String notifyAppsKey(String profileId) {
+        return "p_" + profileId + "_" + KEY_NOTIFY_APPS;
+    }
+
+    private static java.util.Set<String> namesOf(String raw) {
         java.util.Set<String> out = new java.util.HashSet<>();
         for (String name : raw.split("\n")) {
             if (!name.trim().isEmpty()) {
@@ -876,13 +928,6 @@ public class SettingsStore {
             }
         }
         return out;
-    }
-
-    public static void setNotifyApps(Context context, java.util.Set<String> packages) {
-        context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-                .putString(KEY_NOTIFY_APPS, android.text.TextUtils.join("\n",
-                        new java.util.TreeSet<>(packages)))
-                .apply();
     }
 
     /** Budget app-intern aus dem Verlauf berechnen (true) statt aus KMyMoney importieren (false, Standard). */

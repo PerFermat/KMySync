@@ -37,6 +37,21 @@ public final class KnownApps {
         return out;
     }
 
+    /** Je Profil die Apps, für die es Regeln hat. */
+    public java.util.Map<String, Set<String>> byProfile() {
+        java.util.Map<String, Set<String>> out = new java.util.HashMap<>();
+        for (java.util.Map.Entry<String, ?> e : prefs.getAll().entrySet()) {
+            if (e.getValue() instanceof Set) {
+                Set<String> names = new HashSet<>();
+                for (Object name : (Set<?>) e.getValue()) {
+                    names.add(String.valueOf(name));
+                }
+                out.put(e.getKey(), names);
+            }
+        }
+        return out;
+    }
+
     public void put(String profileId, Set<String> packages) {
         prefs.edit().putStringSet(profileId, new HashSet<>(packages)).apply();
     }

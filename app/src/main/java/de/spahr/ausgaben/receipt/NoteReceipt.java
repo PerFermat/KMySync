@@ -69,8 +69,22 @@ public final class NoteReceipt {
         if (file == null || file.trim().isEmpty()) {
             return base;
         }
-        String tag = prefix + file.trim();
-        return base.isEmpty() ? tag : base + " " + tag;
+        return append(base, prefix + file.trim());
+    }
+
+    /**
+     * Hängt einen Zusatz ({@code GPS: …}, {@code BELEG: …}) an die Notiz — durch eine <b>Leerzeile</b>
+     * vom Vorangehenden getrennt. Die eine Stelle, die das festlegt; die Maske, die Spracheingabe und
+     * die Belege setzen ihre Zusätze alle hierüber.
+     *
+     * <p>Bis 2.2 trennte ein Leerzeichen, und die Notiz war eine einzige Zeile: „Wocheneinkauf GPS:
+     * 50.1, 8.6 BELEG: abc". In KMyMoney stand das genau so im Memo. Mit der Leerzeile bleibt der
+     * eigene Text für sich lesbar. Gelesen werden die Zusätze unverändert in beiden Formen — die
+     * Muster erlauben davor beliebigen Leerraum.</p>
+     */
+    public static String append(String base, String tag) {
+        String b = base == null ? "" : base.replaceAll("\\s+$", "");
+        return b.isEmpty() ? tag : b + "\n\n" + tag;
     }
 
     /** Entfernt beide Beleg-Tags; der Rest (inkl. GPS) bleibt erhalten. */
