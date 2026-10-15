@@ -1,6 +1,7 @@
 package de.spahr.ausgaben.notify;
 
 import android.content.Context;
+import android.util.Log;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -24,6 +25,8 @@ import de.spahr.ausgaben.statement.NotificationTemplate;
  * nichts; ein Fehlschlag beim Speichern kehrt vor dem Löschen zurück.</p>
  */
 public final class NotificationRunner {
+
+    private static final String TAG = "NotificationRunner";
 
     /** So viele Tage neben dem Datum der Meldung gilt eine Buchung gleichen Betrags als mögliches Duplikat. */
     static final int DUPLICATE_DAYS = 2;
@@ -97,6 +100,23 @@ public final class NotificationRunner {
      */
     public static int complete(Context context, Repository repository,
                                List<NotificationDraft> remaining, long[] shownIds) {
+        return complete(context, repository, remaining, shownIds, d -> {
+            NotificationTemplate t = NotificationLearner.learn(
+                    new NotificationSource(d.packageName, d.postTime, d.title, d.text),
+                    d.cents, d.isIncome, d.payee, d.account);
+            if (t != null) {
+                repository.notificationTemplates().save(t);
+            }
+        });
+    }
+
+    /** Lernt aus einer von Hand gebuchten Zeile und legt die Vorlage ab — austauschbar für den Test. */
+    interface Learner {
+        void learn(NotificationDraft d);
+    }
+
+    static int complete(Context context, Repository repository, List<NotificationDraft> remaining,
+                        long[] shownIds, Learner learner) {
         final String currency = new de.spahr.ausgaben.settings.SettingsStore(context).getCurrency();
         final int[] booked = {0};
         try {
@@ -121,24 +141,35 @@ public final class NotificationRunner {
         } catch (RuntimeException e) {
             return -1;
         }
-        for (NotificationDraft d : remaining) {
-            if (d.learn && d.isBookable()) {
-                NotificationTemplate t = NotificationLearner.learn(
-                        new NotificationSource(d.packageName, d.postTime, d.title, d.text),
-                        d.cents, d.isIncome, d.payee, d.account);
-                if (t != null) {
-                    repository.notificationTemplates().save(t);
+        // Ab hier stehen die Buchungen. Was jetzt noch schiefgeht, darf höchstens eine Vorlage kosten –
+        // nie das Erledigt: sonst stünden dieselben Zeilen beim nächsten Aktualisieren wieder da und
+        // würden ein zweites Mal gebucht.
+        try {
+            for (NotificationDraft d : remaining) {
+                if (!d.learn || !d.isBookable()) {
+                    continue;
+                }
+                try {
+                    learner.learn(d);
+                } catch (RuntimeException e) {
+                    // Je Zeile: eine, aus der sich nichts lernen lässt, hält die übrigen nicht auf.
+                    Log.w(TAG, "Vorlage aus Benachrichtigung nicht gelernt", e);
                 }
             }
+        } finally {
+            List<Long> ids = new ArrayList<>();
+            for (long id : shownIds) {
+                ids.add(id);
+            }
+            try {
+                // Für dieses Profil erledigt. Hat ein anderes Profil dieselbe App freigegeben, bleibt
+                // die Meldung, bis auch es fertig ist.
+                NotificationBuffer.get(context).markDone(ids, profileOf(context));
+                NotificationBuffer.purgeNow(context);
+            } catch (RuntimeException e) {
+                Log.w(TAG, "Benachrichtigungen nicht als erledigt vermerkt", e);
+            }
         }
-        List<Long> ids = new ArrayList<>();
-        for (long id : shownIds) {
-            ids.add(id);
-        }
-        // Für dieses Profil erledigt. Hat ein anderes Profil dieselbe App freigegeben, bleibt die
-        // Meldung, bis auch es fertig ist.
-        NotificationBuffer.get(context).markDone(ids, profileOf(context));
-        NotificationBuffer.purgeNow(context);
         return booked[0];
     }
 

@@ -209,17 +209,29 @@ final class NotificationLearnFlow {
                               final NotificationBuffer.Entry entry, final long cents,
                               final boolean isIncome, final String payee, final String account) {
         repository.runInBackground(() -> {
-            NotificationTemplate template = NotificationLearner.learn(sourceOf(entry), cents,
-                    isIncome, payee, account);
-            if (template == null) {
-                return Boolean.FALSE;
+            boolean learned = false;
+            try {
+                NotificationTemplate template = NotificationLearner.learn(sourceOf(entry), cents,
+                        isIncome, payee, account);
+                if (template != null) {
+                    repository.notificationTemplates().save(template);
+                    learned = true;
+                }
+            } catch (RuntimeException e) {
+                android.util.Log.w("NotificationLearnFlow", "Vorlage nicht gelernt", e);
+            } finally {
+                // Die Buchung zu dieser Meldung steht schon da – von Hand angelegt, bevor gefragt
+                // wurde. Erledigt ist die Meldung also in jedem Fall, ob die Vorlage nun entstand oder
+                // nicht; sonst käme sie später als Vorschlag wieder und würde doppelt gebucht.
+                try {
+                    NotificationBuffer.get(activity).markDone(Collections.singletonList(entry.id),
+                            de.spahr.ausgaben.notify.NotificationRunner.profileOf(activity));
+                    NotificationBuffer.purgeNow(activity);
+                } catch (RuntimeException e) {
+                    android.util.Log.w("NotificationLearnFlow", "Meldung nicht als erledigt vermerkt", e);
+                }
             }
-            repository.notificationTemplates().save(template);
-            // Aus dieser Meldung wurde gelernt, und die Buchung dazu steht schon da: erledigt.
-            NotificationBuffer.get(activity).markDone(Collections.singletonList(entry.id),
-                    de.spahr.ausgaben.notify.NotificationRunner.profileOf(activity));
-            NotificationBuffer.purgeNow(activity);
-            return Boolean.TRUE;
+            return learned;
         }, learned -> {
             Toast.makeText(activity.getApplicationContext(),
                     learned ? R.string.notify_learned : R.string.notify_learn_failed,

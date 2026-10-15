@@ -558,6 +558,62 @@ public class NotificationRunnerTest {
         assertEquals(1, vorbereiten().size());
     }
 
+    // ---- Fehler beim Lernen ----
+
+    /** Eine nicht erkannte Zeile, so wie sie von Hand gebucht aus der Maske zurückkommt. */
+    private NotificationDraft vonHandGebucht(String text, String key, long cents) {
+        NotificationDraft d = new NotificationDraft();
+        d.entryId = meldung(HEUTE, text, key);
+        d.packageName = BANK;
+        d.key = key;
+        d.postTime = HEUTE;
+        d.dateMillis = HEUTE;
+        d.title = "Kartenzahlung";
+        d.text = text;
+        d.cents = cents;
+        d.payee = "Amazon";
+        d.account = "Kreditkarte";
+        d.edited = true;
+        d.learn = true;
+        return d;
+    }
+
+    /**
+     * Wirft das Lernen, stehen die Buchungen trotzdem, und die Meldungen sind für das Profil erledigt
+     * – sonst kämen sie beim nächsten Aktualisieren wieder und würden doppelt gebucht.
+     */
+    @Test
+    public void wirftDasLernenBleibenBuchungenUndErledigt() throws Exception {
+        final NotificationDraft d = vonHandGebucht("Gutschrift von 20,00 EUR", "a", 2000L);
+        final List<NotificationDraft> zeilen = Collections.singletonList(d);
+        int gebucht = imHintergrund(() -> NotificationRunner.complete(ctx, repo, zeilen,
+                new long[]{d.entryId}, x -> {
+                    throw new IllegalStateException("Lernen kaputt");
+                }));
+        assertEquals(1, gebucht);
+        assertEquals(1, imHintergrund(() -> db.bookingDao().getAllBookings()).size());
+        assertTrue(buffer.allFor(NotificationRunner.profileOf(ctx)).isEmpty());
+    }
+
+    /** Je Zeile abgefangen: wirft die erste, wird aus der zweiten trotzdem gelernt. */
+    @Test
+    public void eineFehlerhafteZeileHaeltDieAnderenNichtAuf() throws Exception {
+        final NotificationDraft erste = vonHandGebucht("Gutschrift von 20,00 EUR", "a", 2000L);
+        final NotificationDraft zweite = vonHandGebucht("Gutschrift von 35,00 EUR", "b", 3500L);
+        final List<NotificationDraft> zeilen = java.util.Arrays.asList(erste, zweite);
+        final List<NotificationDraft> gelernt = new ArrayList<>();
+        int gebucht = imHintergrund(() -> NotificationRunner.complete(ctx, repo, zeilen,
+                new long[]{erste.entryId, zweite.entryId}, x -> {
+                    if (x == erste) {
+                        throw new IllegalStateException("Lernen kaputt");
+                    }
+                    gelernt.add(x);
+                }));
+        assertEquals(2, gebucht);
+        assertEquals(Collections.singletonList(zweite), gelernt);
+        assertTrue(buffer.allFor(NotificationRunner.profileOf(ctx)).isEmpty());
+    }
+
     /** Erkannt, aber ohne den Blick des Nutzers nicht buchbar: bleibt ungebucht. */
     @Test
     public void nichtBuchbareZeilenWerdenNichtGebucht() throws Exception {
