@@ -204,6 +204,46 @@ public class NotificationRunTest {
         assertFalse(drafts.get(1).dupBuffer);
     }
 
+    /** Viele Bank-Apps posten jede Zahlung unter derselben ID: verschiedene Beträge sind zwei Umsätze. */
+    @Test
+    public void gleicherSchluesselVerschiedeneBetraegeWerdenNichtMarkiert() {
+        List<NotificationDraft> drafts = lauf(Arrays.asList(
+                meldung(BANK, HEUTE, zahlung("REWE", "12,34", "*1234"), "fest"),
+                meldung(BANK, HEUTE + 60_000, zahlung("Lidl", "7,50", "*1234"), "fest")),
+                vorlage("Kreditkarte", "*1234"));
+        assertEquals(2, drafts.size());
+        assertFalse(drafts.get(0).dupBuffer);
+        assertFalse(drafts.get(1).dupBuffer);
+    }
+
+    /**
+     * Gleicher Schlüssel, gleicher Betrag, drei Stunden auseinander: als Aktualisierung gilt das nicht
+     * mehr (die liegen binnen {@link MessageUpdate#MAX_GAP_MS}), also keine Markierung über den
+     * Schlüssel — der Kaffee am Morgen und der am Nachmittag.
+     *
+     * <p>Steht derselbe Empfänger am selben Tag dabei, greift die Regel für gleichen Inhalt und markiert
+     * die <b>spätere</b> als mögliches Duplikat. Angezeigt werden in beiden Fällen beide Zeilen.</p>
+     */
+    @Test
+    public void gleicherSchluesselGleicherBetragStundenAuseinander() {
+        long morgens = HEUTE - 3 * 3_600_000L;
+        List<NotificationDraft> verschiedeneHaendler = lauf(Arrays.asList(
+                meldung(BANK, morgens, zahlung("Bäckerei Nord", "3,50", "*1234"), "fest"),
+                meldung(BANK, HEUTE, zahlung("Kiosk Süd", "3,50", "*1234"), "fest")),
+                vorlage("Kreditkarte", "*1234"));
+        assertEquals(2, verschiedeneHaendler.size());
+        assertFalse(verschiedeneHaendler.get(0).dupBuffer);
+        assertFalse(verschiedeneHaendler.get(1).dupBuffer);
+
+        List<NotificationDraft> derselbeHaendler = lauf(Arrays.asList(
+                meldung(BANK, morgens, zahlung("Bäckerei Nord", "3,50", "*1234"), "fest"),
+                meldung(BANK, HEUTE, zahlung("Bäckerei Nord", "3,50", "*1234"), "fest")),
+                vorlage("Kreditkarte", "*1234"));
+        assertEquals(2, derselbeHaendler.size());
+        assertFalse("die frühere bleibt unmarkiert", derselbeHaendler.get(0).dupBuffer);
+        assertTrue("die spätere trägt den Hinweis", derselbeHaendler.get(1).dupBuffer);
+    }
+
     /** Neuer Schlüssel, gleicher Inhalt am selben Tag: die spätere wird markiert, nicht entfernt. */
     @Test
     public void gleicherInhaltUnterNeuemSchluesselWirdMarkiert() {

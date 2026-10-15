@@ -127,14 +127,51 @@ public class NotificationMatcherTest {
         assertEquals("a", found.get(0).key);
     }
 
-    /** Zweimal derselbe Kaffee: nicht zu unterscheiden, also kein Treffer. */
+    /**
+     * Zweimal derselbe Kaffee: nicht zu unterscheiden. Beide kommen zurück, und der Nutzer sagt,
+     * welcher gemeint ist — bis 2.2 gab es hier gar keinen Treffer.
+     */
     @Test
-    public void nichtUnterscheidbareMeldungenErgebenKeinenTreffer() {
+    public void nichtUnterscheidbareMeldungenKommenBeideZurueck() {
         List<NotificationBuffer.Entry> buffer = Arrays.asList(
                 meldung("de.bank", HEUTE, "Zahlung bei Café Central über 3,50 EUR", "a"),
                 meldung("de.bank", HEUTE + 1000, "Zahlung bei Café Central über 3,50 EUR", "b"));
-        assertTrue(suche(buffer, 350L, "Café Central").isEmpty());
-        assertTrue(suche(buffer, 350L, "").isEmpty());
+        assertEquals(2, suche(buffer, 350L, "Café Central").size());
+        assertEquals(2, suche(buffer, 350L, "").size());
+    }
+
+    /** Trennt der Empfänger mehrere, aber nicht genau einen, bleiben die passenden zur Wahl. */
+    @Test
+    public void mehrerePassendeEmpfaengerBleibenZurWahl() {
+        List<NotificationBuffer.Entry> buffer = Arrays.asList(
+                meldung("de.bank", HEUTE, "Zahlung bei REWE Markt über 3,50 EUR", "a"),
+                meldung("de.bank", HEUTE + 1000, "Zahlung bei REWE City über 3,50 EUR", "b"),
+                meldung("de.bank", HEUTE + 2000, "Zahlung bei Kiosk über 3,50 EUR", "c"));
+        List<NotificationBuffer.Entry> found = suche(buffer, 350L, "Rewe");
+        assertEquals(2, found.size());
+        assertEquals("a", found.get(0).key);
+        assertEquals("b", found.get(1).key);
+    }
+
+    // ---- gleicher Schlüssel ----
+
+    /** Viele Bank-Apps posten jede Zahlung unter derselben ID: verschiedene Beträge sind zwei Umsätze. */
+    @Test
+    public void gleicherSchluesselVerschiedeneBetraegeSindBeideAuffindbar() {
+        List<NotificationBuffer.Entry> buffer = Arrays.asList(
+                meldung("de.bank", HEUTE, "Zahlung bei REWE über 12,34 EUR", "fest"),
+                meldung("de.bank", HEUTE + 60_000, "Zahlung bei Lidl über 7,50 EUR", "fest"));
+        assertEquals(1, suche(buffer, 1234L, "").size());
+        assertEquals(1, suche(buffer, 750L, "").size());
+    }
+
+    /** Gleicher Schlüssel, gleicher Betrag, Stunden auseinander: zwei Einkäufe, beide zur Wahl. */
+    @Test
+    public void gleicherSchluesselGleicherBetragStundenAuseinanderBeideZurWahl() {
+        List<NotificationBuffer.Entry> buffer = Arrays.asList(
+                meldung("de.bank", HEUTE - 3 * 3_600_000L, "Zahlung bei Bäckerei über 3,50 EUR", "fest"),
+                meldung("de.bank", HEUTE, "Zahlung bei Bäckerei über 3,50 EUR", "fest"));
+        assertEquals(2, suche(buffer, 350L, "").size());
     }
 
     /** Der Empfänger ist nur Zünglein: passt er nicht, bleibt der einzige Treffer trotzdem einer. */

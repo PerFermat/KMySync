@@ -157,13 +157,20 @@ final class NotificationLearnFlow {
         return DLG_ASK.equals(key) || DLG_PICK.equals(key);
     }
 
-    /** Verschiedene Apps haben denselben Betrag gemeldet: der Nutzer sagt, welche gemeint ist. */
+    /**
+     * Mehrere Meldungen passen — aus verschiedenen Apps oder aus einer, ohne dass der Empfänger sie
+     * trennt: der Nutzer sagt, welche gemeint ist.
+     */
     private static Dialog buildPick(final FragmentActivity activity, final Bundle args) {
         String[] apps = args.getStringArray(ARG_APPS);
         String[] texts = args.getStringArray(ARG_TEXTS);
+        long[] times = args.getLongArray(ARG_TIMES);
         CharSequence[] labels = new CharSequence[apps.length];
         for (int i = 0; i < apps.length; i++) {
-            labels[i] = appLabel(activity, apps[i]) + "\n" + texts[i];
+            // Mit Uhrzeit: zwei Meldungen derselben App können gleich lauten (zweimal derselbe
+            // Kaffee), und dann trennt sie nur noch der Zeitpunkt.
+            labels[i] = appLabel(activity, apps[i]) + " · "
+                    + de.spahr.ausgaben.settings.DateFormats.dateTime(times[i]) + "\n" + texts[i];
         }
         return new AppDialog(activity)
                 .setTitle(R.string.notify_offer_pick_title)

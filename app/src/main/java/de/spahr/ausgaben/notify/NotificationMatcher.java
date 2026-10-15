@@ -29,12 +29,14 @@ public final class NotificationMatcher {
     }
 
     /**
-     * Je App höchstens eine Meldung. Leer heißt: nichts gefunden. Mehrere heißt: verschiedene Apps
-     * haben denselben Betrag gemeldet, und der Nutzer muss sagen, welche gemeint ist.
+     * Die Meldungen, die zu der Buchung passen. Leer heißt: nichts gefunden. Eine heißt: diese. Mehrere
+     * heißt: der Nutzer muss sagen, welche gemeint ist — sei es, dass verschiedene Apps denselben
+     * Betrag gemeldet haben, sei es, dass innerhalb einer App mehrere übrig bleiben, die auch der
+     * Empfänger nicht trennt (zwei gleich teure Einkäufe am selben Tag).
      *
-     * <p>Bleiben <b>innerhalb</b> einer App mehrere übrig, die auch der Empfänger nicht trennt, gibt
-     * es von dieser App keinen Treffer. Zwei gleich teure Einkäufe am selben Tag sind nicht zu
-     * unterscheiden, und aus der falschen zu lernen hieße, die richtige später doppelt vorzuschlagen.</p>
+     * <p>Zusammengefasst wird nur, was nachweislich dieselbe Meldung ist ({@link MessageUpdate}); ein
+     * gleicher Schlüssel allein genügt nicht. Lieber einmal mehr nachfragen, als eine echte Zahlung
+     * stillschweigend fallen zu lassen.</p>
      */
     public static List<NotificationBuffer.Entry> match(List<NotificationBuffer.Entry> buffer,
                                                        long cents, long bookingMillis, String payee,
@@ -56,41 +58,51 @@ public final class NotificationMatcher {
         }
         List<NotificationBuffer.Entry> out = new ArrayList<>();
         for (List<NotificationBuffer.Entry> candidates : byApp.values()) {
-            NotificationBuffer.Entry best = pick(latestPerKey(candidates), payee);
-            if (best != null) {
-                out.add(best);
+            out.addAll(pick(withoutOlderVersions(candidates), payee));
+        }
+        return out;
+    }
+
+    /**
+     * Eine App, die ihre Meldung aktualisiert, hat sie nicht zweimal geschickt: von einer
+     * Aktualisierung gilt die jüngste Fassung. Alles andere bleibt Kandidat — auch unter gleichem
+     * Schlüssel, denn viele Apps posten jede Zahlung unter derselben festen ID.
+     */
+    private static List<NotificationBuffer.Entry> withoutOlderVersions(
+            List<NotificationBuffer.Entry> entries) {
+        List<NotificationBuffer.Entry> out = new ArrayList<>();
+        for (NotificationBuffer.Entry e : entries) {
+            boolean superseded = false;
+            for (NotificationBuffer.Entry o : entries) {
+                if (o != e && MessageUpdate.isUpdate(e, o)
+                        && MessageUpdate.newer(o.postTime, o.id, e.postTime, e.id)) {
+                    superseded = true;
+                    break;
+                }
+            }
+            if (!superseded) {
+                out.add(e);
             }
         }
         return out;
     }
 
-    /** Eine App, die ihre Meldung aktualisiert, hat sie nicht zweimal geschickt: die jüngste Fassung gilt. */
-    private static List<NotificationBuffer.Entry> latestPerKey(List<NotificationBuffer.Entry> entries) {
-        Map<String, NotificationBuffer.Entry> latest = new LinkedHashMap<>();
-        for (NotificationBuffer.Entry e : entries) {
-            NotificationBuffer.Entry seen = latest.get(e.key);
-            if (seen == null || e.postTime >= seen.postTime) {
-                latest.put(e.key, e);
-            }
+    /**
+     * Mehrere Kandidaten einer App: der Empfänger entscheidet, wenn er genau einen trennt. Sonst
+     * kommen alle zurück — die passenden, wenn es mehrere sind, sonst alle — und der Nutzer wählt.
+     */
+    private static List<NotificationBuffer.Entry> pick(List<NotificationBuffer.Entry> candidates,
+                                                       String payee) {
+        if (candidates.size() <= 1) {
+            return candidates;
         }
-        return new ArrayList<>(latest.values());
-    }
-
-    private static NotificationBuffer.Entry pick(List<NotificationBuffer.Entry> candidates,
-                                                 String payee) {
-        if (candidates.size() == 1) {
-            return candidates.get(0);
-        }
-        NotificationBuffer.Entry named = null;
+        List<NotificationBuffer.Entry> named = new ArrayList<>();
         for (NotificationBuffer.Entry e : candidates) {
             if (PayeeMatch.similarity(payee, e.title + " " + e.text) >= PayeeMatch.THRESHOLD) {
-                if (named != null) {
-                    return null;   // auch der Empfänger trennt sie nicht
-                }
-                named = e;
+                named.add(e);
             }
         }
-        return named;
+        return named.isEmpty() ? candidates : named;
     }
 
     private static LocalDate dayOf(long millis, ZoneId zone) {

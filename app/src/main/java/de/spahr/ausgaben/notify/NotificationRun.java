@@ -4,11 +4,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
 import de.spahr.ausgaben.statement.NotificationSource;
@@ -18,8 +16,10 @@ import de.spahr.ausgaben.statement.NotificationTemplate;
  * Der Durchlauf beim Aktualisieren, soweit er reines Rechnen ist: aus dem Puffer und den Vorlagen die
  * Zeilen der Vorschlagsliste bauen und markieren, was doppelt sein könnte.
  *
- * <p>Die Leitlinie steht in jeder Verzweigung: im Zweifel nicht erkennen. Zwei Vorlagen, die sich
- * widersprechen, ergeben keine Buchung zum Aussuchen, sondern eine Zeile „nicht erkannt".</p>
+ * <p>Die Leitlinie: im Zweifel eine Zeile <b>mit Hinweis zeigen</b>, nicht unterdrücken — eine
+ * überzählige Buchung ist schnell gelöscht, eine fehlende fällt oft erst beim Abgleich auf. Gebucht
+ * wird nur, was der Nutzer bestätigt. Zwei Vorlagen, die sich widersprechen, ergeben deshalb keine
+ * geratene Buchung, sondern eine Zeile „nicht erkannt", die er von Hand buchen kann.</p>
  */
 public final class NotificationRun {
 
@@ -159,30 +159,31 @@ public final class NotificationRun {
     }
 
     /**
-     * Markiert Zeilen, die dieselbe Meldung ein zweites Mal sind.
+     * Markiert Zeilen, die dieselbe Meldung ein zweites Mal sein könnten. Markiert — entfernt wird
+     * nichts; der Nutzer sieht beide Zeilen und entscheidet.
      *
-     * <p>Zwei Fälle. Gleicher Schlüssel: die App hat ihre Meldung aktualisiert („vorgemerkt", dann
-     * „gebucht") — alle Fassungen außer der jüngsten. Und gleiche App, gleicher Betrag, gleicher
+     * <p>Zwei Fälle. Eine Aktualisierung derselben Meldung ({@link MessageUpdate}: gleicher Schlüssel,
+     * gleicher Betrag, wenige Minuten): die ältere Fassung. Und gleiche App, gleicher Betrag, gleicher
      * Empfänger am selben Tag: dann ist es entweder dieselbe Meldung unter neuem Schlüssel oder
-     * wirklich ein zweiter Einkauf; das weiß nur der Nutzer, also wird die spätere markiert und nicht
-     * entfernt.</p>
+     * wirklich ein zweiter Einkauf; das weiß nur der Nutzer, also wird die spätere markiert.</p>
+     *
+     * <p>Gleicher Schlüssel allein ist kein Grund: viele Bank-Apps posten jede Zahlung unter derselben
+     * festen ID.</p>
      */
     public static void markBufferDuplicates(List<NotificationDraft> drafts, ZoneId zone) {
-        Map<String, NotificationDraft> latestByKey = new HashMap<>();
         for (NotificationDraft d : drafts) {
             d.dupBuffer = false;
-            NotificationDraft seen = latestByKey.get(d.packageName + '\u001F' + d.key);
-            if (seen == null || d.postTime >= seen.postTime) {
-                latestByKey.put(d.packageName + '\u001F' + d.key, d);
+            for (NotificationDraft o : drafts) {
+                if (o != d && MessageUpdate.isUpdate(d, o)
+                        && MessageUpdate.newer(o.postTime, o.entryId, d.postTime, d.entryId)) {
+                    d.dupBuffer = true;   // es gibt eine jüngere Fassung derselben Meldung
+                    break;
+                }
             }
         }
         Set<String> seenContent = new HashSet<>();
         for (NotificationDraft d : drafts) {
-            if (latestByKey.get(d.packageName + '\u001F' + d.key) != d) {
-                d.dupBuffer = true;
-                continue;
-            }
-            if (d.cents <= 0) {
+            if (d.dupBuffer || d.cents <= 0) {
                 continue;
             }
             LocalDate day = Instant.ofEpochMilli(d.dateMillis).atZone(zone).toLocalDate();
