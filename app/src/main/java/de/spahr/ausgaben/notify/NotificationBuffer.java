@@ -31,6 +31,17 @@ public final class NotificationBuffer extends SQLiteOpenHelper {
     /** So lange bleibt eine Meldung, deren App keine Vorlage hat — Zeit genug, die Buchung anzulegen. */
     public static final long UNKNOWN_TTL_MS = 24L * 60 * 60 * 1000;
 
+    /**
+     * So lange wartet eine Meldung, deren App Regeln hat, auf den Durchlauf ihres Profils — danach gilt
+     * das Profil als fertig, auch ohne Durchlauf.
+     *
+     * <p>Ohne Frist wüchse der Puffer für ein Profil, das niemand mehr aktualisiert, ohne Ende, mit
+     * beliebig alten Rohtexten. Großzügig bemessen, weil eine verfallene Meldung eine Buchung kostet,
+     * die niemand vermisst, bis der Abgleich nicht aufgeht: 30 Tage reichen auch für ein Profil, das
+     * man nur zum Monatsabschluss öffnet.</p>
+     */
+    public static final long KNOWN_TTL_MS = 30L * 24 * 60 * 60 * 1000;
+
     private static NotificationBuffer instance;
 
     /** Eine aufgehobene Benachrichtigung. */
@@ -190,10 +201,11 @@ public final class NotificationBuffer extends SQLiteOpenHelper {
      * Löscht, was kein Profil mehr braucht — die einzige Stelle, die über das Löschen entscheidet.
      *
      * <p><b>Beteiligt</b> an einer Meldung ist jedes Profil, das ihre App freigegeben hat. <b>Fertig</b>
-     * ist ein Profil, wenn es die Meldung erledigt hat ({@link #markDone}) — oder wenn es für die App
-     * keine Regel hat und die Meldung älter als {@link #UNKNOWN_TTL_MS} ist: dann hatte es einen Tag
-     * Zeit, die Buchung dazu anzulegen, und wird sie in keiner Liste je sehen. Gelöscht wird, wenn
-     * alle Beteiligten fertig sind; ohne Beteiligte sofort.</p>
+     * ist ein Profil, wenn es die Meldung erledigt hat ({@link #markDone}) — oder wenn sie älter ist
+     * als seine Frist. Hat es für die App keine Regel, sind das {@link #UNKNOWN_TTL_MS}: einen Tag
+     * Zeit, die Buchung dazu anzulegen, danach sähe es die Meldung in keiner Liste je. Hat es Regeln,
+     * sind es {@link #KNOWN_TTL_MS}. Gelöscht wird, wenn alle Beteiligten fertig sind; ohne
+     * Beteiligte sofort.</p>
      *
      * @param allowedByProfile Profil → freigegebene Apps
      * @param knownByProfile   Profil → Apps, für die es Regeln hat
@@ -226,8 +238,8 @@ public final class NotificationBuffer extends SQLiteOpenHelper {
                 }
                 Set<String> known = knownByProfile.get(profile.getKey());
                 boolean hasRules = known != null && known.contains(e.packageName);
-                if (!hasRules && e.postTime < now - UNKNOWN_TTL_MS) {
-                    continue;
+                if (e.postTime < now - (hasRules ? KNOWN_TTL_MS : UNKNOWN_TTL_MS)) {
+                    continue;   // Frist dieses Profils abgelaufen
                 }
                 needed = true;
                 break;

@@ -176,6 +176,34 @@ public class NotificationBufferTest {
         assertEquals(0, buffer.purge(JETZT, frei, frei));
     }
 
+    /** Mit Regel wartet die Meldung großzügig: 29 Tage alt bleibt sie … */
+    @Test
+    public void mitRegelBleibtSie29Tage() {
+        add("de.bank", JETZT - 29 * TAG, "alt");
+        Map<String, Set<String>> frei = profile("a", "de.bank");
+        assertEquals(0, buffer.purge(JETZT, frei, frei));
+        assertEquals(1, buffer.all().size());
+    }
+
+    /** … nach 30 Tagen gilt auch ein Profil mit Regel als fertig, das nie aktualisiert wurde. */
+    @Test
+    public void mitRegelVerfaelltSieNach30Tagen() {
+        add("de.bank", JETZT - 31 * TAG, "uralt");
+        add("de.bank", JETZT - 29 * TAG, "alt");
+        Map<String, Set<String>> frei = profile("a", "de.bank");
+        assertEquals(1, buffer.purge(JETZT, frei, frei));
+        assertEquals("alt", buffer.all().get(0).key);
+    }
+
+    /** Für eine App ohne Regel bleibt es bei einem Tag. */
+    @Test
+    public void ohneRegelBleibtEsBeiEinemTag() {
+        add("de.bank", JETZT - TAG - 1, "alt");
+        Map<String, Set<String>> frei = profile("a", "de.bank");
+        assertEquals(1, buffer.purge(JETZT, frei, profile("a", "")));
+        assertTrue(buffer.all().isEmpty());
+    }
+
     /** Der Verfall gilt je Profil: B hat eine Regel und hält die Meldung, auch wenn sie für A alt ist. */
     @Test
     public void verfallGiltJeProfil() {
