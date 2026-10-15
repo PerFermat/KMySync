@@ -198,4 +198,14 @@ public class NotificationMatcherTest {
     public void leererPuffer() {
         assertTrue(suche(new ArrayList<NotificationBuffer.Entry>(), 1234L, "Rewe").isEmpty());
     }
+
+    /** Mit dem Zahlenformat des Profils findet die Buchung über 1.234,00 auch „1.234 €". */
+    @Test
+    public void ganzzahligerBetragNachZahlenformat() {
+        List<NotificationBuffer.Entry> buffer = Arrays.asList(
+                meldung("de.bank", HEUTE, "Sie haben 1.234 € bei Media Markt bezahlt", "a"));
+        assertTrue(suche(buffer, 123400L, "").isEmpty());
+        assertEquals(1, NotificationMatcher.match(buffer, 123400L, HEUTE, "", UTC,
+                de.spahr.ausgaben.statement.MoneyStyle.forNumberFormat("de_group")).size());
+    }
 }

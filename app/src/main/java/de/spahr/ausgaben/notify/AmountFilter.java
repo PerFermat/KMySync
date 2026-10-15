@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+import de.spahr.ausgaben.statement.MoneyStyle;
 import de.spahr.ausgaben.statement.NotificationSource;
 import de.spahr.ausgaben.util.Currencies;
 import de.spahr.ausgaben.util.TextValues;
@@ -16,6 +17,10 @@ import de.spahr.ausgaben.util.TextValues;
  * daran oder daneben. Eines allein genügt nicht. „Akku bei 12,50 %" ist keine Buchung, „Noch 3 €
  * Guthaben" keine Zahl mit Komma. Was hier durchfällt, sieht die App nie wieder; die Schwelle ist
  * deshalb der Datenschutz dieser Funktion und nicht bloß ein Vorfilter.</p>
+ *
+ * <p>Ohne Nachkommastellen („12 €", „1.234 €") geht ein Betrag nur durch, wenn ein Zahlenformat
+ * ({@link MoneyStyle}) mitgegeben wird — das des Profils, für das die Meldung bestimmt ist. Ohne eines
+ * gilt die strenge Schwelle.</p>
  *
  * <p>Die Währung ist nicht auf die eigene beschränkt: ein Umsatz in Dollar soll im Puffer landen und
  * später als Fremdwährung auffallen, statt gar nicht erst gesehen zu werden.</p>
@@ -29,7 +34,12 @@ public final class AmountFilter {
     }
 
     public static boolean hasAmount(String title, String text) {
-        return hasAmount(title) || hasAmount(text);
+        return hasAmount(title, text, MoneyStyle.STRICT);
+    }
+
+    /** Wie {@link #hasAmount(String, String)}, mit Ganzzahlen nach dem Zahlenformat {@code style}. */
+    public static boolean hasAmount(String title, String text, MoneyStyle style) {
+        return !amounts(title, text, style).isEmpty();
     }
 
     public static boolean hasAmount(String raw) {
@@ -38,15 +48,27 @@ public final class AmountFilter {
 
     /** Alle Beträge aus Titel und Text, in Cent und ohne Vorzeichen. */
     public static List<Long> amounts(String title, String text) {
-        List<Long> out = amounts(title);
-        out.addAll(amounts(text));
+        return amounts(title, text, MoneyStyle.STRICT);
+    }
+
+    public static List<Long> amounts(String title, String text, MoneyStyle style) {
+        List<Long> out = amounts(title, style);
+        out.addAll(amounts(text, style));
         return out;
     }
 
     /** Alle Beträge des Texts — jede Zahl mit Nachkommastellen, an oder neben der eine Währung steht. */
     public static List<Long> amounts(String raw) {
+        return amounts(raw, MoneyStyle.STRICT);
+    }
+
+    /**
+     * Wie {@link #amounts(String)}; dazu ganzzahlige Beträge, wie das Zahlenformat {@code style} sie
+     * schreibt („12 €", „1.234 €") — {@link MoneyStyle#canonical} bringt sie vorher in eindeutige Form.
+     */
+    public static List<Long> amounts(String raw, MoneyStyle style) {
         List<Long> out = new ArrayList<>();
-        for (String line : NotificationSource.normalize(raw).split("\n")) {
+        for (String line : style.canonical(NotificationSource.normalize(raw)).split("\n")) {
             String[] tokens = words(line);
             for (int i = 0; i < tokens.length; i++) {
                 if (!isMoney(tokens[i])) {
@@ -67,8 +89,12 @@ public final class AmountFilter {
      * Meldung in fremder Währung spricht.
      */
     public static List<String> currencies(String raw) {
+        return currencies(raw, MoneyStyle.STRICT);
+    }
+
+    public static List<String> currencies(String raw, MoneyStyle style) {
         List<String> out = new ArrayList<>();
-        for (String line : NotificationSource.normalize(raw).split("\n")) {
+        for (String line : style.canonical(NotificationSource.normalize(raw)).split("\n")) {
             String[] tokens = words(line);
             for (int i = 0; i < tokens.length; i++) {
                 if (!isMoney(tokens[i])) {

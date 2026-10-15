@@ -916,6 +916,24 @@ public class SettingsStore {
         return out;
     }
 
+    /**
+     * Das Zahlenformat je Profil (Profilkennung → {@code NUMBER_FORMAT_*}); Profile ohne eigenen Eintrag
+     * fehlen und gelten wie die Vorgabe. Für den Benachrichtigungsdienst, der kein Profil kennt und
+     * trotzdem wissen muss, wie die Profile Beträge schreiben.
+     */
+    public static java.util.Map<String, String> numberFormatsByProfile(Context context) {
+        java.util.Map<String, String> out = new java.util.HashMap<>();
+        String suffix = "_" + KEY_NUMBER_FORMAT;
+        for (java.util.Map.Entry<String, ?> e : context.getApplicationContext()
+                .getSharedPreferences(PREFS, Context.MODE_PRIVATE).getAll().entrySet()) {
+            String key = e.getKey();
+            if (key.startsWith("p_") && key.endsWith(suffix) && e.getValue() instanceof String) {
+                out.put(key.substring(2, key.length() - suffix.length()), (String) e.getValue());
+            }
+        }
+        return out;
+    }
+
     private static String notifyAppsKey(String profileId) {
         return "p_" + profileId + "_" + KEY_NOTIFY_APPS;
     }

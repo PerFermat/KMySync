@@ -282,7 +282,8 @@ public class NotificationRulesActivity extends LocalizedActivity {
             textResult.setText(R.string.notify_rules_invalid);
             return;
         }
-        NotificationSource source = new NotificationSource(packageName, 0L, title, text);
+        NotificationSource source = new NotificationSource(packageName, 0L, title, text,
+                NotificationRunner.styleOf(this));
         Long cents = t.amountRule.readCents(source.text());
         String account = t.account;
         StringBuilder b = new StringBuilder();

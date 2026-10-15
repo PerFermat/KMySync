@@ -165,7 +165,8 @@ public class NotificationBatchActivity extends LocalizedActivity {
 
     private void render() {
         // Vor jeder Anzeige neu: Bearbeiten und Entfernen können eine Doppelung schaffen oder auflösen.
-        NotificationRun.markBufferDuplicates(drafts, java.time.ZoneId.systemDefault());
+        NotificationRun.markBufferDuplicates(drafts, java.time.ZoneId.systemDefault(),
+                NotificationRunner.styleOf(this));
         container.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(this);
         boolean blocked = false;

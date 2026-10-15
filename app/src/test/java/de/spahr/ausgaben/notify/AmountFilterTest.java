@@ -96,4 +96,27 @@ public class AmountFilterTest {
         assertFalse(AmountFilter.hasAmount(null, null));
         assertFalse(AmountFilter.hasAmount("", ""));
     }
+
+    // ---- ohne Nachkommastellen, nach Zahlenformat ----
+
+    private static final de.spahr.ausgaben.statement.MoneyStyle DE =
+            de.spahr.ausgaben.statement.MoneyStyle.forNumberFormat("de_group");
+
+    @Test
+    public void ganzzahlenNurMitZahlenformat() {
+        assertFalse(AmountFilter.hasAmount("Zahlung über 12 € bei REWE"));
+        assertEquals(java.util.Collections.singletonList(1200L),
+                AmountFilter.amounts("Zahlung über 12 € bei REWE", DE));
+        assertEquals(java.util.Collections.singletonList(123400L),
+                AmountFilter.amounts("1.234 € abgebucht", DE));
+        assertEquals(java.util.Collections.singletonList(123400L), AmountFilter.amounts("1,234 € paid",
+                de.spahr.ausgaben.statement.MoneyStyle.forNumberFormat("en_group")));
+        assertEquals(java.util.Collections.singletonList("EUR"), AmountFilter.currencies("12 € bei REWE", DE));
+    }
+
+    /** Auch mit Zahlenformat: ohne Währung keine Geldangabe. */
+    @Test
+    public void ganzzahlOhneWaehrungAuchMitZahlenformatNicht() {
+        assertFalse(AmountFilter.hasAmount("Termin", "um 12 Uhr, PIN 1234", DE));
+    }
 }

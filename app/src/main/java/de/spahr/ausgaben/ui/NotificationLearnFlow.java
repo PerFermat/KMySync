@@ -119,13 +119,14 @@ final class NotificationLearnFlow {
                         NotificationBuffer.get(activity).allFor(
                                 de.spahr.ausgaben.notify.NotificationRunner.profileOf(activity)),
                         de.spahr.ausgaben.notify.AppSelection.allowed(activity)),
-                b.amountCents, b.createdAt, payee, ZoneId.systemDefault()));
+                b.amountCents, b.createdAt, payee, ZoneId.systemDefault(),
+                de.spahr.ausgaben.notify.NotificationRunner.styleOf(activity)));
         if (found.isEmpty()) {
             return found;
         }
         List<NotificationTemplate> templates = repository.notificationTemplates().all();
         for (Iterator<NotificationBuffer.Entry> it = found.iterator(); it.hasNext(); ) {
-            NotificationSource source = sourceOf(it.next());
+            NotificationSource source = sourceOf(activity, it.next());
             for (NotificationTemplate t : templates) {
                 NotificationTemplate.Hit hit = t.account.equals(account) ? t.apply(source) : null;
                 if (hit != null && hit.cents == b.amountCents) {
@@ -137,8 +138,10 @@ final class NotificationLearnFlow {
         return found;
     }
 
-    private static NotificationSource sourceOf(NotificationBuffer.Entry e) {
-        return new NotificationSource(e.packageName, e.postTime, e.title, e.text);
+    private static NotificationSource sourceOf(android.content.Context context,
+                                               NotificationBuffer.Entry e) {
+        return new NotificationSource(e.packageName, e.postTime, e.title, e.text,
+                de.spahr.ausgaben.notify.NotificationRunner.styleOf(context));
     }
 
     /** Baut den Dialog zu {@code key}; {@code null}, wenn der Schlüssel nicht hierher gehört. */
@@ -211,7 +214,7 @@ final class NotificationLearnFlow {
         repository.runInBackground(() -> {
             boolean learned = false;
             try {
-                NotificationTemplate template = NotificationLearner.learn(sourceOf(entry), cents,
+                NotificationTemplate template = NotificationLearner.learn(sourceOf(activity, entry), cents,
                         isIncome, payee, account);
                 if (template != null) {
                     repository.notificationTemplates().save(template);

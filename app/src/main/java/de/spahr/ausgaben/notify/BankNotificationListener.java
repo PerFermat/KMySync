@@ -97,8 +97,9 @@ public class BankNotificationListener extends NotificationListenerService {
     }
 
     /**
-     * Liest eine Meldung; {@code null}, wenn sie nicht in Frage kommt: die eigene, die Sammelzeile einer
-     * Gruppe (sie wiederholt nur ihre Einzelmeldungen) oder eine ohne Geldbetrag.
+     * Liest eine Meldung; {@code null}, wenn sie nicht in Frage kommt: die eigene oder die Sammelzeile
+     * einer Gruppe (sie wiederholt nur ihre Einzelmeldungen). Ob sie einen Betrag nennt, entscheidet
+     * erst {@link #keep} — dort steht fest, welches Zahlenformat gilt.
      */
     static Captured read(StatusBarNotification sbn, String ownPackage) {
         if (sbn == null || ownPackage.equals(sbn.getPackageName())) {
@@ -112,7 +113,7 @@ public class BankNotificationListener extends NotificationListenerService {
         String title = text(extras.getCharSequence(Notification.EXTRA_TITLE));
         String big = text(extras.getCharSequence(Notification.EXTRA_BIG_TEXT));
         String body = big.isEmpty() ? text(extras.getCharSequence(Notification.EXTRA_TEXT)) : big;
-        if (!AmountFilter.hasAmount(title, body)) {
+        if (title.trim().isEmpty() && body.trim().isEmpty()) {
             return null;
         }
         return new Captured(sbn.getPackageName(), sbn.getPostTime(), title, body, sbn.getKey());
@@ -130,10 +131,38 @@ public class BankNotificationListener extends NotificationListenerService {
             return -1;
         }
         if (!AppSelection.isAllowedAnywhere(context, c.packageName)) {
-            AppSelection.noteSeen(context, c.packageName);
+            // Nicht freigegeben: nur der Name, und nur mit der strengen Schwelle – sonst böte sich jede
+            // App an, die „Noch 3 € Guthaben" meldet.
+            if (AmountFilter.hasAmount(c.title, c.text)) {
+                AppSelection.noteSeen(context, c.packageName);
+            }
+            return -1;
+        }
+        if (!hasAmountForAnyProfile(context, c)) {
             return -1;
         }
         return NotificationBuffer.get(context).add(c.packageName, c.postTime, c.title, c.text, c.key);
+    }
+
+    /**
+     * Ob die Meldung einen Betrag nennt — mit Nachkommastellen immer, ohne sie nach dem Zahlenformat
+     * eines der Profile, die die App freigegeben haben. Welches Profil die Meldung später liest, weiß
+     * der Dienst nicht; aufgehoben wird, was für irgendeines davon ein Betrag ist.
+     */
+    static boolean hasAmountForAnyProfile(Context context, Captured c) {
+        if (AmountFilter.hasAmount(c.title, c.text)) {
+            return true;
+        }
+        java.util.Map<String, String> formats = SettingsStore.numberFormatsByProfile(context);
+        for (java.util.Map.Entry<String, Set<String>> profile
+                : SettingsStore.notifyAppsByProfile(context).entrySet()) {
+            if (profile.getValue().contains(c.packageName) && AmountFilter.hasAmount(c.title, c.text,
+                    de.spahr.ausgaben.statement.MoneyStyle.forNumberFormat(
+                            formats.get(profile.getKey())))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -144,7 +173,7 @@ public class BankNotificationListener extends NotificationListenerService {
     public static void scanSeen(Context context) {
         for (StatusBarNotification sbn : active(context)) {
             Captured c = read(sbn, context.getPackageName());
-            if (c != null) {
+            if (c != null && AmountFilter.hasAmount(c.title, c.text)) {
                 AppSelection.noteSeen(context, c.packageName);
             }
         }

@@ -16,9 +16,19 @@ public final class NotificationSource implements TextSource {
     private final PdfText text;
 
     public NotificationSource(String packageName, long postTime, String title, String body) {
+        this(packageName, postTime, title, body, MoneyStyle.STRICT);
+    }
+
+    /**
+     * @param style das Zahlenformat des Profils: ganzzahlige Beträge („1.234 €") werden in die
+     *              eindeutige Form gebracht, bevor die Erkennung sie liest
+     */
+    public NotificationSource(String packageName, long postTime, String title, String body,
+                              MoneyStyle style) {
         this.packageName = packageName == null ? "" : packageName;
         this.postTime = postTime;
-        this.text = PdfText.fromLines(normalize(title) + "\n" + normalize(body));
+        this.text = PdfText.fromLines(style.canonical(normalize(title)) + "\n"
+                + style.canonical(normalize(body)));
     }
 
     @Override

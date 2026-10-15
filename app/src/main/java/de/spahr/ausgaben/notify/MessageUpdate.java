@@ -45,14 +45,16 @@ public final class MessageUpdate {
         return false;
     }
 
-    static boolean isUpdate(NotificationBuffer.Entry a, NotificationBuffer.Entry b) {
-        return isUpdate(a.packageName, a.key, a.postTime, AmountFilter.amounts(a.title, a.text),
-                b.packageName, b.key, b.postTime, AmountFilter.amounts(b.title, b.text));
+    static boolean isUpdate(NotificationBuffer.Entry a, NotificationBuffer.Entry b,
+                            de.spahr.ausgaben.statement.MoneyStyle style) {
+        return isUpdate(a.packageName, a.key, a.postTime, AmountFilter.amounts(a.title, a.text, style),
+                b.packageName, b.key, b.postTime, AmountFilter.amounts(b.title, b.text, style));
     }
 
-    static boolean isUpdate(NotificationDraft a, NotificationDraft b) {
-        return isUpdate(a.packageName, a.key, a.postTime, AmountFilter.amounts(a.title, a.text),
-                b.packageName, b.key, b.postTime, AmountFilter.amounts(b.title, b.text));
+    static boolean isUpdate(NotificationDraft a, NotificationDraft b,
+                            de.spahr.ausgaben.statement.MoneyStyle style) {
+        return isUpdate(a.packageName, a.key, a.postTime, AmountFilter.amounts(a.title, a.text, style),
+                b.packageName, b.key, b.postTime, AmountFilter.amounts(b.title, b.text, style));
     }
 
     /** Ob {@code b} die jüngere Fassung ist; bei gleicher Zeit gilt die später aufgehobene. */

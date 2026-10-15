@@ -86,9 +86,43 @@ public class BankNotificationCaptureTest {
         assertEquals("Sie haben 12,34 € bei REWE bezahlt.", c.text);
     }
 
+    /** Ohne Betrag wird nichts aufgehoben – und eine nicht freigegebene App bietet sich nicht an. */
     @Test
-    public void ohneBetragWirdNichtsGelesen() {
-        assertNull(lesen(meldung(BANK, "Hinweis", "Ihre neue PIN ist unterwegs.", null, 0, 5L)));
+    public void ohneBetragWirdNichtsAufgehoben() {
+        BankNotificationListener.Captured c =
+                lesen(meldung(BANK, "Hinweis", "Ihre neue PIN ist unterwegs.", null, 0, 5L));
+        assertEquals(-1L, BankNotificationListener.keep(ctx, c, null));
+        assertFalse(AppSelection.candidates(ctx).contains(BANK));
+        AppSelection.setAllowed(ctx, Collections.singletonList(BANK));
+        assertEquals(-1L, BankNotificationListener.keep(ctx, c, null));
+        assertTrue(buffer.all().isEmpty());
+    }
+
+    // ---- Beträge ohne Nachkommastellen ----
+
+    private void zahlenformat(String format) {
+        ctx.getSharedPreferences("ausgaben_settings", Context.MODE_PRIVATE).edit()
+                .putString("p_" + new ProfileManager(ctx).getActiveProfileId() + "_number_format", format)
+                .commit();
+    }
+
+    /** Freigegeben, Profil schreibt „1.234,56": „1.234 €" ist ein Betrag und wird aufgehoben. */
+    @Test
+    public void ganzzahlMitTausenderpunktNachZahlenformatDesProfils() {
+        zahlenformat("de_group");
+        AppSelection.setAllowed(ctx, Collections.singletonList(BANK));
+        assertTrue(BankNotificationListener.keep(ctx, lesen(meldung(BANK, "Neuer Umsatz",
+                "Sie haben 1.234 € bei Media Markt bezahlt.", null, 0, System.currentTimeMillis())),
+                null) > 0);
+    }
+
+    /** Nicht freigegeben: dort bleibt die strenge Schwelle – „Noch 3 € Guthaben" bietet keine App an. */
+    @Test
+    public void nichtFreigegebeneAppBrauchtNachkommastellen() {
+        zahlenformat("de_group");
+        assertEquals(-1L, BankNotificationListener.keep(ctx, lesen(meldung("de.shop", "Konto",
+                "Noch 3 € Guthaben", null, 0, 5L)), null));
+        assertFalse(AppSelection.candidates(ctx).contains("de.shop"));
     }
 
     /** Die Sammelzeile einer Gruppe wiederholt nur ihre Einzelmeldungen. */

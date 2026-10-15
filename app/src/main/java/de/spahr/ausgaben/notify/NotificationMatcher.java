@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import de.spahr.ausgaben.statement.MoneyStyle;
 import de.spahr.ausgaben.util.PayeeMatch;
 
 /**
@@ -41,12 +42,19 @@ public final class NotificationMatcher {
     public static List<NotificationBuffer.Entry> match(List<NotificationBuffer.Entry> buffer,
                                                        long cents, long bookingMillis, String payee,
                                                        ZoneId zone) {
+        return match(buffer, cents, bookingMillis, payee, zone, MoneyStyle.STRICT);
+    }
+
+    /** @param style das Zahlenformat des Profils, für Beträge ohne Nachkommastellen in der Meldung */
+    public static List<NotificationBuffer.Entry> match(List<NotificationBuffer.Entry> buffer,
+                                                       long cents, long bookingMillis, String payee,
+                                                       ZoneId zone, MoneyStyle style) {
         long amount = Math.abs(cents);
         LocalDate day = dayOf(bookingMillis, zone);
         Map<String, List<NotificationBuffer.Entry>> byApp = new LinkedHashMap<>();
         for (NotificationBuffer.Entry e : buffer) {
             if (Math.abs(ChronoUnit.DAYS.between(day, dayOf(e.postTime, zone))) > MAX_DAYS
-                    || !AmountFilter.amounts(e.title, e.text).contains(amount)) {
+                    || !AmountFilter.amounts(e.title, e.text, style).contains(amount)) {
                 continue;
             }
             List<NotificationBuffer.Entry> list = byApp.get(e.packageName);
@@ -58,7 +66,7 @@ public final class NotificationMatcher {
         }
         List<NotificationBuffer.Entry> out = new ArrayList<>();
         for (List<NotificationBuffer.Entry> candidates : byApp.values()) {
-            out.addAll(pick(withoutOlderVersions(candidates), payee));
+            out.addAll(pick(withoutOlderVersions(candidates, style), payee));
         }
         return out;
     }
@@ -69,12 +77,12 @@ public final class NotificationMatcher {
      * Schlüssel, denn viele Apps posten jede Zahlung unter derselben festen ID.
      */
     private static List<NotificationBuffer.Entry> withoutOlderVersions(
-            List<NotificationBuffer.Entry> entries) {
+            List<NotificationBuffer.Entry> entries, MoneyStyle style) {
         List<NotificationBuffer.Entry> out = new ArrayList<>();
         for (NotificationBuffer.Entry e : entries) {
             boolean superseded = false;
             for (NotificationBuffer.Entry o : entries) {
-                if (o != e && MessageUpdate.isUpdate(e, o)
+                if (o != e && MessageUpdate.isUpdate(e, o, style)
                         && MessageUpdate.newer(o.postTime, o.id, e.postTime, e.id)) {
                     superseded = true;
                     break;

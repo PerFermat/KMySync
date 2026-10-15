@@ -43,7 +43,7 @@ public final class NotificationRunner {
         ArrayList<NotificationDraft> drafts = NotificationRun.drafts(
                 NotificationRun.ofApps(NotificationBuffer.get(context).allFor(profileOf(context)),
                         AppSelection.allowed(context)),
-                templates, Currencies::forAccount, ZoneId.systemDefault());
+                templates, Currencies::forAccount, ZoneId.systemDefault(), styleOf(context));
         if (drafts.isEmpty()) {
             return drafts;
         }
@@ -100,9 +100,10 @@ public final class NotificationRunner {
      */
     public static int complete(Context context, Repository repository,
                                List<NotificationDraft> remaining, long[] shownIds) {
+        final de.spahr.ausgaben.statement.MoneyStyle style = styleOf(context);
         return complete(context, repository, remaining, shownIds, d -> {
             NotificationTemplate t = NotificationLearner.learn(
-                    new NotificationSource(d.packageName, d.postTime, d.title, d.text),
+                    new NotificationSource(d.packageName, d.postTime, d.title, d.text, style),
                     d.cents, d.isIncome, d.payee, d.account);
             if (t != null) {
                 repository.notificationTemplates().save(t);
@@ -214,6 +215,12 @@ public final class NotificationRunner {
         } catch (RuntimeException e) {
             return "";
         }
+    }
+
+    /** Wie das aktive Profil Beträge schreibt — für Beträge ohne Nachkommastellen in Meldungen. */
+    public static de.spahr.ausgaben.statement.MoneyStyle styleOf(Context context) {
+        return de.spahr.ausgaben.statement.MoneyStyle.forNumberFormat(
+                new de.spahr.ausgaben.settings.SettingsStore(context).getNumberFormat());
     }
 
     public static String profileOf(Context context) {

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import de.spahr.ausgaben.statement.MoneyStyle;
 import de.spahr.ausgaben.statement.NotificationSource;
 import de.spahr.ausgaben.statement.NotificationTemplate;
 
@@ -38,6 +39,14 @@ public final class NotificationRun {
     public static ArrayList<NotificationDraft> drafts(List<NotificationBuffer.Entry> buffer,
                                                       List<NotificationTemplate> templates,
                                                       AccountCurrency currencies, ZoneId zone) {
+        return drafts(buffer, templates, currencies, zone, MoneyStyle.STRICT);
+    }
+
+    /** @param style das Zahlenformat des Profils, für Beträge ohne Nachkommastellen */
+    public static ArrayList<NotificationDraft> drafts(List<NotificationBuffer.Entry> buffer,
+                                                      List<NotificationTemplate> templates,
+                                                      AccountCurrency currencies, ZoneId zone,
+                                                      MoneyStyle style) {
         ArrayList<NotificationDraft> out = new ArrayList<>();
         for (NotificationBuffer.Entry e : buffer) {
             List<NotificationTemplate> ofApp = new ArrayList<>();
@@ -49,9 +58,9 @@ public final class NotificationRun {
             if (ofApp.isEmpty()) {
                 continue;
             }
-            out.add(draft(e, ofApp, currencies));
+            out.add(draft(e, ofApp, currencies, style));
         }
-        markBufferDuplicates(out, zone);
+        markBufferDuplicates(out, zone, style);
         return out;
     }
 
@@ -68,7 +77,7 @@ public final class NotificationRun {
     }
 
     private static NotificationDraft draft(NotificationBuffer.Entry e, List<NotificationTemplate> ofApp,
-                                           AccountCurrency currencies) {
+                                           AccountCurrency currencies, MoneyStyle style) {
         NotificationDraft d = new NotificationDraft();
         d.entryId = e.id;
         d.packageName = e.packageName;
@@ -79,7 +88,8 @@ public final class NotificationRun {
         d.coords = e.coords;
         d.dateMillis = e.postTime;
 
-        NotificationSource source = new NotificationSource(e.packageName, e.postTime, e.title, e.text);
+        NotificationSource source = new NotificationSource(e.packageName, e.postTime, e.title, e.text,
+                style);
         List<NotificationTemplate.Hit> hits = new ArrayList<>();
         for (NotificationTemplate t : ofApp) {
             NotificationTemplate.Hit hit = t.apply(source);
@@ -104,10 +114,11 @@ public final class NotificationRun {
                 accounts.add(t.account);
             }
             d.account = accounts.size() == 1 ? accounts.iterator().next() : "";
-            List<Long> amounts = AmountFilter.amounts(e.title, e.text);
+            List<Long> amounts = AmountFilter.amounts(e.title, e.text, style);
             d.cents = amounts.size() == 1 ? amounts.get(0) : 0;
         }
-        d.foreignCurrency = foreignCurrency(e, d.account.isEmpty() ? "" : currencies.of(d.account));
+        d.foreignCurrency = foreignCurrency(e, d.account.isEmpty() ? "" : currencies.of(d.account),
+                style);
         return d;
     }
 
@@ -146,11 +157,16 @@ public final class NotificationRun {
 
     /** Das Kürzel einer Währung in der Meldung, die nicht die des Kontos ist; leer, wenn keine. */
     static String foreignCurrency(NotificationBuffer.Entry e, String accountCurrency) {
+        return foreignCurrency(e, accountCurrency, MoneyStyle.STRICT);
+    }
+
+    static String foreignCurrency(NotificationBuffer.Entry e, String accountCurrency,
+                                  MoneyStyle style) {
         String own = AmountFilter.iso(accountCurrency);
         if (own.isEmpty()) {
             return "";
         }
-        for (String found : AmountFilter.currencies(e.title + "\n" + e.text)) {
+        for (String found : AmountFilter.currencies(e.title + "\n" + e.text, style)) {
             if (!found.equals(own)) {
                 return found;
             }
@@ -171,10 +187,15 @@ public final class NotificationRun {
      * festen ID.</p>
      */
     public static void markBufferDuplicates(List<NotificationDraft> drafts, ZoneId zone) {
+        markBufferDuplicates(drafts, zone, MoneyStyle.STRICT);
+    }
+
+    public static void markBufferDuplicates(List<NotificationDraft> drafts, ZoneId zone,
+                                            MoneyStyle style) {
         for (NotificationDraft d : drafts) {
             d.dupBuffer = false;
             for (NotificationDraft o : drafts) {
-                if (o != d && MessageUpdate.isUpdate(d, o)
+                if (o != d && MessageUpdate.isUpdate(d, o, style)
                         && MessageUpdate.newer(o.postTime, o.entryId, d.postTime, d.entryId)) {
                     d.dupBuffer = true;   // es gibt eine jüngere Fassung derselben Meldung
                     break;
