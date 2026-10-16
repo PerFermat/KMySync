@@ -13,8 +13,10 @@ import java.util.Locale;
 
 /**
  * Hält den zuletzt bekannten Standort, um ihn (nur als Koordinaten) an Buchungsnotizen anzuhängen.
- * Bewusst rein lokal: {@link LocationManager} ohne Google-Play-Dienste, kein Netzwerk, kein externer
- * Geocoder – die Koordinaten verlassen das Gerät nicht.
+ * Die Ermittlung ist bewusst rein lokal: {@link LocationManager} ohne Google-Play-Dienste, kein
+ * Netzwerk, kein externer Geocoder. Weiter als in die Notiz gehen die Koordinaten nicht – mit ihr
+ * landen sie beim Synchronisieren in der eigenen KMyMoney-Datei auf dem Speicher des Nutzers, nie
+ * bei einem Dritten.
  *
  * <p>{@link #start()} beginnt (mit vorhandener Standort-Berechtigung) mit dem Empfang von Updates,
  * {@link #stop()} beendet ihn. {@link #currentCoordinates()} liefert „lat, lon" oder {@code null}, wenn
