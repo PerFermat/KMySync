@@ -1027,6 +1027,7 @@
     <string name="notify_listener_label">Transactions from notifications</string>
     <string name="notify_offer_title">Notification for this transaction</string>
     <string name="notify_offer_message">%1$s reported this transaction:\n\n%2$s\n\nProcess future notifications from this app for the account “%3$s”?</string>
+    <string name="notify_offer_transfer_message">%1$s reported this transfer:\n\n%2$s\n\nProcess future notifications from this app? Choose the account they belong to: “%3$s” (money out) or “%4$s” (money in).</string>
     <string name="notify_offer_pick_title">Which app reported this transaction?</string>
     <string name="notify_offer_yes">Yes, process them</string>
     <string name="notify_offer_no">No</string>

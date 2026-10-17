@@ -48,6 +48,8 @@ final class NotificationLearnFlow {
     private static final String ARG_INCOME = "a_nlIncome";
     private static final String ARG_PAYEE = "a_nlPayee";
     private static final String ARG_ACCOUNT = "a_nlAccount";
+    /** Bei einer Umbuchung das Nach-Konto; {@link #ARG_ACCOUNT} ist dann das Von-Konto. */
+    private static final String ARG_TO_ACCOUNT = "a_nlToAccount";
 
     private NotificationLearnFlow() {
     }
@@ -58,14 +60,15 @@ final class NotificationLearnFlow {
      */
     static void afterSave(final FragmentActivity activity, final Repository repository,
                           final Booking b, final Runnable close) {
-        if (b == null || b.isTransfer || b.amountCents <= 0
+        if (b == null || b.amountCents <= 0
                 || !SettingsStore.isNotifyLearnEnabled(activity)) {
             close.run();
             return;
         }
         final String account = b.account == null ? "" : b.account;
+        final String to = b.isTransfer && b.transferAccount != null ? b.transferAccount : "";
         final String payee = b.payee == null ? "" : b.payee;
-        repository.runInBackground(() -> offers(activity, repository, b, account, payee), found -> {
+        repository.runInBackground(() -> offers(activity, repository, b, account, to, payee), found -> {
             if (activity.isFinishing() || activity.isDestroyed()) {
                 return;
             }
@@ -96,6 +99,7 @@ final class NotificationLearnFlow {
             args.putBoolean(ARG_INCOME, b.isIncome);
             args.putString(ARG_PAYEE, payee);
             args.putString(ARG_ACCOUNT, account);
+            args.putString(ARG_TO_ACCOUNT, to);
             if (found.size() == 1) {
                 args.putInt(ARG_INDEX, 0);
                 HostedDialog.show(activity, DLG_ASK, args);
@@ -107,11 +111,14 @@ final class NotificationLearnFlow {
 
     /**
      * Die Meldungen, aus denen sich etwas lernen ließe: je App höchstens eine, und keine, die eine
-     * Vorlage dieses Kontos schon liest — dann gibt es nichts zu fragen.
+     * Vorlage dieses Kontos schon liest — dann gibt es nichts zu fragen. Bei einer Umbuchung zählen
+     * beide Konten: die Meldung kann von jeder der beiden Seiten kommen.
+     *
+     * @param to bei einer Umbuchung das Nach-Konto, sonst leer
      */
     private static List<NotificationBuffer.Entry> offers(FragmentActivity activity,
                                                          Repository repository, Booking b,
-                                                         String account, String payee) {
+                                                         String account, String to, String payee) {
         // Nur Meldungen von Apps, die dieses Profil freigegeben hat, und die es noch nicht erledigt
         // hat – sonst böte ein Profil an, aus der Bank-Meldung eines anderen zu lernen.
         List<NotificationBuffer.Entry> found = new ArrayList<>(NotificationMatcher.match(
@@ -128,7 +135,8 @@ final class NotificationLearnFlow {
         for (Iterator<NotificationBuffer.Entry> it = found.iterator(); it.hasNext(); ) {
             NotificationSource source = sourceOf(activity, it.next());
             for (NotificationTemplate t : templates) {
-                NotificationTemplate.Hit hit = t.account.equals(account) ? t.apply(source) : null;
+                boolean ours = t.account.equals(account) || (!to.isEmpty() && t.account.equals(to));
+                NotificationTemplate.Hit hit = ours ? t.apply(source) : null;
                 if (hit != null && hit.cents == b.amountCents) {
                     it.remove();
                     break;
@@ -195,14 +203,29 @@ final class NotificationLearnFlow {
         final long id = args.getLongArray(ARG_IDS)[i];
         final long time = args.getLongArray(ARG_TIMES)[i];
         final String account = args.getString(ARG_ACCOUNT, "");
+        final String to = args.getString(ARG_TO_ACCOUNT, "");
         String shown = title.isEmpty() ? text : title + "\n" + text;
+        final NotificationBuffer.Entry entry = new NotificationBuffer.Entry(id, app, time, title, text, "");
+        if (!to.isEmpty()) {
+            // Umbuchung: die Meldung gehört zu einer der beiden Seiten, und nur der Nutzer weiß, zu
+            // welcher. Vom Von-Konto ist es ein Abgang, vom Nach-Konto ein Zugang.
+            return new AppDialog(activity)
+                    .setTitle(R.string.notify_offer_title)
+                    .setMessage(activity.getString(R.string.notify_offer_transfer_message,
+                            appLabel(activity, app), shown, account, to))
+                    .setPositiveButton(account, (d, w) -> learn(activity, repository, entry,
+                            args.getLong(ARG_CENTS), false, args.getString(ARG_PAYEE, ""), account))
+                    .setNeutralButton(to, (d, w) -> learn(activity, repository, entry,
+                            args.getLong(ARG_CENTS), true, args.getString(ARG_PAYEE, ""), to))
+                    .setNegativeButton(R.string.notify_offer_no, (d, w) -> activity.finish())
+                    .create();
+        }
         return new AppDialog(activity)
                 .setTitle(R.string.notify_offer_title)
                 .setMessage(activity.getString(R.string.notify_offer_message,
                         appLabel(activity, app), shown, account))
                 .setPositiveButton(R.string.notify_offer_yes, (d, w) -> learn(activity, repository,
-                        new NotificationBuffer.Entry(id, app, time, title, text, ""),
-                        args.getLong(ARG_CENTS), args.getBoolean(ARG_INCOME),
+                        entry, args.getLong(ARG_CENTS), args.getBoolean(ARG_INCOME),
                         args.getString(ARG_PAYEE, ""), account))
                 .setNegativeButton(R.string.notify_offer_no, (d, w) -> activity.finish())
                 .create();

@@ -993,6 +993,7 @@
     <string name="notify_listener_label">Buchungen aus Benachrichtigungen</string>
     <string name="notify_offer_title">Benachrichtigung zu dieser Buchung</string>
     <string name="notify_offer_message">%1$s hat diesen Umsatz gemeldet:\n\n%2$s\n\nKünftige Benachrichtigungen dieser App für das Konto „%3$s“ verarbeiten?</string>
+    <string name="notify_offer_transfer_message">%1$s hat diese Umbuchung gemeldet:\n\n%2$s\n\nKünftige Benachrichtigungen dieser App verarbeiten? Dann das Konto wählen, zu dem sie gehören: „%3$s“ (Abgang) oder „%4$s“ (Zugang).</string>
     <string name="notify_offer_pick_title">Welche App hat diesen Umsatz gemeldet?</string>
     <string name="notify_offer_yes">Ja, verarbeiten</string>
     <string name="notify_offer_no">Nein</string>

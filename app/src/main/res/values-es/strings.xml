@@ -986,6 +986,7 @@
     <string name="notify_listener_label">Apuntes a partir de notificaciones</string>
     <string name="notify_offer_title">Notificación de este apunte</string>
     <string name="notify_offer_message">%1$s ha comunicado este movimiento:\n\n%2$s\n\n¿Procesar las futuras notificaciones de esta aplicación para la cuenta «%3$s»?</string>
+    <string name="notify_offer_transfer_message">%1$s ha comunicado este traspaso:\n\n%2$s\n\n¿Procesar las futuras notificaciones de esta aplicación? Elige la cuenta a la que pertenecen: «%3$s» (salida) o «%4$s» (entrada).</string>
     <string name="notify_offer_pick_title">¿Qué aplicación ha comunicado este movimiento?</string>
     <string name="notify_offer_yes">Sí, procesarlas</string>
     <string name="notify_offer_no">No</string>

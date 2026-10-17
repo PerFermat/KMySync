@@ -1924,10 +1924,19 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
             // Der Beleg wird erst hier festgeschrieben – bis zur Bestätigung ist nichts gespeichert.
             // Beide Seiten bekommen dieselbe Notiz und damit denselben BELEG:-Tag – und dieselben
             // Stichwörter, denn in der .kmy-Datei ist die Umbuchung eine einzige Transaktion.
+            // Wie bei Ausgaben: zur neuen Umbuchung nach einer Benachrichtigung suchen. Sie trägt den
+            // Betrag, das Datum und beide Konten – mehr braucht die Suche nicht.
+            final Booking saved = new Booking();
+            saved.isTransfer = true;
+            saved.account = from;
+            saved.transferAccount = to;
+            saved.amountCents = cents;
+            saved.payee = payee;
+            saved.createdAt = ts;
             repository.saveTransferBooking(from, to, cents, payee, receipts.withReceiptTag(note, ts, true),
                 tags.tags(), ts, fromPlace, toPlace, () -> {
                     Toast.makeText(this, R.string.transfer_saved, Toast.LENGTH_SHORT).show();
-                    finishAfterSave();
+                    finishAfterSave(saved);
                 });
         }));
     }
