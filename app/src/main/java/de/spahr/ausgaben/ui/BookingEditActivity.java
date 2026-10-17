@@ -73,6 +73,16 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
     public static final String EXTRA_PREFILL_INCOME = "prefill_income";
     /** Vorbelegung der Notiz – im Stapelmodus der Wortlaut der Benachrichtigung. */
     public static final String EXTRA_PREFILL_NOTE = "prefill_note";
+    /** Stapelmodus: die Zeile ist eine Umbuchung; das Gegenkonto steht in {@link #EXTRA_PREFILL_TRANSFER_ACCOUNT}. */
+    public static final String EXTRA_PREFILL_TRANSFER = "prefill_transfer";
+    /** Stapelmodus: Gegenkonto der Umbuchung zum Konto aus {@link #EXTRA_PRESET_ACCOUNT}. */
+    public static final String EXTRA_PREFILL_TRANSFER_ACCOUNT = "prefill_transfer_account";
+    /**
+     * Stapelmodus: die Zeile der Liste ({@code NotificationDraft}), wie sie gerade steht. Ist sie schon
+     * geändert oder eine Umbuchung, füllt sie die Maske – samt Kategorie, Aufteilung und Stichwörtern –,
+     * statt neu aufzulösen.
+     */
+    public static final String EXTRA_BATCH_ROW = "batch_row";
     public static final String RESULT_PAYEE = "result_payee";
     public static final String RESULT_CENTS = "result_cents";
     public static final String RESULT_INCOME = "result_income";
@@ -87,6 +97,9 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
     public static final String RESULT_SPLIT_CATEGORIES = "result_split_categories";
     public static final String RESULT_SPLIT_CENTS = "result_split_cents";
     public static final String RESULT_SPLIT_SIDES = "result_split_sides";
+    /** Stapelmodus: als Umbuchung gespeichert; {@link #RESULT_ACCOUNT}/{@link #RESULT_INCOME} wie die Zeile. */
+    public static final String RESULT_TRANSFER = "result_transfer";
+    public static final String RESULT_TRANSFER_ACCOUNT = "result_transfer_account";
     /**
      * Bei einer per Alias/Vorlage aufgelösten Umbuchung: das in der Buchungsliste angezeigte Konto
      * (Nutzereingabe). Steckt es bereits als Von- oder Nach-Konto in Alias/Vorlage, bleiben beide Konten
@@ -522,6 +535,9 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
             // „Jetzt buchen": Planung als NEUE Buchung vorbefüllt, bearbeitbar.
             long dueMs = getIntent().getLongExtra(EXTRA_SCHEDULED_DUE_MS, System.currentTimeMillis());
             repository.getScheduledById(scheduledBookId, st -> bindScheduledBooking(st, dueMs));
+        } else if (batch && batchRow() != null) {
+            // Stapelmodus, Zeile schon geändert oder Umbuchung: ihr Stand gilt, nicht eine neue Auflösung.
+            bindTemplate(batchRow().toBooking(), null);
         } else if (templateId >= 0) {
             // Sprach-Schnellerfassung: neue Buchung aus Vorlage vorbefüllen.
             final Long amount = voiceAmount >= 0 ? voiceAmount : null;
@@ -560,6 +576,7 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
             if (prefillNote != null) {
                 editNote.setText(prefillNote);
             }
+            applyBatchPresets();
             // Alias-Treffer: bevorzugte Buchungsart setzen und Konto/Kategorien/Von-Bis vorbelegen.
             long aliasId = getIntent().getLongExtra(EXTRA_ALIAS_ID, -1);
             if (aliasId >= 0) {
@@ -1727,7 +1744,7 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
 
     private void saveAsNew() {
         if (batch && isTransferType()) {
-            Toast.makeText(this, R.string.notify_batch_simple_only, Toast.LENGTH_LONG).show();
+            returnTransferToList();
             return;
         }
         if (isTransferType()) {
@@ -1757,8 +1774,56 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
     }
 
     /**
+     * Stapelmodus, Umbuchung: gibt sie an die Liste zurück, bezogen auf das Konto der Regel. Steht es als
+     * Nach-Konto da, ist es ein Zugang; sonst gilt das Von-Konto als Konto der Zeile – auch wenn der
+     * Nutzer beide Konten geändert hat, denn was er einträgt, gilt.
+     */
+    private void returnTransferToList() {
+        final String from = Ui.text(editAccount).trim();
+        final String to = Ui.text(editAccountTo).trim();
+        final Long cents = parseAmountToCents(Ui.text(editAmount));
+        if (cents == null || cents <= 0) {
+            Toast.makeText(this, R.string.error_amount, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!isKnownAccount(from) || !isKnownAccount(to) || from.equalsIgnoreCase(to)) {
+            Toast.makeText(this, R.string.error_transfer_accounts, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String own = getIntent().getStringExtra(EXTRA_PRESET_ACCOUNT);
+        final boolean incoming = own != null && to.equalsIgnoreCase(own.trim())
+                && !from.equalsIgnoreCase(own.trim());
+        final String payee = Ui.text(editPayee).trim();
+        final String note = Ui.text(editNote).trim();
+        final long when = composeTimestamp();
+        maybeAskCorrection(payee, () -> {
+            Intent out = new Intent();
+            out.putExtra(RESULT_TRANSFER, true);
+            out.putExtra(RESULT_ACCOUNT, incoming ? to : from);
+            out.putExtra(RESULT_TRANSFER_ACCOUNT, incoming ? from : to);
+            out.putExtra(RESULT_INCOME, incoming);
+            out.putExtra(RESULT_PAYEE, payee);
+            out.putExtra(RESULT_CENTS, (long) cents);
+            out.putExtra(RESULT_DATE_MS, when);
+            out.putExtra(RESULT_CATEGORY, "");
+            out.putExtra(RESULT_CATEGORY_SIDE, -1);
+            out.putExtra(RESULT_NOTE, note);
+            out.putExtra(RESULT_TAGS, tags.tags());
+            setResult(RESULT_OK, out);
+            finish();
+        });
+    }
+
+    /** Stapelmodus: die mitgegebene Zeile, sofern ihr Stand die Maske füllen soll; sonst {@code null}. */
+    private de.spahr.ausgaben.notify.NotificationDraft batchRow() {
+        de.spahr.ausgaben.notify.NotificationDraft row = getIntent().getParcelableExtra(EXTRA_BATCH_ROW);
+        return row != null && (row.edited || row.isTransfer) ? row : null;
+    }
+
+    /**
      * Stapelmodus: gibt die Eingaben an die Liste zurück, statt zu buchen – auch eine Aufteilung (eine
-     * Splitvorlage ließe sich sonst nicht bestätigen). Nur die Umbuchung ist dort ausgeschlossen.
+     * Splitvorlage ließe sich sonst nicht bestätigen). Umbuchungen gehen über
+     * {@link #returnTransferToList}.
      */
     private void returnToList(Booking b, List<SplitRowController.Part> parts) {
         Boolean side = parts.isEmpty() ? null : resolvePartType(parts.get(0));
@@ -1791,18 +1856,41 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
     }
 
     /**
-     * Stapelmodus: Konto und Datum kommen von der Regel der Benachrichtigung und gelten auch dann,
-     * wenn eine Vorlagebuchung oder ein Alias die Maske gefüllt hat – deren Konto ist ein anderes.
+     * Stapelmodus: Art, Konto und Datum kommen von der Zeile der Liste – der Regel der Benachrichtigung
+     * oder dem, was der Nutzer dort eingestellt hat – und gelten auch dann, wenn eine Vorlagebuchung
+     * oder ein Alias die Maske gefüllt hat: deren Konten sind andere.
      */
     private void applyBatchPresets() {
-        if (!batch || isTransferType()) {
+        if (!batch) {
             return;
         }
         String account = getIntent().getStringExtra(EXTRA_PRESET_ACCOUNT);
-        if (account != null && !account.isEmpty()) {
-            editAccount.setText(account, false);
-            setupPlaceDropdown(account);
+        account = account == null ? "" : account;
+        boolean income = getIntent().getBooleanExtra(EXTRA_PREFILL_INCOME, false);
+        if (getIntent().getBooleanExtra(EXTRA_PREFILL_TRANSFER, false)) {
+            String other = getIntent().getStringExtra(EXTRA_PREFILL_TRANSFER_ACCOUNT);
+            other = other == null ? "" : other;
+            if (!isTransferType()) {
+                toggleType.check(R.id.btnTransfer);
+            }
+            // Erst nach dem Umschalten: der Wechsel der Art füllt aus dem Alias nach.
+            String from = income ? other : account;
+            String to = income ? account : other;
+            editAccount.setText(from, false);
+            setupPlaceDropdown(from);
+            editAccountTo.setText(to, false);
+            setupPlaceOptions(editPlaceTo, to, false);
             applyTypeVisibility();
+        } else {
+            if (isTransferType()) {
+                // Die Vorlage war eine Umbuchung, die Zeile ist es nicht: die Zeile gilt.
+                toggleType.check(income ? R.id.btnIncome : R.id.btnExpense);
+            }
+            if (!account.isEmpty()) {
+                editAccount.setText(account, false);
+                setupPlaceDropdown(account);
+                applyTypeVisibility();
+            }
         }
         long date = getIntent().getLongExtra(EXTRA_PREFILL_DATE_MS, -1);
         if (date > 0) {

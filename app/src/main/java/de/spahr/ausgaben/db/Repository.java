@@ -1146,13 +1146,49 @@ public class Repository {
      */
     public Booking voiceBookingBlocking(String sentence, String account, boolean income,
                                         String coords, long when, boolean insert, String note) {
-        return voiceBooking(sentence, account, "", income ? VOICE_TYPE_INCOME : VOICE_TYPE_EXPENSE,
+        return voiceBookingBlocking(sentence, account,
+                income ? VOICE_TYPE_INCOME : VOICE_TYPE_EXPENSE, coords, when, insert, note);
+    }
+
+    /**
+     * Wie oben, mit vorgegebener Buchungsart ({@code VOICE_TYPE_*}) – so, wie die Uhr sie per Knopf
+     * mitschickt. Bei einer Umbuchung ist {@code account} das Konto, das die Uhr gewählt hätte; die
+     * zurückgegebene Buchung trägt dann Von-Konto in {@link Booking#account} und Nach-Konto in
+     * {@link Booking#transferAccount}.
+     */
+    public Booking voiceBookingBlocking(String sentence, String account, String type,
+                                        String coords, long when, boolean insert, String note) {
+        return voiceBooking(sentence, account, "", type,
                 coords == null || coords.isEmpty() ? null : coords, false, when, insert, note);
     }
 
     /**
+     * Die Buchungsart, die die Spracheingabe am Handy für diesen Empfänger wählen würde: dieselbe
+     * Auflösung wie {@link #resolveVoice} (bevorzugte Aliase → Buchungen → übrige Aliase), und die Art
+     * kommt wie in der Maske aus dem Treffer. {@link #VOICE_TYPE_TRANSFER}, wenn das eine Umbuchung ist,
+     * sonst {@code null} – Einnahme oder Ausgabe gibt dann die Richtung vor, die schon feststeht.
+     */
+    public String voiceTypeBlocking(String term, String coords) {
+        boolean gps = new de.spahr.ausgaben.settings.SettingsStore(appContext).isGpsEnabled();
+        return aliasResolver.voiceTypeBlocking(term, gps ? coords : null);
+    }
+
+    /**
+     * Legt eine Umbuchung sofort an – auf dem Faden des Aufrufers, gern in {@link #inTransaction}. Die
+     * Orte sind die Standardorte der beiden Konten, wie bei einer Umbuchung aus der Spracheingabe.
+     */
+    public void insertTransferNow(String from, String to, long cents, String payee, String note,
+                                  String tags, long when) {
+        de.spahr.ausgaben.settings.PlacesStore ps =
+                new de.spahr.ausgaben.settings.PlacesStore(appContext);
+        insertTransferPair(from, to, cents, payee, note, tags, when, null,
+                UUID.randomUUID().toString(), ps.getDefaultPlace(from), ps.getDefaultPlace(to));
+    }
+
+    /**
      * @param now    der Zeitpunkt der Buchung
-     * @param insert siehe {@link #voiceBookingBlocking}; eine Umbuchung wird immer angelegt
+     * @param insert siehe {@link #voiceBookingBlocking}; auch eine Umbuchung wird mit {@code false}
+     *               nur vorgeschlagen
      * @param noteOverride siehe {@link #voiceBookingBlocking}; {@code null} = Notiz wie bisher
      * @return {@code null}, wenn nichts zu buchen war
      */
@@ -1242,7 +1278,23 @@ public class Repository {
                         .getDefaultAccount().trim();
                 to = from.equalsIgnoreCase(phoneDefault) ? "" : phoneDefault;
             }
+            if (noteOverride != null) {
+                // Wie bei Einnahme/Ausgabe: die Notiz einer Benachrichtigung ist deren Wortlaut.
+                note = noteOverride;
+            }
             note = AliasResolver.appendGps(note, coords);
+            Booking proposal = new Booking();
+            proposal.amountCents = amount;
+            proposal.createdAt = now;
+            proposal.isTransfer = true;
+            proposal.account = from;
+            proposal.transferAccount = to;
+            proposal.payee = payee == null ? "" : payee;
+            proposal.note = note;
+            proposal.spokenText = recognized;
+            if (!insert) {
+                return proposal;
+            }
             de.spahr.ausgaben.settings.PlacesStore ps =
                     new de.spahr.ausgaben.settings.PlacesStore(appContext);
             String fromPlace = isRealPlace(selPlace) ? selPlace : ps.getDefaultPlace(from);
@@ -1251,7 +1303,7 @@ public class Repository {
             // Sprach-/Widget-Erfassung: Stichwörter gibt es erst in der Bearbeitungsmaske.
             insertTransferPair(from, to, amount, payee, note, "", now, null,
                     UUID.randomUUID().toString(), fromPlace, toPlace);
-            return new Booking();
+            return proposal;
         }
 
         // Einnahme/Ausgabe: Richtung per Knopf erzwungen; Konto/Ort sind die Uhr-/Widget-Auswahl und

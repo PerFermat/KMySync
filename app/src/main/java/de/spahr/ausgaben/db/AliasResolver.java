@@ -657,6 +657,28 @@ class AliasResolver {
      * dann über bestehende Buchungen, erst danach über die übrigen Aliase. Liefert Vorlage-Buchung und/oder
      * Alias sowie den – ggf. ersetzten – Empfänger für die Vorbelegung.
      */
+    /**
+     * Die Art, die die Maske nach einem Diktat aus dem Treffer von {@link #resolve} übernähme
+     * ({@code BookingEditActivity}: Vorlage → {@code isTransfer}, Alias → {@code type}) – hier nur, ob es
+     * eine Umbuchung ist. Ein Umbuchungs-Alias zählt nur mit beiden Konten; ohne sie gäbe es nichts
+     * vorzuschlagen. Synchron, für den Hintergrundfaden.
+     */
+    String voiceTypeBlocking(String term, String coords) {
+        String t = term == null ? "" : term.trim();
+        if (t.isEmpty()) {
+            return null;
+        }
+        Booking[] booking = new Booking[1];
+        PayeeCorrection[] alias = new PayeeCorrection[1];
+        resolve(t, de.spahr.ausgaben.location.Geo.parse(coords), closedAccounts(), null, booking, alias);
+        if (alias[0] != null) {
+            return Repository.VOICE_TYPE_TRANSFER.equals(alias[0].type)
+                    && aliasSupports(alias[0], Repository.VOICE_TYPE_TRANSFER)
+                    ? Repository.VOICE_TYPE_TRANSFER : null;
+        }
+        return booking[0] != null && booking[0].isTransfer ? Repository.VOICE_TYPE_TRANSFER : null;
+    }
+
     void resolveVoice(final String term, final String coords,
                       final Callback<VoiceResolution> callback) {
         executor.execute(() -> {

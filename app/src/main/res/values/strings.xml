@@ -1034,11 +1034,12 @@
     <string name="notify_learn_failed">No template could be derived from this notification.</string>
     <string name="notify_batch_title">Transactions from notifications</string>
     <string name="notify_batch_saved">Transactions created: %1$d</string>
-    <string name="notify_batch_simple_only">Transfers are not possible in this list.</string>
     <string name="notify_batch_cancel_title">Close the list?</string>
     <string name="notify_batch_cancel_message">Nothing will be booked. The notifications are kept and will appear again the next time you refresh.</string>
     <string name="notify_batch_cancel">Close</string>
     <string name="notify_problem_unrecognized">Not recognised – will not be booked. Book it by hand with the pencil and the app learns this kind of message.</string>
+    <string name="notify_problem_transfer">Counter account missing – choose another account for the transfer</string>
+    <string name="notify_pick_transfer_account">Transfer to or from</string>
     <string name="notify_problem_account">Account missing – the app reports for several accounts</string>
     <string name="notify_problem_foreign">Foreign currency (%1$s) – please check the amount with the pencil</string>
     <string name="notify_foreign_checked">Foreign currency (%1$s)</string>

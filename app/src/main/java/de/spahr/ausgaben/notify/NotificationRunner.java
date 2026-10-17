@@ -129,7 +129,12 @@ public final class NotificationRunner {
                         continue;
                     }
                     booked[0]++;
-                    if (d.viaVoice && !d.edited) {
+                    if (d.isTransfer) {
+                        // Mit den Konten, die die Zeile zeigt – vorgeschlagen, umgestellt oder in der
+                        // Maske geändert. Gebucht wird, was dasteht.
+                        repository.insertTransferNow(d.fromAccount(), d.toAccount(), d.cents, d.payee,
+                                d.note, d.tags, d.dateMillis);
+                    } else if (d.viaVoice && !d.edited) {
                         // Unverändert übernommen: bucht dieselbe Routine, die den Vorschlag gemacht hat.
                         repository.voiceBookingBlocking(sentence(d, currency), d.account, d.isIncome,
                                 d.coords, d.dateMillis, true, d.wording());
@@ -192,19 +197,47 @@ public final class NotificationRunner {
      *
      * <p>Liest sie einen anderen Betrag als die Regel, gilt die Regel und die Zeile bleibt, wie sie
      * ist: der Betrag steht dann fest, nur die Zuordnung fehlt.</p>
+     *
+     * <p>Ob es eine Umbuchung ist, entscheidet der Treffer dieser Auflösung wie nach einem Diktat am
+     * Handy: bevorzugter Alias, dann Buchungen, dann übrige Aliase. Dann schlägt die Sprachroutine die
+     * Umbuchung vor, und das Gegenkonto ist die Seite, die nicht das Konto der Regel ist. Die Richtung
+     * bleibt die der Meldung.</p>
      */
     private static void propose(Repository repository, NotificationDraft d, String currency) {
+        // Die Ausgabe bzw. Einnahme immer: stellt der Nutzer eine Umbuchung zurück, steht sie bereit.
         Booking v = repository.voiceBookingBlocking(sentence(d, currency), d.account, d.isIncome,
                 d.coords, d.dateMillis, false, d.wording());
-        if (v == null || v.amountCents != d.cents) {
+        if (v != null && v.amountCents == d.cents) {
+            d.viaVoice = true;
+            d.payee = v.payee;
+            d.category = v.category == null ? "" : v.category;
+            d.categoryIsIncome = v.categoryIsIncome;
+            d.note = v.note == null ? "" : v.note;
+            d.setSplits(v.parts);
+        }
+        if (!Repository.VOICE_TYPE_TRANSFER.equals(
+                repository.voiceTypeBlocking(d.rawPayee, d.coords))) {
             return;
         }
-        d.viaVoice = true;
-        d.payee = v.payee;
-        d.category = v.category == null ? "" : v.category;
-        d.categoryIsIncome = v.categoryIsIncome;
-        d.note = v.note == null ? "" : v.note;
-        d.setSplits(v.parts);
+        Booking t = repository.voiceBookingBlocking(sentence(d, currency), d.account,
+                Repository.VOICE_TYPE_TRANSFER, d.coords, d.dateMillis, false, d.wording());
+        if (t == null || t.amountCents != d.cents) {
+            return;
+        }
+        d.isTransfer = true;
+        d.transferAccount = counterpart(d.account, t.account, t.transferAccount);
+        d.payee = t.payee;
+        d.note = t.note == null ? "" : t.note;
+    }
+
+    /** Die Seite einer Umbuchung, die nicht {@code own} ist; leer, wenn es keine andere gibt. */
+    static String counterpart(String own, String from, String to) {
+        String f = from == null ? "" : from.trim();
+        String t = to == null ? "" : to.trim();
+        if (!f.isEmpty() && !f.equalsIgnoreCase(own)) {
+            return t.equalsIgnoreCase(own) || t.isEmpty() ? f : t;
+        }
+        return t.equalsIgnoreCase(own) ? "" : t;
     }
 
     /** Der Standort jetzt, wie die Spracheingabe am Handy ihn liest; leer, wenn es keinen gibt. */

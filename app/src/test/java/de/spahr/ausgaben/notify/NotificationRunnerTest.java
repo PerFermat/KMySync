@@ -651,4 +651,229 @@ public class NotificationRunnerTest {
         assertEquals(3500L, next.cents);
         assertEquals("Zalando", next.payee);
     }
+
+    // ---- Umbuchung oder Ausgabe ----
+
+    /** Eine Umbuchung, wie die App sie anlegt: zwei verknüpfte Zeilen. */
+    private void umbuchung(String payee, String from, String to, long time) throws Exception {
+        imHintergrund(() -> {
+            repo.insertTransferNow(from, to, 5000L, payee, "", "", time);
+            return null;
+        });
+    }
+
+    private void umbuchungsAlias(String spoken, String from, String to, boolean preferred)
+            throws Exception {
+        final PayeeCorrection a = new PayeeCorrection(spoken, spoken, HEUTE - 40 * TAG);
+        a.type = Repository.VOICE_TYPE_TRANSFER;
+        a.fromAccount = from;
+        a.toAccount = to;
+        a.preferred = preferred;
+        imHintergrund(() -> {
+            db.payeeCorrectionDao().upsert(a);
+            return null;
+        });
+    }
+
+    /** Neu angelegt, nicht aus dem Bestand des Tests. */
+    private List<Booking> neueBuchungen() throws Exception {
+        List<Booking> out = new ArrayList<>();
+        for (Booking b : imHintergrund(() -> db.bookingDao().getAllBookings())) {
+            if (b.createdAt == HEUTE) {
+                out.add(b);
+            }
+        }
+        return out;
+    }
+
+    /** Zuletzt als Umbuchung gebucht: die Zeile wird Umbuchung, mit dem Gegenkonto von damals. */
+    @Test
+    public void letzteBuchungAlsUmbuchungSchlaegtUmbuchungVor() throws Exception {
+        vorlageLernen();
+        umbuchung("PayPal", "Kreditkarte", "PayPal-Konto", HEUTE - 5 * TAG);
+        meldung(HEUTE, zahlung("PayPal", "25,00"), "a");
+        NotificationDraft d = vorbereiten().get(0);
+        assertTrue(d.isTransfer);
+        assertEquals("PayPal-Konto", d.transferAccount);
+        assertEquals("Kreditkarte", d.fromAccount());
+        assertEquals("PayPal-Konto", d.toAccount());
+        assertEquals("PayPal", d.payee);
+        assertTrue(d.isBookable());
+    }
+
+    /** Wie nach einem Diktat: ein bevorzugter Alias geht den Buchungen vor. */
+    @Test
+    public void bevorzugterAusgabeAliasGehtDerUmbuchungVor() throws Exception {
+        vorlageLernen();
+        umbuchung("PayPal", "Kreditkarte", "PayPal-Konto", HEUTE - 5 * TAG);
+        final PayeeCorrection a = new PayeeCorrection("PayPal", "PayPal", HEUTE - 40 * TAG);
+        a.catExpense1 = "Online";
+        a.preferred = true;
+        imHintergrund(() -> {
+            db.payeeCorrectionDao().upsert(a);
+            return null;
+        });
+        meldung(HEUTE, zahlung("PayPal", "25,00"), "a");
+        NotificationDraft d = vorbereiten().get(0);
+        assertFalse(d.isTransfer);
+        assertEquals("Online", d.category);
+    }
+
+    /** Buchungen gehen den übrigen Aliasen vor – auch einem Umbuchungs-Alias. */
+    @Test
+    public void ausgabeBuchungGehtDemUebrigenUmbuchungsAliasVor() throws Exception {
+        vorlageLernen();
+        buchung(1999L, HEUTE - 3 * TAG, "PayPal", "Online");
+        umbuchungsAlias("PayPal", "Kreditkarte", "PayPal-Konto", false);
+        meldung(HEUTE, zahlung("PayPal", "25,00"), "a");
+        NotificationDraft d = vorbereiten().get(0);
+        assertFalse(d.isTransfer);
+        assertEquals("Online", d.category);
+    }
+
+    /** Ohne Buchung entscheidet der übrige Alias – mit seinen beiden Konten. */
+    @Test
+    public void umbuchungsAliasOhneBuchungSchlaegtUmbuchungVor() throws Exception {
+        vorlageLernen();
+        umbuchungsAlias("PayPal", "Kreditkarte", "PayPal-Konto", false);
+        meldung(HEUTE, zahlung("PayPal", "25,00"), "a");
+        NotificationDraft d = vorbereiten().get(0);
+        assertTrue(d.isTransfer);
+        assertEquals("PayPal-Konto", d.transferAccount);
+    }
+
+    /** Ein Zugang bleibt ein Zugang: das Konto der Meldung ist dann das Nach-Konto. */
+    @Test
+    public void zugangWirdUmbuchungAufDasKontoDerMeldung() throws Exception {
+        final NotificationTemplate t = NotificationLearner.learn(new NotificationSource(BANK, 0L,
+                "Kartenzahlung", "Gutschrift von Amazon in Höhe von 20,00 EUR."),
+                2000L, true, "Amazon", "Kreditkarte");
+        imHintergrund(() -> {
+            repo.notificationTemplates().save(t);
+            return null;
+        });
+        umbuchung("Hausbank", "Girokonto", "Kreditkarte", HEUTE - 30 * TAG);
+        meldung(HEUTE, "Gutschrift von Hausbank in Höhe von 300,00 EUR.", "a");
+        ArrayList<NotificationDraft> drafts = vorbereiten();
+        NotificationDraft d = drafts.get(0);
+        assertTrue(d.isIncome);
+        assertTrue(d.isTransfer);
+        assertEquals("Girokonto", d.fromAccount());
+        assertEquals("Kreditkarte", d.toAccount());
+
+        assertEquals(1, abschliessen(drafts, ids(drafts)));
+        for (Booking b : neueBuchungen()) {
+            assertEquals(b.isIncome ? "Kreditkarte" : "Girokonto", b.account);
+        }
+    }
+
+    /** OK legt die Umbuchung an, wie die Zeile sie zeigt: beide Seiten, verknüpft. */
+    @Test
+    public void umbuchungWirdMitBeidenSeitenGebucht() throws Exception {
+        vorlageLernen();
+        umbuchung("PayPal", "Kreditkarte", "PayPal-Konto", HEUTE - 5 * TAG);
+        meldung(HEUTE, zahlung("PayPal", "25,00"), "a");
+        ArrayList<NotificationDraft> drafts = vorbereiten();
+        assertEquals(1, abschliessen(drafts, ids(drafts)));
+        List<Booking> neu = neueBuchungen();
+        assertEquals(2, neu.size());
+        assertEquals(neu.get(0).transferGroup, neu.get(1).transferGroup);
+        assertFalse(neu.get(0).transferGroup.isEmpty());
+        for (Booking b : neu) {
+            assertTrue(b.isTransfer);
+            assertEquals(2500L, b.amountCents);
+            assertEquals("PayPal", b.payee);
+            assertEquals(b.isIncome ? "PayPal-Konto" : "Kreditkarte", b.account);
+            assertEquals(b.isIncome ? "Kreditkarte" : "PayPal-Konto", b.transferAccount);
+            // Der Wortlaut der Meldung, wie bei jeder Buchung aus einer Benachrichtigung.
+            assertTrue(b.note.startsWith("Kartenzahlung\n"));
+        }
+        assertTrue(buffer.allFor(NotificationRunner.profileOf(ctx)).isEmpty());
+    }
+
+    /** In der Liste auf Ausgabe zurückgestellt: gebucht wird eine Ausgabe, keine Umbuchung. */
+    @Test
+    public void zurueckgestellteZeileWirdAlsAusgabeGebucht() throws Exception {
+        vorlageLernen();
+        umbuchung("PayPal", "Kreditkarte", "PayPal-Konto", HEUTE - 5 * TAG);
+        meldung(HEUTE, zahlung("PayPal", "25,00"), "a");
+        ArrayList<NotificationDraft> drafts = vorbereiten();
+        drafts.get(0).isTransfer = false;
+        assertEquals(1, abschliessen(drafts, ids(drafts)));
+        List<Booking> neu = neueBuchungen();
+        assertEquals(1, neu.size());
+        assertFalse(neu.get(0).isTransfer);
+        assertEquals("Kreditkarte", neu.get(0).account);
+        assertFalse(neu.get(0).isIncome);
+    }
+
+    /** Was der Nutzer in der Maske geändert hat, gilt – nicht der ursprüngliche Vorschlag. */
+    @Test
+    public void inDerMaskeGeaenderteZeileWirdSoGebucht() throws Exception {
+        vorlageLernen();
+        buchung(1999L, HEUTE - 3 * TAG, "Geldautomat", "Bargeld");
+        meldung(HEUTE, zahlung("Geldautomat", "50,00"), "a");
+        ArrayList<NotificationDraft> drafts = vorbereiten();
+        NotificationDraft d = drafts.get(0);
+        assertFalse(d.isTransfer);
+        // Was die Maske zurückgibt: Umbuchung auf die Barkasse, anderer Empfänger.
+        d.isTransfer = true;
+        d.transferAccount = "Barkasse";
+        d.payee = "Abhebung";
+        d.edited = true;
+        assertEquals(1, abschliessen(drafts, ids(drafts)));
+        List<Booking> neu = neueBuchungen();
+        assertEquals(2, neu.size());
+        for (Booking b : neu) {
+            assertTrue(b.isTransfer);
+            assertEquals("Abhebung", b.payee);
+            assertEquals(b.isIncome ? "Barkasse" : "Kreditkarte", b.account);
+        }
+    }
+
+    /** Eine Umbuchung ohne Gegenkonto hält den Abschluss auf, statt halb gebucht zu werden. */
+    @Test
+    public void umbuchungOhneGegenkontoIstNichtBuchbar() {
+        NotificationDraft d = new NotificationDraft();
+        d.recognized = true;
+        d.cents = 100L;
+        d.account = "Kreditkarte";
+        d.isTransfer = true;
+        assertEquals(NotificationDraft.PROBLEM_TRANSFER, d.problem());
+        assertTrue(d.blocksSave());
+        d.transferAccount = "kreditkarte";
+        assertEquals(NotificationDraft.PROBLEM_TRANSFER, d.problem());
+        d.transferAccount = "Girokonto";
+        assertTrue(d.isBookable());
+        // Zurück zur Ausgabe: das Gegenkonto stört dann nicht.
+        d.isTransfer = false;
+        d.transferAccount = "";
+        assertTrue(d.isBookable());
+    }
+
+    /** Die Art übersteht Drehen und Maske: sie reist im Parcel mit. */
+    @Test
+    public void umbuchungReistImParcelMit() {
+        NotificationDraft d = new NotificationDraft();
+        d.isTransfer = true;
+        d.transferAccount = "PayPal-Konto";
+        d.coords = "1, 2";
+        android.os.Parcel p = android.os.Parcel.obtain();
+        d.writeToParcel(p, 0);
+        p.setDataPosition(0);
+        NotificationDraft back = NotificationDraft.CREATOR.createFromParcel(p);
+        p.recycle();
+        assertTrue(back.isTransfer);
+        assertEquals("PayPal-Konto", back.transferAccount);
+        assertEquals("1, 2", back.coords);
+    }
+
+    /** Das Gegenkonto ist die Seite, die nicht das Konto der Meldung ist. */
+    @Test
+    public void gegenkontoIstDieAndereSeite() {
+        assertEquals("B", NotificationRunner.counterpart("A", "A", "B"));
+        assertEquals("B", NotificationRunner.counterpart("A", "B", "A"));
+        assertEquals("", NotificationRunner.counterpart("A", "A", ""));
+        assertEquals("", NotificationRunner.counterpart("A", "a", "A"));
+    }
 }

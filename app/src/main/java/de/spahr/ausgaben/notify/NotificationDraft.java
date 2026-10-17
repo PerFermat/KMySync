@@ -25,6 +25,8 @@ public class NotificationDraft implements Parcelable {
     public static final int PROBLEM_ACCOUNT = 2;
     /** Die Meldung nennt einen Betrag in anderer Währung als der des Kontos. */
     public static final int PROBLEM_FOREIGN = 3;
+    /** Als Umbuchung gewählt, aber ohne Gegenkonto – oder mit dem eigenen Konto als Gegenkonto. */
+    public static final int PROBLEM_TRANSFER = 4;
 
     // ---- die Meldung ----
     public long entryId;
@@ -60,6 +62,13 @@ public class NotificationDraft implements Parcelable {
      * Abschluss die Sprachroutine selbst; sonst die Zeile, wie sie dasteht.
      */
     public boolean viaVoice;
+    /**
+     * Eine Umbuchung zwischen eigenen Konten statt einer Ausgabe oder Einnahme. Die Richtung gibt
+     * weiter {@link #isIncome} an, bezogen auf {@link #account}: Abgang heißt „account → Gegenkonto".
+     */
+    public boolean isTransfer;
+    /** Das Gegenkonto einer Umbuchung. Bleibt stehen, wenn die Zeile wieder zur Ausgabe wird. */
+    public String transferAccount = "";
 
     // ---- Markierungen ----
     /** Das Kürzel der fremden Währung, wenn die Meldung eine nennt; sonst leer. */
@@ -83,6 +92,10 @@ public class NotificationDraft implements Parcelable {
         if (account.isEmpty()) {
             return PROBLEM_ACCOUNT;
         }
+        if (isTransfer && (transferAccount.trim().isEmpty()
+                || transferAccount.trim().equalsIgnoreCase(account.trim()))) {
+            return PROBLEM_TRANSFER;
+        }
         // Erst nach dem Blick in die Maske: dort steht der Betrag, den der Nutzer für richtig hält.
         if (!foreignCurrency.isEmpty() && !edited) {
             return PROBLEM_FOREIGN;
@@ -97,7 +110,17 @@ public class NotificationDraft implements Parcelable {
     /** Ob die Zeile den Abschluss aufhält: erkannt, aber so nicht buchbar. Nicht erkannte tun das nicht. */
     public boolean blocksSave() {
         int p = problem();
-        return p == PROBLEM_ACCOUNT || p == PROBLEM_FOREIGN;
+        return p == PROBLEM_ACCOUNT || p == PROBLEM_FOREIGN || p == PROBLEM_TRANSFER;
+    }
+
+    /** Von-Konto einer Umbuchung. */
+    public String fromAccount() {
+        return isIncome ? transferAccount : account;
+    }
+
+    /** Nach-Konto einer Umbuchung. */
+    public String toAccount() {
+        return isIncome ? account : transferAccount;
     }
 
     /**
@@ -156,6 +179,14 @@ public class NotificationDraft implements Parcelable {
         b.createdAt = dateMillis;
         b.exported = false;
         b.spokenText = rawPayee;
+        if (isTransfer) {
+            // Wie eine Seite der Umbuchung in der Kontenliste – ohne Kategorie.
+            b.isTransfer = true;
+            b.transferAccount = transferAccount;
+            b.category = "";
+            b.categoryIsIncome = null;
+            return b;
+        }
         if (isSplit()) {
             b.parts = new ArrayList<>();
             for (int i = 0; i < splitCategories.size(); i++) {
@@ -197,6 +228,8 @@ public class NotificationDraft implements Parcelable {
         splitSides = in.createIntArray();
         viaVoice = in.readInt() != 0;
         coords = in.readString();
+        isTransfer = in.readInt() != 0;
+        transferAccount = in.readString();
     }
 
     @Override
@@ -228,6 +261,8 @@ public class NotificationDraft implements Parcelable {
         out.writeIntArray(splitSides);
         out.writeInt(viaVoice ? 1 : 0);
         out.writeString(coords);
+        out.writeInt(isTransfer ? 1 : 0);
+        out.writeString(transferAccount);
     }
 
     @Override
