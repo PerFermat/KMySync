@@ -80,9 +80,11 @@ public class NotificationBatchTransferTest {
         idle();
     }
 
-    private static MaterialButtonToggleGroup umschalter(NotificationBatchActivity a) {
+    /** Die erste Zeile der Liste, wie sie dasteht. */
+    private static String titel(NotificationBatchActivity a) {
         LinearLayout container = a.findViewById(R.id.batchContainer);
-        return container.getChildAt(0).findViewById(R.id.toggleDraftType);
+        android.widget.TextView t = container.getChildAt(0).findViewById(R.id.textDraftSecurity);
+        return t.getText().toString();
     }
 
     /** Der nächste Aufruf der Maske – mit allem, was die Liste mitgibt. */
@@ -93,33 +95,27 @@ public class NotificationBatchTransferTest {
         return next;
     }
 
+    /** In der Liste zeigt nur der Pfeil vor dem Empfänger die Umbuchung an. */
     @Test
-    public void umschalterStelltZwischenAusgabeUndUmbuchungUm() throws Exception {
+    public void umbuchungZeigtDenPfeilVorDemEmpfaenger() throws Exception {
         NotificationDraft d = zeile();
+        d.isTransfer = true;
         d.transferAccount = "PayPal-Konto";
-        NotificationBatchActivity a = liste(d);
-        MaterialButtonToggleGroup toggle = umschalter(a);
-        assertEquals(View.VISIBLE, toggle.getVisibility());
-        assertEquals(R.id.btnDraftPlain, toggle.getCheckedButtonId());
-
-        toggle.check(R.id.btnDraftTransfer);
-        idle();
-        assertTrue(ersteZeile(a).isTransfer);
-        assertEquals("PayPal-Konto", ersteZeile(a).transferAccount);
-
-        umschalter(a).check(R.id.btnDraftPlain);
-        idle();
-        assertFalse(ersteZeile(a).isTransfer);
-        // Das Gegenkonto bleibt für den Rückweg stehen.
-        assertEquals("PayPal-Konto", ersteZeile(a).transferAccount);
+        assertEquals("→ PayPal", titel(liste(d)));
     }
 
     @Test
-    public void nichtErkannteZeileHatKeinenUmschalter() throws Exception {
+    public void zugangZeigtDenPfeilInDieAndereRichtung() throws Exception {
         NotificationDraft d = zeile();
-        d.recognized = false;
-        NotificationBatchActivity a = liste(d);
-        assertEquals(View.GONE, umschalter(a).getVisibility());
+        d.isIncome = true;
+        d.isTransfer = true;
+        d.transferAccount = "Girokonto";
+        assertEquals("← PayPal", titel(liste(d)));
+    }
+
+    @Test
+    public void ausgabeOhnePfeil() throws Exception {
+        assertEquals("PayPal", titel(liste(zeile())));
     }
 
     @Test
@@ -163,7 +159,7 @@ public class NotificationBatchTransferTest {
         assertEquals("Barkasse", d.transferAccount);
         assertEquals("Abhebung", d.payee);
         assertEquals("Bargeld", d.note);
-        assertEquals(R.id.btnDraftTransfer, umschalter(a).getCheckedButtonId());
+        assertEquals("→ Abhebung", titel(a));
 
         Intent again = maskeOeffnen(a);
         assertTrue(again.getBooleanExtra(BookingEditActivity.EXTRA_PREFILL_TRANSFER, false));
@@ -179,6 +175,7 @@ public class NotificationBatchTransferTest {
         aufrufen(a, "applyEdit", Intent.class, zurueck);
         assertFalse(ersteZeile(a).isTransfer);
         assertEquals("Bargeld", ersteZeile(a).category);
+        assertEquals("Abhebung", titel(a));
     }
 
     private static BookingEditActivity maske(NotificationDraft d) {

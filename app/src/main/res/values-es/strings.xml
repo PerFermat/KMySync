@@ -998,8 +998,7 @@
     <string name="notify_batch_cancel_message">No se apunta nada. Las notificaciones se conservan y volverán a aparecer la próxima vez que actualices.</string>
     <string name="notify_batch_cancel">Cerrar</string>
     <string name="notify_problem_unrecognized">No reconocida: no se apuntará. Apúntala a mano con el lápiz y la aplicación aprenderá este tipo de mensaje.</string>
-    <string name="notify_problem_transfer">Falta la contrapartida: elige otra cuenta para el traspaso</string>
-    <string name="notify_pick_transfer_account">Traspaso con la cuenta</string>
+    <string name="notify_problem_transfer">Falta la contrapartida: elígela con el lápiz</string>
     <string name="notify_problem_account">Falta la cuenta: la aplicación informa de varias cuentas</string>
     <string name="notify_problem_foreign">Moneda extranjera (%1$s): comprueba el importe con el lápiz</string>
     <string name="notify_foreign_checked">Moneda extranjera (%1$s)</string>

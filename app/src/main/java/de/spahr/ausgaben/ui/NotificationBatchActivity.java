@@ -43,7 +43,7 @@ import de.spahr.ausgaben.settings.SettingsStore;
  * Zurück löschen nichts: die Liste kommt beim nächsten Aktualisieren wieder. Dasselbe gilt, wenn die
  * App beendet wird.</p>
  */
-public class NotificationBatchActivity extends LocalizedActivity implements HostedDialog.Host {
+public class NotificationBatchActivity extends LocalizedActivity {
 
     public static final String EXTRA_DRAFTS = "drafts";
     /** Die Nummern aller gezeigten Puffereinträge – auch derer, die der Nutzer aus der Liste nimmt. */
@@ -51,10 +51,6 @@ public class NotificationBatchActivity extends LocalizedActivity implements Host
 
     private static final String STATE_EDITING = "s_editing";
     private static final String STATE_SAVING = "s_saving";
-    /** Die Auswahl des Gegenkontos, wenn eine Zeile zur Umbuchung wird – siehe {@link HostedDialog}. */
-    private static final String DLG_TRANSFER_ACCOUNT = "dlg_transferAccount";
-    private static final String ARG_INDEX = "a_index";
-    private static final String ARG_ACCOUNTS = "a_accounts";
 
     /** Steht die Liste schon offen? Zweimal Aktualisieren öffnete sie sonst zweimal. */
     private static boolean open;
@@ -214,114 +210,19 @@ public class NotificationBatchActivity extends LocalizedActivity implements Host
             problem.setText(hint);
         }
 
-        bindType(view, d, index);
-
         ImageButton edit = view.findViewById(R.id.btnDraftEdit);
         edit.setOnClickListener(v -> edit(index));
         view.findViewById(R.id.btnDraftDelete).setOnClickListener(v -> remove(index));
         return view;
     }
 
-    /**
-     * Der Umschalter Ausgabe (bzw. Einnahme) / Umbuchung. Nur bei Zeilen, deren Betrag und Konto
-     * feststehen – sonst gibt es nichts umzubuchen. Die Richtung bleibt die der Meldung.
-     */
-    private void bindType(View view, NotificationDraft d, int index) {
-        com.google.android.material.button.MaterialButtonToggleGroup toggle =
-                view.findViewById(R.id.toggleDraftType);
-        int p = d.problem();
-        boolean show = !saving && p != NotificationDraft.PROBLEM_UNRECOGNIZED
-                && p != NotificationDraft.PROBLEM_ACCOUNT;
-        toggle.setVisibility(show ? View.VISIBLE : View.GONE);
-        if (!show) {
-            return;
-        }
-        MaterialButton plain = view.findViewById(R.id.btnDraftPlain);
-        plain.setText(d.isIncome ? R.string.type_income : R.string.type_expense);
-        toggle.check(d.isTransfer ? R.id.btnDraftTransfer : R.id.btnDraftPlain);
-        // Erst nach dem Vorbelegen: das check() oben ist keine Entscheidung des Nutzers.
-        toggle.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
-            if (isChecked) {
-                setTransfer(index, checkedId == R.id.btnDraftTransfer);
-            }
-        });
-    }
-
-    /**
-     * Stellt die Art einer Zeile um. Zur Umbuchung braucht es ein Gegenkonto: Kennt die Zeile noch
-     * keines, wird gefragt; ein Abbruch lässt sie, wie sie war.
-     */
-    private void setTransfer(final int index, boolean transfer) {
-        if (saving || index < 0 || index >= drafts.size()) {
-            return;
-        }
-        final NotificationDraft d = drafts.get(index);
-        if (d.isTransfer == transfer) {
-            return;
-        }
-        String other = d.transferAccount.trim();
-        if (!transfer || (!other.isEmpty() && !other.equalsIgnoreCase(d.account.trim()))) {
-            d.isTransfer = transfer;
-            render();
-            return;
-        }
-        repository.getAccountNames(names -> {
-            if (isFinishing() || isDestroyed()) {
-                return;
-            }
-            ArrayList<String> choices = new ArrayList<>();
-            for (String n : names) {
-                if (n != null && !n.trim().isEmpty() && !n.trim().equalsIgnoreCase(d.account.trim())) {
-                    choices.add(n);
-                }
-            }
-            Bundle args = new Bundle();
-            args.putInt(ARG_INDEX, index);
-            args.putStringArrayList(ARG_ACCOUNTS, choices);
-            HostedDialog.show(this, DLG_TRANSFER_ACCOUNT, args);
-        });
-    }
-
-    @Override
-    public android.app.Dialog buildDialog(String key, Bundle args) {
-        if (!DLG_TRANSFER_ACCOUNT.equals(key)) {
-            return null;
-        }
-        final int index = args.getInt(ARG_INDEX, -1);
-        final ArrayList<String> accounts = args.getStringArrayList(ARG_ACCOUNTS);
-        if (accounts == null || accounts.isEmpty() || index < 0 || index >= drafts.size()) {
-            return null;
-        }
-        return new AppDialog(this)
-                .setTitle(R.string.notify_pick_transfer_account)
-                .setItems(accounts.toArray(new String[0]), (dialog, which) -> {
-                    if (index < drafts.size()) {
-                        NotificationDraft d = drafts.get(index);
-                        d.transferAccount = accounts.get(which);
-                        d.isTransfer = true;
-                    }
-                    render();
-                })
-                .create();
-    }
-
-    @Override
-    public void onDialogCancelled(String key, Bundle args) {
-        // Der Umschalter steht schon auf Umbuchung – zurück auf den Stand der Zeile.
-        render();
-    }
-
     /** Die zweite Zeile: Datum, Konto, Kategorie – und der Wortlaut der Meldung, wo er gebraucht wird. */
     private String detailsOf(NotificationDraft d) {
         StringBuilder b = new StringBuilder(DateFormats.date(d.dateMillis));
-        if (d.isTransfer && !d.account.isEmpty()) {
-            String other = d.transferAccount.isEmpty() ? "?" : d.transferAccount;
-            b.append(" · ").append(d.isIncome ? other : d.account)
-                    .append(" → ").append(d.isIncome ? d.account : other);
-        } else if (!d.account.isEmpty()) {
+        if (!d.account.isEmpty()) {
             b.append(" · ").append(d.account);
         }
-        // Eine Umbuchung hat keine Kategorie; die der Ausgabe bleibt nur für den Rückweg stehen.
+        // Eine Umbuchung hat keine Kategorie – sie zeigt sich am Pfeil vor dem Empfänger.
         if (!d.isTransfer && d.isSplit()) {
             b.append(" · ").append(android.text.TextUtils.join(" + ", d.splitCategories));
         } else if (!d.isTransfer && !d.category.isEmpty()) {

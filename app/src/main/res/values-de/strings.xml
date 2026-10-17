@@ -1005,8 +1005,7 @@
     <string name="notify_batch_cancel_message">Es wird nichts gebucht. Die Benachrichtigungen bleiben erhalten und erscheinen beim nächsten Aktualisieren wieder.</string>
     <string name="notify_batch_cancel">Schließen</string>
     <string name="notify_problem_unrecognized">Nicht erkannt – wird nicht gebucht. Mit dem Stift von Hand buchen, dann lernt die App diese Art Meldung.</string>
-    <string name="notify_problem_transfer">Gegenkonto fehlt – für die Umbuchung ein anderes Konto wählen</string>
-    <string name="notify_pick_transfer_account">Umbuchung mit Konto</string>
+    <string name="notify_problem_transfer">Gegenkonto fehlt – mit dem Stift ein Konto wählen</string>
     <string name="notify_problem_account">Konto fehlt – die App meldet für mehrere Konten</string>
     <string name="notify_problem_foreign">Fremdwährung (%1$s) – bitte den Betrag mit dem Stift prüfen</string>
     <string name="notify_foreign_checked">Fremdwährung (%1$s)</string>
