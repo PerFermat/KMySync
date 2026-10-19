@@ -876,4 +876,27 @@ public class NotificationRunnerTest {
         assertEquals("", NotificationRunner.counterpart("A", "A", ""));
         assertEquals("", NotificationRunner.counterpart("A", "a", "A"));
     }
+
+    // ---- Warten auf die Ortung beim Eintreffen ----
+
+    /** Solange die Ortung läuft, erscheint die Meldung nicht – und der Abschluss löscht sie nicht. */
+    @Test
+    public void wartendeMeldungKommtBeimNaechstenAktualisieren() throws Exception {
+        vorlageLernen();
+        long frei = meldung(HEUTE, zahlung("REWE Markt", "7,50"), "a");
+        buffer.add(BANK, HEUTE, "Kartenzahlung", zahlung("Lidl", "9,99"), "b",
+                System.currentTimeMillis() + ArrivalLocation.HOLD_MS);
+        ArrayList<NotificationDraft> drafts = vorbereiten();
+        assertEquals(1, drafts.size());
+        assertEquals(frei, drafts.get(0).entryId);
+        abschliessen(drafts, ids(drafts));
+
+        // Die Ortung ist fertig: jetzt ist sie da.
+        long wartend = buffer.all().get(0).id;
+        buffer.setCoords(wartend, "50.1, 8.6");
+        ArrayList<NotificationDraft> next = vorbereiten();
+        assertEquals(1, next.size());
+        assertEquals(999L, next.get(0).cents);
+        assertEquals("50.1, 8.6", next.get(0).coords);
+    }
 }

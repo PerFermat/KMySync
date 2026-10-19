@@ -68,11 +68,14 @@ public class BankNotificationListener extends NotificationListenerService {
             return;
         }
         io.execute(() -> {
-            final long id = keep(this, c, null);
-            NotificationBuffer.purgeNow(this);
             // Nur hier, beim Eintreffen: jetzt ist das Handy noch dort, wo bezahlt wurde. Eine später
-            // aus der Leiste übernommene Meldung bekommt keinen Standort.
-            if (id > 0) {
+            // aus der Leiste übernommene Meldung bekommt keinen Standort. Solange die Ortung läuft,
+            // wartet die Meldung, statt mit dem Standort vom Aktualisieren gebucht zu werden.
+            boolean locate = ArrivalLocation.available(this);
+            final long id = keep(this, c, null,
+                    locate ? c.postTime + ArrivalLocation.HOLD_MS : 0L);
+            NotificationBuffer.purgeNow(this);
+            if (id > 0 && locate) {
                 ArrivalLocation.fetch(this, io,
                         coords -> NotificationBuffer.get(this).setCoords(id, coords));
             }
@@ -127,6 +130,11 @@ public class BankNotificationListener extends NotificationListenerService {
      * @return die Nummer des neuen Puffereintrags; -1, wenn nichts neu aufgehoben wurde
      */
     static long keep(Context context, Captured c, Set<String> only) {
+        return keep(context, c, only, 0L);
+    }
+
+    /** @param readyAt ab wann die Meldung für das Aktualisieren bestimmt ist; 0 = sofort */
+    static long keep(Context context, Captured c, Set<String> only, long readyAt) {
         if (only != null && !only.contains(c.packageName)) {
             return -1;
         }
@@ -141,7 +149,8 @@ public class BankNotificationListener extends NotificationListenerService {
         if (!hasAmountForAnyProfile(context, c)) {
             return -1;
         }
-        return NotificationBuffer.get(context).add(c.packageName, c.postTime, c.title, c.text, c.key);
+        return NotificationBuffer.get(context).add(c.packageName, c.postTime, c.title, c.text, c.key,
+                readyAt);
     }
 
     /**

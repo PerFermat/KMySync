@@ -283,6 +283,8 @@ public class NotificationBufferTest {
         buffer = new NotificationBuffer(ctx);
         assertEquals(1, buffer.allFor("a").size());
         assertEquals("", buffer.all().get(0).coords);
+        // Was vor der Wartezeit aufgehoben wurde, wartet auf nichts.
+        assertEquals(1, buffer.readyFor("a", 0L).size());
         buffer.markDone(Collections.singletonList(buffer.all().get(0).id), "a");
         assertTrue(buffer.allFor("a").isEmpty());
     }
@@ -297,6 +299,72 @@ public class NotificationBufferTest {
         // Kein Standort heißt: nichts überschreiben.
         buffer.setCoords(id, "");
         assertEquals("50.123456, 8.654321", buffer.all().get(0).coords);
+    }
+
+    // ---- Warten auf die Ortung ----
+
+    /** Solange die Ortung läuft, fehlt die Meldung beim Aktualisieren – nicht aber für die Lernfrage. */
+    @Test
+    public void wartendeMeldungFehltNurBeimAktualisieren() {
+        buffer.add("de.bank", JETZT, "Kartenzahlung", "12,34 EUR bei REWE", "k1",
+                JETZT + ArrivalLocation.HOLD_MS);
+        assertTrue(buffer.readyFor("a", JETZT + 1000L).isEmpty());
+        assertEquals(1, buffer.allFor("a").size());
+    }
+
+    /** Steht der Standort fest, ist die Meldung sofort frei. */
+    @Test
+    public void standortGibtDieMeldungFrei() {
+        long id = buffer.add("de.bank", JETZT, "Kartenzahlung", "12,34 EUR bei REWE", "k1",
+                JETZT + ArrivalLocation.HOLD_MS);
+        buffer.setCoords(id, "50.123456, 8.654321");
+        List<NotificationBuffer.Entry> ready = buffer.readyFor("a", JETZT + 1000L);
+        assertEquals(1, ready.size());
+        assertEquals("50.123456, 8.654321", ready.get(0).coords);
+    }
+
+    /** Auch eine Ortung ohne Ergebnis ist zu Ende – die Meldung wartet nicht weiter. */
+    @Test
+    public void ohneStandortWirdSieEbenfallsFrei() {
+        long id = buffer.add("de.bank", JETZT, "Kartenzahlung", "12,34 EUR bei REWE", "k1",
+                JETZT + ArrivalLocation.HOLD_MS);
+        buffer.setCoords(id, "");
+        assertEquals(1, buffer.readyFor("a", JETZT + 1000L).size());
+        assertEquals("", buffer.all().get(0).coords);
+    }
+
+    /** Bricht die Ortung ab (Dienst beendet), wird die Meldung nach der Frist von selbst frei. */
+    @Test
+    public void nachDerFristFreiAuchOhneOrtung() {
+        buffer.add("de.bank", JETZT, "Kartenzahlung", "12,34 EUR bei REWE", "k1",
+                JETZT + ArrivalLocation.HOLD_MS);
+        assertTrue(buffer.readyFor("a", JETZT + ArrivalLocation.HOLD_MS - 1).isEmpty());
+        assertEquals(1, buffer.readyFor("a", JETZT + ArrivalLocation.HOLD_MS).size());
+    }
+
+    /** Eine Datei der Fassung 3 (mit Standort, ohne Wartezeit) wird ergänzt; die Einträge bleiben. */
+    @Test
+    public void dateiDerFassungDreiWirdErgaenzt() {
+        Context ctx = ApplicationProvider.getApplicationContext();
+        buffer.close();
+        ctx.deleteDatabase(NotificationBuffer.FILE);
+        android.database.sqlite.SQLiteDatabase alt = ctx.openOrCreateDatabase(
+                NotificationBuffer.FILE, Context.MODE_PRIVATE, null);
+        alt.execSQL("CREATE TABLE notification_buffer (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + "package_name TEXT NOT NULL, post_time INTEGER NOT NULL, title TEXT NOT NULL, "
+                + "text TEXT NOT NULL, notif_key TEXT NOT NULL, coords TEXT NOT NULL DEFAULT '', "
+                + "UNIQUE(notif_key, post_time))");
+        alt.execSQL("CREATE TABLE notification_done (entry_id INTEGER NOT NULL, "
+                + "profile_id TEXT NOT NULL, PRIMARY KEY(entry_id, profile_id))");
+        alt.execSQL("INSERT INTO notification_buffer (package_name, post_time, title, text, notif_key, "
+                + "coords) VALUES ('de.bank', 5, 'Titel', '12,34 EUR', 'k1', '1.0, 2.0')");
+        alt.setVersion(3);
+        alt.close();
+
+        buffer = new NotificationBuffer(ctx);
+        List<NotificationBuffer.Entry> ready = buffer.readyFor("a", 0L);
+        assertEquals(1, ready.size());
+        assertEquals("1.0, 2.0", ready.get(0).coords);
     }
 
     // ---- bekannte Apps ----

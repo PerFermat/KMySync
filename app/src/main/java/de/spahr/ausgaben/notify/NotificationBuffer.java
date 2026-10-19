@@ -81,7 +81,7 @@ public final class NotificationBuffer extends SQLiteOpenHelper {
 
     /** Für Tests: eine eigene Instanz statt der gemeinsamen. */
     NotificationBuffer(Context context) {
-        super(context, FILE, null, 3);
+        super(context, FILE, null, 4);
     }
 
     @Override
@@ -89,7 +89,7 @@ public final class NotificationBuffer extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE notification_buffer (id INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + "package_name TEXT NOT NULL, post_time INTEGER NOT NULL, title TEXT NOT NULL, "
                 + "text TEXT NOT NULL, notif_key TEXT NOT NULL, coords TEXT NOT NULL DEFAULT '', "
-                + "UNIQUE(notif_key, post_time))");
+                + "ready_at INTEGER NOT NULL DEFAULT 0, UNIQUE(notif_key, post_time))");
         createDone(db);
     }
 
@@ -100,6 +100,9 @@ public final class NotificationBuffer extends SQLiteOpenHelper {
         }
         if (oldVersion < 3) {
             db.execSQL("ALTER TABLE notification_buffer ADD COLUMN coords TEXT NOT NULL DEFAULT ''");
+        }
+        if (oldVersion < 4) {
+            db.execSQL("ALTER TABLE notification_buffer ADD COLUMN ready_at INTEGER NOT NULL DEFAULT 0");
         }
     }
 
@@ -123,7 +126,18 @@ public final class NotificationBuffer extends SQLiteOpenHelper {
      */
     public synchronized long add(String packageName, long postTime, String title, String text,
                                  String key) {
+        return add(packageName, postTime, title, text, key, 0L);
+    }
+
+    /**
+     * Wie oben, aber erst ab {@code readyAt} für das Aktualisieren bestimmt ({@link #readyFor}): so
+     * lange läuft die Ortung beim Eintreffen. Steht sie vorher fest, gibt {@link #setCoords} die
+     * Meldung frei; bricht sie ab, wird sie mit {@code readyAt} von selbst frei.
+     */
+    public synchronized long add(String packageName, long postTime, String title, String text,
+                                 String key, long readyAt) {
         ContentValues v = new ContentValues();
+        v.put("ready_at", readyAt);
         v.put("package_name", packageName == null ? "" : packageName);
         v.put("post_time", postTime);
         v.put("title", title == null ? "" : title);
@@ -134,15 +148,19 @@ public final class NotificationBuffer extends SQLiteOpenHelper {
     }
 
     /**
-     * Trägt nach, wo das Handy beim Eintreffen der Meldung war. Getrennt vom Aufheben, weil die Ortung
-     * einige Sekunden braucht und die Meldung nicht darauf warten soll.
+     * Trägt nach, wo das Handy beim Eintreffen der Meldung war, und gibt sie für das Aktualisieren
+     * frei – auch ohne Standort: dann ist die Ortung eben zu Ende. Getrennt vom Aufheben, weil die
+     * Ortung bis zu einer Minute braucht.
      */
     public synchronized void setCoords(long id, String coords) {
-        if (id <= 0 || coords == null || coords.isEmpty()) {
+        if (id <= 0) {
             return;
         }
         ContentValues v = new ContentValues();
-        v.put("coords", coords);
+        if (coords != null && !coords.isEmpty()) {
+            v.put("coords", coords);
+        }
+        v.put("ready_at", 0L);
         getWritableDatabase().update("notification_buffer", v, "id = ?",
                 new String[]{String.valueOf(id)});
     }
@@ -156,6 +174,15 @@ public final class NotificationBuffer extends SQLiteOpenHelper {
     public synchronized List<Entry> allFor(String profileId) {
         return query("WHERE id NOT IN (SELECT entry_id FROM notification_done WHERE profile_id = ?) ",
                 new String[]{profileId});
+    }
+
+    /**
+     * Wie {@link #allFor}, aber ohne Meldungen, deren Ortung beim Eintreffen noch läuft – für das
+     * Aktualisieren. Die Lernfrage nimmt {@link #allFor}: zum Lernen braucht es keinen Standort.
+     */
+    public synchronized List<Entry> readyFor(String profileId, long now) {
+        return query("WHERE id NOT IN (SELECT entry_id FROM notification_done WHERE profile_id = ?) "
+                + "AND ready_at <= ? ", new String[]{profileId, String.valueOf(now)});
     }
 
     private List<Entry> query(String where, String[] args) {

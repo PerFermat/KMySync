@@ -41,7 +41,8 @@ public final class NotificationRunner {
         List<NotificationTemplate> templates = repository.notificationTemplates().all();
         // Nur was dieses Profil freigegeben und noch nicht erledigt hat.
         ArrayList<NotificationDraft> drafts = NotificationRun.drafts(
-                NotificationRun.ofApps(NotificationBuffer.get(context).allFor(profileOf(context)),
+                NotificationRun.ofApps(NotificationBuffer.get(context).readyFor(profileOf(context),
+                                System.currentTimeMillis()),
                         AppSelection.allowed(context)),
                 templates, Currencies::forAccount, ZoneId.systemDefault(), styleOf(context));
         if (drafts.isEmpty()) {
