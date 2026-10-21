@@ -124,6 +124,13 @@ public class NotificationBatchActivity extends LocalizedActivity {
         editLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(), result -> {
                     if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        if (result.getData().getBooleanExtra(BookingEditActivity.RESULT_REMOVE, false)) {
+                            // „Löschen" in der Maske: wie der Papierkorb der Zeile.
+                            int index = editing;
+                            editing = -1;
+                            remove(index);
+                            return;
+                        }
                         applyEdit(result.getData());
                     }
                     editing = -1;

@@ -437,6 +437,16 @@
                     android:layout_marginTop="16dp"
                     android:text="@string/new_booking" />
 
+                <!-- Nur in der Liste der Benachrichtigungen: zurück, ohne die Zeile zu ändern. -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnBatchBack"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/batch_back"
+                    android:visibility="gone" />
+
                 <!-- Nur bei „jetzt buchen" aus den geplanten Buchungen: Termin ohne Buchung überspringen. -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSkipSchedule"

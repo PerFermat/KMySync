@@ -100,6 +100,8 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
     /** Stapelmodus: als Umbuchung gespeichert; {@link #RESULT_ACCOUNT}/{@link #RESULT_INCOME} wie die Zeile. */
     public static final String RESULT_TRANSFER = "result_transfer";
     public static final String RESULT_TRANSFER_ACCOUNT = "result_transfer_account";
+    /** Stapelmodus: „Löschen" – die Zeile soll aus der Liste, wie mit dem Papierkorb. */
+    public static final String RESULT_REMOVE = "result_remove";
     /**
      * Bei einer per Alias/Vorlage aufgelösten Umbuchung: das in der Buchungsliste angezeigte Konto
      * (Nutzereingabe). Steckt es bereits als Von- oder Nach-Konto in Alias/Vorlage, bleiben beide Konten
@@ -199,6 +201,8 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
     private MaterialButton btnSkipSchedule;
     private MaterialButton btnUpdate;
     private MaterialButton btnDelete;
+    /** Stapelmodus: zurück zur Liste, ohne die Zeile zu ändern. */
+    private MaterialButton btnBatchBack;
     /** Statuszeile beim Nachladen eines Belegs (Shimmer + Text, unbestimmt). */
     private ImportBanner receiptBanner;
 
@@ -379,6 +383,7 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
         btnSkipSchedule = findViewById(R.id.btnSkipSchedule);
         btnUpdate = findViewById(R.id.btnUpdate);
         btnDelete = findViewById(R.id.btnDelete);
+        btnBatchBack = findViewById(R.id.btnBatchBack);
 
         ShimmerView receiptShimmer = findViewById(R.id.receiptShimmer);
         receiptShimmer.setColors(getColor(R.color.import_banner_bg), getColor(R.color.import_banner_shimmer));
@@ -478,7 +483,19 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
             PickerBehaviour.settleAll(getWindow().getDecorView());
             update();
         });
-        btnDelete.setOnClickListener(v -> confirmDelete());
+        btnDelete.setOnClickListener(v -> {
+            if (batch) {
+                // Nichts ist gebucht: die Zeile verschwindet nur aus der Liste, wie mit dem Papierkorb.
+                setResult(RESULT_OK, new Intent().putExtra(RESULT_REMOVE, true));
+                finish();
+                return;
+            }
+            confirmDelete();
+        });
+        btnBatchBack.setOnClickListener(v -> {
+            setResult(RESULT_CANCELED);
+            finish();
+        });
 
         rowReceipt = findViewById(R.id.rowReceipt);
         textReceipt = findViewById(R.id.textReceipt);
@@ -1620,8 +1637,27 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
         } else {
             enabled = splitCtl.isValid();
         }
-        btnSaveNew.setEnabled(enabled);
+        // In der Liste der Benachrichtigungen bleibt Speichern anklickbar und sagt beim Tipp, was fehlt –
+        // ein ausgegrauter Knopf sah dort aus wie einer ohne Funktion.
+        btnSaveNew.setEnabled(enabled || batch);
         btnUpdate.setEnabled(enabled);
+    }
+
+    /**
+     * Stapelmodus: Speichern, Zurück und Löschen – alle drei führen zurück in die Liste. Läuft nach
+     * jedem Füllweg, weil die die Knöpfe für eine neue Buchung einrichten.
+     */
+    private void setupBatchButtons() {
+        if (!batch) {
+            return;
+        }
+        btnSaveNew.setText(R.string.save);
+        btnSaveNew.setVisibility(View.VISIBLE);
+        btnBatchBack.setVisibility(View.VISIBLE);
+        btnUpdate.setVisibility(View.GONE);
+        btnDelete.setText(R.string.delete);
+        btnDelete.setVisibility(View.VISIBLE);
+        updateSaveEnabled();
     }
 
     // ---- Datum ----
@@ -1751,6 +1787,13 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
             saveTransferNew();
             return;
         }
+        if (batch && !splitCtl.isValid()) {
+            // Der Knopf ist im Stapelmodus nie ausgegraut – also hier sagen, was nicht stimmt.
+            Long total = parseAmountToCents(Ui.text(editAmount));
+            Toast.makeText(this, total == null || total <= 0 ? R.string.error_amount
+                    : R.string.error_split_sum, Toast.LENGTH_SHORT).show();
+            return;
+        }
         Booking b = readValidFields(new Booking());
         if (b == null) {
             return;
@@ -1864,6 +1907,7 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
         if (!batch) {
             return;
         }
+        setupBatchButtons();
         String account = getIntent().getStringExtra(EXTRA_PRESET_ACCOUNT);
         account = account == null ? "" : account;
         boolean income = getIntent().getBooleanExtra(EXTRA_PREFILL_INCOME, false);

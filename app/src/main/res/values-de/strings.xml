@@ -1001,6 +1001,7 @@
     <string name="notify_learn_failed">Aus dieser Benachrichtigung ließ sich keine Vorlage ableiten.</string>
     <string name="notify_batch_title">Buchungen aus Benachrichtigungen</string>
     <string name="notify_batch_saved">Buchungen angelegt: %1$d</string>
+    <string name="batch_back">Zurück (ohne Speichern)</string>
     <string name="notify_batch_cancel_title">Liste schließen?</string>
     <string name="notify_batch_cancel_message">Es wird nichts gebucht. Die Benachrichtigungen bleiben erhalten und erscheinen beim nächsten Aktualisieren wieder.</string>
     <string name="notify_batch_cancel">Schließen</string>

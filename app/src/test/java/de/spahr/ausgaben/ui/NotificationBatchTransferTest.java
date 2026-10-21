@@ -257,4 +257,94 @@ public class NotificationBatchTransferTest {
         }
         return out;
     }
+
+    // ---- Knöpfe der Maske im Stapelmodus ----
+
+    private static com.google.android.material.button.MaterialButton knopf(android.app.Activity a, int id) {
+        return a.findViewById(id);
+    }
+
+    /** Speichern, Zurück und Löschen – „Neue Buchung" und „Ändern" gibt es hier nicht. */
+    @Test
+    public void maskeZeigtSpeichernZurueckUndLoeschen() {
+        BookingEditActivity a = maske(zeile());
+        android.content.Context ctx = ApplicationProvider.getApplicationContext();
+        assertEquals(View.VISIBLE, knopf(a, R.id.btnSaveNew).getVisibility());
+        assertEquals(ctx.getString(R.string.save), knopf(a, R.id.btnSaveNew).getText().toString());
+        assertEquals(View.VISIBLE, knopf(a, R.id.btnBatchBack).getVisibility());
+        assertEquals(View.VISIBLE, knopf(a, R.id.btnDelete).getVisibility());
+        assertEquals(ctx.getString(R.string.delete), knopf(a, R.id.btnDelete).getText().toString());
+        assertEquals(View.GONE, knopf(a, R.id.btnUpdate).getVisibility());
+    }
+
+    /** Auch eine Umbuchungszeile bekommt dieselben drei Knöpfe. */
+    @Test
+    public void umbuchungsMaskeZeigtDieselbenKnoepfe() {
+        NotificationDraft d = zeile();
+        d.isTransfer = true;
+        d.transferAccount = "PayPal-Konto";
+        BookingEditActivity a = maske(d);
+        assertEquals(View.VISIBLE, knopf(a, R.id.btnBatchBack).getVisibility());
+        assertEquals(View.VISIBLE, knopf(a, R.id.btnDelete).getVisibility());
+        assertEquals(View.GONE, knopf(a, R.id.btnUpdate).getVisibility());
+    }
+
+    @Test
+    public void zurueckGibtNichtsZurueck() {
+        BookingEditActivity a = maske(zeile());
+        knopf(a, R.id.btnBatchBack).performClick();
+        assertTrue(a.isFinishing());
+        assertEquals(android.app.Activity.RESULT_CANCELED, Shadows.shadowOf(a).getResultCode());
+    }
+
+    @Test
+    public void loeschenMeldetDieZeileZumEntfernen() {
+        BookingEditActivity a = maske(zeile());
+        knopf(a, R.id.btnDelete).performClick();
+        assertTrue(a.isFinishing());
+        assertEquals(android.app.Activity.RESULT_OK, Shadows.shadowOf(a).getResultCode());
+        assertTrue(Shadows.shadowOf(a).getResultIntent()
+                .getBooleanExtra(BookingEditActivity.RESULT_REMOVE, false));
+    }
+
+    /** Speichern ist nie stumm: ohne Betrag sagt es, was fehlt, und die Maske bleibt offen. */
+    @Test
+    public void speichernOhneBetragSagtWasFehlt() {
+        BookingEditActivity a = maske(zeile());
+        android.widget.EditText amount = a.findViewById(R.id.editAmount);
+        amount.setText("");
+        idle();
+        assertTrue(knopf(a, R.id.btnSaveNew).isEnabled());
+        knopf(a, R.id.btnSaveNew).performClick();
+        idle();
+        assertFalse(a.isFinishing());
+        assertEquals(ApplicationProvider.getApplicationContext().getString(R.string.error_amount),
+                org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+    }
+
+    /** „Löschen" in der Maske nimmt die Zeile aus der Liste, wie der Papierkorb. */
+    @Test
+    public void loeschenAusDerMaskeEntferntDieZeile() throws Exception {
+        NotificationDraft erste = zeile();
+        erste.edited = true;
+        NotificationDraft zweite = zeile();
+        zweite.entryId = 2L;
+        zweite.payee = "Lidl";
+        ArrayList<NotificationDraft> drafts = new ArrayList<>();
+        drafts.add(erste);
+        drafts.add(zweite);
+        Intent i = new Intent(ApplicationProvider.getApplicationContext(),
+                NotificationBatchActivity.class)
+                .putParcelableArrayListExtra(NotificationBatchActivity.EXTRA_DRAFTS, drafts)
+                .putExtra(NotificationBatchActivity.EXTRA_SHOWN_IDS, new long[]{1L, 2L});
+        NotificationBatchActivity a = Robolectric.buildActivity(NotificationBatchActivity.class, i)
+                .setup().get();
+        idle();
+        Intent opened = maskeOeffnen(a);
+        Shadows.shadowOf(a).receiveResult(opened, android.app.Activity.RESULT_OK,
+                new Intent().putExtra(BookingEditActivity.RESULT_REMOVE, true));
+        idle();
+        assertEquals("Lidl", ersteZeile(a).payee);
+        assertEquals("Lidl", titel(a));
+    }
 }
