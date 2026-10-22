@@ -1360,6 +1360,9 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
         btnUpdate.setVisibility(View.GONE);
         btnDelete.setVisibility(View.GONE);
         populateFrom(b, amountCents);
+        // Der Empfänger der Vorlage ist schon das Ergebnis der Erkennung („MTP Tankstelle" →
+        // „Tankstelle"), keine Berichtigung: nach dem Alias wird erst gefragt, wenn der Nutzer ihn ändert.
+        prefilledPayee = b.payee == null ? "" : b.payee;
         refreshNoteLocation();
         applyBatchPresets();
     }

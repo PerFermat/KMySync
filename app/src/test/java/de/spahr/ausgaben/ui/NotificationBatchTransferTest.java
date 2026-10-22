@@ -347,4 +347,58 @@ public class NotificationBatchTransferTest {
         assertEquals("Lidl", ersteZeile(a).payee);
         assertEquals("Lidl", titel(a));
     }
+
+    // ---- Nachfrage nach dem Alias ----
+
+    /** Die Maske einer erkannten Zeile, wie die Liste sie öffnet: mit dem Wortlaut der Bank. */
+    private static BookingEditActivity erkannteMaske(String payee) throws Exception {
+        android.content.Context ctx = ApplicationProvider.getApplicationContext();
+        de.spahr.ausgaben.db.AppDatabase db = de.spahr.ausgaben.db.AppDatabase.getInstance(ctx);
+        java.util.concurrent.Executors.newSingleThreadExecutor().submit(() -> {
+            db.accountDao().insertIfAbsent(new de.spahr.ausgaben.db.Account("Kreditkarte"));
+            return null;
+        }).get(10, java.util.concurrent.TimeUnit.SECONDS);
+        NotificationDraft d = zeile();
+        d.edited = true;
+        d.payee = payee;
+        d.rawPayee = "MTP Tankstelle";
+        Intent i = new Intent(ctx, BookingEditActivity.class)
+                .putExtra(BookingEditActivity.EXTRA_BATCH, true)
+                .putExtra(BookingEditActivity.EXTRA_PREFILL_DATE_MS, d.dateMillis)
+                .putExtra(BookingEditActivity.EXTRA_BATCH_ROW, d)
+                .putExtra(BookingEditActivity.EXTRA_PRESET_ACCOUNT, d.account)
+                .putExtra(BookingEditActivity.EXTRA_VOICE_SPOKEN_PAYEE, d.rawPayee)
+                .putExtra(BookingEditActivity.EXTRA_VOICE_AMOUNT_CENTS, d.cents)
+                .putExtra(BookingEditActivity.EXTRA_PREFILL_NOTE, "");
+        BookingEditActivity a = Robolectric.buildActivity(BookingEditActivity.class, i).setup().get();
+        for (int n = 0; n < 5; n++) {
+            Thread.sleep(50);
+            idle();
+        }
+        return a;
+    }
+
+    /** Erkannt war richtig („MTP Tankstelle" → „Tankstelle"): unverändert speichern fragt nicht. */
+    @Test
+    public void unveraendertGespeichertFragtNichtNachDemAlias() throws Exception {
+        BookingEditActivity a = erkannteMaske("Tankstelle");
+        knopf(a, R.id.btnSaveNew).performClick();
+        idle();
+        assertTrue("ohne Änderung keine Alias-Frage", a.isFinishing());
+        assertEquals("Tankstelle", Shadows.shadowOf(a).getResultIntent()
+                .getStringExtra(BookingEditActivity.RESULT_PAYEE));
+    }
+
+    /** Von Hand berichtigt: dann wird gefragt, ob die Schreibweise der Bank als Alias gilt. */
+    @Test
+    public void vonHandBerichtigtFragtNachDemAlias() throws Exception {
+        BookingEditActivity a = erkannteMaske("Tankstelle");
+        android.widget.EditText payee = a.findViewById(R.id.editPayee);
+        payee.setText("Shell");
+        idle();
+        knopf(a, R.id.btnSaveNew).performClick();
+        idle();
+        assertFalse(a.isFinishing());
+        assertTrue(org.robolectric.shadows.ShadowDialog.getLatestDialog().isShowing());
+    }
 }
