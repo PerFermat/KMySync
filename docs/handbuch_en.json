@@ -109,6 +109,11 @@
     },
     {
       "type": "p",
+      "id": "b-0074a",
+      "text": "<b>Installing:</b> KMySync is available on <b>F-Droid</b> – <a href=\"https://f-droid.org/packages/de.spahr.ausgaben/\" color=\"#1565c0\">https://f-droid.org/packages/de.spahr.ausgaben/</a> – and as an APK in the <b>GitHub releases</b> – <a href=\"https://github.com/PerFermat/KMySync/releases\" color=\"#1565c0\">https://github.com/PerFermat/KMySync/releases</a>. The F-Droid version comes without Google services; the watch app and the Play services document scanner are only part of the full version from GitHub. F-Droid signs with its own key, so the two versions cannot update each other: to switch, make a backup first (Chapter 20), uninstall and reinstall."
+    },
+    {
+      "type": "p",
       "id": "b-0003",
       "text": "The app needs no vendor account and no third-party cloud: data is exchanged with KMyMoney through a folder you provide yourself (Nextcloud, WebDAV or SMB/Samba). There are no ads and no tracking. The one exception is the map for picking a location: it loads its tiles from OpenStreetMap, and only when you open it."
     },
