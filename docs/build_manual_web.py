@@ -36,6 +36,7 @@ FAVICON = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect wi
 # Zeigt immer auf das neueste Release, auch wenn die Seite noch nicht neu erzeugt ist.
 RELEASE_URL = APP_URL + "/releases/latest"
 RELEASE_API = "https://api.github.com/repos/PerFermat/KMySync/releases/latest"
+FDROID_URL = "https://f-droid.org/packages/de.spahr.ausgaben/"
 AUTOR = {"@type": "Person", "name": "Michael Spahr", "url": "https://michaelspahr.de/"}
 SCHRIFT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 SCHRIFT_FETT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
@@ -61,6 +62,7 @@ UI = {
            "plattform": "<b>Für Android</b> (ab 8.0) und Wear OS (ab 3)",
            "og_plattform": "Nur für Android & Wear OS – nicht für iPhone",
            "release": "Neueste Version", "release_titel": "Neueste Version von KMySync auf GitHub herunterladen",
+           "fdroid": "F-Droid", "fdroid_titel": "KMySync auf F-Droid installieren (ohne Google-Dienste)",
            "og_unter": "Benutzerhandbuch", "og_zeile": "Bargeld unterwegs erfassen –\nund in KMyMoney weiterverarbeiten.",
            "locale": "de_DE",
            "unterzeile": "Bargeld unterwegs erfassen – und in KMyMoney weiterverarbeiten."},
@@ -73,6 +75,7 @@ UI = {
            "plattform": "<b>For Android</b> (8.0 and later) and Wear OS (3 and later)",
            "og_plattform": "Android & Wear OS only – not for iPhone",
            "release": "Latest version", "release_titel": "Download the latest KMySync version from GitHub",
+           "fdroid": "F-Droid", "fdroid_titel": "Install KMySync from F-Droid (without Google services)",
            "og_unter": "User Manual", "og_zeile": "Record cash on the go –\nand process it in KMyMoney.",
            "locale": "en_US",
            "unterzeile": "Record cash on the go – and process it in KMyMoney."},
@@ -287,6 +290,7 @@ class Seite:
             f'<a href="{andere_href if l != lang else "./"}" class="{"on" if l == lang else "alt"}" hreflang="{l}" '
             f'lang="{l}">{l.upper()}</a>' for l in SPRACHEN)
         pdf = f'<a class="btn ghost" href="{PDF_URL}{PDF[lang]}">↓ {U["pdf"]}</a>'
+        fdroid = f'<a class="btn ghost" href="{FDROID_URL}" title="{U["fdroid_titel"]}">{U["fdroid"]} ↗</a>'
         release = (f'<a class="btn" href="{RELEASE_URL}" title="{U["release_titel"]}">'
                    f'<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>'
                    f'{U["release"]}{": " + html.escape(self.version) if self.version else ""}</a>')
@@ -302,7 +306,7 @@ class Seite:
             {"@type": "SoftwareApplication", "@id": SITE + "#app", "name": "KMySync",
              "operatingSystem": "Android 8.0+, Wear OS 3+", "applicationCategory": "FinanceApplication",
              "softwareVersion": (self.version or "").replace("KMySync ", "") or None,
-             "downloadUrl": RELEASE_URL, "url": SITE, "sameAs": APP_URL, "author": AUTOR,
+             "downloadUrl": RELEASE_URL, "url": SITE, "sameAs": [APP_URL, FDROID_URL], "author": AUTOR,
              "license": "https://www.gnu.org/licenses/gpl-3.0.html",
              "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"}},
         ]}
@@ -349,7 +353,7 @@ class Seite:
   <main class="doc">
     <div class="hero"><h1>{html.escape(I["doc_title"])}</h1><p>{U["unterzeile"]}</p>
       <p class="plattform"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85a.64.64 0 00-.83.22l-1.88 3.24a11.43 11.43 0 00-8.94 0L5.65 5.67a.64.64 0 00-.87-.2c-.28.18-.37.54-.22.83L6.4 9.48A10.81 10.81 0 001 18h22a10.81 10.81 0 00-5.4-8.52zM7 15.25a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5zm10 0a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5z"/></svg><span>{U["plattform"]}</span></p>
-      <div class="meta">{release}{pdf}<span class="pill">{I["date_text"]}</span></div></div>
+      <div class="meta">{release}{fdroid}{pdf}<span class="pill">{I["date_text"]}</span></div></div>
     {"".join(inhalt)}
   </main>
   <aside class="stage" aria-hidden="true"><div class="phone"><img id="ph" alt=""></div><div class="dots" id="dots"></div><div class="cap" id="phcap"></div></aside>
