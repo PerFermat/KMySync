@@ -1,0 +1,7 @@
+Nuevo: apuntes desde notificaciones push, para bancos sin FinTS. KMySync aprende de un apunte introducido a mano y, al actualizar, propone los movimientos futuros en una lista, con beneficiario, categoría y ubicación.
+
+Nuevo: leer y escribir la base de datos de KMyMoney (SQLite).
+
+Exportación más segura: autocomprobación tras cada escritura, comparación línea a línea y restauración en caso de error.
+
+Copias de seguridad: número ajustable y copias mensuales permanentes.

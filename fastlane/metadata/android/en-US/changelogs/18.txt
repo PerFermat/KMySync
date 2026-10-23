@@ -1,0 +1,7 @@
+New: bookings from push notifications – for banks without FinTS. KMySync learns from a booking you enter by hand and, on refresh, suggests future transactions as a list, with payee, category and location.
+
+New: read and write the KMyMoney database (SQLite).
+
+Safer export: self-check after every write, line-by-line comparison, restore on errors.
+
+Backups: adjustable number, permanent monthly backups.

@@ -1,0 +1,7 @@
+Neu: Buchungen aus Push-Benachrichtigungen – für Banken ohne FinTS. KMySync lernt aus einer von Hand angelegten Buchung und schlägt künftige Umsätze beim Aktualisieren als Liste vor, mit Empfänger, Kategorie und Standort.
+
+Neu: KMyMoney-Datenbank (SQLite) lesen und schreiben.
+
+Sicherer Export: Selbstprüfung nach jedem Schreiben, Zeilenvergleich, Wiederherstellen bei Fehlern.
+
+Sicherungen: Anzahl einstellbar, dauerhafte Monatssicherungen.
