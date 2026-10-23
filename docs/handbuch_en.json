@@ -2,7 +2,7 @@
   "doc_title": "KMySync – User Manual",
   "doc_author": "KMySync",
   "version_text": "Version 2.3",
-  "date_text": "Updated: September 2026",
+  "date_text": "Updated: October 2026",
   "toc_title": "Contents",
   "footer_text": "KMySync · User Manual (Version 2.3)",
   "page_text": "Page %d",
@@ -163,7 +163,7 @@
     {
       "type": "p",
       "id": "b-0005f",
-      "text": "<b>Where to go next:</b> the welcome assistant in detail is in the next chapter, recording a booking in Chapter 8, syncing with KMyMoney in Chapter 17, and every single setting in Chapter 19."
+      "text": "<b>Where to go next:</b> the welcome assistant in detail is in the next chapter, recording a booking in Chapter 8, syncing with KMyMoney in Chapter 18, and every single setting in Chapter 20."
     },
     {
       "type": "h1",
@@ -189,7 +189,7 @@
           "id": "b-0010",
           "items": [
             "Choose the <b>language</b> (takes effect immediately).",
-            "<b>Import/export format</b>: CSV, «Read .kmy, export CSV» or KMyMoney file (.kmy).",
+            "<b>Import/export format</b>: CSV, «Read .kmy, export CSV», KMyMoney file (.kmy), KMyMoney database (SQLite) or «Read SQLite database, export CSV».",
             "<b>Synchronisation</b>: server type, URL, user, password – with <b>«Test connection»</b>; in .kmy mode also <b>«Choose .kmy»</b>.",
             "<b>«Import accounts»</b>: the same selection dialog as «Add account», right here in the assistant.",
             "<b>«More settings»</b> opens the full settings; <b>«Done»</b> closes the assistant."
@@ -215,7 +215,7 @@
     {
       "type": "p",
       "id": "b-0012",
-      "text": "All settings in detail – language, number format, currency, server connection, export mode, default account, alias names, app lock, backup and more – are explained in the <b>«Settings»</b> chapter at the end of the manual (Chapter 19). They are reachable any time via the <b>⋮ menu</b> at the top right, entry <b>«Settings»</b> at the very bottom."
+      "text": "All settings in detail – language, number format, currency, server connection, export mode, default account, alias names, app lock, backup and more – are explained in the <b>«Settings»</b> chapter at the end of the manual (Chapter 20). They are reachable any time via the <b>⋮ menu</b> at the top right, entry <b>«Settings»</b> at the very bottom."
     },
     {
       "type": "h1",
@@ -1232,6 +1232,11 @@
       }
     },
     {
+      "type": "p",
+      "id": "b-9540",
+      "text": "<b>Document scanner:</b> in the variant with Google services (GitHub download «full»), the camera opens the Play services document scanner. It detects the edges of the receipt, straightens it and captures several pages in a row. Without Play services, and in the F-Droid variant, the usual camera is used."
+    },
+    {
       "type": "h2",
       "id": "b-0080a",
       "text": "Exporting the receipts of a filter"
@@ -1305,8 +1310,194 @@
     },
     {
       "type": "h1",
+      "id": "b-9500",
+      "text": "12. Transactions from notifications"
+    },
+    {
+      "type": "p",
+      "id": "b-9501",
+      "text": "For accounts without FinTS – a credit card, for example: many banking apps report every card payment instantly as a <b>push notification</b>. KMySync can read these notifications and suggest bookings from them. There is no built-in list of banks: the app <b>learns</b> how your bank's notifications are structured from a booking you enter once by hand."
+    },
+    {
+      "type": "h2",
+      "id": "b-9502",
+      "text": "Turning it on"
+    },
+    {
+      "type": "steps",
+      "id": "b-9503",
+      "items": [
+        "<b>Turn on the switch.</b> In <b>Settings</b>, turn on <b>«Transactions from notifications»</b>. A notice explains what the app keeps; OK opens the system settings – allow KMySync <b>notification access</b> there.",
+        "<b>Choose the banking app.</b> Under <b>Edit profile → «Select apps for notifications»</b>, tick your banking app. Every app that has already sent a notification with an amount of money is listed. If its notification is still in the notification shade, it is taken over as soon as you tick the app. Each profile chooses its own apps.",
+        "<b>Location (optional).</b> If GPS is on and KMySync has location access <b>«Allow all the time»</b>, the app remembers where you were when the notification arrived (see below)."
+      ]
+    },
+    {
+      "type": "text_with_single_shot",
+      "id": "b-9504",
+      "content": [
+        {
+          "type": "p",
+          "id": "b-9504a",
+          "text": "In the list, every app that has already learned something has a <b>pencil</b> (edit rules) and a <b>trash can</b>. The trash can first deletes the learned rules of that app; once there are none left, another tap deletes the app's stored texts."
+        }
+      ],
+      "shot": {
+        "fname": "Benachrichtigung Apps.png",
+        "caption": "Choosing banking apps per profile",
+        "width": 5.0
+      }
+    },
+    {
+      "type": "h2",
+      "id": "b-9505",
+      "text": "Learning: the first notification"
+    },
+    {
+      "type": "text_with_single_shot",
+      "id": "b-9506",
+      "content": [
+        {
+          "type": "p",
+          "id": "b-9506a",
+          "text": "When your bank's first notification arrives, enter the booking <b>by hand</b> as usual – amount, account, payee. On saving, the app looks for a stored notification with exactly this amount from the time of the booking and asks: <b>«Process future notifications from this app for the account …?»</b>"
+        },
+        {
+          "type": "p",
+          "id": "b-9506b",
+          "text": "With <b>«Yes, process them»</b> it learns a rule: where the amount and the payee are in the notification. If several notifications match, it first asks which one you mean – with date and time, in case two read the same."
+        }
+      ],
+      "shot": {
+        "fname": "Benachrichtigung Frage.png",
+        "caption": "The question after the first booking",
+        "width": 5.0
+      }
+    },
+    {
+      "type": "p",
+      "id": "b-9507",
+      "text": "<b>After a transfer</b>, the app asks which of the two accounts the notifications belong to: the from-account (money out) or the to-account (money in)."
+    },
+    {
+      "type": "p",
+      "id": "b-9508",
+      "text": "<b>One account, one banking app:</b> if an account learns from a different app, that app's rules replace the account's previous ones. One app may, however, serve several accounts – told apart by the card ending in the notification, for example. For experiments, it is best to use a separate test account."
+    },
+    {
+      "type": "h2",
+      "id": "b-9509",
+      "text": "The list of suggestions on refresh"
+    },
+    {
+      "type": "text_with_single_shot",
+      "id": "b-9510",
+      "content": [
+        {
+          "type": "p",
+          "id": "b-9510a",
+          "text": "When you <b>refresh all accounts</b> (pull down or long-press «All accounts»), the app first reads the KMyMoney file and then shows the new notifications as a list – even if the server cannot be reached at the moment. Each row shows payee and amount, with date and account below."
+        },
+        {
+          "type": "p",
+          "id": "b-9510b",
+          "text": "A <b>transfer</b> is shown by the arrow in front of the payee: «→» for money out, «←» for money in."
+        }
+      ],
+      "shot": {
+        "fname": "Benachrichtigung Liste.png",
+        "caption": "Suggestions from notifications",
+        "width": 5.0
+      }
+    },
+    {
+      "type": "bullets",
+      "id": "b-9511",
+      "items": [
+        "<b>«Not recognised»</b> (yellow): no rule fits. The row is not booked. If you fill it in yourself with the pencil, the app learns from it for the next notification of this kind.",
+        "<b>«Possible duplicate»</b> (yellow): the account already has a booking with the same amount (up to two days apart), or the same notification is present more than once. It is shown anyway – check it and remove it if needed.",
+        "<b>Account missing, foreign currency, counter account missing</b> (red): this row holds up «OK» until it is completed with the pencil or removed."
+      ]
+    },
+    {
+      "type": "p",
+      "id": "b-9512",
+      "text": "The <b>pencil</b> opens the booking form with three buttons, all of which lead back to the list: <b>«Save»</b> puts your changes into the row, <b>«Back (without saving)»</b> leaves it unchanged, <b>«Delete»</b> removes it from the list. What you set in the form counts – including the booking type and the accounts of a transfer. If you correct the payee, the app offers to learn the bank's spelling as an alias, just as after dictation. The <b>trash can</b> in the row removes it directly."
+    },
+    {
+      "type": "p",
+      "id": "b-9513",
+      "text": "<b>«OK»</b> books all bookable rows. Afterwards all notifications shown are done – including the removed and the unrecognised ones. <b>Cancel</b> or Back change nothing: the list comes back on the next refresh."
+    },
+    {
+      "type": "h2",
+      "id": "b-9514",
+      "text": "Payee, note and location"
+    },
+    {
+      "type": "p",
+      "id": "b-9515",
+      "text": "The app finds the <b>payee</b> exactly as with voice input (Chapter 11): first preferred aliases, then earlier bookings, then the remaining aliases. That is how «MTP Tankstelle» becomes your «Petrol station» – with the category of the earlier booking or the alias and, if any, its split. If the payee was last booked as a <b>transfer</b>, the list suggests a transfer again, with the counter account used then. Whether it is an expense or income is stated by the notification itself."
+    },
+    {
+      "type": "p",
+      "id": "b-9516",
+      "text": "The <b>note</b> contains the exact wording of the notification – title and text, with line breaks. So KMyMoney later shows what the bank reported."
+    },
+    {
+      "type": "p",
+      "id": "b-9517",
+      "text": "<b>Location:</b> with GPS and «Allow all the time» access, the app locates the phone for up to <b>one minute</b> when the notification arrives and adds the position as a GPS line; it also helps to pick the right branch among payees with the same name. While locating is still running, the notification does not yet appear in the list. Without «all the time» access the location at refresh is used; with GPS switched off, none at all."
+    },
+    {
+      "type": "p",
+      "id": "b-9518",
+      "text": "The app recognises <b>amounts</b> with two decimals («12.34 €»), and for the chosen apps also whole amounts such as «12 €» or «1,234 €» – read according to the profile's number format."
+    },
+    {
+      "type": "h2",
+      "id": "b-9519",
+      "text": "Editing rules"
+    },
+    {
+      "type": "text_with_single_shot",
+      "id": "b-9520",
+      "content": [
+        {
+          "type": "p",
+          "id": "b-9520a",
+          "text": "The pencil next to an app opens its <b>rule page</b> – laid out like the recognition rules for PDF statements (Chapter 10): a feature such as the card ending, the labels for amount and payee (one per line, further ones are fallbacks), which number is meant and in which currency. At the bottom you can type a <b>test notification</b> or insert a stored one; the app shows right away what the rule reads from it."
+        },
+        {
+          "type": "p",
+          "id": "b-9520b",
+          "text": "The learned rules belong to the profile and are part of every backup."
+        }
+      ],
+      "shot": {
+        "fname": "Benachrichtigung Regeln.png",
+        "caption": "Adjusting a learned rule by hand",
+        "width": 5.0
+      }
+    },
+    {
+      "type": "h2",
+      "id": "b-9521",
+      "text": "What the app keeps"
+    },
+    {
+      "type": "bullets",
+      "id": "b-9522",
+      "items": [
+        "Only notifications from the <b>chosen apps</b> are kept, and only if they mention an amount of money. From other apps KMySync remembers just the name – so they can be offered for selection – and no text.",
+        "The texts are kept in a separate file on the device that is <b>never part of a backup</b>. They are deleted as soon as all profiles involved have processed them – at the latest after 24 hours for an app without a rule, after 30 days for an app with a rule.",
+        "Only the wording of a notification that becomes a booking leaves the device – as the note of that booking."
+      ]
+    },
+    {
+      "type": "h1",
       "id": "b-0091",
-      "text": "12. Booking list and filter"
+      "text": "13. Booking list and filter"
     },
     {
       "type": "text_with_single_shot",
@@ -1410,7 +1601,7 @@
     {
       "type": "h1",
       "id": "b-0094",
-      "text": "13. Analysis"
+      "text": "14. Analysis"
     },
     {
       "type": "text_with_single_shot",
@@ -1437,7 +1628,7 @@
     {
       "type": "h1",
       "id": "b-0097",
-      "text": "14. Where does my money go?"
+      "text": "15. Where does my money go?"
     },
     {
       "type": "text_with_single_shot",
@@ -1446,7 +1637,7 @@
         {
           "type": "p",
           "id": "b-0099",
-          "text": "The <b>Categories</b> page (menu <b>⋮ → Categories</b>) shows the <b>expenses per category</b> – as a pie chart and below it as a list, sorted <b>descending</b> by amount. It complements the analysis (Chapter 13), which only shows the development over time per account/place."
+          "text": "The <b>Categories</b> page (menu <b>⋮ → Categories</b>) shows the <b>expenses per category</b> – as a pie chart and below it as a list, sorted <b>descending</b> by amount. It complements the analysis (Chapter 14), which only shows the development over time per account/place."
         },
         {
           "type": "bullets",
@@ -1475,7 +1666,7 @@
     {
       "type": "p",
       "id": "b-0102",
-      "text": "The <b>calendar toggle</b> at the top right adds the <b>scheduled expenses due</b> in the period (Chapter 16) to the ones already made – including those that sit as a <b>deduction inside a scheduled income</b>, such as the capital gains tax on a dividend. Then:"
+      "text": "The <b>calendar toggle</b> at the top right adds the <b>scheduled expenses due</b> in the period (Chapter 17) to the ones already made – including those that sit as a <b>deduction inside a scheduled income</b>, such as the capital gains tax on a dividend. Then:"
     },
     {
       "type": "bullets",
@@ -1500,7 +1691,7 @@
     {
       "type": "h1",
       "id": "b-0106",
-      "text": "15. Budget"
+      "text": "16. Budget"
     },
     {
       "type": "text_with_single_shot",
@@ -1564,7 +1755,7 @@
     {
       "type": "h1",
       "id": "b-0114",
-      "text": "16. Scheduled transactions"
+      "text": "17. Scheduled transactions"
     },
     {
       "type": "text_with_single_shot",
@@ -1669,7 +1860,7 @@
     {
       "type": "h1",
       "id": "b-0158",
-      "text": "17. Synchronizing: performing export and import"
+      "text": "18. Synchronizing: performing export and import"
     },
     {
       "type": "text_with_pic",
@@ -1714,6 +1905,37 @@
     },
     {
       "type": "h2",
+      "id": "b-9530",
+      "text": "Self-check, comparison and restore"
+    },
+    {
+      "type": "p",
+      "id": "b-9531",
+      "text": "Before the app uploads the new file, it <b>checks it itself</b>: whatever it did not mean to touch must be unchanged, character by character; new and changed transactions must be consistent, categories must sit in the right branch (income or expense), and the balance of every account must match the app's bookings. If a check fails, nothing is written and the bookings stay queued for export."
+    },
+    {
+      "type": "text_with_single_shot",
+      "id": "b-9532",
+      "content": [
+        {
+          "type": "p",
+          "id": "b-9532a",
+          "text": "Writing works the way KMyMoney itself does it – line by line, with the attributes in the file's order. After uploading, the app reads the file back from the server and compares. Under <b>Edit profile → «Changes to the KMyMoney file»</b> you see, for every export, exactly the lines that changed – for a database, the changed records per table."
+        },
+        {
+          "type": "p",
+          "id": "b-9532b",
+          "text": "If the file arrived <b>broken</b> on the server, the app restores the state from before the export; the bookings then stay queued."
+        }
+      ],
+      "shot": {
+        "fname": "Export Änderungen.png",
+        "caption": "Which lines an export changed",
+        "width": 5.0
+      }
+    },
+    {
+      "type": "h2",
       "id": "b-0163",
       "text": "(Re-)importing accounts"
     },
@@ -1740,7 +1962,7 @@
     {
       "type": "p",
       "id": "b-0167",
-      "text": "The import runs <b>in the background</b> – the UI stays usable, a yellow banner shows progress. A message appears only on error."
+      "text": "Import and export run <b>in the background</b> – the interface stays usable, a band shows the progress. If you switch to another app meanwhile, Android throttles the network; the app then waits up to ten minutes until it is in front again instead of aborting. A message only appears on errors."
     },
     {
       "type": "h2",
@@ -1750,7 +1972,7 @@
     {
       "type": "p",
       "id": "b-0169",
-      "text": "Before every write-back the app automatically creates a <b>timestamped backup</b> of the .kmy in the «Backup» subfolder next to the original – a fallback in case something is ever wrong with the file."
+      "text": "Before every write-back the app automatically creates a <b>timestamped backup</b> of the .kmy in the «Backup» subfolder next to the original – a fallback in case something is ever wrong with the file. How many backups are kept is set under <b>Edit profile → «Backups to keep»</b> (default 20, 0 = keep all permanently). Independently of that, the first backup of every month is kept forever in the subfolder <b>«Monthly backups»</b>."
     },
     {
       "type": "h2",
@@ -1790,7 +2012,7 @@
     {
       "type": "h1",
       "id": "b-0173",
-      "text": "18. Wear OS (watch)"
+      "text": "19. Wear OS (watch)"
     },
     {
       "type": "text_with_single_shot",
@@ -1903,7 +2125,7 @@
     {
       "type": "h1",
       "id": "b-0181",
-      "text": "19. Settings (complete reference)"
+      "text": "20. Settings (complete reference)"
     },
     {
       "type": "text_with_shot_row",
@@ -1944,8 +2166,8 @@
         "<b>Number format</b>: «1.234,56», «1,234.56» or «1234,56»/«1234.56» without grouping; plus the <b>«Show currency symbol»</b> toggle. Applies to all amounts in the app and on the watch; the export keeps a stable format.",
         "<b>Dividends gross/net</b>: whether portfolio dividends are settled gross (declared) or net.",
         "<b>Read statements</b>: allows reading the bank's PDF statements in the portfolio (default: off). When switched on the app states how many banks the recognition was measured against. The complete documentation is in Chapter 10.",
-        "<b>Budget in-app</b>: compute the budget actuals from history instead of importing from KMyMoney (see Chapter 15).",
-        "<b>Install offline speech package on the watch</b> (GitHub build with the Wear bridge only): lets the watch download the offline speech model of the chosen language so voice recording works offline too (see Chapter 18). Off → the number-pad fallback applies offline."
+        "<b>Budget in-app</b>: compute the budget actuals from history instead of importing from KMyMoney (see Chapter 16).",
+        "<b>Install offline speech package on the watch</b> (GitHub build with the Wear bridge only): lets the watch download the offline speech model of the chosen language so voice recording works offline too (see Chapter 19). Off → the number-pad fallback applies offline."
       ]
     },
     {
@@ -2175,7 +2397,9 @@
       "items": [
         "<b>.kmy mode</b>: writes new bookings straight into the KMyMoney file (including splits and transfers) and imports accounts/bookings as well as the portfolio from it. <b>«Choose .kmy»</b> opens a file browser (subfolders, «..» to go back).",
         "<b>CSV mode</b>: exports one CSV file per account (each booking only once); the target folder and import folder are set here.",
-        "<b>Read .kmy, export CSV</b>: accounts, categories, payees, schedules and portfolio come from the KMyMoney file, but the app never writes to it – new bookings go out via CSV and are imported in KMyMoney. For anyone who does not want the app to write their .kmy."
+        "<b>Read .kmy, export CSV</b>: accounts, categories, payees, schedules and portfolio come from the KMyMoney file, but the app never writes to it – new bookings go out via CSV and are imported in KMyMoney. For anyone who does not want the app to write their .kmy.",
+        "<b>KMyMoney database (SQLite)</b>: like .kmy mode, but for a KMyMoney database in SQLite format instead of the .kmy file. Supported is the unencrypted database of KMyMoney 5.1 (schema version 12). If KMyMoney currently has the database open, the app writes nothing.",
+        "<b>Read SQLite database, export CSV</b>: the counterpart of «Read .kmy, export CSV» for the database."
       ]
     },
     {
@@ -2196,7 +2420,7 @@
     {
       "type": "p",
       "id": "b-0202",
-      "text": "Without a configured sync target, export goes locally into a folder you choose. How the sync runs is in Chapter 17."
+      "text": "Without a configured sync target, export goes locally into a folder you choose. How the sync runs is in Chapter 18."
     },
     {
       "type": "h2",
@@ -2223,6 +2447,16 @@
     },
     {
       "type": "h2",
+      "id": "b-9550",
+      "text": "Transactions from notifications"
+    },
+    {
+      "type": "p",
+      "id": "b-9551",
+      "text": "The switch <b>«Transactions from notifications»</b> applies to the whole device; which banking apps are read is set by each profile under <b>Edit profile → «Select apps for notifications»</b>. Everything else is in Chapter 12."
+    },
+    {
+      "type": "h2",
       "id": "b-0207",
       "text": "Appearance"
     },
@@ -2231,7 +2465,7 @@
       "id": "b-0208",
       "items": [
         "<b>Dark mode</b>: light/dark (takes effect immediately).",
-        "<b>Reminder for scheduled bookings</b>: reminds once a day of scheduled bookings due today (off by default; see Chapter 16)."
+        "<b>Reminder for scheduled bookings</b>: reminds once a day of scheduled bookings due today (off by default; see Chapter 17)."
       ]
     },
     {
@@ -2293,7 +2527,7 @@
     {
       "type": "h1",
       "id": "b-0219",
-      "text": "20. CSV format (export)"
+      "text": "21. CSV format (export)"
     },
     {
       "type": "p",
@@ -2312,7 +2546,7 @@
     {
       "type": "h1",
       "id": "b-0217",
-      "text": "21. Disclaimer"
+      "text": "22. Disclaimer"
     },
     {
       "type": "p",

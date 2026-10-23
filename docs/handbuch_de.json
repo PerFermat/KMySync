@@ -2,7 +2,7 @@
   "doc_title": "KMySync – Benutzerhandbuch",
   "doc_author": "KMySync",
   "version_text": "Version 2.3",
-  "date_text": "Stand: September 2026",
+  "date_text": "Stand: Oktober 2026",
   "toc_title": "Inhalt",
   "footer_text": "KMySync · Benutzerhandbuch (Version 2.3)",
   "page_text": "Seite %d",
@@ -163,7 +163,7 @@
     {
       "type": "p",
       "id": "b-0005f",
-      "text": "<b>Wo es weitergeht:</b> Der Willkommen-Assistent im einzelnen steht im nächsten Kapitel, das Erfassen einer Buchung in Kapitel 8, der Abgleich mit KMyMoney in Kapitel 17 und jede einzelne Einstellung in Kapitel 19."
+      "text": "<b>Wo es weitergeht:</b> Der Willkommen-Assistent im einzelnen steht im nächsten Kapitel, das Erfassen einer Buchung in Kapitel 8, der Abgleich mit KMyMoney in Kapitel 18 und jede einzelne Einstellung in Kapitel 20."
     },
     {
       "type": "h1",
@@ -189,7 +189,7 @@
           "id": "b-0010",
           "items": [
             "<b>Sprache</b> wählen (wirkt sofort).",
-            "<b>Import-/Export-Format</b>: CSV, «.kmy lesen, CSV exportieren» oder KMyMoney-Datei (.kmy).",
+            "<b>Import-/Export-Format</b>: CSV, «.kmy lesen, CSV exportieren», KMyMoney-Datei (.kmy), KMyMoney-Datenbank (SQLite) oder «SQLite-Datenbank lesen, CSV exportieren».",
             "<b>Synchronisierung</b>: Server-Typ, URL, Benutzer, Passwort – mit <b>«Verbindung testen»</b>; im .kmy-Modus zusätzlich <b>«.kmy auswählen»</b>.",
             "<b>«Konten importieren»</b>: derselbe Auswahldialog wie bei «Konto hinzufügen», direkt hier im Assistenten.",
             "<b>«Weitere Einstellungen»</b> öffnet die vollständigen Einstellungen; <b>«Fertig»</b> schließt den Assistenten."
@@ -215,7 +215,7 @@
     {
       "type": "p",
       "id": "b-0012",
-      "text": "Alle Einstellungen im Detail – Sprache, Zahlenformat, Währung, Server-Verbindung, Export-Modus, Standardkonto, Alias-Namen, App-Sperre, Sicherung u. v. m. – erklärt das Kapitel <b>«Einstellungen»</b> am Ende des Handbuchs (Kapitel 19). Erreichbar sind sie jederzeit über das <b>Menü ⋮</b> oben rechts, Eintrag <b>«Einstellungen»</b> ganz unten."
+      "text": "Alle Einstellungen im Detail – Sprache, Zahlenformat, Währung, Server-Verbindung, Export-Modus, Standardkonto, Alias-Namen, App-Sperre, Sicherung u. v. m. – erklärt das Kapitel <b>«Einstellungen»</b> am Ende des Handbuchs (Kapitel 20). Erreichbar sind sie jederzeit über das <b>Menü ⋮</b> oben rechts, Eintrag <b>«Einstellungen»</b> ganz unten."
     },
     {
       "type": "h1",
@@ -1237,6 +1237,11 @@
       }
     },
     {
+      "type": "p",
+      "id": "b-9540",
+      "text": "<b>Dokumentenscanner:</b> In der Variante mit Google-Diensten (GitHub-Download «full») öffnet die Kamera den Dokumentenscanner der Play-Dienste. Er erkennt die Kanten des Belegs, entzerrt ihn und nimmt mehrere Seiten hintereinander auf. Ohne Play-Dienste, und in der F-Droid-Variante, bleibt es bei der gewohnten Kamera."
+    },
+    {
       "type": "h2",
       "id": "b-0080a",
       "text": "Belege eines Filters ausgeben"
@@ -1310,8 +1315,194 @@
     },
     {
       "type": "h1",
+      "id": "b-9500",
+      "text": "12. Buchungen aus Benachrichtigungen"
+    },
+    {
+      "type": "p",
+      "id": "b-9501",
+      "text": "Für Konten ohne FinTS – etwa eine Kreditkarte: Viele Bank-Apps melden jede Kartenzahlung sofort per <b>Push-Benachrichtigung</b>. KMySync kann diese Meldungen mitlesen und daraus Buchungen vorschlagen. Eine fest eingebaute Liste von Banken gibt es dabei nicht: Die App <b>lernt</b> aus einer Buchung, die Sie einmal von Hand anlegen, wie die Meldungen Ihrer Bank aufgebaut sind."
+    },
+    {
+      "type": "h2",
+      "id": "b-9502",
+      "text": "Einschalten"
+    },
+    {
+      "type": "steps",
+      "id": "b-9503",
+      "items": [
+        "<b>Schalter einschalten.</b> In den <b>Einstellungen</b> den Schalter <b>«Buchungen aus Benachrichtigungen»</b> einschalten. Ein Hinweis erklärt, was die App aufhebt; mit OK öffnen sich die Systemeinstellungen – erlauben Sie dort KMySync den <b>Benachrichtigungszugriff</b>.",
+        "<b>Bank-App auswählen.</b> Unter <b>Profil ändern → «Apps für Benachrichtigungen auswählen»</b> die Bank-App anhaken. Zur Auswahl steht jede App, die schon einmal eine Meldung mit einem Geldbetrag geschickt hat. Steht deren Meldung noch in der Benachrichtigungsleiste, wird sie beim Anhaken gleich übernommen. Jedes Profil wählt seine eigenen Apps.",
+        "<b>Standort (freiwillig).</b> Ist GPS eingeschaltet und hat KMySync den Standortzugriff <b>«Immer erlauben»</b>, merkt sich die App, wo Sie beim Eintreffen der Meldung waren (siehe unten)."
+      ]
+    },
+    {
+      "type": "text_with_single_shot",
+      "id": "b-9504",
+      "content": [
+        {
+          "type": "p",
+          "id": "b-9504a",
+          "text": "In der Auswahl steht hinter jeder App, für die schon etwas gelernt ist, ein <b>Stift</b> (Regeln ändern) und ein <b>Papierkorb</b>. Der Papierkorb löscht zuerst die gelernten Regeln dieser App; gibt es keine mehr, löscht er auf einen weiteren Tipp die aufgehobenen Texte der App."
+        }
+      ],
+      "shot": {
+        "fname": "Benachrichtigung Apps.png",
+        "caption": "Bank-Apps je Profil auswählen",
+        "width": 5.0
+      }
+    },
+    {
+      "type": "h2",
+      "id": "b-9505",
+      "text": "Lernen: die erste Meldung"
+    },
+    {
+      "type": "text_with_single_shot",
+      "id": "b-9506",
+      "content": [
+        {
+          "type": "p",
+          "id": "b-9506a",
+          "text": "Kommt die erste Meldung Ihrer Bank, legen Sie die Buchung wie gewohnt <b>von Hand</b> an – Betrag, Konto, Empfänger. Beim Speichern sucht die App eine aufgehobene Meldung mit genau diesem Betrag aus der Zeit der Buchung und fragt: <b>«Künftige Benachrichtigungen dieser App für das Konto … verarbeiten?»</b>"
+        },
+        {
+          "type": "p",
+          "id": "b-9506b",
+          "text": "Mit <b>«Ja, verarbeiten»</b> lernt sie eine Regel: wo in der Meldung Betrag und Empfänger stehen. Passen mehrere Meldungen, fragt sie zuerst, welche gemeint ist – mit Datum und Uhrzeit, falls zwei gleich lauten."
+        }
+      ],
+      "shot": {
+        "fname": "Benachrichtigung Frage.png",
+        "caption": "Die Nachfrage nach der ersten Buchung",
+        "width": 5.0
+      }
+    },
+    {
+      "type": "p",
+      "id": "b-9507",
+      "text": "<b>Nach einer Umbuchung</b> fragt die App, zu welchem der beiden Konten die Meldungen gehören: zum Von-Konto (Abgang) oder zum Nach-Konto (Zugang)."
+    },
+    {
+      "type": "p",
+      "id": "b-9508",
+      "text": "<b>Ein Konto, eine Bank-App:</b> Lernt ein Konto aus einer anderen App, ersetzen deren Regeln die bisherigen dieses Kontos. Eine App darf dagegen mehrere Konten bedienen – unterschieden etwa durch die Kartenendung in der Meldung. Für Versuche nehmen Sie deshalb am besten ein eigenes Testkonto."
+    },
+    {
+      "type": "h2",
+      "id": "b-9509",
+      "text": "Die Vorschlagsliste beim Aktualisieren"
+    },
+    {
+      "type": "text_with_single_shot",
+      "id": "b-9510",
+      "content": [
+        {
+          "type": "p",
+          "id": "b-9510a",
+          "text": "Beim <b>Aktualisieren aller Konten</b> (Herunterziehen oder langer Druck auf «Alle Konten») liest die App zuerst die KMyMoney-Datei ein und zeigt danach die neuen Meldungen als Liste – auch dann, wenn der Server gerade nicht erreichbar ist. Jede Zeile nennt Empfänger und Betrag, darunter Datum und Konto."
+        },
+        {
+          "type": "p",
+          "id": "b-9510b",
+          "text": "Eine <b>Umbuchung</b> erkennen Sie am Pfeil vor dem Empfänger: «→» für einen Abgang, «←» für einen Zugang."
+        }
+      ],
+      "shot": {
+        "fname": "Benachrichtigung Liste.png",
+        "caption": "Vorschläge aus Benachrichtigungen",
+        "width": 5.0
+      }
+    },
+    {
+      "type": "bullets",
+      "id": "b-9511",
+      "items": [
+        "<b>«Nicht erkannt»</b> (gelb): Keine Regel passt. Die Zeile wird nicht gebucht. Füllen Sie sie mit dem Stift selbst aus, lernt die App daraus für die nächste Meldung dieser Art.",
+        "<b>«Mögliches Duplikat»</b> (gelb): Im Konto steht schon eine Buchung gleichen Betrags (bis zwei Tage daneben), oder dieselbe Meldung liegt mehrfach vor. Gezeigt wird sie trotzdem – prüfen und bei Bedarf entfernen.",
+        "<b>Konto fehlt, fremde Währung, Gegenkonto fehlt</b> (rot): Diese Zeile hält «OK» auf, bis sie mit dem Stift ergänzt oder entfernt ist."
+      ]
+    },
+    {
+      "type": "p",
+      "id": "b-9512",
+      "text": "Der <b>Stift</b> öffnet die Buchungsmaske mit drei Knöpfen, die alle in die Liste zurückführen: <b>«Speichern»</b> übernimmt Ihre Änderungen in die Zeile, <b>«Zurück (ohne Speichern)»</b> lässt sie unverändert, <b>«Löschen»</b> nimmt sie aus der Liste. Was Sie in der Maske einstellen, gilt – auch die Buchungsart und die Konten einer Umbuchung. Berichtigen Sie den Empfänger, bietet die App wie nach einem Diktat an, die Schreibweise der Bank als Alias zu lernen. Der <b>Papierkorb</b> in der Zeile nimmt sie direkt heraus."
+    },
+    {
+      "type": "p",
+      "id": "b-9513",
+      "text": "<b>«OK»</b> bucht alle buchbaren Zeilen. Danach sind alle gezeigten Meldungen erledigt – auch die entfernten und die nicht erkannten. <b>Abbrechen</b> oder Zurück ändern nichts: Die Liste kommt beim nächsten Aktualisieren wieder."
+    },
+    {
+      "type": "h2",
+      "id": "b-9514",
+      "text": "Empfänger, Notiz und Standort"
+    },
+    {
+      "type": "p",
+      "id": "b-9515",
+      "text": "Den <b>Empfänger</b> sucht die App genauso wie bei der Spracheingabe (Kapitel 11): erst bevorzugte Aliase, dann frühere Buchungen, dann die übrigen Aliase. Aus «MTP Tankstelle» wird so Ihre «Tankstelle» – samt Kategorie der früheren Buchung bzw. des Alias und gegebenenfalls ihrer Aufteilung. War der Empfänger zuletzt eine <b>Umbuchung</b>, schlägt die Liste wieder eine Umbuchung mit dem damaligen Gegenkonto vor. Ob Ausgabe oder Einnahme, sagt die Meldung selbst."
+    },
+    {
+      "type": "p",
+      "id": "b-9516",
+      "text": "Die <b>Notiz</b> enthält den genauen Wortlaut der Meldung – Überschrift und Text, mit Zeilenumbrüchen. So steht in KMyMoney später, was die Bank gemeldet hat."
+    },
+    {
+      "type": "p",
+      "id": "b-9517",
+      "text": "<b>Standort:</b> Mit GPS und dem Zugriff «Immer erlauben» ortet die App beim Eintreffen der Meldung bis zu <b>einer Minute</b> lang und hängt die Position als GPS-Zeile an; sie hilft auch, unter gleichnamigen Empfängern die richtige Filiale zu finden. Solange die Ortung läuft, erscheint die Meldung noch nicht in der Liste. Ohne den Zugriff «Immer» gilt der Standort beim Aktualisieren, bei ausgeschaltetem GPS gar keiner."
+    },
+    {
+      "type": "p",
+      "id": "b-9518",
+      "text": "<b>Beträge</b> erkennt die App mit zwei Nachkommastellen («12,34 €»), bei den ausgewählten Apps auch ganze Beträge wie «12 €» oder «1.234 €» – gelesen nach dem Zahlenformat des Profils."
+    },
+    {
+      "type": "h2",
+      "id": "b-9519",
+      "text": "Regeln ändern"
+    },
+    {
+      "type": "text_with_single_shot",
+      "id": "b-9520",
+      "content": [
+        {
+          "type": "p",
+          "id": "b-9520a",
+          "text": "Der Stift hinter einer App öffnet ihre <b>Regelseite</b> – aufgebaut wie die Erkennungsregeln für PDF-Abrechnungen (Kapitel 10): ein Merkmal wie die Kartenendung, die Beschriftungen für Betrag und Empfänger (eine je Zeile, weitere sind Rückfälle), welche Zahl gemeint ist und in welcher Währung. Unten lässt sich eine <b>Testmeldung</b> eintippen oder eine aufgehobene einsetzen; die App zeigt sofort, was die Regel daraus liest."
+        },
+        {
+          "type": "p",
+          "id": "b-9520b",
+          "text": "Die gelernten Regeln gehören zum Profil und sind Teil jeder Sicherung."
+        }
+      ],
+      "shot": {
+        "fname": "Benachrichtigung Regeln.png",
+        "caption": "Eine gelernte Regel von Hand anpassen",
+        "width": 5.0
+      }
+    },
+    {
+      "type": "h2",
+      "id": "b-9521",
+      "text": "Was die App aufhebt"
+    },
+    {
+      "type": "bullets",
+      "id": "b-9522",
+      "items": [
+        "Aufgehoben werden nur Meldungen der <b>ausgewählten Apps</b>, und nur, wenn sie einen Geldbetrag nennen. Von anderen Apps merkt sich KMySync allein den Namen – damit sie zur Auswahl stehen –, keinen Text.",
+        "Die Texte liegen in einer eigenen Datei auf dem Gerät, die in <b>keine Sicherung</b> gelangt. Gelöscht werden sie, sobald alle beteiligten Profile sie verarbeitet haben – spätestens nach 24 Stunden bei einer App ohne Regel, nach 30 Tagen bei einer App mit Regel.",
+        "Das Gerät verlässt nur der Wortlaut einer Meldung, aus der eine Buchung wird – als Notiz dieser Buchung."
+      ]
+    },
+    {
+      "type": "h1",
       "id": "b-0091",
-      "text": "12. Buchungsliste und Filter"
+      "text": "13. Buchungsliste und Filter"
     },
     {
       "type": "text_with_single_shot",
@@ -1415,7 +1606,7 @@
     {
       "type": "h1",
       "id": "b-0094",
-      "text": "13. Auswertung"
+      "text": "14. Auswertung"
     },
     {
       "type": "text_with_single_shot",
@@ -1442,7 +1633,7 @@
     {
       "type": "h1",
       "id": "b-0097",
-      "text": "14. Wofür geht mein Geld?"
+      "text": "15. Wofür geht mein Geld?"
     },
     {
       "type": "text_with_single_shot",
@@ -1451,7 +1642,7 @@
         {
           "type": "p",
           "id": "b-0099",
-          "text": "Die Seite <b>Kategorien</b> (Menü <b>⋮ → Kategorien</b>) zeigt die <b>Ausgaben je Kategorie</b> – als Kreisdiagramm und darunter als Liste, <b>absteigend</b> nach Betrag. Sie ergänzt die Auswertung (Kapitel 13), die nur den zeitlichen Verlauf je Konto/Ort zeigt."
+          "text": "Die Seite <b>Kategorien</b> (Menü <b>⋮ → Kategorien</b>) zeigt die <b>Ausgaben je Kategorie</b> – als Kreisdiagramm und darunter als Liste, <b>absteigend</b> nach Betrag. Sie ergänzt die Auswertung (Kapitel 14), die nur den zeitlichen Verlauf je Konto/Ort zeigt."
         },
         {
           "type": "bullets",
@@ -1480,7 +1671,7 @@
     {
       "type": "p",
       "id": "b-0102",
-      "text": "Der <b>Kalender-Schalter</b> oben rechts rechnet die im Zeitraum <b>fälligen geplanten Ausgaben</b> (Kapitel 16) zu den bereits getätigten hinzu – auch die, die als <b>Abzug in einer geplanten Einzahlung</b> stecken, etwa die Kapitalertragssteuer einer Dividende. Dann gilt:"
+      "text": "Der <b>Kalender-Schalter</b> oben rechts rechnet die im Zeitraum <b>fälligen geplanten Ausgaben</b> (Kapitel 17) zu den bereits getätigten hinzu – auch die, die als <b>Abzug in einer geplanten Einzahlung</b> stecken, etwa die Kapitalertragssteuer einer Dividende. Dann gilt:"
     },
     {
       "type": "bullets",
@@ -1505,7 +1696,7 @@
     {
       "type": "h1",
       "id": "b-0106",
-      "text": "15. Budget"
+      "text": "16. Budget"
     },
     {
       "type": "text_with_single_shot",
@@ -1569,7 +1760,7 @@
     {
       "type": "h1",
       "id": "b-0114",
-      "text": "16. Geplante Buchungen"
+      "text": "17. Geplante Buchungen"
     },
     {
       "type": "text_with_single_shot",
@@ -1674,7 +1865,7 @@
     {
       "type": "h1",
       "id": "b-0158",
-      "text": "17. Synchronisieren: Export und Import durchführen"
+      "text": "18. Synchronisieren: Export und Import durchführen"
     },
     {
       "type": "text_with_pic",
@@ -1719,6 +1910,37 @@
     },
     {
       "type": "h2",
+      "id": "b-9530",
+      "text": "Selbstprüfung, Vergleich und Wiederherstellen"
+    },
+    {
+      "type": "p",
+      "id": "b-9531",
+      "text": "Bevor die App die neue Datei hochlädt, <b>prüft sie sie selbst</b>: Was sie nicht anfassen wollte, muss Zeichen für Zeichen gleich geblieben sein; neue und geänderte Transaktionen müssen in sich stimmig sein, Kategorien im richtigen Zweig (Einnahmen oder Ausgaben) liegen und der Saldo jedes Kontos zu den Buchungen der App passen. Schlägt eine Prüfung fehl, wird nichts geschrieben, und die Buchungen bleiben zum Export vorgemerkt."
+    },
+    {
+      "type": "text_with_single_shot",
+      "id": "b-9532",
+      "content": [
+        {
+          "type": "p",
+          "id": "b-9532a",
+          "text": "Geschrieben wird wie von KMyMoney selbst – Zeile für Zeile, die Angaben in der Reihenfolge der Datei. Nach dem Hochladen liest die App die Datei vom Server zurück und vergleicht. Unter <b>Profil ändern → «Änderungen an der KMyMoney-Datei»</b> sehen Sie zu jedem Export genau die Zeilen, die sich geändert haben – bei einer Datenbank die geänderten Sätze je Tabelle."
+        },
+        {
+          "type": "p",
+          "id": "b-9532b",
+          "text": "Kam die Datei <b>defekt</b> auf dem Server an, stellt die App den Stand von vor dem Export wieder her; die Buchungen bleiben dann vorgemerkt."
+        }
+      ],
+      "shot": {
+        "fname": "Export Änderungen.png",
+        "caption": "Welche Zeilen ein Export geändert hat",
+        "width": 5.0
+      }
+    },
+    {
+      "type": "h2",
       "id": "b-0163",
       "text": "Konten (neu) importieren"
     },
@@ -1745,7 +1967,7 @@
     {
       "type": "p",
       "id": "b-0167",
-      "text": "Der Import läuft <b>im Hintergrund</b> – die Oberfläche bleibt bedienbar, ein gelber Banner zeigt den Fortschritt. Eine Meldung kommt nur bei einem Fehler."
+      "text": "Import und Export laufen <b>im Hintergrund</b> – die Oberfläche bleibt bedienbar, ein Band zeigt den Fortschritt. Wechseln Sie währenddessen in eine andere App, drosselt Android das Netz; die App wartet dann bis zu zehn Minuten, bis sie wieder vorn ist, statt abzubrechen. Eine Meldung kommt nur bei einem Fehler."
     },
     {
       "type": "h2",
@@ -1755,7 +1977,7 @@
     {
       "type": "p",
       "id": "b-0169",
-      "text": "Vor jedem Rückschreiben legt die App automatisch eine <b>zeitgestempelte Sicherung</b> der .kmy im Unterordner «Backup» neben dem Original an – ein Fallback, falls mit der Datei einmal etwas nicht stimmt."
+      "text": "Vor jedem Rückschreiben legt die App automatisch eine <b>zeitgestempelte Sicherung</b> der .kmy im Unterordner «Backup» neben dem Original an – ein Fallback, falls mit der Datei einmal etwas nicht stimmt. Wie viele Sicherungen liegen bleiben, legen Sie unter <b>Profil ändern → «Sicherungen aufheben»</b> fest (Vorgabe 20, 0 = alle dauerhaft). Unabhängig davon bleibt die erste Sicherung jedes Monats für immer im Unterordner <b>«Monatssicherungen»</b>."
     },
     {
       "type": "h2",
@@ -1795,7 +2017,7 @@
     {
       "type": "h1",
       "id": "b-0173",
-      "text": "18. Wear OS (Uhr)"
+      "text": "19. Wear OS (Uhr)"
     },
     {
       "type": "text_with_single_shot",
@@ -1908,7 +2130,7 @@
     {
       "type": "h1",
       "id": "b-0181",
-      "text": "19. Einstellungen (vollständige Referenz)"
+      "text": "20. Einstellungen (vollständige Referenz)"
     },
     {
       "type": "text_with_shot_row",
@@ -1949,8 +2171,8 @@
         "<b>Zahlenformat</b>: «1.234,56», «1,234.56» oder «1234,56»/«1234.56» ohne Tausendertrennung; dazu der Schalter <b>«Währungskennzeichen anzeigen»</b>. Gilt für alle Beträge in App und Uhr; der Export bleibt formatstabil.",
         "<b>Dividenden brutto/netto</b>: ob Depot-Dividenden brutto (deklariert) oder netto verrechnet werden.",
         "<b>Abrechnungen einlesen</b>: erlaubt im Depot das Einlesen von PDF-Abrechnungen der Bank (Standard: aus). Beim Einschalten nennt die App, an wie vielen Banken die Erkennung gemessen wurde. Die ausführliche Dokumentation dazu steht in Kapitel 10.",
-        "<b>Budget app-intern</b>: das Budget-Ist aus dem Verlauf berechnen statt aus KMyMoney importieren (siehe Kapitel 15).",
-        "<b>Offline-Sprachpaket auf der Uhr installieren</b> (nur GitHub-Variante mit Wear-Anbindung): erlaubt der Uhr, das Offline-Sprachmodell der gewählten Sprache zu laden, damit die Sprachaufnahme auch offline funktioniert (siehe Kapitel 18). Aus → offline greift der Zahlenblock-Fallback."
+        "<b>Budget app-intern</b>: das Budget-Ist aus dem Verlauf berechnen statt aus KMyMoney importieren (siehe Kapitel 16).",
+        "<b>Offline-Sprachpaket auf der Uhr installieren</b> (nur GitHub-Variante mit Wear-Anbindung): erlaubt der Uhr, das Offline-Sprachmodell der gewählten Sprache zu laden, damit die Sprachaufnahme auch offline funktioniert (siehe Kapitel 19). Aus → offline greift der Zahlenblock-Fallback."
       ]
     },
     {
@@ -2180,7 +2402,9 @@
       "items": [
         "<b>.kmy-Modus</b>: schreibt neue Buchungen direkt in die KMyMoney-Datei (inkl. Splits und Umbuchungen) und importiert Konten/Buchungen sowie das Depot daraus. Über <b>«.kmy auswählen»</b> öffnet sich ein Datei-Browser (Unterordner, «..» zurück).",
         "<b>CSV-Modus</b>: exportiert je Konto eine CSV-Datei (jede Buchung nur einmal); Zielordner und Import-Ordner werden hier gesetzt.",
-        "<b>.kmy lesen, CSV exportieren</b>: Konten, Kategorien, Empfänger, Planungen und Depot kommen aus der KMyMoney-Datei, geschrieben wird aber nie hinein – neue Buchungen gehen per CSV hinaus und werden in KMyMoney importiert. Für alle, die ihre .kmy nicht von der App beschreiben lassen wollen."
+        "<b>.kmy lesen, CSV exportieren</b>: Konten, Kategorien, Empfänger, Planungen und Depot kommen aus der KMyMoney-Datei, geschrieben wird aber nie hinein – neue Buchungen gehen per CSV hinaus und werden in KMyMoney importiert. Für alle, die ihre .kmy nicht von der App beschreiben lassen wollen.",
+        "<b>KMyMoney-Datenbank (SQLite)</b>: wie der .kmy-Modus, nur für eine KMyMoney-Datenbank im SQLite-Format statt der .kmy-Datei. Unterstützt wird die unverschlüsselte Datenbank von KMyMoney 5.1 (Schema-Version 12). Hat KMyMoney die Datenbank gerade geöffnet, schreibt die App nichts.",
+        "<b>SQLite-Datenbank lesen, CSV exportieren</b>: das Gegenstück zu «.kmy lesen, CSV exportieren» für die Datenbank."
       ]
     },
     {
@@ -2201,7 +2425,7 @@
     {
       "type": "p",
       "id": "b-0202",
-      "text": "Ohne konfiguriertes Sync-Ziel wird lokal in einen selbst gewählten Ordner exportiert. Wie der Abgleich abläuft, steht in Kapitel 17."
+      "text": "Ohne konfiguriertes Sync-Ziel wird lokal in einen selbst gewählten Ordner exportiert. Wie der Abgleich abläuft, steht in Kapitel 18."
     },
     {
       "type": "h2",
@@ -2228,6 +2452,16 @@
     },
     {
       "type": "h2",
+      "id": "b-9550",
+      "text": "Buchungen aus Benachrichtigungen"
+    },
+    {
+      "type": "p",
+      "id": "b-9551",
+      "text": "Der Schalter <b>«Buchungen aus Benachrichtigungen»</b> gilt für das ganze Gerät; welche Bank-Apps gelesen werden, legt jedes Profil unter <b>Profil ändern → «Apps für Benachrichtigungen auswählen»</b> fest. Alles Weitere steht in Kapitel 12."
+    },
+    {
+      "type": "h2",
       "id": "b-0207",
       "text": "Darstellung"
     },
@@ -2236,7 +2470,7 @@
       "id": "b-0208",
       "items": [
         "<b>Dunkelmodus</b>: Hell/Dunkel (wirkt sofort).",
-        "<b>Erinnerung an geplante Buchungen</b>: erinnert einmal täglich an heute fällige geplante Buchungen (standardmäßig aus; siehe Kapitel 16)."
+        "<b>Erinnerung an geplante Buchungen</b>: erinnert einmal täglich an heute fällige geplante Buchungen (standardmäßig aus; siehe Kapitel 17)."
       ]
     },
     {
@@ -2298,7 +2532,7 @@
     {
       "type": "h1",
       "id": "b-0219",
-      "text": "20. CSV-Format (Export)"
+      "text": "21. CSV-Format (Export)"
     },
     {
       "type": "p",
@@ -2312,7 +2546,7 @@
     {
       "type": "h1",
       "id": "b-0217",
-      "text": "21. Haftungsausschluss"
+      "text": "22. Haftungsausschluss"
     },
     {
       "type": "p",
