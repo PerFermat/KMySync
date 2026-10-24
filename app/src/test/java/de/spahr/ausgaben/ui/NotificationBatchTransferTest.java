@@ -352,6 +352,10 @@ public class NotificationBatchTransferTest {
 
     /** Die Maske einer erkannten Zeile, wie die Liste sie öffnet: mit dem Wortlaut der Bank. */
     private static BookingEditActivity erkannteMaske(String payee) throws Exception {
+        return erkannteMaske(payee, "");
+    }
+
+    private static BookingEditActivity erkannteMaske(String payee, String coords) throws Exception {
         android.content.Context ctx = ApplicationProvider.getApplicationContext();
         de.spahr.ausgaben.db.AppDatabase db = de.spahr.ausgaben.db.AppDatabase.getInstance(ctx);
         java.util.concurrent.Executors.newSingleThreadExecutor().submit(() -> {
@@ -369,7 +373,8 @@ public class NotificationBatchTransferTest {
                 .putExtra(BookingEditActivity.EXTRA_PRESET_ACCOUNT, d.account)
                 .putExtra(BookingEditActivity.EXTRA_VOICE_SPOKEN_PAYEE, d.rawPayee)
                 .putExtra(BookingEditActivity.EXTRA_VOICE_AMOUNT_CENTS, d.cents)
-                .putExtra(BookingEditActivity.EXTRA_PREFILL_NOTE, "");
+                .putExtra(BookingEditActivity.EXTRA_PREFILL_NOTE, "Neuer Umsatz\nSie haben 4,15 € bei Cafe bezahlt.")
+                .putExtra(BookingEditActivity.EXTRA_PREFILL_COORDS, coords);
         BookingEditActivity a = Robolectric.buildActivity(BookingEditActivity.class, i).setup().get();
         for (int n = 0; n < 5; n++) {
             Thread.sleep(50);
@@ -400,5 +405,45 @@ public class NotificationBatchTransferTest {
         idle();
         assertFalse(a.isFinishing());
         assertTrue(org.robolectric.shadows.ShadowDialog.getLatestDialog().isShowing());
+    }
+
+    /** Der Standort vom Eintreffen der Meldung geht beim Ändern in der Maske nicht verloren. */
+    @Test
+    public void standortDerMeldungBleibtBeimAendern() throws Exception {
+        BookingEditActivity a = erkannteMaske("Tankstelle", "50.123456, 8.654321");
+        knopf(a, R.id.btnSaveNew).performClick();
+        idle();
+        assertTrue(a.isFinishing());
+        String note = Shadows.shadowOf(a).getResultIntent()
+                .getStringExtra(BookingEditActivity.RESULT_NOTE);
+        assertTrue(note, note.startsWith("Neuer Umsatz\nSie haben 4,15 € bei Cafe bezahlt."));
+        assertTrue(note, note.endsWith("GPS: 50.123456, 8.654321"));
+    }
+
+    /** Eine GPS-Zeile, die schon in der Notiz der Zeile steht, landet nicht doppelt im Textfeld. */
+    @Test
+    public void gpsZeileDerNotizStehtNichtImTextfeld() throws Exception {
+        NotificationDraft d = zeile();
+        d.edited = true;
+        d.note = "Neuer Umsatz\nText\nGPS: 50.123456, 8.654321";
+        Intent i = new Intent(ApplicationProvider.getApplicationContext(), BookingEditActivity.class)
+                .putExtra(BookingEditActivity.EXTRA_BATCH, true)
+                .putExtra(BookingEditActivity.EXTRA_BATCH_ROW, d)
+                .putExtra(BookingEditActivity.EXTRA_PRESET_ACCOUNT, d.account)
+                .putExtra(BookingEditActivity.EXTRA_PREFILL_NOTE, d.note)
+                .putExtra(BookingEditActivity.EXTRA_PREFILL_COORDS, "50.123456, 8.654321");
+        BookingEditActivity a = Robolectric.buildActivity(BookingEditActivity.class, i).setup().get();
+        idle();
+        assertEquals("Neuer Umsatz\nText", text(a, R.id.editNote));
+    }
+
+    /** Die Liste gibt der Maske den Standort vom Eintreffen mit. */
+    @Test
+    public void listeGibtDenStandortMit() throws Exception {
+        NotificationDraft d = zeile();
+        d.edited = true;
+        d.coords = "50.1, 8.6";
+        Intent next = maskeOeffnen(liste(d));
+        assertEquals("50.1, 8.6", next.getStringExtra(BookingEditActivity.EXTRA_PREFILL_COORDS));
     }
 }

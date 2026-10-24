@@ -304,6 +304,7 @@ public class NotificationBatchActivity extends LocalizedActivity {
                 .putExtra(BookingEditActivity.EXTRA_PREFILL_DATE_MS, d.dateMillis)
                 .putExtra(BookingEditActivity.EXTRA_PREFILL_INCOME, d.isIncome)
                 .putExtra(BookingEditActivity.EXTRA_BATCH_ROW, d)
+                .putExtra(BookingEditActivity.EXTRA_PREFILL_COORDS, d.coords)
                 .putExtra(BookingEditActivity.EXTRA_PREFILL_TRANSFER, d.isTransfer)
                 .putExtra(BookingEditActivity.EXTRA_PREFILL_TRANSFER_ACCOUNT, d.transferAccount);
         if (!d.account.isEmpty()) {

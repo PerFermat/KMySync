@@ -83,6 +83,12 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
      * statt neu aufzulösen.
      */
     public static final String EXTRA_BATCH_ROW = "batch_row";
+    /**
+     * Stapelmodus: wo das Handy beim Eintreffen der Benachrichtigung war („lat, lon"). Füllt die GPS-Zeile –
+     * sie kommt so in die Notiz und in einen hier gelernten Alias; der Standort beim Öffnen der Maske
+     * wäre ein anderer.
+     */
+    public static final String EXTRA_PREFILL_COORDS = "prefill_coords";
     public static final String RESULT_PAYEE = "result_payee";
     public static final String RESULT_CENTS = "result_cents";
     public static final String RESULT_INCOME = "result_income";
@@ -1804,6 +1810,8 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
         b.exported = false;
         final List<SplitRowController.Part> parts = splitCtl.collectParts();
         if (batch) {
+            // Mit der GPS-Zeile vom Eintreffen der Meldung – sonst ginge sie beim Ändern verloren.
+            b.note = composeNoteForSave(true);
             // Wie nach einem Diktat: wurde der Empfänger berichtigt, den Alias anbieten – dann löst er
             // beim nächsten Mal die Schreibweise der Bank auf.
             b.createdAt = composeTimestamp();
@@ -1840,7 +1848,7 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
         final boolean incoming = own != null && to.equalsIgnoreCase(own.trim())
                 && !from.equalsIgnoreCase(own.trim());
         final String payee = Ui.text(editPayee).trim();
-        final String note = Ui.text(editNote).trim();
+        final String note = composeNoteForSave(true);
         final long when = composeTimestamp();
         maybeAskCorrection(payee, () -> {
             Intent out = new Intent();
@@ -1943,10 +1951,16 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
         if (date > 0) {
             selectedDate.setTimeInMillis(date);
             updateDateField();
-        }        // Die Notiz ist der Wortlaut der Meldung, nicht die der Vorlagebuchung.
+        }        // Die Notiz ist der Wortlaut der Meldung, nicht die der Vorlagebuchung. Eine GPS-Zeile darin
+        // gehört in die eigene Zeile darunter, nicht ins Textfeld.
         String note = getIntent().getStringExtra(EXTRA_PREFILL_NOTE);
         if (note != null) {
-            editNote.setText(note);
+            editNote.setText(stripTags(note));
+        }
+        String coords = getIntent().getStringExtra(EXTRA_PREFILL_COORDS);
+        if (coords != null && !coords.trim().isEmpty() && !gps.editedByUser()) {
+            gps.setCoords(coords.trim());
+            updateNoteTagRows();
         }
     }
 
