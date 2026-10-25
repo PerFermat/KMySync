@@ -994,6 +994,7 @@
     <string name="notify_learn_failed">No se ha podido derivar una plantilla de esta notificación.</string>
     <string name="notify_batch_title">Apuntes a partir de notificaciones</string>
     <string name="notify_batch_saved">Apuntes creados: %1$d</string>
+    <string name="notify_batch_learned">Nuevas variantes de notificación aprendidas: %1$d; a partir de ahora se reconocerán.</string>
     <string name="batch_back">Volver (sin guardar)</string>
     <string name="notify_batch_cancel_title">¿Cerrar la lista?</string>
     <string name="notify_batch_cancel_message">No se apunta nada. Las notificaciones se conservan y volverán a aparecer la próxima vez que actualices.</string>

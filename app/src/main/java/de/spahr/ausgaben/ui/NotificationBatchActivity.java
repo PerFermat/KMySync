@@ -406,7 +406,8 @@ public class NotificationBatchActivity extends LocalizedActivity {
         final ArrayList<NotificationDraft> remaining = new ArrayList<>(drafts);
         final long[] ids = shownIds;
         repository.runInBackground(
-                () -> NotificationRunner.complete(app, repository, remaining, ids), saved -> {
+                () -> NotificationRunner.completeAndLearn(app, repository, remaining, ids), outcome -> {
+                    int saved = outcome.booked;
                     if (saved < 0) {
                         saving = false;
                         Toast.makeText(app, R.string.statement_batch_save_failed,
@@ -417,8 +418,12 @@ public class NotificationBatchActivity extends LocalizedActivity {
                         return;
                     }
                     if (saved > 0) {
-                        Toast.makeText(app, getString(R.string.notify_batch_saved, saved),
-                                Toast.LENGTH_LONG).show();
+                        // Eine von Hand gebuchte, nicht erkannte Zeile lernt still – das soll man sehen.
+                        String message = getString(R.string.notify_batch_saved, saved);
+                        if (outcome.learned > 0) {
+                            message += "\n" + getString(R.string.notify_batch_learned, outcome.learned);
+                        }
+                        Toast.makeText(app, message, Toast.LENGTH_LONG).show();
                         // Offene App, Widgets und Uhr über die neuen Buchungen informieren.
                         app.sendBroadcast(new Intent(
                                 de.spahr.ausgaben.wear.WearBridge.ACTION_BOOKINGS_CHANGED)

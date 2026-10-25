@@ -1035,6 +1035,7 @@
     <string name="notify_learn_failed">No template could be derived from this notification.</string>
     <string name="notify_batch_title">Transactions from notifications</string>
     <string name="notify_batch_saved">Transactions created: %1$d</string>
+    <string name="notify_batch_learned">New notification variants learned: %1$d – messages like these will be recognised from now on.</string>
     <string name="batch_back">Back (without saving)</string>
     <string name="notify_batch_cancel_title">Close the list?</string>
     <string name="notify_batch_cancel_message">Nothing will be booked. The notifications are kept and will appear again the next time you refresh.</string>

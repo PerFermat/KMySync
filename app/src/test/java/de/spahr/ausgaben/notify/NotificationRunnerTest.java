@@ -899,4 +899,39 @@ public class NotificationRunnerTest {
         assertEquals(999L, next.get(0).cents);
         assertEquals("50.1, 8.6", next.get(0).coords);
     }
+
+    // ---- Rückmeldung über still Gelerntes ----
+
+    /** Eine nicht erkannte, von Hand gebuchte Zeile wird gelernt – und der Abschluss sagt es. */
+    @Test
+    public void abschlussMeldetGelernteVarianten() throws Exception {
+        vorlageLernen();
+        meldung(HEUTE, "Sie haben online 70,15 EUR bei AMAZON bezahlt.", "a");
+        ArrayList<NotificationDraft> drafts = vorbereiten();
+        NotificationDraft d = drafts.get(0);
+        assertFalse(d.recognized);
+        d.cents = 7015L;
+        d.payee = "Amazon";
+        d.account = "Kreditkarte";
+        d.edited = true;
+        d.learn = true;
+        final long[] ids = ids(drafts);
+        NotificationRunner.Outcome o = imHintergrund(
+                () -> NotificationRunner.completeAndLearn(ctx, repo, drafts, ids));
+        assertEquals(1, o.booked);
+        assertEquals(1, o.learned);
+    }
+
+    /** Nur Erkanntes gebucht: nichts gelernt, nichts zu melden. */
+    @Test
+    public void ohneLernzeileWirdNichtsGemeldet() throws Exception {
+        vorlageLernen();
+        meldung(HEUTE, zahlung("REWE Markt", "7,50"), "a");
+        ArrayList<NotificationDraft> drafts = vorbereiten();
+        final long[] ids = ids(drafts);
+        NotificationRunner.Outcome o = imHintergrund(
+                () -> NotificationRunner.completeAndLearn(ctx, repo, drafts, ids));
+        assertEquals(1, o.booked);
+        assertEquals(0, o.learned);
+    }
 }

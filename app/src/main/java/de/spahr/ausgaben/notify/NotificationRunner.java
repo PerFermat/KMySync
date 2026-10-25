@@ -101,15 +101,40 @@ public final class NotificationRunner {
      */
     public static int complete(Context context, Repository repository,
                                List<NotificationDraft> remaining, long[] shownIds) {
+        return completeAndLearn(context, repository, remaining, shownIds).booked;
+    }
+
+    /** Was der Abschluss getan hat: gebucht und – still, aus nicht erkannten Zeilen – gelernt. */
+    public static final class Outcome {
+        /** Angelegte Buchungen; -1, wenn das Speichern scheiterte. */
+        public final int booked;
+        /** Neu gelernte Vorlagen. */
+        public final int learned;
+
+        Outcome(int booked, int learned) {
+            this.booked = booked;
+            this.learned = learned;
+        }
+    }
+
+    /**
+     * Wie {@link #complete}, sagt aber auch, wie viele Vorlagen dabei gelernt wurden – damit die Liste
+     * es dem Nutzer melden kann: eine nicht erkannte Zeile, von Hand gebucht, lernt ohne Rückfrage.
+     */
+    public static Outcome completeAndLearn(Context context, Repository repository,
+                                           List<NotificationDraft> remaining, long[] shownIds) {
         final de.spahr.ausgaben.statement.MoneyStyle style = styleOf(context);
-        return complete(context, repository, remaining, shownIds, d -> {
+        final int[] learned = {0};
+        int booked = complete(context, repository, remaining, shownIds, d -> {
             NotificationTemplate t = NotificationLearner.learn(
                     new NotificationSource(d.packageName, d.postTime, d.title, d.text, style),
                     d.cents, d.isIncome, d.payee, d.account);
             if (t != null) {
                 repository.notificationTemplates().save(t);
+                learned[0]++;
             }
         });
+        return new Outcome(booked, learned[0]);
     }
 
     /** Lernt aus einer von Hand gebuchten Zeile und legt die Vorlage ab — austauschbar für den Test. */
