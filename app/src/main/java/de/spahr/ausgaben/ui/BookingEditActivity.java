@@ -2281,7 +2281,8 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
             Toast.makeText(this, R.string.error_transfer_accounts, Toast.LENGTH_SHORT).show();
             return;
         }
-        final String note = composeNoteForSave(true);
+        // Dieselbe Buchung in anderer Art: ihr Standort bleibt der gespeicherte, nicht der von jetzt.
+        final String note = composeNoteForSave(false);
         final String payee = Ui.text(editPayee).trim();
         final String fromPlace = selectedPlace();
         final String toPlace = selectedPlaceTo();
@@ -2320,7 +2321,8 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
                 Toast.makeText(this, R.string.booking_updated, Toast.LENGTH_SHORT).show();
                 finish();
             };
-            nb.note = composeNoteForSave(true);
+            // Dieselbe Buchung in anderer Art: ihr Standort bleibt der gespeicherte, nicht der von jetzt.
+            nb.note = composeNoteForSave(false);
             // Wie beim Umwandeln in die andere Richtung: der Beleg bleibt an der Buchung.
             attachReceipt(nb, false, () -> {
                 if (parts.size() >= 2) {
