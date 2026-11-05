@@ -1,1 +1,5 @@
 Kategorieauswahl auf schmalen Bildschirmen: Die Liste geht über die volle Breite, lange Namen brechen um, und tiefere Kategorien stehen als Baum statt als „Auto:Benzin“.
+
+Benachrichtigungen: Der Standort vom Eintreffen bleibt beim Ändern erhalten. Nach „OK“ nennt die App neu gelernte Meldungsvarianten.
+
+Behoben: Beim Umstellen der Buchungsart ging der gespeicherte Standort verloren.

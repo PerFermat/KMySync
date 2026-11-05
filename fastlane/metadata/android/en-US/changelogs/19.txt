@@ -1,1 +1,5 @@
 Category picker on narrow screens: the list spans the full width, long names wrap, and deeper categories appear as a tree instead of "Car:Fuel".
+
+Notifications: the location from when a notification arrived is kept when you edit it. After "OK" the app reports newly learned notification variants.
+
+Fixed: switching the booking type lost the saved location.

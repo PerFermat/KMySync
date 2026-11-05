@@ -1,1 +1,5 @@
 Selector de categorías en pantallas estrechas: la lista ocupa todo el ancho, los nombres largos se dividen en dos líneas y las categorías más profundas aparecen como árbol en lugar de «Coche:Gasolina».
+
+Notificaciones: la ubicación del momento de llegada se conserva al editar. Tras «OK», la app indica las nuevas variantes de notificación aprendidas.
+
+Corregido: al cambiar el tipo de apunte se perdía la ubicación guardada.

@@ -1,10 +1,10 @@
 {
   "doc_title": "KMySync – Benutzerhandbuch",
   "doc_author": "KMySync",
-  "version_text": "Version 2.3",
-  "date_text": "Stand: Oktober 2026",
+  "version_text": "Version 2.4",
+  "date_text": "Stand: November 2026",
   "toc_title": "Inhalt",
-  "footer_text": "KMySync · Benutzerhandbuch (Version 2.3)",
+  "footer_text": "KMySync · Benutzerhandbuch (Version 2.4)",
   "page_text": "Seite %d",
   "placeholder_no_image": "Kein Bild",
   "table_headers": [
@@ -679,6 +679,11 @@
           "type": "p",
           "id": "b-0050",
           "text": "In den <b>Kontenfeldern</b> steht vorn, was Sie am ehesten brauchen: zuerst Ihre <b>Favoriten</b> (Stern), dahinter die Konten der gerade gewählten <b>Kontengruppe</b> (Symbol der Gruppe), dann alle übrigen mit dem Symbol ihrer Kontenart. Ihre eigene Kontenreihenfolge bleibt innerhalb jedes Blocks erhalten."
+        },
+        {
+          "type": "p",
+          "id": "b-0050k",
+          "text": "Die <b>Kategorienliste</b> steht als Baum: jede Kategorie mit ihrem eigenen Namen, Unterkategorien eingerückt, ab der dritten Ebene mit einer feinen Linie davor (├ / └). Unter «Fahrtkosten» steht also «Auto» und darunter «Benzin» – im Feld landet nach der Wahl der volle Name «Fahrtkosten:Auto:Benzin». Beim Suchen bleiben die übergeordneten Kategorien als Wegweiser stehen, und ein Doppelpunkt sucht über die Ebenen hinweg: «auto:park» findet «Fahrtkosten:Auto:Parkkosten». Lange Namen brechen in eine zweite Zeile um, statt abgeschnitten zu werden."
         },
         {
           "type": "h2",
@@ -1437,7 +1442,7 @@
     {
       "type": "p",
       "id": "b-9513",
-      "text": "<b>«OK»</b> bucht alle buchbaren Zeilen. Danach sind alle gezeigten Meldungen erledigt – auch die entfernten und die nicht erkannten. <b>Abbrechen</b> oder Zurück ändern nichts: Die Liste kommt beim nächsten Aktualisieren wieder."
+      "text": "<b>«OK»</b> bucht alle buchbaren Zeilen. Danach sind alle gezeigten Meldungen erledigt – auch die entfernten und die nicht erkannten. <b>Abbrechen</b> oder Zurück ändern nichts: Die Liste kommt beim nächsten Aktualisieren wieder. Haben Sie eine nicht erkannte Zeile selbst ausgefüllt, nennt die Meldung nach «OK», wie viele neue Meldungsvarianten die App dabei gelernt hat."
     },
     {
       "type": "h2",
