@@ -681,11 +681,6 @@
           "text": "<b>Account fields</b> put what you are most likely to need at the top: first your <b>favourites</b> (star), then the accounts of the currently selected <b>account group</b> (the group's own icon), then all the rest with the icon of their account kind. Your own account order is kept within each block."
         },
         {
-          "type": "p",
-          "id": "b-0050k",
-          "text": "The <b>category list</b> is shown as a tree: each category with its own name, subcategories indented, from the third level on with a thin line in front (├ / └). Under «Travel» you find «Car» and below it «Fuel» – once picked, the field holds the full name «Travel:Car:Fuel». While searching, the parent categories stay visible as signposts, and a colon searches across levels: «car:park» finds «Travel:Car:Parking». Long names wrap onto a second line instead of being cut off."
-        },
-        {
           "type": "h2",
           "id": "b-0050a0",
           "text": "What the app suggests for you"

@@ -681,11 +681,6 @@
           "text": "In den <b>Kontenfeldern</b> steht vorn, was Sie am ehesten brauchen: zuerst Ihre <b>Favoriten</b> (Stern), dahinter die Konten der gerade gewählten <b>Kontengruppe</b> (Symbol der Gruppe), dann alle übrigen mit dem Symbol ihrer Kontenart. Ihre eigene Kontenreihenfolge bleibt innerhalb jedes Blocks erhalten."
         },
         {
-          "type": "p",
-          "id": "b-0050k",
-          "text": "Die <b>Kategorienliste</b> steht als Baum: jede Kategorie mit ihrem eigenen Namen, Unterkategorien eingerückt, ab der dritten Ebene mit einer feinen Linie davor (├ / └). Unter «Fahrtkosten» steht also «Auto» und darunter «Benzin» – im Feld landet nach der Wahl der volle Name «Fahrtkosten:Auto:Benzin». Beim Suchen bleiben die übergeordneten Kategorien als Wegweiser stehen, und ein Doppelpunkt sucht über die Ebenen hinweg: «auto:park» findet «Fahrtkosten:Auto:Parkkosten». Lange Namen brechen in eine zweite Zeile um, statt abgeschnitten zu werden."
-        },
-        {
           "type": "h2",
           "id": "b-0050a0",
           "text": "Was die App für Sie vorschlägt"
