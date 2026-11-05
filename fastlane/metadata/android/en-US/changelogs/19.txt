@@ -1,0 +1,1 @@
+Category picker on narrow screens: the list spans the full width, long names wrap, and deeper categories appear as a tree instead of "Car:Fuel".

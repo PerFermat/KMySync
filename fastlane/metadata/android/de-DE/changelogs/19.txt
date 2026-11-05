@@ -1,0 +1,1 @@
+Kategorieauswahl auf schmalen Bildschirmen: Die Liste geht über die volle Breite, lange Namen brechen um, und tiefere Kategorien stehen als Baum statt als „Auto:Benzin“.

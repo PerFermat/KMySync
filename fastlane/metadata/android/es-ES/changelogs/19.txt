@@ -1,0 +1,1 @@
+Selector de categorías en pantallas estrechas: la lista ocupa todo el ancho, los nombres largos se dividen en dos líneas y las categorías más profundas aparecen como árbol en lugar de «Coche:Gasolina».

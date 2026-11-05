@@ -7,10 +7,12 @@
     android:orientation="horizontal"
     android:gravity="center_vertical">
 
+    <!-- Schmal und ohne Rahmen: auf kleinen Bildschirmen braucht das Kategoriefeld jeden Millimeter
+         (Issue #11). Die Höhe bleibt 48dp, damit der Knopf sicher zu treffen ist. -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnRemoveSplit"
-        style="?attr/materialButtonOutlinedStyle"
-        android:layout_width="48dp"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="32dp"
         android:layout_height="48dp"
         android:insetTop="0dp"
         android:insetBottom="0dp"
@@ -19,17 +21,15 @@
         android:minWidth="0dp"
         android:minHeight="0dp"
         android:text="@string/split_remove"
-        android:textSize="18sp"
+        android:textSize="22sp"
         android:lineSpacingExtra="0dp"
-        android:textColor="@color/expense_red"
-        app:strokeColor="@color/expense_red"
-        app:cornerRadius="24dp" />
+        android:textColor="@color/expense_red" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:layout_marginStart="8dp"
+        android:layout_marginStart="4dp"
         android:hint="@string/category_hint">
 
         <de.spahr.ausgaben.ui.PickerTextView

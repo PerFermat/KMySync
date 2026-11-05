@@ -168,6 +168,16 @@ class SplitRowController {
         if (categoryAdapter != null) {
             PickerAdapters.categories(cat, categoryAdapter);
         }
+        // Die Liste so breit wie die ganze Zeile statt nur wie das Feld zwischen Knopf und Betrag – wie
+        // bei Empfänger und Konto, deren Felder ohnehin über die volle Breite gehen (Issue #11).
+        row.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+            int[] zeile = new int[2];
+            int[] feld = new int[2];
+            v.getLocationInWindow(zeile);
+            cat.getLocationInWindow(feld);
+            cat.setDropDownWidth(v.getWidth());
+            cat.setDropDownHorizontalOffset(zeile[0] - feld[0]);
+        });
         // Vorbelegung vor dem Anhängen der Listener, damit sie keine dynamische Logik auslösen.
         if (category != null) {
             cat.setText(category, false);

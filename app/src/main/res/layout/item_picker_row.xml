@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Eine Zeile in den Vorschlagslisten der Eingabefelder: Symbol, Abstand, Text.
      Ersetzt android.R.layout.simple_list_item_1; die Höhe von 48dp ist das Mindestmaß für eine
-     sicher zu treffende Zeile. Ohne Symbol (Aufzählungen wie Sprache oder Export-Modus) bleibt der
+     sicher zu treffende Zeile. Lange Namen brechen in eine zweite Zeile um, statt gleich abgeschnitten
+     zu werden (Issue #11). Ohne Symbol (Aufzählungen wie Sprache oder Export-Modus) bleibt der
      Platz frei, damit alle Zeilen einer Liste denselben Textanfang haben. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -26,6 +27,6 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:ellipsize="end"
-        android:maxLines="1"
+        android:maxLines="2"
         android:textAppearance="?attr/textAppearanceBodyLarge" />
 </LinearLayout>

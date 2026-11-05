@@ -15,15 +15,17 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import de.spahr.ausgaben.R;
 import de.spahr.ausgaben.settings.CategoryColorStore;
 
 /**
  * Adapter für die Kategorie-Auswahl. Oberste Ebene: die Gruppen-Überschriften „Ausgabe" und „Einnahme"
- * (fett, nicht als Wert nutzbar), darunter je die Kategorien als Baum (`Haupt:Unter`, Unterkategorien
- * eingerückt). Beim Tippen wird gefiltert, die zugehörige Gruppen-Überschrift bleibt aber sichtbar.
+ * (fett, nicht als Wert nutzbar), darunter je die Kategorien als Baum beliebiger Tiefe
+ * (`Haupt:Unter:Unterunter`). Jede Zeile zeigt nur ihren eigenen Namen, eingerückt nach ihrer Ebene; ab
+ * der dritten Ebene steht eine Baumlinie davor (├ / └), damit „Benzin" erkennbar unter „Auto" liegt, ohne
+ * dass „Auto:" in jeder Zeile wiederkehrt (Issue #11). Beim Tippen wird gefiltert, die zugehörige
+ * Gruppen-Überschrift und die übergeordneten Kategorien bleiben aber sichtbar.
  */
 public class CategoryFilterAdapter extends ArrayAdapter<CategoryFilterAdapter.CatItem> {
 
@@ -43,14 +45,25 @@ public class CategoryFilterAdapter extends ArrayAdapter<CategoryFilterAdapter.Ca
         public final boolean isMain;
         /** Typ der Gruppe, aus der dieser Eintrag stammt (true = Einnahme, false = Ausgabe). */
         public final boolean groupIsIncome;
+        /** Ebene im Baum: 0 = Hauptkategorie, 1 = Unterkategorie, 2 und tiefer mit Baumlinie. */
+        final int depth;
+        /** Letztes Kind seines Elternteils – zeichnet └ statt ├. */
+        final boolean lastChild;
 
         CatItem(String label, String value, int kind, String group, boolean groupIsIncome) {
+            this(label, value, kind, group, groupIsIncome, 0, false);
+        }
+
+        CatItem(String label, String value, int kind, String group, boolean groupIsIncome,
+                int depth, boolean lastChild) {
             this.label = label;
             this.value = value;
             this.kind = kind;
             this.group = group;
             this.isMain = kind == KIND_MAIN;
             this.groupIsIncome = groupIsIncome;
+            this.depth = depth;
+            this.lastChild = lastChild;
         }
     }
 
@@ -61,6 +74,8 @@ public class CategoryFilterAdapter extends ArrayAdapter<CategoryFilterAdapter.Ca
     /** Die zuletzt angezeigte Suchanfrage – leer heißt: das Feld steht offen mit dem ganzen Bestand. */
     private String lastConstraint = "";
     private final int indentPx;
+    /** Weitere Einrückung je Ebene ab der dritten – kleiner, weil dort die Baumlinie mit einrückt. */
+    private final int treeIndentPx;
     /** Liefert die Farbe, die dieselbe Kategorie auch im Kreisdiagramm trägt. */
     private final CategoryColorStore colors;
 
@@ -70,7 +85,9 @@ public class CategoryFilterAdapter extends ArrayAdapter<CategoryFilterAdapter.Ca
         super(context, R.layout.item_picker_row, R.id.pickerText);
         this.all = build(allLabel, expenseLabel, expenseCats, incomeLabel, incomeCats);
         this.shown = new ArrayList<>(all);
-        this.indentPx = Math.round(24 * context.getResources().getDisplayMetrics().density);
+        float density = context.getResources().getDisplayMetrics().density;
+        this.indentPx = Math.round(24 * density);
+        this.treeIndentPx = Math.round(12 * density);
         this.colors = new CategoryColorStore(context);
         addAll(this.shown);
     }
@@ -92,28 +109,47 @@ public class CategoryFilterAdapter extends ArrayAdapter<CategoryFilterAdapter.Ca
             return;
         }
         out.add(new CatItem(groupLabel, "", KIND_GROUP, groupLabel, groupIsIncome));
-        TreeMap<String, TreeSet<String>> tree = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Node root = new Node();
         for (String c : categories) {
             if (c == null || c.trim().isEmpty()) {
                 continue;
             }
-            String cat = c.trim();
-            int i = cat.indexOf(':');
-            String main = i >= 0 ? cat.substring(0, i).trim() : cat;
-            String sub = i >= 0 ? cat.substring(i + 1).trim() : "";
-            TreeSet<String> subs = tree.computeIfAbsent(main,
-                    k -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER));
-            if (!sub.isEmpty()) {
-                subs.add(sub);
+            // Fehlt ein Zwischenglied („Fahrtkosten:Auto" zu „Fahrtkosten:Auto:Benzin"), entsteht es
+            // hier von selbst – wählbar wie bisher schon die Hauptkategorie über ihren Unterkategorien.
+            Node node = root;
+            for (String part : c.trim().split(":")) {
+                String name = part.trim();
+                if (!name.isEmpty()) {
+                    node = node.children.computeIfAbsent(name, k -> new Node());
+                }
             }
         }
-        for (Map.Entry<String, TreeSet<String>> e : tree.entrySet()) {
-            String main = e.getKey();
-            out.add(new CatItem(main, main, KIND_MAIN, groupLabel, groupIsIncome));
-            for (String sub : e.getValue()) {
-                out.add(new CatItem(sub, main + ":" + sub, KIND_SUB, groupLabel, groupIsIncome));
-            }
+        emit(out, root, "", 0, groupLabel, groupIsIncome);
+    }
+
+    /** Ein Knoten im Kategoriebaum; die Kinder sortiert wie bisher, ohne Groß-/Kleinschreibung. */
+    private static final class Node {
+        final TreeMap<String, Node> children = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    }
+
+    /** Gibt den Baum in Lesereihenfolge aus: jeder Knoten, dann seine Kinder. */
+    private static void emit(List<CatItem> out, Node node, String prefix, int depth, String groupLabel,
+                             boolean groupIsIncome) {
+        int i = 0;
+        int n = node.children.size();
+        for (Map.Entry<String, Node> e : node.children.entrySet()) {
+            String name = e.getKey();
+            String value = prefix.isEmpty() ? name : prefix + ":" + name;
+            out.add(new CatItem(name, value, depth == 0 ? KIND_MAIN : KIND_SUB, groupLabel,
+                    groupIsIncome, depth, ++i == n));
+            emit(out, e.getValue(), value, depth + 1, groupLabel, groupIsIncome);
         }
+    }
+
+    /** „A:B:C" → „A:B"; Hauptkategorien haben keinen Elternteil (""). */
+    private static String parentOf(String value) {
+        int i = value.lastIndexOf(':');
+        return i >= 0 ? value.substring(0, i) : "";
     }
 
     /**
@@ -250,8 +286,12 @@ public class CategoryFilterAdapter extends ArrayAdapter<CategoryFilterAdapter.Ca
             tv.setAllCaps(false);
             tv.setTextColor(primaryText(tv));
             tv.setTypeface(item.kind == KIND_MAIN ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
-            int left = item.kind == KIND_SUB ? indentPx : 0;
+            int left = item.kind == KIND_SUB ? indentPx * Math.min(item.depth, 1)
+                    + treeIndentPx * Math.max(item.depth - 1, 0) : 0;
             tv.setPadding(left, top, right, bottom);
+            if (item.kind == KIND_SUB && item.depth >= 2) {
+                tv.setText(withTreeLine(tv, item));
+            }
             // Ein Zeichen für zweierlei: die Richtung (Einnahme/Ausgabe) über die Form, die Kategorie
             // über die Farbe – dieselbe, die sie im Kreisdiagramm trägt. Unterkategorien erben die Farbe
             // ihrer Hauptkategorie, damit Geschwister zusammengehörig aussehen.
@@ -264,6 +304,22 @@ public class CategoryFilterAdapter extends ArrayAdapter<CategoryFilterAdapter.Ca
             }
         }
         return row;
+    }
+
+    /**
+     * Der Name mit grauer Baumlinie davor. Bricht er in eine zweite Zeile um, beginnt die unter dem
+     * Namen, nicht unter der Linie.
+     */
+    private static CharSequence withTreeLine(TextView tv, CatItem item) {
+        String line = item.lastChild ? "└ " : "├ ";
+        android.text.SpannableString text = new android.text.SpannableString(line + item.label);
+        text.setSpan(new android.text.style.ForegroundColorSpan(
+                        tv.getResources().getColor(R.color.grey_text, null)),
+                0, line.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        int rest = Math.round(tv.getPaint().measureText(line));
+        text.setSpan(new android.text.style.LeadingMarginSpan.Standard(0, rest),
+                0, text.length(), android.text.Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+        return text;
     }
 
     /** „Haupt:Unter" → „Haupt"; Hauptkategorien bleiben, wie sie sind. */
@@ -302,62 +358,37 @@ public class CategoryFilterAdapter extends ArrayAdapter<CategoryFilterAdapter.Ca
                     result.addAll(all);
                 }
             } else {
-                // Passende Kategorien sammeln; eine Gruppen-Überschrift nur zeigen, wenn sie Treffer hat.
-                // Trifft nur eine Unterkategorie zu, wird zusätzlich ihre Hauptkategorie mit angezeigt
-                // (als Kontext, auch wenn deren eigener Text nicht passt) – sonst wüsste man beim Tippen
-                // einer Unterkategorie nicht, zu welcher Hauptkategorie sie gehört. Umgekehrt zeigt eine
-                // passende Hauptkategorie auch alle ihre Unterkategorien (unabhängig von deren Text).
+                // Ein Eintrag passt, wenn sein voller Pfad die Suche enthält – eine passende Kategorie
+                // zeigt damit auch alle Kategorien darunter, und „auto:benz" trifft „Fahrtkosten:Auto:
+                // Benzin". Zu jedem Treffer kommen seine übergeordneten Kategorien als Kontext dazu,
+                // sonst wüsste man nicht, wo er hängt. Eine Gruppen-Überschrift nur bei Treffern.
                 result = new ArrayList<>();
                 for (CatItem it : all) {
                     if (it.kind == KIND_ALL) {
                         result.add(it);
                     }
                 }
-                java.util.LinkedHashMap<String, List<CatItem>> byGroup = new java.util.LinkedHashMap<>();
-                java.util.Map<String, CatItem> headers = new java.util.HashMap<>();
-                java.util.Map<String, CatItem> pendingMain = new java.util.HashMap<>();
-                java.util.Set<String> addedMain = new java.util.HashSet<>();
-                java.util.Set<String> expandMain = new java.util.HashSet<>();
+                // Je Gruppe die Pfade der Treffer samt Vorfahren; die Ausgabe folgt der Reihenfolge von all.
+                java.util.Map<String, java.util.Set<String>> keep = new java.util.HashMap<>();
                 for (CatItem it : all) {
-                    if (it.kind == KIND_GROUP) {
-                        headers.put(it.group, it);
-                        byGroup.put(it.group, new ArrayList<>());
-                    } else if (it.kind == KIND_MAIN) {
-                        pendingMain.put(it.value, it);
-                        addedMain.remove(it.value);
-                        expandMain.remove(it.value);
-                        if (it.label.toLowerCase(Locale.getDefault()).contains(q)) {
-                            List<CatItem> l = byGroup.get(it.group);
-                            if (l != null) {
-                                l.add(it);
-                                addedMain.add(it.value);
-                                expandMain.add(it.value);
-                            }
-                        }
-                    } else if (it.kind == KIND_SUB) {
-                        String mainKey = it.value.substring(0, it.value.indexOf(':'));
-                        boolean matches = expandMain.contains(mainKey)
-                                || it.label.toLowerCase(Locale.getDefault()).contains(q);
-                        if (!matches) {
-                            continue;
-                        }
-                        List<CatItem> l = byGroup.get(it.group);
-                        if (l != null) {
-                            if (!addedMain.contains(mainKey)) {
-                                CatItem mainItem = pendingMain.get(mainKey);
-                                if (mainItem != null) {
-                                    l.add(mainItem);
-                                    addedMain.add(mainKey);
-                                }
-                            }
-                            l.add(it);
+                    if ((it.kind == KIND_MAIN || it.kind == KIND_SUB)
+                            && it.value.toLowerCase(Locale.getDefault()).contains(q)) {
+                        java.util.Set<String> paths = keep.computeIfAbsent(it.group,
+                                k -> new java.util.HashSet<>());
+                        // Hinauf bis zur Hauptkategorie – oder bis zu einem Vorfahren, der schon drin ist.
+                        String p = it.value;
+                        while (!p.isEmpty() && paths.add(p)) {
+                            p = parentOf(p);
                         }
                     }
                 }
-                for (Map.Entry<String, List<CatItem>> e : byGroup.entrySet()) {
-                    if (!e.getValue().isEmpty()) {
-                        result.add(headers.get(e.getKey()));
-                        result.addAll(e.getValue());
+                for (CatItem it : all) {
+                    java.util.Set<String> paths = keep.get(it.group);
+                    if (paths == null) {
+                        continue;
+                    }
+                    if (it.kind == KIND_GROUP || paths.contains(it.value)) {
+                        result.add(it);
                     }
                 }
             }
