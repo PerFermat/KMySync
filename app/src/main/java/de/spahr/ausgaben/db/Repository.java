@@ -1903,15 +1903,18 @@ public class Repository {
         public final String kmyId;
         public final double shares;
         public final double price;
+        /** Datum des Kurses (ms); 0 = unbekannt, etwa ohne Kurs in der Datei. */
+        public final long priceDate;
         public final long valueCents;
 
         DepotHolding(String name, String symbol, String kmyId, double shares, double price,
-                     long valueCents) {
+                     long priceDate, long valueCents) {
             this.name = name;
             this.symbol = symbol;
             this.kmyId = kmyId;
             this.shares = shares;
             this.price = price;
+            this.priceDate = priceDate;
             this.valueCents = valueCents;
         }
     }

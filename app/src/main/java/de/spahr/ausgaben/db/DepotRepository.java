@@ -121,7 +121,7 @@ class DepotRepository {
             for (Security s : securityDao.getSecurities(depot)) {
                 double q = shares.containsKey(s.kmyId) ? shares.get(s.kmyId) : 0.0;
                 long value = Math.round(q * s.price * 100.0);
-                result.add(new DepotHolding(s.name, s.symbol, s.kmyId, q, s.price, value));
+                result.add(new DepotHolding(s.name, s.symbol, s.kmyId, q, s.price, s.priceDate, value));
             }
             mainHandler.post(() -> callback.onResult(result));
         });

@@ -582,6 +582,11 @@ public class KmyDocument implements KmyAbsicht.Konten {
     /**
      * Liest den (nach TRANSACTIONS stehenden) SECURITIES- und PRICES-Block: Wertpapier-Stammdaten und je
      * Wertpapier den <b>letzten</b> Kurs in seiner Handelswährung.
+     *
+     * <p>Hat ein Wertpapier keinen einzigen Kurs in seiner Handelswährung, gelten die Kurse der Währung,
+     * deren Kurs am jüngsten ist – lieber dieser Wert als gar keiner. So etwa, wenn ein Kursimport in
+     * KMyMoney die Kurse gegen eine andere Währung ablegt, als am Wertpapier eingetragen ist
+     * (GitHub-Issue #12).</p>
      */
     private void parseSecuritiesAndPrices() throws IOException {
         try {
@@ -592,6 +597,8 @@ public class KmyDocument implements KmyAbsicht.Konten {
             String curFrom = null;
             String curTo = null;
             String openSecurity = null;   // Wertpapier, dessen KEYVALUEPAIRS gerade gelesen werden
+            // Kurse in anderen Währungen, für den Rückfall: Wertpapier → Währung → Historie.
+            Map<String, Map<String, List<double[]>>> otherCurrency = new LinkedHashMap<>();
             while (event != XmlPullParser.END_DOCUMENT) {
                 if (event == XmlPullParser.START_TAG) {
                     String tag = parser.getName();
@@ -627,15 +634,14 @@ public class KmyDocument implements KmyAbsicht.Konten {
                         String[] info = securityInfo.get(curFrom);
                         String tc = info == null ? "" : info[2];
                         // Kurs in der Handelswährung des Wertpapiers (bei EUR-Papieren „to=EUR").
-                        if (tc.isEmpty() || tc.equalsIgnoreCase(curTo)) {
-                            long d = parseKmyDate(parser.getAttributeValue(null, "date"));
-                            double p = fractionToDouble(parser.getAttributeValue(null, "price"));
-                            if (d >= 0 && p > 0) {
-                                double[] prev = securityPrice.get(curFrom);
-                                if (prev == null || d >= (long) prev[1]) {
-                                    securityPrice.put(curFrom, new double[]{p, d});
-                                }
-                                securityPriceHistory.computeIfAbsent(curFrom, k -> new ArrayList<>())
+                        long d = parseKmyDate(parser.getAttributeValue(null, "date"));
+                        double p = fractionToDouble(parser.getAttributeValue(null, "price"));
+                        if (d >= 0 && p > 0) {
+                            if (tc.isEmpty() || tc.equalsIgnoreCase(curTo)) {
+                                addPrice(securityPrice, securityPriceHistory, curFrom, p, d);
+                            } else {
+                                otherCurrency.computeIfAbsent(curFrom, k -> new LinkedHashMap<>())
+                                        .computeIfAbsent(orEmpty(curTo), k -> new ArrayList<>())
                                         .add(new double[]{p, d});
                             }
                         }
@@ -648,9 +654,40 @@ public class KmyDocument implements KmyAbsicht.Konten {
                 }
                 event = parser.next();
             }
+            for (Map.Entry<String, Map<String, List<double[]>>> e : otherCurrency.entrySet()) {
+                if (securityPrice.containsKey(e.getKey())) {
+                    continue;
+                }
+                List<double[]> best = null;
+                for (List<double[]> history : e.getValue().values()) {
+                    if (best == null || newest(history) > newest(best)) {
+                        best = history;
+                    }
+                }
+                for (double[] ph : best) {
+                    addPrice(securityPrice, securityPriceHistory, e.getKey(), ph[0], (long) ph[1]);
+                }
+            }
         } catch (XmlPullParserException e) {
             throw new IOException(ctx.getString(de.spahr.ausgaben.R.string.err_kmy_read), e);
         }
+    }
+
+    private static void addPrice(Map<String, double[]> latest, Map<String, List<double[]>> history,
+                                 String id, double price, long date) {
+        double[] prev = latest.get(id);
+        if (prev == null || date >= (long) prev[1]) {
+            latest.put(id, new double[]{price, date});
+        }
+        history.computeIfAbsent(id, k -> new ArrayList<>()).add(new double[]{price, date});
+    }
+
+    private static long newest(List<double[]> history) {
+        long max = -1;
+        for (double[] ph : history) {
+            max = Math.max(max, (long) ph[1]);
+        }
+        return max;
     }
 
     /**

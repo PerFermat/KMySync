@@ -361,6 +361,8 @@ public class DepotActivity extends LocalizedActivity {
         lastHoldings = holdings;
         container.removeAllViews();
         boolean any = false;
+        java.text.DateFormat df = java.text.DateFormat.getDateInstance(java.text.DateFormat.SHORT,
+                getResources().getConfiguration().getLocales().get(0));
         for (Repository.DepotHolding h : holdings) {
             boolean closed = Math.abs(h.shares) < de.spahr.ausgaben.util.SecurityAmounts.SHARE_EPSILON;
             boolean visible = closed ? filterShowClosed : filterShowActive;
@@ -369,7 +371,7 @@ public class DepotActivity extends LocalizedActivity {
             }
             any = true;
             String left = h.name + (h.symbol.isEmpty() ? "" : "  ·  " + h.symbol)
-                    + "\n" + shares(h.shares) + " × " + price(h.price);
+                    + "\n" + shares(h.shares) + " × " + priceWithDate(price(h.price), h.priceDate, df);
             addRow(left, money(h.valueCents), v -> openHistory(h));
         }
         if (!any) {
@@ -859,6 +861,14 @@ public class DepotActivity extends LocalizedActivity {
     /** Stückzahl im eingestellten Zahlenformat (siehe {@code MoneyFormat.SHARE_DECIMALS}). */
     private static String shares(double v) {
         return de.spahr.ausgaben.settings.MoneyFormat.shares(v);
+    }
+
+    /**
+     * Kurs mit seinem Datum, etwa „31,50 (06.11.26)“: so sieht man, ob die App einen veralteten Kurs hat
+     * (GitHub-Issue #12). Ohne bekanntes Datum nur der Kurs.
+     */
+    static String priceWithDate(String price, long priceDate, java.text.DateFormat df) {
+        return priceDate > 0 ? price + " (" + df.format(new java.util.Date(priceDate)) + ")" : price;
     }
 
     /** Kurs: bis zu vier Nachkommastellen, im eingestellten Zahlenformat. */
