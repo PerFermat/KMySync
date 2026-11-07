@@ -197,7 +197,7 @@
             "<b>Import-/Export-Format</b>: CSV, «.kmy lesen, CSV exportieren», KMyMoney-Datei (.kmy), KMyMoney-Datenbank (SQLite) oder «SQLite-Datenbank lesen, CSV exportieren».",
             "<b>Synchronisierung</b>: Server-Typ, URL, Benutzer, Passwort – mit <b>«Verbindung testen»</b>; im .kmy-Modus zusätzlich <b>«.kmy auswählen»</b>.",
             "<b>«Konten importieren»</b>: derselbe Auswahldialog wie bei «Konto hinzufügen», direkt hier im Assistenten.",
-            "<b>«Weitere Einstellungen»</b> öffnet die vollständigen Einstellungen; <b>«Fertig»</b> schließt den Assistenten."
+            "<b>«Fertig»</b> schließt den Assistenten. Alle weiteren Einstellungen erreichen Sie danach jederzeit über das Menü."
           ]
         }
       ],
@@ -208,7 +208,7 @@
         },
         {
           "fname": "Willkommen_2.png",
-          "caption": "«Konten importieren», «Weitere Einstellungen», «Fertig»"
+          "caption": "«Konten importieren», Standardkonto und «Fertig»"
         }
       ]
     },
@@ -276,7 +276,7 @@
       ],
       "shot": {
         "fname": "Saldenzeile.png",
-        "caption": "Saldenzeile mit Gruppensumme; Antippen schaltet weiter",
+        "caption": "Saldenzeile; Antippen schaltet weiter",
         "width": 6.0
       }
     },
@@ -374,7 +374,7 @@
       ],
       "shot": {
         "fname": "Kontenmenü.png",
-        "caption": "Kontenschublade mit Konten, Depot und «Konto hinzufügen»",
+        "caption": "Kontenschublade mit Konten, Depot und «Neues Konto hinzufügen»",
         "width": 3.5
       }
     },
@@ -546,7 +546,7 @@
         },
         {
           "fname": "Konten Kontextmenü.png",
-          "caption": "«⋮»: Gruppen ankreuzen, neue anlegen, Konto schließen"
+          "caption": "«⋮»: Gruppen ankreuzen oder neu anlegen"
         }
       ]
     },
@@ -886,7 +886,7 @@
       "shots": [
         {
           "fname": "Depot Bewegungen.png",
-          "caption": "Bewegungen eines Wertpapiers: Käufe, Verkäufe und Dividenden"
+          "caption": "Bewegungen eines Wertpapiers, hier Käufe und Dividenden"
         },
         {
           "fname": "Depot Auswertung.png",
@@ -1024,7 +1024,7 @@
       ],
       "shot": {
         "fname": "Erkennungsregeln.png",
-        "caption": "Erkennungsregeln je Bank verwalten",
+        "caption": "Die gelernten Erkennungsregeln eines Depots",
         "width": 6.0
       }
     },
@@ -2150,11 +2150,11 @@
       "shots": [
         {
           "fname": "Einstellungen_1.png",
-          "caption": "Sprache, Zahlenformat, Server-Verbindung"
+          "caption": "Profil ändern: Farbe, Sprache, Format, Server-Verbindung"
         },
         {
           "fname": "Einstellungen_2.png",
-          "caption": "Export-Modus, Standardkonto, Orte je Konto"
+          "caption": "Profil ändern: Zahlenformat, Dividenden, Budget, Standardkonto, Orte"
         },
         {
           "fname": "Einstellungen_3.png",
@@ -2287,7 +2287,7 @@
       ],
       "shot": {
         "fname": "SMB Assistent.png",
-        "caption": "SMB-Assistent: gefundene Server, Anmeldung und Freigabe-Auswahl",
+        "caption": "SMB-Verbindung von Hand; «Server im Netzwerk suchen» startet den Assistenten",
         "width": 6.0
       }
     },
@@ -2328,7 +2328,7 @@
       ],
       "shot": {
         "fname": "SMB Diagnose.png",
-        "caption": "Der Bericht: jeder Schritt mit Dauer und Statuscode",
+        "caption": "Der Bericht: jeder Schritt mit seinem Ergebnis – hier scheitert schon das Verbinden",
         "width": 6.0
       }
     },

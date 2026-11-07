@@ -197,7 +197,7 @@
             "<b>Import/export format</b>: CSV, «Read .kmy, export CSV», KMyMoney file (.kmy), KMyMoney database (SQLite) or «Read SQLite database, export CSV».",
             "<b>Synchronisation</b>: server type, URL, user, password – with <b>«Test connection»</b>; in .kmy mode also <b>«Choose .kmy»</b>.",
             "<b>«Import accounts»</b>: the same selection dialog as «Add account», right here in the assistant.",
-            "<b>«More settings»</b> opens the full settings; <b>«Done»</b> closes the assistant."
+            "<b>«Done»</b> closes the assistant. All further settings can be reached at any time from the menu afterwards."
           ]
         }
       ],
@@ -208,7 +208,7 @@
         },
         {
           "fname": "Willkommen_2.png",
-          "caption": "«Import accounts», «More settings», «Done»"
+          "caption": "«Import accounts», default account and «Done»"
         }
       ]
     },
@@ -276,7 +276,7 @@
       ],
       "shot": {
         "fname": "Saldenzeile.png",
-        "caption": "Balance line with group total; tapping cycles through",
+        "caption": "Balance line; tapping cycles through",
         "width": 6.0
       }
     },
@@ -374,7 +374,7 @@
       ],
       "shot": {
         "fname": "Kontenmenü.png",
-        "caption": "Account drawer with accounts, portfolio and «Add account»",
+        "caption": "Account drawer with accounts, portfolio and «Add new account»",
         "width": 3.5
       }
     },
@@ -546,7 +546,7 @@
         },
         {
           "fname": "Konten Kontextmenü.png",
-          "caption": "«⋮»: tick groups, create a new one, close the account"
+          "caption": "«⋮»: tick groups or create a new one"
         }
       ]
     },
@@ -886,7 +886,7 @@
       "shots": [
         {
           "fname": "Portfolio Transactions.png",
-          "caption": "Transactions for a security: buys, sells and dividends"
+          "caption": "Transactions for a security, here buys and dividends"
         },
         {
           "fname": "Portfolio Analysis.png",
@@ -1024,7 +1024,7 @@
       ],
       "shot": {
         "fname": "Recognition Rules.png",
-        "caption": "Managing recognition rules per bank",
+        "caption": "The learned recognition rules of a portfolio",
         "width": 6.0
       }
     },
@@ -2145,11 +2145,11 @@
       "shots": [
         {
           "fname": "Einstellungen_1.png",
-          "caption": "Language, number format, server connection"
+          "caption": "Change profile: colour, language, format, server connection"
         },
         {
           "fname": "Einstellungen_2.png",
-          "caption": "Export mode, default account, places per account"
+          "caption": "Change profile: number format, dividends, budget, default account, places"
         },
         {
           "fname": "Einstellungen_3.png",
@@ -2282,7 +2282,7 @@
       ],
       "shot": {
         "fname": "SMB Assistent.png",
-        "caption": "SMB wizard: servers found, sign-in and share selection",
+        "caption": "SMB connection by hand; «Search for servers on the network» starts the wizard",
         "width": 6.0
       }
     },
@@ -2323,7 +2323,7 @@
       ],
       "shot": {
         "fname": "SMB Diagnose.png",
-        "caption": "The report: every step with duration and status code",
+        "caption": "The report: every step with its result – here the connection already fails",
         "width": 6.0
       }
     },
