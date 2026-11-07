@@ -119,6 +119,17 @@ class AliasResolver {
 
     private boolean resolvePass(String term, double[] coords, java.util.Set<String> closed, String type,
                                 Booking[] outBooking, PayeeCorrection[] outAlias) {
+        // Ein Empfänger, den es unter genau diesem Namen schon gibt, geht dem bevorzugten Alias vor –
+        // sonst machte die unscharfe Alias-Suche aus „Bäckerei Butterblume" über den Alias „bäcker"
+        // die „Bäckerei Krustengold". Nicht aber einem Alias, der wörtlich so lautet: den hat der
+        // Nutzer genau für diesen Begriff angelegt.
+        if (!hasExactAlias(term, true, closed, type)) {
+            Booking exact = exactPayeeBooking(term, coords, closed, type);
+            if (exact != null) {
+                outBooking[0] = exact;
+                return true;
+            }
+        }
         PayeeCorrection alias = matchAlias(term, true, coords, closed, type);
         if (alias != null) {
             outAlias[0] = alias;
@@ -135,6 +146,73 @@ class AliasResolver {
             return true;
         }
         return false;
+    }
+
+    /** Gibt es einen (offenen, zur Art passenden) Alias, dessen Begriff genau {@code term} lautet? */
+    private boolean hasExactAlias(String term, boolean preferred, java.util.Set<String> closed,
+                                  String type) {
+        String t = term == null ? "" : term.trim();
+        if (t.isEmpty()) {
+            return false;
+        }
+        // Über LIKE holen und selbst vergleichen: so zählt Groß/klein nicht, auch bei Umlauten.
+        for (PayeeCorrection a : correctionDao.findAllBySpokenLike(t, preferred ? 1 : 0)) {
+            if (a.spoken != null && a.spoken.trim().equalsIgnoreCase(t)
+                    && !aliasBlocked(a, closed) && aliasSupports(a, type)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Eine frühere Buchung, deren Empfänger <b>genau</b> {@code term} heißt (Groß/klein egal).
+     *
+     * <p>Der Standort entscheidet mit, wenn es ihn gibt: Kennt die App den aktuellen und tragen
+     * Buchungen dieses Namens einen, muss eine davon im Umkreis {@link
+     * de.spahr.ausgaben.location.Geo#RADIUS_M} liegen – dann gilt die nächste. Liegen alle weit weg, ist
+     * es kein Treffer, und die gewohnte Reihenfolge (bevorzugter Alias zuerst) entscheidet; der kann für
+     * genau diesen Ort angelegt sein. Ohne Standort auf einer der beiden Seiten zählt der Name allein,
+     * und es gilt die neueste Buchung.</p>
+     *
+     * @return {@code null}, wenn es keinen solchen Treffer gibt
+     */
+    Booking exactPayeeBooking(String term, double[] coords, java.util.Set<String> closed, String type) {
+        String t = term == null ? "" : term.trim();
+        if (t.isEmpty()) {
+            return null;
+        }
+        List<Booking> exact = new ArrayList<>();
+        for (Booking b : filterBookings(openBookings(bookingDao.findByPayeeLike(t), closed), type)) {
+            if (b.payee != null && b.payee.trim().equalsIgnoreCase(t)) {
+                exact.add(b);
+            }
+        }
+        if (exact.isEmpty()) {
+            return null;
+        }
+        if (coords == null) {
+            return exact.get(0);
+        }
+        Booking nearest = null;
+        double nearestD = Double.MAX_VALUE;
+        boolean anyGps = false;
+        for (Booking b : exact) {
+            double[] ll = de.spahr.ausgaben.location.Geo.parse(b.note);
+            if (ll == null) {
+                continue;
+            }
+            anyGps = true;
+            double d = de.spahr.ausgaben.location.Geo.distanceMeters(coords[0], coords[1], ll[0], ll[1]);
+            if (d < nearestD) {
+                nearestD = d;
+                nearest = b;
+            }
+        }
+        if (!anyGps) {
+            return exact.get(0);
+        }
+        return nearestD <= de.spahr.ausgaben.location.Geo.RADIUS_M ? nearest : null;
     }
 
     /**
