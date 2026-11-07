@@ -105,4 +105,14 @@ public class KmyFxConversionTest {
         // Der von KMyMoney gebuchte Euro-Betrag, nicht 83,49 × Tageskurs mit Rundungsfehler.
         assertEquals(4175L, tx.amountCents);
     }
+
+    /** Basiswährung und Devisenkurs der Datei kommen beim Kontenimport mit (für die Gesamtsumme). */
+    @Test
+    public void echteDateiLiefertBasiswaehrungUndDevisenkurs() throws Exception {
+        KmyImporter imp = new KmyImporter(
+                new KmyDocument(KmyRobustnessTest.fixture("fremdwaehrung-depot.kmy"), ctx), ctx);
+        assertEquals("EUR", imp.baseCurrency());
+        assertEquals(0.5, imp.exchangeRates().rate("USD", "EUR", System.currentTimeMillis()), 1e-9);
+        assertEquals(2.0, imp.exchangeRates().rate("EUR", "USD", System.currentTimeMillis()), 1e-9);
+    }
 }

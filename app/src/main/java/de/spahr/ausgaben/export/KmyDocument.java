@@ -78,8 +78,8 @@ public class KmyDocument implements KmyAbsicht.Konten {
     private final Map<String, List<double[]>> securityPriceHistory = new LinkedHashMap<>();
     /** Wertpapier-ID → Währung, in der {@link #securityPrice} steht (das {@code to} des Kurspaars). */
     private final Map<String, String> securityPriceCurrency = new LinkedHashMap<>();
-    /** Devisenkurse: von-Währung → nach-Währung → Historie {kurs, dateMillis}, zeitlich aufsteigend. */
-    private final Map<String, Map<String, List<double[]>>> fxHistory = new LinkedHashMap<>();
+    /** Devisenkurse ({@code PRICEPAIR} zwischen zwei Währungen). */
+    private final de.spahr.ausgaben.util.FxTable fx = new de.spahr.ausgaben.util.FxTable();
 
     /** Budgetjahr → Liste der Kategorie-Soll-Werte (Jahressumme) aus dem BUDGETS-Block. */
     private final Map<Integer, List<BudgetEntry>> budgetsByYear = new LinkedHashMap<>();
@@ -505,45 +505,14 @@ public class KmyDocument implements KmyAbsicht.Konten {
         return orEmpty(securityPriceCurrency.get(kmyId));
     }
 
-    /**
-     * Devisenkurs: wie viele Einheiten {@code to} eine Einheit {@code from} am Tag {@code date} kostet.
-     * Gilt der jüngste Kurs bis zu diesem Tag; liegt keiner davor, der älteste. Ist nur das Gegenpaar
-     * gepflegt (KMyMoney legt je nach Eingabe {@code EUR→USD} oder {@code USD→EUR} ab), sein Kehrwert.
-     * Gleiche Währung = 1; ohne passenden Kurs {@code NaN}.
-     */
+    /** Devisenkurs eines Tages, siehe {@link de.spahr.ausgaben.util.FxTable#rate}. */
     public double rate(String from, String to, long date) {
-        if (from == null || to == null || from.isEmpty() || to.isEmpty()) {
-            return Double.NaN;
-        }
-        if (from.equalsIgnoreCase(to)) {
-            return 1;
-        }
-        double direct = valueAt(fxPair(from, to), date);
-        if (!Double.isNaN(direct)) {
-            return direct;
-        }
-        double inverse = valueAt(fxPair(to, from), date);
-        return Double.isNaN(inverse) ? Double.NaN : 1 / inverse;
+        return fx.rate(from, to, date);
     }
 
-    private List<double[]> fxPair(String from, String to) {
-        Map<String, List<double[]>> byTo = fxHistory.get(from);
-        return byTo == null ? null : byTo.get(to);
-    }
-
-    /** Wert einer aufsteigenden Historie am Tag {@code date}, siehe {@link #rate}. */
-    private static double valueAt(List<double[]> history, long date) {
-        if (history == null || history.isEmpty()) {
-            return Double.NaN;
-        }
-        double v = history.get(0)[0];
-        for (double[] ph : history) {
-            if ((long) ph[1] > date) {
-                break;
-            }
-            v = ph[0];
-        }
-        return v;
+    /** Alle Devisenkurse der Datei. */
+    public de.spahr.ausgaben.util.FxTable fxTable() {
+        return fx;
     }
 
     public long maxTransactionNumber() {
@@ -706,7 +675,11 @@ public class KmyDocument implements KmyAbsicht.Konten {
                 }
                 String[] info = securityInfo.get(e.getKey());
                 if (info == null) {
-                    fxHistory.put(e.getKey(), e.getValue());
+                    for (Map.Entry<String, List<double[]>> byTo : e.getValue().entrySet()) {
+                        for (double[] ph : byTo.getValue()) {
+                            fx.add(e.getKey(), byTo.getKey(), ph[0], (long) ph[1]);
+                        }
+                    }
                     continue;
                 }
                 // Kurs in der Handelswährung des Wertpapiers (bei EUR-Papieren „to=EUR"); fehlt er,

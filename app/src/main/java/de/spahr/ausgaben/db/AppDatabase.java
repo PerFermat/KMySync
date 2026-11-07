@@ -16,7 +16,7 @@ import de.spahr.ausgaben.settings.ProfileManager;
         Budget.class, CategoryType.class, ScheduledTransaction.class, ScheduledSplit.class,
         AnalysisExtra.class, SecurityTxValueOverride.class, KmyPendingDelete.class, SecurityPrice.class,
         ScheduledAdvance.class, AccountGroup.class, AccountGroupMember.class, AccountKindOrder.class,
-        Tag.class, SecurityTxSplit.class, NotificationTemplateRow.class},
+        Tag.class, SecurityTxSplit.class, NotificationTemplateRow.class, FxRate.class},
         version = 59, exportSchema = true)
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -812,16 +812,22 @@ public abstract class AppDatabase extends RoomDatabase {
 
     /**
      * v58 → v59: der Originalkurs eines in die Basiswährung umgerechneten Wertpapiers
-     * ({@link Security#origPrice}). Der neue Wert kommt mit dem nächsten Depot-Import.
+     * ({@link Security#origPrice}) und die Devisenkurse ({@link FxRate}) für die Umrechnung von
+     * Fremdwährungskonten. Beides kommt mit dem nächsten Import.
      */
     static final Migration MIGRATION_58_59 = new Migration(58, 59) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase db) {
             db.execSQL("ALTER TABLE security ADD COLUMN orig_price REAL NOT NULL DEFAULT 0");
+            db.execSQL("CREATE TABLE IF NOT EXISTS `fx_rate` (`id` INTEGER PRIMARY KEY AUTOINCREMENT "
+                    + "NOT NULL, `from_cur` TEXT NOT NULL, `to_cur` TEXT NOT NULL, `date` INTEGER NOT NULL, "
+                    + "`rate` REAL NOT NULL)");
         }
     };
 
     public abstract BookingDao bookingDao();
+
+    public abstract FxRateDao fxRateDao();
 
     public abstract NotificationTemplateDao notificationTemplateDao();
 

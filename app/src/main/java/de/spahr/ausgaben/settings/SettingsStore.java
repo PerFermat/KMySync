@@ -58,6 +58,8 @@ public class SettingsStore {
     private static final String KEY_ALIAS_PROMPT = "alias_prompt";
     private static final String KEY_LANGUAGE = "language";
     private static final String KEY_CURRENCY = "currency";
+    /** Basiswährung der KMyMoney-Datei (ISO, z. B. „EUR"), beim Import gemerkt; leer = unbekannt. */
+    private static final String KEY_BASE_CURRENCY = "kmy_base_currency";
     private static final String KEY_NUMBER_FORMAT = "number_format";
     private static final String KEY_CSV_SEPARATOR = "csv_separator";
     private static final String KEY_SHOW_CURRENCY = "show_currency";
@@ -770,6 +772,16 @@ public class SettingsStore {
 
     public void setCurrency(String currency) {
         prefs.edit().putString(pk(KEY_CURRENCY), currency == null ? "" : currency.trim()).apply();
+    }
+
+    /** Basiswährung der KMyMoney-Datei; Ziel der Umrechnung von Fremdwährungskonten in den Summen. */
+    public String getBaseCurrency() {
+        String c = prefs.getString(pk(KEY_BASE_CURRENCY), "");
+        return c == null ? "" : c.trim();
+    }
+
+    public void setBaseCurrency(String currency) {
+        prefs.edit().putString(pk(KEY_BASE_CURRENCY), currency == null ? "" : currency.trim()).apply();
     }
 
     /** Gewähltes Zahlenformat (siehe {@code NUMBER_FORMAT_*}). Standard = heutiges Verhalten (1234,56). */

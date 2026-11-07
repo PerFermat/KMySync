@@ -177,6 +177,7 @@ public final class KmyAccountImport {
         // Anlage/Verbindlichkeit bzw. Einnahme/Ausgabe für ALLE Konten und Kategorien der .kmy
         // klassifizieren, nicht nur für die aktualisierten.
         repository.applyAccountTypes(importer.accountTypes());
+        repository.applyExchangeRates(importer.baseCurrency(), importer.exchangeRates());
         repository.applyCategoryTypes(importer.categoryTypes());
         // Kontengruppen aus der Datei nachziehen: Banken aus dem Institutsblock, „Favoriten"
         // aus den bevorzugten Konten.

@@ -101,6 +101,41 @@ public class Repository {
         });
     }
 
+    /**
+     * Basiswährung und Devisenkurse der eingelesenen Datei übernehmen – Grundlage für die Umrechnung von
+     * Fremdwährungskonten in Gesamtsumme und Vermögensverlauf ({@link CurrencyContext}).
+     */
+    public void applyExchangeRates(final String baseCurrency, final de.spahr.ausgaben.util.FxTable fx) {
+        executor.execute(() -> {
+            new de.spahr.ausgaben.settings.SettingsStore(appContext).setBaseCurrency(baseCurrency);
+            java.util.List<FxRate> rows = new java.util.ArrayList<>();
+            if (fx != null) {
+                for (Object[] e : fx.entries()) {
+                    rows.add(new FxRate((String) e[0], (String) e[1], (Long) e[3], (Double) e[2]));
+                }
+            }
+            AppDatabase.getInstance(appContext).fxRateDao().replaceAll(rows);
+        });
+    }
+
+    /** Basiswährung, Kontowährungen und Devisenkurse für die Umrechnung in den Summen. */
+    public void getCurrencyContext(final Callback<CurrencyContext> callback) {
+        executor.execute(() -> {
+            de.spahr.ausgaben.util.FxTable fx = new de.spahr.ausgaben.util.FxTable();
+            for (FxRate r : AppDatabase.getInstance(appContext).fxRateDao().getAll()) {
+                fx.add(r.fromCur, r.toCur, r.rate, r.date);
+            }
+            java.util.Map<String, String> currencies = new java.util.HashMap<>();
+            for (Account a : accountDao.getAll()) {
+                currencies.put(a.name.toLowerCase(java.util.Locale.ROOT), a.currency);
+            }
+            final CurrencyContext c = new CurrencyContext(
+                    new de.spahr.ausgaben.settings.SettingsStore(appContext).getBaseCurrency(),
+                    currencies, fx);
+            mainHandler.post(() -> callback.onResult(c));
+        });
+    }
+
     /** KMyMoney-Kontotyp beim Import übernehmen (Trennung Anlage/Verbindlichkeit). Typ 0 = ignorieren. */
     public void setAccountType(final String account, final int type) {
         if (account == null || account.trim().isEmpty() || type == 0) {

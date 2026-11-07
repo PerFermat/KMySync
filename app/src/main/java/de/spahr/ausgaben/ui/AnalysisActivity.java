@@ -68,6 +68,8 @@ public class AnalysisActivity extends LocalizedActivity {
     private MaterialAutoCompleteTextView viewSelector;
 
     private List<Booking> allBookings = new ArrayList<>();
+    /** Fremdwährungskonten: in den Summensichten mit Saldo × Devisenkurs des Tages bewertet. */
+    private de.spahr.ausgaben.db.CurrencyContext.ForeignBalances foreign = null;
     private List<PlaceEntry> allPlaceEntries = new ArrayList<>();
     /** Depotübergreifende Zeitreihen-Bewertung (Depot-Linie in „Gesamt"/„Depot"); {@code null} bis geladen. */
     private de.spahr.ausgaben.db.DepotValuation depotValuation = null;
@@ -173,6 +175,7 @@ public class AnalysisActivity extends LocalizedActivity {
         repository.getCategoryTypes(types -> categoryTypes = types);
         repository.getAllBookings(result -> {
             allBookings = result;
+            repository.getCurrencyContext(cc -> foreign = cc.foreignBalances(result));
             repository.getAllSplitsMap(m -> {
                 splitsByBooking = m;
                 bookingsLoaded = true;
@@ -305,7 +308,8 @@ public class AnalysisActivity extends LocalizedActivity {
         if (viewKey.equals(MainActivity.VIEW_GROUP_TOTAL)) {
             // Kontengruppe: alle Buchungen ihrer Konten – dieselbe Regel wie MainActivity.inSelectedGroup().
             for (Booking b : allBookings) {
-                if (b.account != null && groupAccounts.contains(b.account.toLowerCase(Locale.ROOT))) {
+                if (b.account != null && groupAccounts.contains(b.account.toLowerCase(Locale.ROOT))
+                        && !isConverted(b)) {
                     events.add(new long[]{b.createdAt, b.isIncome ? b.amountCents : -b.amountCents});
                 }
             }
@@ -348,6 +352,9 @@ public class AnalysisActivity extends LocalizedActivity {
             for (Booking b : allBookings) {
                 if (onlyFiltered && !matchesFilter(b)) {
                     continue;
+                }
+                if (!onlyFiltered && isConverted(b)) {
+                    continue;   // kommt umgerechnet über foreignCentsAt
                 }
                 long signed = b.isIncome ? b.amountCents : -b.amountCents;
                 // Gefilterte Sicht mit Kategorie-Filter: Splitbuchung nur mit dem passenden Teilbetrag.
@@ -419,6 +426,34 @@ public class AnalysisActivity extends LocalizedActivity {
                 : depotValuation.valueCentsAt(t);
     }
 
+    /** Bucht dieses Konto in Fremdwährung und wird in der Summensicht umgerechnet? */
+    private boolean isConverted(Booking b) {
+        return foreign != null && foreign.contains(b.account);
+    }
+
+    /**
+     * Umgerechneter Wert der Fremdwährungskonten zum Stichtag für die Summensichten („Gesamt",
+     * „Gesamt ohne Depot", Kontengruppe); in allen anderen Sichten 0.
+     */
+    private long foreignCentsAt(long t) {
+        if (foreign == null || foreign.isEmpty()) {
+            return 0;
+        }
+        if (viewKey.equals(MainActivity.VIEW_TOTAL) || viewKey.equals(MainActivity.VIEW_TOTAL_NODEPOT)) {
+            return foreign.valueCentsAt(t, null);
+        }
+        if (viewKey.equals(MainActivity.VIEW_GROUP_TOTAL)) {
+            return foreign.valueCentsAt(t, groupAccounts::contains);
+        }
+        return 0;
+    }
+
+    private boolean usesForeign() {
+        return foreign != null && !foreign.isEmpty()
+                && (viewKey.equals(MainActivity.VIEW_TOTAL) || viewKey.equals(MainActivity.VIEW_TOTAL_NODEPOT)
+                || viewKey.equals(MainActivity.VIEW_GROUP_TOTAL));
+    }
+
     private void renderChart() {
         // Depot-Beteiligung der Sicht: „Gesamt" enthält den Depotwert zusätzlich, „Depot" zeigt nur ihn.
         // Die Kontengruppe zählt ihre eigenen Depots mit – wie die Gruppensumme in der Saldo-Leiste.
@@ -439,9 +474,13 @@ public class AnalysisActivity extends LocalizedActivity {
         if (useDepot) {
             total += depotCentsAt(System.currentTimeMillis());
         }
+        boolean useForeign = usesForeign();
+        if (useForeign) {
+            total += foreignCentsAt(System.currentTimeMillis());
+        }
         textTotal.setText(getString(R.string.analysis_total, formatEuro(total)));
 
-        if (events.isEmpty() && !depotOnly) {
+        if (events.isEmpty() && !depotOnly && !useForeign) {
             chart.clear();
             chart.invalidate();
             fabScrollRight.hide();
@@ -466,6 +505,15 @@ public class AnalysisActivity extends LocalizedActivity {
         if (useDepot) {
             long first = depotValuation.firstTxMs();
             if (first > 0) {
+                long fps = periodStart(first);
+                if (fps < minMs) minMs = fps;
+            }
+            long nowPs = periodStart(System.currentTimeMillis());
+            if (nowPs > maxMs) maxMs = nowPs;
+        }
+        if (useForeign) {
+            long first = foreign.firstMs();
+            if (first != Long.MAX_VALUE) {
                 long fps = periodStart(first);
                 if (fps < minMs) minMs = fps;
             }
@@ -513,6 +561,8 @@ public class AnalysisActivity extends LocalizedActivity {
         // Depotwert unmittelbar vor Fensterbeginn – Basis für die Wertänderung der ersten gezeigten Periode.
         long prevDepotCents = (useDepot && !periods.isEmpty())
                 ? depotCentsAt(periods.get(0) - 1) : 0;
+        long prevForeignCents = (useForeign && !periods.isEmpty())
+                ? foreignCentsAt(periods.get(0) - 1) : 0;
         for (int i = 0; i < periods.size(); i++) {
             long ps = periods.get(i);
             labels.add(label(ps));
@@ -530,6 +580,11 @@ public class AnalysisActivity extends LocalizedActivity {
                 depotDelta = depotCents - prevDepotCents;
             }
 
+            // Fremdwährungskonten wie ein Depot: Wert am Periodenende, die Änderung geht in den Balken.
+            long foreignCents = useForeign ? foreignCentsAt(nextBoundary - 1) : 0;
+            long foreignDelta = foreignCents - prevForeignCents;
+            prevForeignCents = foreignCents;
+
             long bar;
             boolean drawBar;
             if (depotOnly) {
@@ -537,11 +592,11 @@ public class AnalysisActivity extends LocalizedActivity {
                 drawBar = bar != 0;
             } else if (includeDepot) {
                 // „Gesamt" = Buchungs-Netto + Wertentwicklung des Depots (Δ Depotwert) je Periode.
-                bar = netVal + depotDelta;
+                bar = netVal + depotDelta + foreignDelta;
                 drawBar = bar != 0;
             } else {
-                bar = netVal;
-                drawBar = hasEvent.contains(ps);
+                bar = netVal + foreignDelta;
+                drawBar = hasEvent.contains(ps) || foreignDelta != 0;
             }
             if (drawBar) {
                 barEntries.add(new BarEntry(i, bar / 100f));
@@ -549,7 +604,7 @@ public class AnalysisActivity extends LocalizedActivity {
             }
 
             prevDepotCents = depotCents;
-            lineEntries.add(new Entry(i, (running + depotCents) / 100f));
+            lineEntries.add(new Entry(i, (running + depotCents + foreignCents) / 100f));
         }
         lastIndex = periods.size() - 1;
 

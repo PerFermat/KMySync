@@ -444,6 +444,16 @@ public class KmyImporter {
     }
 
     /** Kontoname → KMyMoney-Typ für alle wählbaren Konten (zum Klassifizieren aller App-Konten beim Import). */
+    /** Basiswährung der Datei (ISO); leer, wenn nicht angegeben. */
+    public String baseCurrency() {
+        return doc.baseCurrency();
+    }
+
+    /** Devisenkurse der Datei. */
+    public de.spahr.ausgaben.util.FxTable exchangeRates() {
+        return doc.fxTable();
+    }
+
     public java.util.Map<String, Integer> accountTypes() {
         java.util.Map<String, Integer> out = new java.util.LinkedHashMap<>();
         for (String name : doc.accountNames()) {

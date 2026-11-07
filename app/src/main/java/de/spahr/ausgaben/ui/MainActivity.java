@@ -122,6 +122,8 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
     private BookingSearchBar searchBar;
 
     private List<Booking> allBookings = new ArrayList<>();
+    /** Fremdwährungskonten: in „Gesamt" und der Gruppensumme in Basiswährung umgerechnet. */
+    private de.spahr.ausgaben.db.CurrencyContext.ForeignBalances foreign = null;
     private java.util.Map<Long, List<BookingSplit>> splitsByBooking = new java.util.HashMap<>();
     private java.util.Map<String, Long> placeBalances = new java.util.LinkedHashMap<>();
     private long totalBalance = 0;
@@ -828,10 +830,13 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         repository.getAccountNames(this::populateAccountDrawer);
         repository.getAllBookings(result -> {
             allBookings = result;
-            repository.getAllSplitsMap(map -> {
-                splitsByBooking = map;
-                adapter.setSplits(map);
-                reloadPlacesAndApply();
+            repository.getCurrencyContext(cc -> {
+                foreign = cc.foreignBalances(result);
+                repository.getAllSplitsMap(map -> {
+                    splitsByBooking = map;
+                    adapter.setSplits(map);
+                    reloadPlacesAndApply();
+                });
             });
         });
     }
@@ -941,11 +946,16 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         groupBalance = 0;
         for (Booking b : allBookings) {
             long signed = signedOf(b);
-            totalBalance += signed;
+            // Ein Fremdwährungskonto zählt in den Summen mit seinem umgerechneten Saldo (nach der
+            // Schleife), in der eigenen Kontoansicht aber in seiner Währung.
+            boolean converted = foreign != null && foreign.contains(b.account);
+            if (!converted) {
+                totalBalance += signed;
+            }
             if (selectedAccount.isEmpty() || b.account.equalsIgnoreCase(selectedAccount)) {
                 selectedAccountBalance += signed;
             }
-            if (inSelectedGroup(b.account)) {
+            if (!converted && inSelectedGroup(b.account)) {
                 groupBalance += signed;
             }
             if (matchesFilter(b)) {
@@ -956,6 +966,11 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
                 filtered.add(b);
                 filteredSum += disp;
             }
+        }
+        if (foreign != null && !foreign.isEmpty()) {
+            long now = System.currentTimeMillis();
+            totalBalance += foreign.valueCentsAt(now, null);
+            groupBalance += foreign.valueCentsAt(now, this::inSelectedGroup);
         }
         // Depots der Gruppe zählen mit – sie haben keine Buchungen, ihr Wert steckt in den Wertpapieren.
         for (java.util.Map.Entry<String, Long> e : depotValues.entrySet()) {

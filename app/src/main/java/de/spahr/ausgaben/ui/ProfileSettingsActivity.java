@@ -1011,6 +1011,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
                     repository.setAccountCurrency(acc, importer.currencyOf(acc));
                 }
                 repository.applyAccountTypes(importer.accountTypes());
+                repository.applyExchangeRates(importer.baseCurrency(), importer.exchangeRates());
                 repository.applyCategoryTypes(importer.categoryTypes());
                 post(() -> repository.replaceImportAccounts(map, null,
                         res -> importDepotsThenFinish(importer, depotTargets, importedCount)));

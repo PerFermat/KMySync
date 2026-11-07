@@ -231,6 +231,7 @@ class MainImportFlow {
                 }
                 // Konto- und Kategorietypen für ALLE Konten/Kategorien der .kmy übernehmen.
                 repository.applyAccountTypes(importer.accountTypes());
+                repository.applyExchangeRates(importer.baseCurrency(), importer.exchangeRates());
                 repository.applyCategoryTypes(importer.categoryTypes());
                 int written = 0;
                 for (List<Booking> l : map.values()) {

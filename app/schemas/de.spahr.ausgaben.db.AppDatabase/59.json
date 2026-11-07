@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 59,
-    "identityHash": "65ad13a0770577fe4cf074ddebe3af65",
+    "identityHash": "ad7684735390cd4fc4a1ecede0d0b187",
     "entities": [
       {
         "tableName": "booking",
@@ -1626,11 +1626,53 @@
             "createSql": "CREATE INDEX IF NOT EXISTS `index_notification_template_package_name_discriminator` ON `${TABLE_NAME}` (`package_name`, `discriminator`)"
           }
         ]
+      },
+      {
+        "tableName": "fx_rate",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `from_cur` TEXT NOT NULL, `to_cur` TEXT NOT NULL, `date` INTEGER NOT NULL, `rate` REAL NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fromCur",
+            "columnName": "from_cur",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "toCur",
+            "columnName": "to_cur",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rate",
+            "columnName": "rate",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '65ad13a0770577fe4cf074ddebe3af65')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ad7684735390cd4fc4a1ecede0d0b187')"
     ]
   }
 }
