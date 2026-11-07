@@ -48,6 +48,15 @@ final class DiagnosticsDialog {
                         banner));
     }
 
+    /** Lokaler Ordner: kein Netz, aber dieselbe Frage – geht es, und wenn nicht, warum? */
+    static void runLocal(Activity activity, DiagnosticsBanner banner, String treeUri, String folder,
+                         String file) {
+        final android.content.Context app = activity.getApplicationContext();
+        run(activity, banner, R.string.diag_title_local,
+                de.spahr.ausgaben.net.LocalDiagnostics.title(),
+                () -> de.spahr.ausgaben.net.LocalDiagnostics.run(app, treeUri, folder, file));
+    }
+
     private static void run(Activity activity, DiagnosticsBanner banner, int title,
                             String reportTitle, Callable<List<Step>> work) {
         banner.start();

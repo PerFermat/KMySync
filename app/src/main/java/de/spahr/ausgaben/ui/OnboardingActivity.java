@@ -594,7 +594,9 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
         String file = kmy ? RemotePath.fileOf(path) : "";
         String password = pw.isEmpty() ? settings.getPassword() : pw;
         String type = syncFields.serverType();
-        if (SettingsStore.SERVER_SMB.equals(type)) {
+        if (SettingsStore.SERVER_LOCAL.equals(type)) {
+            DiagnosticsDialog.runLocal(this, diagBanner, Ui.trimmedText(editUrl), folder, file);
+        } else if (SettingsStore.SERVER_SMB.equals(type)) {
             DiagnosticsDialog.runSmb(this, diagBanner, Ui.trimmedText(editUrl), Ui.trimmedText(editUser), password, folder, file);
         } else {
             DiagnosticsDialog.runWebDav(this, diagBanner, Ui.trimmedText(editUrl), Ui.trimmedText(editUser), password,

@@ -106,6 +106,11 @@ public class SettingsStore {
     public static final String SERVER_WEBDAV = "webdav";
     /** Server-Typ: SMB/Samba-Freigabe; die „URL" ist {@code smb://Host/Freigabe[/Basis]}. */
     public static final String SERVER_SMB = "smb";
+    /**
+     * Server-Typ: ein Ordner auf dem Gerät, freigegeben über den Android-Ordnerdialog; die „URL" ist
+     * dessen Baum-Adresse ({@code content://…/tree/…}). Benutzer und Passwort gibt es dafür nicht.
+     */
+    public static final String SERVER_LOCAL = "local";
 
     /** Export-/Import-Modus: kMyMoney-CSV wie bisher. */
     public static final String MODE_CSV = "csv";
@@ -121,9 +126,12 @@ public class SettingsStore {
     private final SharedPreferences prefs;
     private final SharedPreferences secret;
     private final String profilePrefix;
+    /** Für den lokalen Ordner: dessen Zugriff läuft über den ContentResolver der App. */
+    private final Context appContext;
 
     public SettingsStore(Context context) {
         Context app = context.getApplicationContext();
+        this.appContext = app;
         this.prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         this.secret = secretPrefs(app);
         this.profilePrefix = "p_" + new ProfileManager(app).getActiveProfileId() + "_";
@@ -351,6 +359,9 @@ public class SettingsStore {
      * WebDAV/Nextcloud: URL+Benutzer+Passwort.
      */
     public boolean hasRemoteConfig() {
+        if (isLocalServer()) {
+            return !getUrl().isEmpty();
+        }
         if (isSmbServer()) {
             String[] smb = parseSmb(getUrl());
             return !smb[0].isEmpty() && !smb[1].isEmpty();
@@ -573,6 +584,16 @@ public class SettingsStore {
 
     public boolean isSmbServer() {
         return SERVER_SMB.equals(getServerType());
+    }
+
+    /** Ein Ordner auf dem Gerät statt eines Servers, siehe {@link #SERVER_LOCAL}. */
+    public boolean isLocalServer() {
+        return SERVER_LOCAL.equals(getServerType());
+    }
+
+    /** Der Anwendungs-Context – für Sync-Ziele, die ihn brauchen (der lokale Ordner). */
+    public Context appContext() {
+        return appContext;
     }
 
     /** Relativer Nextcloud-Pfad zur .kmy inkl. Dateiname, z. B. {@code KMyMoney/gdyx.kmy}. */
@@ -984,6 +1005,9 @@ public class SettingsStore {
         }
         if (SERVER_SMB.equals(serverType)) {
             return SERVER_SMB;
+        }
+        if (SERVER_LOCAL.equals(serverType)) {
+            return SERVER_LOCAL;
         }
         return SERVER_NEXTCLOUD;
     }

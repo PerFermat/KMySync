@@ -568,6 +568,11 @@
     <string name="server_type_nextcloud">Nextcloud</string>
     <string name="server_type_webdav">WebDAV (genérico)</string>
     <string name="server_type_smb">SMB/Samba</string>
+    <string name="server_type_local">Carpeta local (en este dispositivo)</string>
+    <string name="local_folder_choose">Elegir carpeta…</string>
+    <string name="local_folder_chosen">Carpeta: %1$s</string>
+    <string name="local_folder_none">Aún no se ha elegido ninguna carpeta local.</string>
+    <string name="diag_title_local">Comprobación de la carpeta local</string>
     <string name="nextcloud_url_hint">URL base (Nextcloud: https://cloud.example.com – WebDAV: URL DAV completa)</string>
     <string name="nextcloud_user_hint">Nombre de usuario</string>
     <string name="smb_url_hint">Recurso SMB (smb://host[:puerto]/recurso)</string>

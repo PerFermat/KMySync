@@ -594,6 +594,11 @@
     <string name="server_type_nextcloud">Nextcloud</string>
     <string name="server_type_webdav">WebDAV (generic)</string>
     <string name="server_type_smb">SMB/Samba</string>
+    <string name="server_type_local">Local folder (on this device)</string>
+    <string name="local_folder_choose">Choose folder…</string>
+    <string name="local_folder_chosen">Folder: %1$s</string>
+    <string name="local_folder_none">No local folder chosen yet.</string>
+    <string name="diag_title_local">Local folder check</string>
     <string name="nextcloud_url_hint">Base URL (Nextcloud: https://cloud.example.com – WebDAV: full DAV URL)</string>
     <string name="nextcloud_user_hint">Username</string>
     <string name="smb_url_hint">SMB share (smb://host[:port]/share)</string>

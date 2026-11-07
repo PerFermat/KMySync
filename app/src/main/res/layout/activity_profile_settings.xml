@@ -147,6 +147,16 @@
                 android:id="@+id/smbWizard"
                 layout="@layout/view_smb_wizard" />
 
+            <!-- Nur bei „Lokaler Ordner": der Android-Ordnerdialog statt Adresse und Zugangsdaten. -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLocalFolder"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/local_folder_choose"
+                android:visibility="gone" />
+
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/urlLayout"
                 android:layout_width="match_parent"

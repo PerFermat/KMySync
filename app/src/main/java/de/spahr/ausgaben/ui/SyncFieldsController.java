@@ -56,6 +56,9 @@ final class SyncFieldsController {
     private final TextInputLayout urlLayout;
     private final TextInputLayout userLayout;
     private final TextInputLayout passwordLayout;
+    /** Nur beim lokalen Ordner: öffnet den Android-Ordnerdialog. */
+    private final com.google.android.material.button.MaterialButton btnLocalFolder;
+    private final androidx.activity.result.ActivityResultLauncher<android.net.Uri> localFolderPicker;
 
     private String selectedServerType = SettingsStore.SERVER_NEXTCLOUD;
     /** Die Dateiauswahl gilt einer KMyMoney-Datenbank: dann alle Dateien zeigen, nicht nur „.kmy". */
@@ -74,12 +77,18 @@ final class SyncFieldsController {
         this.urlLayout = activity.findViewById(R.id.urlLayout);
         this.userLayout = activity.findViewById(R.id.userLayout);
         this.passwordLayout = activity.findViewById(R.id.passwordLayout);
+        this.btnLocalFolder = activity.findViewById(R.id.btnLocalFolder);
+        // Muss vor STARTED registriert sein – die Masken bauen diesen Regler in onCreate.
+        this.localFolderPicker = activity.registerForActivityResult(
+                new androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree(),
+                this::onLocalFolderChosen);
+        btnLocalFolder.setOnClickListener(v -> localFolderPicker.launch(null));
         // Der Assistent entscheidet über seine Schritte selbst; was daneben sichtbar ist, gehört
         // hierher. Deshalb meldet er nur, daß sich etwas geändert hat.
         smbWizard.setOnStepChanged(this::applyServerTypeHints);
     }
 
-    /** Die gewählte Serverart — Nextcloud, WebDAV oder SMB. */
+    /** Die gewählte Serverart — Nextcloud, WebDAV, SMB oder ein lokaler Ordner. */
     String serverType() {
         return selectedServerType;
     }
@@ -90,30 +99,90 @@ final class SyncFieldsController {
         String ncLabel = activity.getString(R.string.server_type_nextcloud);
         String davLabel = activity.getString(R.string.server_type_webdav);
         String smbLabel = activity.getString(R.string.server_type_smb);
-        PickerAdapters.plain(editServerType, Arrays.asList(ncLabel, davLabel, smbLabel));
+        String localLabel = activity.getString(R.string.server_type_local);
+        PickerAdapters.plain(editServerType, Arrays.asList(ncLabel, davLabel, smbLabel, localLabel));
         selectedServerType = settings.getServerType();
-        editServerType.setText(labelForServerType(ncLabel, davLabel, smbLabel), false);
+        editServerType.setText(labelForServerType(ncLabel, davLabel, smbLabel, localLabel), false);
         applyServerTypeHints();
         editServerType.setOnItemClickListener((parent, view, position, id) -> {
+            String vorher = selectedServerType;
             selectedServerType = position == 1 ? SettingsStore.SERVER_WEBDAV
-                    : position == 2 ? SettingsStore.SERVER_SMB : SettingsStore.SERVER_NEXTCLOUD;
+                    : position == 2 ? SettingsStore.SERVER_SMB
+                    : position == 3 ? SettingsStore.SERVER_LOCAL : SettingsStore.SERVER_NEXTCLOUD;
+            // Eine Server-Adresse ist kein Ordner und umgekehrt: beim Wechsel von oder zu „lokal"
+            // gehört das Adressfeld geleert, sonst hielte die App das eine für das andere.
+            boolean lokalVorher = SettingsStore.SERVER_LOCAL.equals(vorher);
+            boolean lokalJetzt = SettingsStore.SERVER_LOCAL.equals(selectedServerType);
+            if (lokalVorher != lokalJetzt) {
+                editUrl.setText("");
+            }
             settings.setServerType(selectedServerType);
             applyServerTypeHints();
         });
     }
 
-    private String labelForServerType(String nc, String dav, String smb) {
+    private String labelForServerType(String nc, String dav, String smb, String local) {
         if (SettingsStore.SERVER_WEBDAV.equals(selectedServerType)) {
             return dav;
         }
         if (SettingsStore.SERVER_SMB.equals(selectedServerType)) {
             return smb;
         }
+        if (SettingsStore.SERVER_LOCAL.equals(selectedServerType)) {
+            return local;
+        }
         return nc;
+    }
+
+    /**
+     * Der Ordner aus dem Android-Dialog: Zugriff dauerhaft sichern und als „Adresse" eintragen. Das
+     * Adressfeld ist dabei unsichtbar – gespeichert wird es mit der Maske wie jede Server-Adresse.
+     */
+    private void onLocalFolderChosen(android.net.Uri uri) {
+        if (uri == null) {
+            return;
+        }
+        try {
+            activity.getContentResolver().takePersistableUriPermission(uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            | android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        } catch (SecurityException e) {
+            toast(R.string.local_folder_none, Toast.LENGTH_LONG);
+            return;
+        }
+        editUrl.setText(uri.toString());
+        updateLocalFolderLabel();
+    }
+
+    /** Beschriftet den Ordner-Knopf mit dem Namen des gewählten Ordners. */
+    private void updateLocalFolderLabel() {
+        String uri = Ui.trimmedText(editUrl);
+        String name = de.spahr.ausgaben.net.LocalStorage.displayName(activity, uri);
+        if (uri.isEmpty()) {
+            btnLocalFolder.setText(R.string.local_folder_choose);
+        } else {
+            btnLocalFolder.setText(activity.getString(R.string.local_folder_chosen,
+                    name.isEmpty() ? uri : name));
+        }
     }
 
     /** Wie in den Einstellungen: bei SMB übernimmt der Assistent die Felder URL/Benutzer/Passwort. */
     void applyServerTypeHints() {
+        if (SettingsStore.SERVER_LOCAL.equals(selectedServerType)) {
+            // Ein Ordner auf dem Gerät: keine Adresse, kein Benutzer, kein Passwort, kein Assistent –
+            // nur der Ordnerdialog. „Verbindung testen" prüft dann Freigabe, Lesen und Schreiben.
+            smbWizard.resetManual();
+            smbWizard.setVisible(false);
+            urlLayout.setVisibility(View.GONE);
+            userLayout.setVisibility(View.GONE);
+            passwordLayout.setVisibility(View.GONE);
+            activity.findViewById(R.id.btnSmbSearch).setVisibility(View.GONE);
+            activity.findViewById(R.id.btnTestConnection).setVisibility(View.VISIBLE);
+            btnLocalFolder.setVisibility(View.VISIBLE);
+            updateLocalFolderLabel();
+            return;
+        }
+        btnLocalFolder.setVisibility(View.GONE);
         boolean smb = SettingsStore.SERVER_SMB.equals(selectedServerType);
         urlLayout.setHint(activity.getString(smb ? R.string.smb_url_hint : R.string.nextcloud_url_hint));
         userLayout.setHint(activity.getString(smb ? R.string.smb_user_hint : R.string.nextcloud_user_hint));
@@ -184,7 +253,7 @@ final class SyncFieldsController {
         new Thread(() -> {
             try {
                 // Ordner und Dateien in einem Aufruf: SMB meldet sich sonst zweimal hintereinander an.
-                RemoteStorage storage = RemoteStorage.from(serverType, url, user, password);
+                RemoteStorage storage = RemoteStorage.from(activity, serverType, url, user, password);
                 List<String> folders;
                 List<String> files;
                 if (alle) {
@@ -269,7 +338,7 @@ final class SyncFieldsController {
         toast(R.string.loading_files, Toast.LENGTH_SHORT);
         new Thread(() -> {
             try {
-                RemoteStorage storage = RemoteStorage.from(serverType, url, user, password);
+                RemoteStorage storage = RemoteStorage.from(activity, serverType, url, user, password);
                 List<String> folders = storage.listFolders(folder);
                 Collections.sort(folders, String.CASE_INSENSITIVE_ORDER);
                 imVordergrund(() -> showFolderPick(folder, folders, target));

@@ -185,6 +185,9 @@ public interface RemoteStorage {
     }
 
     static RemoteStorage from(SettingsStore s) {
+        if (s.isLocalServer()) {
+            return localOrBroken(s.appContext(), s.getUrl());
+        }
         if (SettingsStore.SERVER_SMB.equals(s.getServerType())) {
             return new SmbStorage(s.getUrl(), s.getUser(), s.getPassword())
                     .withPortCorrection(port -> s.setUrl(SettingsStore.withPort(s.getUrl(), port)));
@@ -197,10 +200,35 @@ public interface RemoteStorage {
      * gespeicherten Feldwerten (Verbindung testen / .kmy durchsuchen).
      */
     static RemoteStorage from(String serverType, String url, String user, String password) {
+        return from(null, serverType, url, user, password);
+    }
+
+    /** Wie oben; {@code context} braucht nur der lokale Ordner. */
+    static RemoteStorage from(android.content.Context context, String serverType, String url,
+                              String user, String password) {
+        if (SettingsStore.SERVER_LOCAL.equals(serverType)) {
+            return localOrBroken(context, url);
+        }
         if (SettingsStore.SERVER_SMB.equals(serverType)) {
             return new SmbStorage(url, user, password);
         }
         boolean nextcloudLayout = !SettingsStore.SERVER_WEBDAV.equals(serverType);
         return new WebDavStorage(url, user, password, nextcloudLayout);
+    }
+
+    /**
+     * Der lokale Ordner – oder, wenn keiner gewählt ist, ein Ziel, an dem jeder Zugriff mit einer
+     * verständlichen Meldung scheitert. Die Fabrik selbst wirft nicht: ihre Aufrufer erwarten das so.
+     */
+    static RemoteStorage localOrBroken(android.content.Context context, String treeUri) {
+        try {
+            return new LocalStorage(context, treeUri);
+        } catch (IOException e) {
+            return (RemoteStorage) java.lang.reflect.Proxy.newProxyInstance(
+                    RemoteStorage.class.getClassLoader(), new Class<?>[]{RemoteStorage.class},
+                    (proxy, method, args) -> {
+                        throw e;
+                    });
+        }
     }
 }
