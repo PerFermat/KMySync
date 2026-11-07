@@ -1905,16 +1905,21 @@ public class Repository {
         public final double price;
         /** Datum des Kurses (ms); 0 = unbekannt, etwa ohne Kurs in der Datei. */
         public final long priceDate;
+        /** Kurs in {@link #currency} vor der Umrechnung; 0 = Papier in Basiswährung. */
+        public final double origPrice;
+        public final String currency;
         public final long valueCents;
 
         DepotHolding(String name, String symbol, String kmyId, double shares, double price,
-                     long priceDate, long valueCents) {
+                     long priceDate, double origPrice, String currency, long valueCents) {
             this.name = name;
             this.symbol = symbol;
             this.kmyId = kmyId;
             this.shares = shares;
             this.price = price;
             this.priceDate = priceDate;
+            this.origPrice = origPrice;
+            this.currency = currency;
             this.valueCents = valueCents;
         }
     }

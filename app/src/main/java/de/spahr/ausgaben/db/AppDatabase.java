@@ -17,7 +17,7 @@ import de.spahr.ausgaben.settings.ProfileManager;
         AnalysisExtra.class, SecurityTxValueOverride.class, KmyPendingDelete.class, SecurityPrice.class,
         ScheduledAdvance.class, AccountGroup.class, AccountGroupMember.class, AccountKindOrder.class,
         Tag.class, SecurityTxSplit.class, NotificationTemplateRow.class},
-        version = 58, exportSchema = true)
+        version = 59, exportSchema = true)
 public abstract class AppDatabase extends RoomDatabase {
 
     /** v1 → v2: Notiz-Spalte ergänzen (bestehende Buchungen bleiben erhalten). */
@@ -810,6 +810,17 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    /**
+     * v58 → v59: der Originalkurs eines in die Basiswährung umgerechneten Wertpapiers
+     * ({@link Security#origPrice}). Der neue Wert kommt mit dem nächsten Depot-Import.
+     */
+    static final Migration MIGRATION_58_59 = new Migration(58, 59) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("ALTER TABLE security ADD COLUMN orig_price REAL NOT NULL DEFAULT 0");
+        }
+    };
+
     public abstract BookingDao bookingDao();
 
     public abstract NotificationTemplateDao notificationTemplateDao();
@@ -884,7 +895,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                 MIGRATION_47_48, MIGRATION_48_49, MIGRATION_49_50,
                                 MIGRATION_50_51, MIGRATION_51_52, MIGRATION_52_53,
                                 MIGRATION_53_54, MIGRATION_54_55, MIGRATION_55_56,
-                                MIGRATION_56_57, MIGRATION_57_58)
+                                MIGRATION_56_57, MIGRATION_57_58, MIGRATION_58_59)
                         .build();
             }
             return instance;

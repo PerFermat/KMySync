@@ -35,6 +35,8 @@ import de.spahr.ausgaben.db.SecurityTx;
  */
 public class KmyImporter {
 
+    private static final String TAG = "KmyImporter";
+
     private final KmyDocument doc;
     private final android.content.Context ctx;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
@@ -96,6 +98,7 @@ public class KmyImporter {
         }
         // Stock-Konten des Depots (Typ 15, parent = Depot): id → {securityKmyId, securityName}.
         Map<String, String[]> stockAccounts = stockAccountsOf(depotId);
+        final String base = doc.baseCurrency();
         for (Map.Entry<String, String[]> e : stockAccounts.entrySet()) {
             String secId = e.getValue()[0];
             String secName = e.getValue()[1];
@@ -103,14 +106,38 @@ public class KmyImporter {
             double[] price = doc.securityPrice(secId);
             String name = info != null && !info[0].isEmpty() ? info[0] : secName;
             String symbol = info != null ? info[1] : "";
-            String currency = info != null && !info[2].isEmpty() ? info[2] : "EUR";
-            Security security = new Security(depotName, secId, name, symbol, currency,
-                    price != null ? price[0] : 0, price != null ? (long) price[1] : 0);
+            String priceCurrency = doc.securityPriceCurrency(secId);
+            String currency = !priceCurrency.isEmpty() ? priceCurrency
+                    : info != null && !info[2].isEmpty() ? info[2] : "EUR";
+            double p = price != null ? price[0] : 0;
+            long pDate = price != null ? (long) price[1] : 0;
+            // Kurse in Fremdwährung (USD-Papier in einer EUR-Datei) mit dem Devisenkurs ihres Tages in
+            // die Basiswährung: dann stimmen Wert, Depotsumme und Vermögensverlauf, ohne dass eine
+            // Ansicht davon wissen muss. Der Originalkurs bleibt für die Anzeige stehen.
+            boolean convert = needsConversion(currency, base);
+            double origPrice = 0;
+            if (convert && p > 0) {
+                double r = doc.rate(currency, base, pDate);
+                if (Double.isNaN(r)) {
+                    android.util.Log.w(TAG, "Kein Devisenkurs " + currency + "→" + base + " für " + name);
+                    convert = false;
+                } else {
+                    origPrice = p;
+                    p *= r;
+                }
+            }
+            Security security = new Security(depotName, secId, name, symbol, currency, p, pDate);
+            security.origPrice = origPrice;
             security.isin = doc.securityIsin(secId);
             data.securities.add(security);
             // Vollständige Kurshistorie (für die zeitliche Depotbewertung in der Vermögensgrafik).
             for (double[] ph : doc.securityPriceHistory(secId)) {
-                data.prices.add(new SecurityPrice(depotName, secId, (long) ph[1], ph[0]));
+                double v = ph[0];
+                if (convert) {
+                    double r = doc.rate(currency, base, (long) ph[1]);
+                    v = Double.isNaN(r) ? v : v * r;
+                }
+                data.prices.add(new SecurityPrice(depotName, secId, (long) ph[1], v));
             }
         }
         if (stockAccounts.isEmpty()) {
@@ -126,6 +153,7 @@ public class KmyImporter {
             String postdate = null;
             String entrydate = null;
             List<String[]> splits = null; // je Split: {account, value, action, shares, memo}
+            String commodity = "";        // Währung der Transaktion, in der die Split-Werte stehen
             int seen = 0;
             while (event != XmlPullParser.END_DOCUMENT) {
                 if (event == XmlPullParser.START_TAG) {
@@ -135,6 +163,7 @@ public class KmyImporter {
                     } else if (inLedger && "TRANSACTION".equals(tag)) {
                         postdate = parser.getAttributeValue(null, "postdate");
                         entrydate = parser.getAttributeValue(null, "entrydate");
+                        commodity = orEmpty(parser.getAttributeValue(null, "commodity")).trim();
                         splits = new ArrayList<>();
                     } else if (inLedger && "SPLIT".equals(tag) && splits != null) {
                         splits.add(new String[]{
@@ -151,6 +180,7 @@ public class KmyImporter {
                     } else if (inLedger && "TRANSACTION".equals(tag)) {
                         SecurityTx tx = toSecurityTx(depotName, stockAccounts, postdate, entrydate, splits);
                         if (tx != null) {
+                            toBaseCurrency(tx, commodity, base);
                             data.transactions.add(tx);
                         }
                         splits = null;
@@ -166,6 +196,31 @@ public class KmyImporter {
             throw new IOException(ctx.getString(de.spahr.ausgaben.R.string.err_kmy_read), e);
         }
         return data;
+    }
+
+    private static boolean needsConversion(String currency, String base) {
+        return base != null && !base.isEmpty() && currency != null && !currency.isEmpty()
+                && !currency.equalsIgnoreCase(base);
+    }
+
+    /**
+     * Beträge einer Wertpapierbewegung stehen in der Währung der Transaktion ({@code commodity}) – beim
+     * USD-Papier oft USD. Mit dem Devisenkurs des Buchungstags in die Basiswährung, damit Einstand und
+     * Gewinn zum umgerechneten Wert passen. Ohne Devisenkurs bleiben sie, wie sie sind.
+     */
+    private void toBaseCurrency(SecurityTx tx, String commodity, String base) {
+        if (!needsConversion(commodity, base)) {
+            return;
+        }
+        double r = doc.rate(commodity, base, tx.date);
+        if (Double.isNaN(r)) {
+            android.util.Log.w(TAG, "Kein Devisenkurs " + commodity + "→" + base
+                    + " für eine Wertpapierbewegung");
+            return;
+        }
+        tx.amountCents = Math.round(tx.amountCents * r);
+        tx.netCents = Math.round(tx.netCents * r);
+        tx.feeCents = Math.round(tx.feeCents * r);
     }
 
     /** Wertpapier-Unterkonten eines Depots (Typ 15): Konto-Id → {Wertpapier-Id, Wertpapiername}. */

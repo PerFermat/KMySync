@@ -57,6 +57,13 @@ public class Security {
     @ColumnInfo(name = "price_date")
     public long priceDate;
 
+    /**
+     * Kurs vor der Umrechnung in die Basiswährung, in {@link #currency} – für die Anzeige eines
+     * Fremdwährungspapiers („180,25 USD“). 0 = nicht umgerechnet, {@link #price} ist der Originalkurs.
+     */
+    @ColumnInfo(name = "orig_price", defaultValue = "0")
+    public double origPrice;
+
     public Security() {
     }
 

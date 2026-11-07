@@ -371,7 +371,7 @@ public class DepotActivity extends LocalizedActivity {
             }
             any = true;
             String left = h.name + (h.symbol.isEmpty() ? "" : "  ·  " + h.symbol)
-                    + "\n" + shares(h.shares) + " × " + priceWithDate(price(h.price), h.priceDate, df);
+                    + "\n" + shares(h.shares) + " × " + priceWithDate(priceText(h), h.priceDate, df);
             addRow(left, money(h.valueCents), v -> openHistory(h));
         }
         if (!any) {
@@ -869,6 +869,15 @@ public class DepotActivity extends LocalizedActivity {
      */
     static String priceWithDate(String price, long priceDate, java.text.DateFormat df) {
         return priceDate > 0 ? price + " (" + df.format(new java.util.Date(priceDate)) + ")" : price;
+    }
+
+    /**
+     * Der Kurs, wie ihn Börse und KMyMoney zeigen: bei einem umgerechneten Fremdwährungspapier der
+     * Originalkurs mit Währung („180,25 USD“), sonst der Kurs ohne Kürzel. Der Wert rechts steht immer
+     * in Basiswährung.
+     */
+    static String priceText(Repository.DepotHolding h) {
+        return h.origPrice > 0 ? price(h.origPrice) + " " + h.currency : price(h.price);
     }
 
     /** Kurs: bis zu vier Nachkommastellen, im eingestellten Zahlenformat. */

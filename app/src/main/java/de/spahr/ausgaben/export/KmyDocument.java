@@ -76,6 +76,10 @@ public class KmyDocument implements KmyAbsicht.Konten {
     private final Map<String, double[]> securityPrice = new LinkedHashMap<>();
     /** Wertpapier-ID → vollständige Kurshistorie (je Eintrag {price, dateMillis}), zeitlich aufsteigend. */
     private final Map<String, List<double[]>> securityPriceHistory = new LinkedHashMap<>();
+    /** Wertpapier-ID → Währung, in der {@link #securityPrice} steht (das {@code to} des Kurspaars). */
+    private final Map<String, String> securityPriceCurrency = new LinkedHashMap<>();
+    /** Devisenkurse: von-Währung → nach-Währung → Historie {kurs, dateMillis}, zeitlich aufsteigend. */
+    private final Map<String, Map<String, List<double[]>>> fxHistory = new LinkedHashMap<>();
 
     /** Budgetjahr → Liste der Kategorie-Soll-Werte (Jahressumme) aus dem BUDGETS-Block. */
     private final Map<Integer, List<BudgetEntry>> budgetsByYear = new LinkedHashMap<>();
@@ -496,6 +500,52 @@ public class KmyDocument implements KmyAbsicht.Konten {
         return l != null ? l : new ArrayList<>();
     }
 
+    /** Währung der Kurse dieses Wertpapiers (meist seine Handelswährung); leer, wenn unbekannt. */
+    public String securityPriceCurrency(String kmyId) {
+        return orEmpty(securityPriceCurrency.get(kmyId));
+    }
+
+    /**
+     * Devisenkurs: wie viele Einheiten {@code to} eine Einheit {@code from} am Tag {@code date} kostet.
+     * Gilt der jüngste Kurs bis zu diesem Tag; liegt keiner davor, der älteste. Ist nur das Gegenpaar
+     * gepflegt (KMyMoney legt je nach Eingabe {@code EUR→USD} oder {@code USD→EUR} ab), sein Kehrwert.
+     * Gleiche Währung = 1; ohne passenden Kurs {@code NaN}.
+     */
+    public double rate(String from, String to, long date) {
+        if (from == null || to == null || from.isEmpty() || to.isEmpty()) {
+            return Double.NaN;
+        }
+        if (from.equalsIgnoreCase(to)) {
+            return 1;
+        }
+        double direct = valueAt(fxPair(from, to), date);
+        if (!Double.isNaN(direct)) {
+            return direct;
+        }
+        double inverse = valueAt(fxPair(to, from), date);
+        return Double.isNaN(inverse) ? Double.NaN : 1 / inverse;
+    }
+
+    private List<double[]> fxPair(String from, String to) {
+        Map<String, List<double[]>> byTo = fxHistory.get(from);
+        return byTo == null ? null : byTo.get(to);
+    }
+
+    /** Wert einer aufsteigenden Historie am Tag {@code date}, siehe {@link #rate}. */
+    private static double valueAt(List<double[]> history, long date) {
+        if (history == null || history.isEmpty()) {
+            return Double.NaN;
+        }
+        double v = history.get(0)[0];
+        for (double[] ph : history) {
+            if ((long) ph[1] > date) {
+                break;
+            }
+            v = ph[0];
+        }
+        return v;
+    }
+
     public long maxTransactionNumber() {
         return maxTransactionNumber;
     }
@@ -587,6 +637,8 @@ public class KmyDocument implements KmyAbsicht.Konten {
      * deren Kurs am jüngsten ist – lieber dieser Wert als gar keiner. So etwa, wenn ein Kursimport in
      * KMyMoney die Kurse gegen eine andere Währung ablegt, als am Wertpapier eingetragen ist
      * (GitHub-Issue #12).</p>
+     *
+     * <p>Kurspaare, deren {@code from} kein Wertpapier ist, sind Devisenkurse ({@link #rate}).</p>
      */
     private void parseSecuritiesAndPrices() throws IOException {
         try {
@@ -597,8 +649,9 @@ public class KmyDocument implements KmyAbsicht.Konten {
             String curFrom = null;
             String curTo = null;
             String openSecurity = null;   // Wertpapier, dessen KEYVALUEPAIRS gerade gelesen werden
-            // Kurse in anderen Währungen, für den Rückfall: Wertpapier → Währung → Historie.
-            Map<String, Map<String, List<double[]>>> otherCurrency = new LinkedHashMap<>();
+            // Alle Kurspaare: von → nach → Historie. Erst am Ende ist sicher bekannt, welches „von“
+            // ein Wertpapier ist und welches eine Währung.
+            Map<String, Map<String, List<double[]>>> pairs = new LinkedHashMap<>();
             while (event != XmlPullParser.END_DOCUMENT) {
                 if (event == XmlPullParser.START_TAG) {
                     String tag = parser.getName();
@@ -631,19 +684,12 @@ public class KmyDocument implements KmyAbsicht.Konten {
                         curFrom = parser.getAttributeValue(null, "from");
                         curTo = parser.getAttributeValue(null, "to");
                     } else if ("PRICE".equals(tag) && curFrom != null) {
-                        String[] info = securityInfo.get(curFrom);
-                        String tc = info == null ? "" : info[2];
-                        // Kurs in der Handelswährung des Wertpapiers (bei EUR-Papieren „to=EUR").
                         long d = parseKmyDate(parser.getAttributeValue(null, "date"));
                         double p = fractionToDouble(parser.getAttributeValue(null, "price"));
                         if (d >= 0 && p > 0) {
-                            if (tc.isEmpty() || tc.equalsIgnoreCase(curTo)) {
-                                addPrice(securityPrice, securityPriceHistory, curFrom, p, d);
-                            } else {
-                                otherCurrency.computeIfAbsent(curFrom, k -> new LinkedHashMap<>())
-                                        .computeIfAbsent(orEmpty(curTo), k -> new ArrayList<>())
-                                        .add(new double[]{p, d});
-                            }
+                            pairs.computeIfAbsent(curFrom, k -> new LinkedHashMap<>())
+                                    .computeIfAbsent(orEmpty(curTo), k -> new ArrayList<>())
+                                    .add(new double[]{p, d});
                         }
                     }
                 } else if (event == XmlPullParser.END_TAG && "PRICEPAIR".equals(parser.getName())) {
@@ -654,17 +700,33 @@ public class KmyDocument implements KmyAbsicht.Konten {
                 }
                 event = parser.next();
             }
-            for (Map.Entry<String, Map<String, List<double[]>>> e : otherCurrency.entrySet()) {
-                if (securityPrice.containsKey(e.getKey())) {
+            for (Map.Entry<String, Map<String, List<double[]>>> e : pairs.entrySet()) {
+                for (List<double[]> history : e.getValue().values()) {
+                    history.sort((a, b) -> Long.compare((long) a[1], (long) b[1]));
+                }
+                String[] info = securityInfo.get(e.getKey());
+                if (info == null) {
+                    fxHistory.put(e.getKey(), e.getValue());
                     continue;
                 }
-                List<double[]> best = null;
-                for (List<double[]> history : e.getValue().values()) {
-                    if (best == null || newest(history) > newest(best)) {
-                        best = history;
+                // Kurs in der Handelswährung des Wertpapiers (bei EUR-Papieren „to=EUR"); fehlt er,
+                // die Währung mit dem jüngsten Kurs.
+                String currency = null;
+                for (String to : e.getValue().keySet()) {
+                    if (to.equalsIgnoreCase(info[2])) {
+                        currency = to;
                     }
                 }
-                for (double[] ph : best) {
+                if (currency == null) {
+                    for (Map.Entry<String, List<double[]>> byTo : e.getValue().entrySet()) {
+                        if (currency == null
+                                || newest(byTo.getValue()) > newest(e.getValue().get(currency))) {
+                            currency = byTo.getKey();
+                        }
+                    }
+                }
+                securityPriceCurrency.put(e.getKey(), currency);
+                for (double[] ph : e.getValue().get(currency)) {
                     addPrice(securityPrice, securityPriceHistory, e.getKey(), ph[0], (long) ph[1]);
                 }
             }
