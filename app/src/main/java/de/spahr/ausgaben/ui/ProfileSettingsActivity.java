@@ -796,7 +796,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
 
         PickerBehaviour.onCommitted(editDefaultPlace, value ->
                 placesStore.setDefaultPlace(placesAccount,
-                        de.spahr.ausgaben.settings.PlacesStore.NO_PLACE.equals(value) ? "" : value));
+                        de.spahr.ausgaben.settings.PlacesStore.isNoPlace(value) ? "" : value));
 
         refreshPlaces();
     }
@@ -838,10 +838,10 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         }
 
         List<String> options = new ArrayList<>(places);
-        options.add(de.spahr.ausgaben.settings.PlacesStore.NO_PLACE);
+        options.add(de.spahr.ausgaben.settings.PlacesStore.noPlace(this));
         PickerAdapters.places(editDefaultPlace, options);
         String def = placesAccount.isEmpty() ? "" : placesStore.getDefaultPlace(placesAccount);
-        editDefaultPlace.setText(def.isEmpty() ? de.spahr.ausgaben.settings.PlacesStore.NO_PLACE : def, false);
+        editDefaultPlace.setText(def.isEmpty() ? de.spahr.ausgaben.settings.PlacesStore.noPlace(this) : def, false);
     }
 
     private void renamePlaceDialog(String oldName) {

@@ -599,7 +599,7 @@ public class BalanceActivity extends LocalizedActivity {
 
     private List<String> placeOptions(String account) {
         List<String> options = new ArrayList<>(placesStore.getPlaces(account));
-        options.add(PlacesStore.NO_PLACE);
+        options.add(PlacesStore.noPlace(this));
         return options;
     }
 

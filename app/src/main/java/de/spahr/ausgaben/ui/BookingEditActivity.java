@@ -1726,7 +1726,7 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
     private boolean showPlace(android.widget.EditText placeField, android.widget.EditText accountField) {
         if (readOnly) {
             String place = Ui.text(placeField).trim();
-            return !place.isEmpty() && !place.equals(PlacesStore.NO_PLACE);
+            return !place.isEmpty() && !PlacesStore.isNoPlace(place);
         }
         return hasPlaces(Ui.text(accountField));
     }
@@ -1748,7 +1748,7 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
      */
     private void setupPlaceOptions(MaterialAutoCompleteTextView field, String account, boolean keepCurrent) {
         List<String> options = new ArrayList<>(placesStore.getPlaces(account));
-        options.add(PlacesStore.NO_PLACE);
+        options.add(PlacesStore.noPlace(this));
         PickerAdapters.places(field, options);
         String cur = Ui.text(field).trim();
         if (keepCurrent && !cur.isEmpty() && options.contains(cur)) {
@@ -1757,7 +1757,7 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
         // In der reinen Ansicht (geplante Buchung) gilt allein der gespeicherte Ort – ein Standardort würde
         // dort einen Ort vortäuschen, den die Planung gar nicht hat.
         String def = readOnly ? "" : placesStore.getDefaultPlace(account);
-        field.setText(!def.isEmpty() && options.contains(def) ? def : PlacesStore.NO_PLACE, false);
+        field.setText(!def.isEmpty() && options.contains(def) ? def : PlacesStore.noPlace(this), false);
     }
 
     /**
@@ -1775,13 +1775,13 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
                 return def;
             }
         }
-        return PlacesStore.NO_PLACE;
+        return PlacesStore.noPlace(this);
     }
 
     /** Ausgewählter Nach-Ort (Umbuchung), normalisiert: „ohne Ort"/leer → {@code ""}. */
     private String selectedPlaceTo() {
         String sel = Ui.text(editPlaceTo);
-        return (sel != null && !sel.trim().isEmpty() && !sel.equals(PlacesStore.NO_PLACE))
+        return (sel != null && !sel.trim().isEmpty() && !PlacesStore.isNoPlace(sel))
                 ? sel.trim() : "";
     }
 
@@ -2023,7 +2023,7 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
     /** Ausgewählter Ort normalisiert: „ohne Ort" bzw. leer → {@code ""}, sonst der echte Ortsname. */
     private String selectedPlace() {
         String sel = Ui.text(editPlace);
-        return (sel != null && !sel.trim().isEmpty() && !sel.equals(PlacesStore.NO_PLACE))
+        return (sel != null && !sel.trim().isEmpty() && !PlacesStore.isNoPlace(sel))
                 ? sel.trim() : "";
     }
 

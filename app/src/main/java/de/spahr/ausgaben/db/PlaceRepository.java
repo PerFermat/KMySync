@@ -17,7 +17,6 @@ import de.spahr.ausgaben.db.Repository.Callback;
  */
 class PlaceRepository {
 
-    private static final String NO_PLACE = de.spahr.ausgaben.settings.PlacesStore.NO_PLACE;
 
     private final PlaceEntryDao placeEntryDao;
     private final BookingDao bookingDao;
@@ -34,7 +33,8 @@ class PlaceRepository {
 
     /** Ein echter Ort – nicht leer und nicht „ohne Ort". */
     static boolean isRealPlace(String place) {
-        return place != null && !place.trim().isEmpty() && !place.equals(NO_PLACE);
+        return place != null && !place.trim().isEmpty()
+                && !de.spahr.ausgaben.settings.PlacesStore.isNoPlace(place);
     }
 
     /** Vorzeichenbehafteter Betrag einer Buchung (Einnahme = +, Ausgabe = −). */

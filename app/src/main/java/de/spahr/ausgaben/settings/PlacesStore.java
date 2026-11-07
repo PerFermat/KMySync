@@ -21,7 +21,36 @@ import java.util.List;
  */
 public class PlacesStore {
 
+    /**
+     * Der Auswahleintrag „ohne Ort" in seiner alten, festen deutschen Schreibweise. Angezeigt wird er
+     * übersetzt ({@link #noPlace}); erkannt wird er in jeder Schreibweise ({@link #isNoPlace}), auch in
+     * dieser – ältere Fassungen haben sie gespeichert.
+     */
     public static final String NO_PLACE = "ohne Ort";
+
+    /** Alle Schreibweisen von „ohne Ort", die die Oberfläche bisher angezeigt hat. */
+    private static final java.util.Set<String> NO_PLACE_LABELS =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    static {
+        NO_PLACE_LABELS.add(NO_PLACE);
+    }
+
+    /**
+     * „ohne Ort" in der Sprache von {@code context} – für die Ortsauswahl. Die Schreibweise wird
+     * gemerkt: Was die Oberfläche anzeigt, landet auch als Feldwert in der Datenbankschicht, und dort
+     * muss {@link #isNoPlace} es wiedererkennen.
+     */
+    public static String noPlace(Context context) {
+        String label = context.getString(de.spahr.ausgaben.R.string.no_place);
+        NO_PLACE_LABELS.add(label);
+        return label;
+    }
+
+    /** Ob ein Ortsfeld „kein Ort" meint – in jeder angezeigten Sprache und in der alten Schreibweise. */
+    public static boolean isNoPlace(String place) {
+        return place != null && NO_PLACE_LABELS.contains(place.trim());
+    }
 
     static final String PREFS = "ausgaben_places";
     static final String KEY_ACCOUNTS = "accounts_v2";
@@ -34,6 +63,8 @@ public class PlacesStore {
     private final String profilePrefix;
 
     public PlacesStore(Context context) {
+        // Die Anzeige der aufrufenden Maske merken, bevor ein Feldwert sie zurückbringt.
+        noPlace(context);
         Context app = context.getApplicationContext();
         this.prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         this.profilePrefix = "p_" + new ProfileManager(app).getActiveProfileId() + "_";

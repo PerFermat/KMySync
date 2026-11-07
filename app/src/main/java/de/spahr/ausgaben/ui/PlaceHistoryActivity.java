@@ -238,6 +238,6 @@ public class PlaceHistoryActivity extends LocalizedActivity {
 
     private static String orEmpty(String s) {
         // „ohne Ort" wird als leerer Ort geführt.
-        return s == null || s.equals(PlacesStore.NO_PLACE) ? "" : s;
+        return s == null || PlacesStore.isNoPlace(s) ? "" : s;
     }
 }
