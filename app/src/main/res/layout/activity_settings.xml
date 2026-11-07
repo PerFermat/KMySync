@@ -268,6 +268,15 @@
             app:strokeColor="@color/expense_red"
             android:text="@string/reset_db" />
 
+        <!-- Was die Versionen an neuen Funktionen gebracht haben (NewsActivity). -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNews"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/news_settings_button" />
+
     </LinearLayout>
     </ScrollView>
 </LinearLayout>

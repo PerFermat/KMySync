@@ -1066,4 +1066,9 @@
     <string name="notify_rules_saved">Regel gespeichert</string>
     <string name="notify_rule_delete">Diese Regel löschen</string>
     <string name="notify_rule_delete_message">Die gewählte Regel wird gelöscht. Andere Regeln dieser App bleiben.</string>
+    <string name="news_title">Neuigkeiten</string>
+    <string name="news_dialog_title">Neu in Version %1$s</string>
+    <string name="news_all">Alle Neuigkeiten</string>
+    <string name="news_settings_button">Neuigkeiten</string>
+    <string name="news_version">Version %1$s</string>
 </resources>

@@ -1,0 +1,89 @@
+[
+  {"version": "2.5", "code": 20, "items": [
+    {"title": "Local folder as sync target", "text": "Besides Nextcloud, WebDAV and SMB you can choose a folder on the device, for example the folder of a sync app like Syncthing. Pick the KMyMoney file in it as usual; export, backups and receipts work there just the same."}
+  ]},
+  {"version": "2.4", "code": 19, "items": [
+    {"title": "Categories as a tree", "text": "On narrow screens the category picker uses the full width and shows subcategories indented below their parent category."},
+    {"title": "Learned notification variants", "text": "After \"OK\" in the list of notifications, the app tells you when it learned a new variant of your bank's messages."}
+  ]},
+  {"version": "2.3", "code": 18, "items": [
+    {"title": "Transactions from push notifications", "text": "For banks without FinTS: KMySync learns from a transaction you entered by hand what your banking app's notifications look like, and proposes future payments as a list when you refresh – with payee, category and location."},
+    {"title": "KMyMoney database (SQLite)", "text": "Besides the .kmy file, the app can also read and write a KMyMoney database in SQLite format."},
+    {"title": "See changes to the KMyMoney file", "text": "After every export a line comparison shows what changed in the file. If it arrived damaged, the app restores the previous version."},
+    {"title": "More backups", "text": "The number of backups is adjustable, and the first backup of every month is kept permanently."}
+  ]},
+  {"version": "2.2", "code": 17, "items": [
+    {"title": "Sync mode \"read .kmy, export CSV\"", "text": "Accounts, schedules and portfolio come from the KMyMoney file, but writing happens only via CSV – for everyone who doesn't want the app to write their .kmy."}
+  ]},
+  {"version": "2.1", "code": 15, "items": [
+    {"title": "Payee is optional", "text": "As in KMyMoney: if the payee stays empty, the category takes its place."},
+    {"title": "Live search in the transaction list", "text": "Tapping the account name opens a search that filters the list as you type."},
+    {"title": "Watch: payees nearby", "text": "On the watch you can pick the payee from the places nearby."}
+  ]},
+  {"version": "2.0", "code": 14, "items": [
+    {"title": "New name: KMySync", "text": "The app is now called KMySync. Data, profiles and settings are kept."},
+    {"title": "\"Test connection\" checks everything", "text": "For Nextcloud, WebDAV and SMB the app checks the whole chain up to writing, renaming and deleting in the target folder, and shows a report with the reason if something fails."},
+    {"title": "Share portfolio rules", "text": "Learned recognition rules for PDF statements can be passed on and imported on another device."}
+  ]},
+  {"version": "1.12", "code": 13, "items": [
+    {"title": "Record securities", "text": "Buys, sells and dividends can be recorded and are written back to KMyMoney – with quantity, price, fees and taxes."},
+    {"title": "Read PDF statements", "text": "The app reads bank statements from PDF and learns for each bank where the values are; several documents can be read in one batch."},
+    {"title": "Multiple profiles", "text": "Separate data sets with their own accent color, their own server and their own backup."},
+    {"title": "Spanish", "text": "Spanish has been added as a third language."}
+  ]},
+  {"version": "1.11", "code": 12, "items": [
+    {"title": "PDF receipts", "text": "Receipts can also be attached as PDF documents."},
+    {"title": "Receipts as ZIP", "text": "The receipts of a filter can be exported as a ZIP file with meaningful file names, for example for your tax advisor."},
+    {"title": "Tags", "text": "Tags from KMyMoney are taken over, stored with the alias and suggested per payee."}
+  ]},
+  {"version": "1.10", "code": 11, "items": [
+    {"title": "Payees nearby", "text": "The closest payees appear at the top of the picker with a direction arrow."},
+    {"title": "The amount helps find the payee", "text": "If several payees are at the same place, the usual amount decides which one is meant."},
+    {"title": "Category from the payee", "text": "The first category is prefilled from the payee and follows when you change the payee."},
+    {"title": "Edited transactions reach KMyMoney", "text": "If you change a transaction that was already exported, the change also reaches the KMyMoney file with the next export."}
+  ]},
+  {"version": "1.9", "code": 10, "items": [
+    {"title": "Account groups", "text": "Your own groups like \"Everyday\" or \"Savings\" besides the account type; institutions and favorites from the .kmy are added as groups."},
+    {"title": "Sort and search accounts", "text": "Accounts can be sorted freely, and a search finds them quickly."},
+    {"title": "Search fields everywhere", "text": "Payee, account, category and place are picker and search field in one."}
+  ]},
+  {"version": "1.8", "code": 9, "items": [
+    {"title": "Multi-page receipts", "text": "A transaction can hold any number of receipt photos."},
+    {"title": "Edit receipts", "text": "Photos can be cropped, skewed invoices straightened, and brightness and contrast adjusted."},
+    {"title": "Built-in receipt viewer", "text": "Swipe, zoom and double-tap right in the app."},
+    {"title": "Complete backup", "text": "Data and settings in one ZIP file, encrypted if you like."}
+  ]},
+  {"version": "1.7", "code": 8, "items": [
+    {"title": "Connection check for SMB", "text": "A diagnosis goes through the whole chain and shows the result and duration of each step."}
+  ]},
+  {"version": "1.6", "code": 7, "items": [
+    {"title": "Choose the SMB port", "text": "Shares on a port other than 445 can be used too."}
+  ]},
+  {"version": "1.5", "code": 6, "items": [
+    {"title": "SMB wizard", "text": "The app searches for servers in the local network; then sign in, choose a share and save – without typing addresses."},
+    {"title": "Advance schedules", "text": "Executed or skipped occurrences are advanced in KMyMoney with the next .kmy export."}
+  ]},
+  {"version": "1.4", "code": 5, "items": [
+    {"title": "Portfolio in net worth", "text": "The portfolio value is included in the total and in the net worth history."},
+    {"title": "CSV in any language", "text": "KMyMoney CSV exports are read regardless of their language and number format."},
+    {"title": "Location on the map", "text": "The GPS location of a transaction can be set on a map."},
+    {"title": "Font size", "text": "The app's font size is adjustable."}
+  ]},
+  {"version": "1.3", "code": 4, "items": [
+    {"title": "Watch without connection", "text": "When the phone is away, the watch still records transactions and sends them later."},
+    {"title": "Transactions behind the category", "text": "Tapping a category in the analysis and in the budget shows its individual transactions."}
+  ]},
+  {"version": "1.2", "code": 3, "items": [
+    {"title": "Budget", "text": "Actual and planned per category, taken from KMyMoney or calculated from the history."},
+    {"title": "\"Where does my money go?\"", "text": "A pie chart by category, optionally including scheduled transactions."},
+    {"title": "Scheduled transactions", "text": "A separate view with balance strip, chart, \"book now\" and reminders for due items."},
+    {"title": "Receipt photos and widgets", "text": "Photos per transaction that are uploaded to the server, and widgets for the home screen."}
+  ]},
+  {"version": "1.1", "code": 2, "items": [
+    {"title": "Portfolio", "text": "Securities with buys, sells, dividends and prices, plus a portfolio view with a pie chart."},
+    {"title": "Number format and currency", "text": "Number format and currency symbol can be chosen, in the app and on the watch."}
+  ]},
+  {"version": "1.0", "code": 1, "items": [
+    {"title": "The first version", "text": "Record cash on the go – by hand, by voice or on the watch – and transfer it to your own KMyMoney file."}
+  ]}
+]

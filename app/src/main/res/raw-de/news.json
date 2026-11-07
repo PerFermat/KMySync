@@ -1,0 +1,89 @@
+[
+  {"version": "2.5", "code": 20, "items": [
+    {"title": "Lokaler Ordner als Sync-Ziel", "text": "Neben Nextcloud, WebDAV und SMB lässt sich ein Ordner auf dem Gerät wählen, etwa der Ordner einer Sync-App wie Syncthing. Darin wählst du die KMyMoney-Datei wie gewohnt; Export, Sicherungen und Belege laufen dort genauso."}
+  ]},
+  {"version": "2.4", "code": 19, "items": [
+    {"title": "Kategorien als Baum", "text": "Die Kategorieauswahl nutzt auf schmalen Bildschirmen die volle Breite und zeigt Unterkategorien eingerückt unter ihrer Hauptkategorie."},
+    {"title": "Gelernte Meldungsvarianten", "text": "Nach „OK“ in der Liste der Benachrichtigungen nennt die App, wenn sie dabei eine neue Variante der Bankmeldungen gelernt hat."}
+  ]},
+  {"version": "2.3", "code": 18, "items": [
+    {"title": "Buchungen aus Push-Benachrichtigungen", "text": "Für Banken ohne FinTS: KMySync lernt aus einer von Hand angelegten Buchung, wie die Meldungen deiner Bank-App aussehen, und schlägt künftige Umsätze beim Aktualisieren als Liste vor – mit Empfänger, Kategorie und Standort."},
+    {"title": "KMyMoney-Datenbank (SQLite)", "text": "Neben der .kmy-Datei kann die App auch eine KMyMoney-Datenbank im SQLite-Format lesen und beschreiben."},
+    {"title": "Änderungen an der KMyMoney-Datei ansehen", "text": "Nach jedem Export zeigt ein Zeilenvergleich, was sich in der Datei geändert hat. Kam sie defekt an, stellt die App den vorherigen Stand wieder her."},
+    {"title": "Mehr Sicherungen", "text": "Die Anzahl der Sicherungen ist einstellbar, und die erste Sicherung jedes Monats bleibt dauerhaft erhalten."}
+  ]},
+  {"version": "2.2", "code": 17, "items": [
+    {"title": "Sync-Modus „.kmy lesen, CSV exportieren“", "text": "Konten, Planungen und Depot kommen aus der KMyMoney-Datei, geschrieben wird aber nur per CSV – für alle, die ihre .kmy nicht von der App beschreiben lassen wollen."}
+  ]},
+  {"version": "2.1", "code": 15, "items": [
+    {"title": "Empfänger ist freiwillig", "text": "Wie in KMyMoney: Bleibt der Empfänger leer, steht die Kategorie an seiner Stelle."},
+    {"title": "Live-Suche in der Buchungsliste", "text": "Ein Tipp auf den Kontonamen öffnet eine Suche, die die Liste schon beim Tippen filtert."},
+    {"title": "Uhr: Empfänger im Umkreis", "text": "Auf der Uhr lässt sich der Empfänger aus den Orten in der Nähe wählen."}
+  ]},
+  {"version": "2.0", "code": 14, "items": [
+    {"title": "Neuer Name: KMySync", "text": "Die App heißt jetzt KMySync. Daten, Profile und Einstellungen bleiben erhalten."},
+    {"title": "„Verbindung testen“ prüft alles", "text": "Für Nextcloud, WebDAV und SMB prüft die App die ganze Kette bis zum Schreiben, Umbenennen und Löschen im Zielordner und zeigt bei Fehlern einen Bericht mit dem Grund."},
+    {"title": "Depot-Regeln teilen", "text": "Gelernte Erkennungsregeln für PDF-Abrechnungen lassen sich weitergeben und auf einem anderen Gerät einspielen."}
+  ]},
+  {"version": "1.12", "code": 13, "items": [
+    {"title": "Wertpapiere erfassen", "text": "Käufe, Verkäufe und Dividenden lassen sich erfassen und werden nach KMyMoney zurückgeschrieben – mit Stückzahl, Kurs, Gebühren und Steuern."},
+    {"title": "PDF-Abrechnungen einlesen", "text": "Die App liest Bankabrechnungen aus dem PDF und lernt je Bank, wo die Werte stehen; mehrere Belege lassen sich im Stapel einlesen."},
+    {"title": "Mehrere Profile", "text": "Getrennte Datenbestände mit eigener Akzentfarbe, eigenem Server und eigener Sicherung."},
+    {"title": "Spanisch", "text": "Spanisch ist als dritte Sprache dazugekommen."}
+  ]},
+  {"version": "1.11", "code": 12, "items": [
+    {"title": "PDF-Belege", "text": "Belege lassen sich auch als PDF-Dokument anhängen."},
+    {"title": "Belege als ZIP", "text": "Die Belege eines Filters lassen sich als ZIP-Datei mit sprechenden Dateinamen ausgeben, etwa fürs Steuerbüro."},
+    {"title": "Stichwörter", "text": "Stichwörter aus KMyMoney werden übernommen, am Alias hinterlegt und je Empfänger vorgeschlagen."}
+  ]},
+  {"version": "1.10", "code": 11, "items": [
+    {"title": "Empfänger in der Nähe", "text": "Die nächstgelegenen Empfänger stehen mit Richtungspfeil oben in der Auswahl."},
+    {"title": "Der Betrag hilft beim Empfänger", "text": "Liegen mehrere Empfänger am selben Ort, entscheidet der übliche Betrag, welcher gemeint ist."},
+    {"title": "Kategorie vom Empfänger", "text": "Die erste Kategorie wird aus dem Empfänger vorbelegt und folgt, wenn du den Empfänger änderst."},
+    {"title": "Geänderte Buchungen erreichen KMyMoney", "text": "Wer eine schon exportierte Buchung ändert, bekommt die Änderung beim nächsten Export auch in die KMyMoney-Datei."}
+  ]},
+  {"version": "1.9", "code": 10, "items": [
+    {"title": "Kontengruppen", "text": "Eigene Gruppen wie „Alltag“ oder „Sparen“ neben der Kontoart; Banken und Favoriten aus der .kmy kommen als Gruppen dazu."},
+    {"title": "Konten sortieren und suchen", "text": "Konten lassen sich frei sortieren, und eine Suche findet sie schnell."},
+    {"title": "Suchfelder überall", "text": "Empfänger, Konto, Kategorie und Ort sind Auswahl und Suchfeld in einem."}
+  ]},
+  {"version": "1.8", "code": 9, "items": [
+    {"title": "Mehrseitige Belege", "text": "Eine Buchung nimmt beliebig viele Belegfotos auf."},
+    {"title": "Belege bearbeiten", "text": "Fotos lassen sich zuschneiden, schräg aufgenommene Rechnungen begradigen und Helligkeit und Kontrast anpassen."},
+    {"title": "Eigener Belegbetrachter", "text": "Blättern, Zoomen und Doppeltippen direkt in der App."},
+    {"title": "Vollständige Sicherung", "text": "Daten und Einstellungen in einer ZIP-Datei, auf Wunsch verschlüsselt."}
+  ]},
+  {"version": "1.7", "code": 8, "items": [
+    {"title": "Verbindungsprüfung für SMB", "text": "Eine Diagnose geht die ganze Kette durch und zeigt je Schritt Ergebnis und Dauer."}
+  ]},
+  {"version": "1.6", "code": 7, "items": [
+    {"title": "SMB-Port frei wählbar", "text": "Auch Freigaben auf einem anderen Port als 445 lassen sich nutzen."}
+  ]},
+  {"version": "1.5", "code": 6, "items": [
+    {"title": "SMB-Assistent", "text": "Die App sucht die Server im lokalen Netz; danach anmelden, eine Freigabe wählen und speichern – ohne Adressen einzutippen."},
+    {"title": "Planungen weiterstellen", "text": "Ausgeführte oder übersprungene Termine werden beim nächsten .kmy-Export in KMyMoney weitergestellt."}
+  ]},
+  {"version": "1.4", "code": 5, "items": [
+    {"title": "Depot im Gesamtvermögen", "text": "Der Depotwert fließt in die Gesamtsumme und den Vermögensverlauf ein."},
+    {"title": "CSV in jeder Sprache", "text": "KMyMoney-CSV-Exporte werden unabhängig von ihrer Sprache und ihrem Zahlenformat eingelesen."},
+    {"title": "Ort auf der Karte", "text": "Der GPS-Ort einer Buchung lässt sich auf einer Karte festlegen."},
+    {"title": "Schriftgröße", "text": "Die Schriftgröße der App ist einstellbar."}
+  ]},
+  {"version": "1.3", "code": 4, "items": [
+    {"title": "Uhr ohne Verbindung", "text": "Ist das Handy weg, nimmt die Uhr Buchungen trotzdem auf und schickt sie später."},
+    {"title": "Buchungen hinter der Kategorie", "text": "Ein Tipp auf eine Kategorie in der Auswertung und im Budget zeigt ihre einzelnen Buchungen."}
+  ]},
+  {"version": "1.2", "code": 3, "items": [
+    {"title": "Budget", "text": "Ist und Soll je Kategorie, aus KMyMoney übernommen oder aus dem Verlauf berechnet."},
+    {"title": "„Wofür geht mein Geld?“", "text": "Ein Kreisdiagramm nach Kategorien, auf Wunsch mit den geplanten Buchungen."},
+    {"title": "Geplante Buchungen", "text": "Eine eigene Ansicht mit Saldo-Streifen, Grafik, „jetzt buchen“ und Erinnerung an Fälliges."},
+    {"title": "Belegfotos und Widgets", "text": "Fotos je Buchung, die auf den Server hochgeladen werden, und Widgets für den Startbildschirm."}
+  ]},
+  {"version": "1.1", "code": 2, "items": [
+    {"title": "Depot", "text": "Wertpapiere mit Käufen, Verkäufen, Dividenden und Kursen, dazu eine Depot-Ansicht mit Kreisdiagramm."},
+    {"title": "Zahlenformat und Währung", "text": "Zahlenformat und Währungssymbol sind wählbar, in der App und auf der Uhr."}
+  ]},
+  {"version": "1.0", "code": 1, "items": [
+    {"title": "Die erste Version", "text": "Bargeld unterwegs erfassen – per Hand, per Sprache oder auf der Uhr – und in die eigene KMyMoney-Datei übertragen."}
+  ]}
+]

@@ -204,6 +204,8 @@ public class SettingsActivity extends LocalizedActivity implements HostedDialog.
                     }
                 });
         ((MaterialButton) findViewById(R.id.btnReset)).setOnClickListener(v -> confirmReset());
+        findViewById(R.id.btnNews).setOnClickListener(v ->
+                startActivity(new android.content.Intent(this, NewsActivity.class)));
     }
     /** Schalter „App mit Biometrie schützen": bei Aktivierung Verfügbarkeit prüfen. */
     private void onAppLockToggled(CompoundButton buttonView, boolean checked) {

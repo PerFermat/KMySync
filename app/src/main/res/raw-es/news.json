@@ -1,0 +1,89 @@
+[
+  {"version": "2.5", "code": 20, "items": [
+    {"title": "Carpeta local como destino de sincronización", "text": "Además de Nextcloud, WebDAV y SMB se puede elegir una carpeta del dispositivo, por ejemplo la carpeta de una app de sincronización como Syncthing. Dentro eliges el archivo de KMyMoney como siempre; la exportación, las copias de seguridad y los justificantes funcionan igual."}
+  ]},
+  {"version": "2.4", "code": 19, "items": [
+    {"title": "Categorías en árbol", "text": "En pantallas estrechas el selector de categorías usa todo el ancho y muestra las subcategorías sangradas bajo su categoría principal."},
+    {"title": "Variantes de notificaciones aprendidas", "text": "Tras pulsar «Aceptar» en la lista de notificaciones, la app indica si ha aprendido una nueva variante de los mensajes de tu banco."}
+  ]},
+  {"version": "2.3", "code": 18, "items": [
+    {"title": "Movimientos desde notificaciones push", "text": "Para bancos sin FinTS: KMySync aprende de un movimiento introducido a mano cómo son las notificaciones de tu app bancaria y, al actualizar, propone los pagos futuros en una lista, con beneficiario, categoría y ubicación."},
+    {"title": "Base de datos de KMyMoney (SQLite)", "text": "Además del archivo .kmy, la app también puede leer y escribir una base de datos de KMyMoney en formato SQLite."},
+    {"title": "Ver los cambios en el archivo de KMyMoney", "text": "Tras cada exportación, una comparación línea a línea muestra qué ha cambiado en el archivo. Si llegó dañado, la app restaura la versión anterior."},
+    {"title": "Más copias de seguridad", "text": "El número de copias de seguridad es ajustable, y la primera copia de cada mes se conserva para siempre."}
+  ]},
+  {"version": "2.2", "code": 17, "items": [
+    {"title": "Modo de sincronización «leer .kmy, exportar CSV»", "text": "Las cuentas, las programaciones y la cartera vienen del archivo de KMyMoney, pero solo se escribe por CSV, para quien no quiera que la app modifique su .kmy."}
+  ]},
+  {"version": "2.1", "code": 15, "items": [
+    {"title": "El beneficiario es opcional", "text": "Como en KMyMoney: si el beneficiario queda vacío, la categoría ocupa su lugar."},
+    {"title": "Búsqueda en vivo en la lista de movimientos", "text": "Al tocar el nombre de la cuenta se abre una búsqueda que filtra la lista mientras escribes."},
+    {"title": "Reloj: beneficiarios cercanos", "text": "En el reloj se puede elegir el beneficiario entre los lugares cercanos."}
+  ]},
+  {"version": "2.0", "code": 14, "items": [
+    {"title": "Nuevo nombre: KMySync", "text": "La app ahora se llama KMySync. Los datos, perfiles y ajustes se conservan."},
+    {"title": "«Probar conexión» lo comprueba todo", "text": "Para Nextcloud, WebDAV y SMB la app comprueba toda la cadena hasta escribir, renombrar y borrar en la carpeta de destino, y si algo falla muestra un informe con el motivo."},
+    {"title": "Compartir reglas de la cartera", "text": "Las reglas de reconocimiento aprendidas para los extractos en PDF se pueden compartir e importar en otro dispositivo."}
+  ]},
+  {"version": "1.12", "code": 13, "items": [
+    {"title": "Registrar valores", "text": "Se pueden registrar compras, ventas y dividendos, que se escriben de vuelta en KMyMoney con cantidad, precio, comisiones e impuestos."},
+    {"title": "Leer extractos en PDF", "text": "La app lee los extractos bancarios en PDF y aprende para cada banco dónde están los valores; se pueden leer varios documentos en lote."},
+    {"title": "Varios perfiles", "text": "Conjuntos de datos separados con su propio color de acento, su propio servidor y su propia copia de seguridad."},
+    {"title": "Español", "text": "Se ha añadido el español como tercer idioma."}
+  ]},
+  {"version": "1.11", "code": 12, "items": [
+    {"title": "Justificantes en PDF", "text": "Los justificantes también se pueden adjuntar como documentos PDF."},
+    {"title": "Justificantes en ZIP", "text": "Los justificantes de un filtro se pueden exportar como archivo ZIP con nombres de archivo descriptivos, por ejemplo para la asesoría fiscal."},
+    {"title": "Etiquetas", "text": "Las etiquetas de KMyMoney se importan, se guardan en el alias y se sugieren por beneficiario."}
+  ]},
+  {"version": "1.10", "code": 11, "items": [
+    {"title": "Beneficiarios cercanos", "text": "Los beneficiarios más cercanos aparecen arriba en el selector con una flecha de dirección."},
+    {"title": "El importe ayuda a encontrar el beneficiario", "text": "Si hay varios beneficiarios en el mismo lugar, el importe habitual decide cuál es."},
+    {"title": "Categoría a partir del beneficiario", "text": "La primera categoría se rellena a partir del beneficiario y cambia cuando cambias el beneficiario."},
+    {"title": "Los movimientos editados llegan a KMyMoney", "text": "Si cambias un movimiento ya exportado, el cambio también llega al archivo de KMyMoney con la siguiente exportación."}
+  ]},
+  {"version": "1.9", "code": 10, "items": [
+    {"title": "Grupos de cuentas", "text": "Grupos propios como «Día a día» o «Ahorro» además del tipo de cuenta; las instituciones y los favoritos del .kmy se añaden como grupos."},
+    {"title": "Ordenar y buscar cuentas", "text": "Las cuentas se pueden ordenar libremente, y una búsqueda las encuentra rápido."},
+    {"title": "Campos de búsqueda en todas partes", "text": "Beneficiario, cuenta, categoría y lugar son selector y campo de búsqueda a la vez."}
+  ]},
+  {"version": "1.8", "code": 9, "items": [
+    {"title": "Justificantes de varias páginas", "text": "Un movimiento admite cualquier número de fotos de justificantes."},
+    {"title": "Editar justificantes", "text": "Las fotos se pueden recortar, enderezar facturas fotografiadas en ángulo y ajustar el brillo y el contraste."},
+    {"title": "Visor de justificantes propio", "text": "Pasar páginas, ampliar y tocar dos veces directamente en la app."},
+    {"title": "Copia de seguridad completa", "text": "Datos y ajustes en un archivo ZIP, cifrado si lo deseas."}
+  ]},
+  {"version": "1.7", "code": 8, "items": [
+    {"title": "Comprobación de conexión para SMB", "text": "Un diagnóstico recorre toda la cadena y muestra el resultado y la duración de cada paso."}
+  ]},
+  {"version": "1.6", "code": 7, "items": [
+    {"title": "Puerto SMB a elegir", "text": "También se pueden usar recursos compartidos en un puerto distinto del 445."}
+  ]},
+  {"version": "1.5", "code": 6, "items": [
+    {"title": "Asistente SMB", "text": "La app busca los servidores de la red local; después inicias sesión, eliges un recurso compartido y guardas, sin escribir direcciones."},
+    {"title": "Avanzar programaciones", "text": "Las fechas ejecutadas u omitidas se avanzan en KMyMoney con la siguiente exportación .kmy."}
+  ]},
+  {"version": "1.4", "code": 5, "items": [
+    {"title": "Cartera en el patrimonio total", "text": "El valor de la cartera se incluye en el total y en la evolución del patrimonio."},
+    {"title": "CSV en cualquier idioma", "text": "Las exportaciones CSV de KMyMoney se leen sin importar su idioma ni su formato numérico."},
+    {"title": "Ubicación en el mapa", "text": "La ubicación GPS de un movimiento se puede fijar en un mapa."},
+    {"title": "Tamaño de letra", "text": "El tamaño de letra de la app es ajustable."}
+  ]},
+  {"version": "1.3", "code": 4, "items": [
+    {"title": "Reloj sin conexión", "text": "Si el móvil no está cerca, el reloj sigue registrando movimientos y los envía más tarde."},
+    {"title": "Movimientos detrás de la categoría", "text": "Al tocar una categoría en el análisis y en el presupuesto se muestran sus movimientos individuales."}
+  ]},
+  {"version": "1.2", "code": 3, "items": [
+    {"title": "Presupuesto", "text": "Real y previsto por categoría, tomado de KMyMoney o calculado a partir del historial."},
+    {"title": "«¿En qué se va mi dinero?»", "text": "Un gráfico circular por categorías, si se desea con los movimientos programados."},
+    {"title": "Movimientos programados", "text": "Una vista propia con franja de saldo, gráfico, «contabilizar ahora» y recordatorio de lo pendiente."},
+    {"title": "Fotos de justificantes y widgets", "text": "Fotos por movimiento que se suben al servidor, y widgets para la pantalla de inicio."}
+  ]},
+  {"version": "1.1", "code": 2, "items": [
+    {"title": "Cartera", "text": "Valores con compras, ventas, dividendos y cotizaciones, además de una vista de cartera con gráfico circular."},
+    {"title": "Formato numérico y moneda", "text": "El formato numérico y el símbolo de moneda se pueden elegir, en la app y en el reloj."}
+  ]},
+  {"version": "1.0", "code": 1, "items": [
+    {"title": "La primera versión", "text": "Registrar efectivo sobre la marcha, a mano, por voz o en el reloj, y pasarlo a tu propio archivo de KMyMoney."}
+  ]}
+]

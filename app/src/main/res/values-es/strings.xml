@@ -1059,4 +1059,9 @@
     <string name="notify_rules_saved">Regla guardada</string>
     <string name="notify_rule_delete">Borrar esta regla</string>
     <string name="notify_rule_delete_message">Se borrará la regla seleccionada. Las demás reglas de esta aplicación se conservan.</string>
+    <string name="news_title">Novedades</string>
+    <string name="news_dialog_title">Novedades de la versión %1$s</string>
+    <string name="news_all">Todas las novedades</string>
+    <string name="news_settings_button">Novedades</string>
+    <string name="news_version">Versión %1$s</string>
 </resources>

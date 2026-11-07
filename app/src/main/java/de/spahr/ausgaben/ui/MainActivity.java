@@ -70,6 +70,9 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
 
     @Override
     public android.app.Dialog buildDialog(String key, Bundle args) {
+        if (WhatsNew.DLG.equals(key)) {
+            return WhatsNew.build(this);
+        }
         if (MainImportFlow.DLG_CSV_PICK.equals(key)) {
             return importFlow.buildCsvPick(args);
         }
@@ -871,6 +874,9 @@ public class MainActivity extends LocalizedActivity implements HostedDialog.Host
         if (!onboardingShown && (names == null || names.isEmpty())) {
             onboardingShown = true;
             startActivity(new Intent(this, OnboardingActivity.class));
+        } else if (names != null && !names.isEmpty()) {
+            // Nach einem Update einmal die neuen Funktionen dieser Version (WhatsNew).
+            WhatsNew.maybeShow(this);
         }
     }
 

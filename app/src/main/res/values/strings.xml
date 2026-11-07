@@ -1100,4 +1100,9 @@
     <string name="notify_rules_saved">Rule saved</string>
     <string name="notify_rule_delete">Delete this rule</string>
     <string name="notify_rule_delete_message">The selected rule will be deleted. Other rules of this app are kept.</string>
+    <string name="news_title">News</string>
+    <string name="news_dialog_title">New in version %1$s</string>
+    <string name="news_all">All news</string>
+    <string name="news_settings_button">News</string>
+    <string name="news_version">Version %1$s</string>
 </resources>
