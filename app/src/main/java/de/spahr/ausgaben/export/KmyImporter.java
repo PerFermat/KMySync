@@ -180,7 +180,7 @@ public class KmyImporter {
                     } else if (inLedger && "TRANSACTION".equals(tag)) {
                         SecurityTx tx = toSecurityTx(depotName, stockAccounts, postdate, entrydate, splits);
                         if (tx != null) {
-                            toBaseCurrency(tx, commodity, base);
+                            toBaseCurrency(tx, splits, commodity, base);
                             data.transactions.add(tx);
                         }
                         splits = null;
@@ -207,12 +207,29 @@ public class KmyImporter {
      * Beträge einer Wertpapierbewegung stehen in der Währung der Transaktion ({@code commodity}) – beim
      * USD-Papier oft USD. Mit dem Devisenkurs des Buchungstags in die Basiswährung, damit Einstand und
      * Gewinn zum umgerechneten Wert passen. Ohne Devisenkurs bleiben sie, wie sie sind.
+     *
+     * <p>Der Kurs kommt bevorzugt aus der Transaktion selbst: Ein Split auf ein Konto in Basiswährung
+     * (das Geldkonto) trägt den Betrag in der Transaktionswährung ({@code value}) und den tatsächlich
+     * gezahlten Betrag in Euro ({@code shares}). Ihr Verhältnis ist der Kurs, den KMyMoney gebucht hat –
+     * genauer als der Tageskurs, und ohne Rundungscent. Erst ohne einen solchen Split gilt
+     * {@link KmyDocument#rate}.</p>
      */
-    private void toBaseCurrency(SecurityTx tx, String commodity, String base) {
+    private void toBaseCurrency(SecurityTx tx, List<String[]> splits, String commodity, String base) {
         if (!needsConversion(commodity, base)) {
             return;
         }
-        double r = doc.rate(commodity, base, tx.date);
+        double r = Double.NaN;
+        for (String[] s : splits) {
+            double value = KmyDocument.fractionToDouble(s[1]);
+            double shares = KmyDocument.fractionToDouble(s[3]);
+            if (value != 0 && shares != 0 && base.equalsIgnoreCase(doc.accountCurrencyOf(s[0]))) {
+                r = Math.abs(shares / value);
+                break;
+            }
+        }
+        if (Double.isNaN(r)) {
+            r = doc.rate(commodity, base, tx.date);
+        }
         if (Double.isNaN(r)) {
             android.util.Log.w(TAG, "Kein Devisenkurs " + commodity + "→" + base
                     + " für eine Wertpapierbewegung");
