@@ -43,6 +43,10 @@ public class KmyDocument implements KmyAbsicht.Konten {
     private final KmySqlite.Abbild sqlite;
     /** Die Datei war GPG-verschlüsselt: ihre Hülle, in der der Export zurückschreibt; sonst {@code null}. */
     private final KmyGpg.Huelle gpg;
+    /** Die Datenbank war mit SQLCipher verschlüsselt: ihre Hülle; sonst {@code null}. */
+    private final KmySqlCipher.Huelle sqlcipher;
+    /** Bei einer Datenbank ihre unverschlüsselten Bytes – die beschreibt der Export; sonst {@code null}. */
+    private final byte[] datenbankRoh;
     /** Lazy: alles hinter dem Hauptbuch, siehe {@link #xmlTail()}. */
     private String xmlTail;
 
@@ -135,9 +139,18 @@ public class KmyDocument implements KmyAbsicht.Konten {
         if (entschluesselt != null) {
             raw = entschluesselt.klar;
         }
+        // Eine mit SQLCipher verschlüsselte Datenbank hat keinen erkennbaren Kopf; ob sie eine ist, sagt
+        // erst das Passwort des Profils.
+        KmySqlCipher.Ergebnis datenbank = !KmySqlite.istSqlite(raw) && KmySqlCipher.vielleicht(raw)
+                ? sqlcipherEntschluesseln(context, raw) : null;
+        this.sqlcipher = datenbank == null ? null : datenbank.huelle;
+        if (datenbank != null) {
+            raw = datenbank.klar;
+        }
         // Eine KMyMoney-Datenbank (SQLite) wird als das XML abgebildet, das KMyMoney aus denselben Daten
         // in eine .kmy schriebe – alles Weitere merkt keinen Unterschied. Siehe KmySqlite.
         this.sqlite = KmySqlite.istSqlite(raw) ? KmySqlite.abbilden(context, raw) : null;
+        this.datenbankRoh = sqlite != null ? raw : null;
         this.xml = sqlite != null ? sqlite.xml : gunzip(raw);
         String badEncoding = declaredNonUtf8Encoding(xml);
         if (badEncoding != null) {
@@ -262,6 +275,31 @@ public class KmyDocument implements KmyAbsicht.Konten {
         return gpg;
     }
 
+    /** Die Hülle einer mit SQLCipher verschlüsselten Datenbank; {@code null}, wenn sie es nicht war. */
+    public KmySqlCipher.Huelle sqlcipher() {
+        return sqlcipher;
+    }
+
+    /** Die unverschlüsselten Bytes der Datenbank, in die der Export schreibt; {@code null} bei .kmy. */
+    public byte[] datenbankRoh() {
+        return datenbankRoh;
+    }
+
+    /** Entschlüsselt eine SQLCipher-Datenbank mit dem Passwort des Profils; wirft mit Meldung. */
+    static KmySqlCipher.Ergebnis sqlcipherEntschluesseln(android.content.Context context, byte[] raw)
+            throws IOException {
+        android.content.Context r = de.spahr.ausgaben.i18n.LocaleManager.localizedContext(context);
+        String passwort = new de.spahr.ausgaben.settings.SettingsStore(context).getDbPassword();
+        if (passwort.isEmpty()) {
+            throw new IOException(r.getString(de.spahr.ausgaben.R.string.kmy_sqlcipher_no_password));
+        }
+        try {
+            return KmySqlCipher.entschluesseln(raw, passwort);
+        } catch (KmySqlCipher.Fehler e) {
+            throw new IOException(r.getString(de.spahr.ausgaben.R.string.kmy_sqlcipher_wrong, e.getMessage()), e);
+        }
+    }
+
     /** Die GPG-Schlüssel des aktiven Profils; {@code null}, wenn keine hinterlegt sind. */
     static KmyGpg.Schluessel gpgSchluessel(android.content.Context context) throws IOException {
         de.spahr.ausgaben.settings.SettingsStore st = new de.spahr.ausgaben.settings.SettingsStore(context);
@@ -319,6 +357,9 @@ public class KmyDocument implements KmyAbsicht.Konten {
     public static String alsXml(android.content.Context context, byte[] raw) throws IOException {
         if (KmyGpg.istVerschluesselt(raw)) {
             raw = entschluesseln(context, raw).klar;
+        }
+        if (!KmySqlite.istSqlite(raw) && KmySqlCipher.vielleicht(raw)) {
+            raw = sqlcipherEntschluesseln(context, raw).klar;
         }
         return KmySqlite.istSqlite(raw) ? KmySqlite.abbilden(context, raw).xml : gunzip(raw);
     }

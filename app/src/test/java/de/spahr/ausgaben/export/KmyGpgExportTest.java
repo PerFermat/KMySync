@@ -11,6 +11,7 @@ import android.content.Context;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -77,6 +78,31 @@ public class KmyGpgExportTest {
         assertEquals(r.xml, zurueck.xml());
         assertEquals(d.gpg().empfaenger, zurueck.gpg().empfaenger);
         assertEquals(r.xml, KmyDocument.alsXml(ctx, hoch));
+    }
+
+    /**
+     * Die echte, von KMyMoney 5.2.2 verschlüsselte Datei ({@code -Dkmy.gpg=…}) mit einer Testbuchung
+     * zurückschreiben; mit {@code -Dkmy.gpg.out=…} liegt das Ergebnis danach zum Öffnen in KMyMoney da.
+     */
+    @Test
+    public void echteDateiMitTestbuchung() throws Exception {
+        String pfad = System.getProperty("kmy.gpg");
+        Assume.assumeTrue("ohne -Dkmy.gpg übersprungen", pfad != null && !pfad.isEmpty());
+        schluesselHinterlegen("michael");
+        KmyDocument d = new KmyDocument(java.nio.file.Files.readAllBytes(new java.io.File(pfad).toPath()), ctx);
+        Booking b = KmySqlCipherTest.testbuchung(d);
+        KmyExporter.Result r = new KmyExporter(d, ctx).build(
+                Collections.singletonList(b), Collections.emptyList(), new HashMap<>());
+        assertEquals(Collections.emptyList(), r.skipped);
+        assertEquals(1, r.writtenIds.size());
+        byte[] inhalt = r.xml.getBytes(StandardCharsets.UTF_8);
+        KmyExportCheck.pruefen(d.xml(), r.xml, inhalt, r.aenderungen);
+        byte[] hoch = KmyExportCoordinator.verschluesseln(ctx, inhalt, d.gpg());
+        assertEquals(r.xml, new KmyDocument(hoch, ctx).xml());
+        String aus = System.getProperty("kmy.gpg.out");
+        if (aus != null && !aus.isEmpty()) {
+            java.nio.file.Files.write(new java.io.File(aus).toPath(), hoch);
+        }
     }
 
     @Test

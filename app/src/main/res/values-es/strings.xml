@@ -774,7 +774,7 @@
 
     <!-- Mensajes detallados de importación/exportación -->
     <string name="err_kmy_read">No se pudo leer el archivo KMyMoney</string>
-    <string name="err_kmy_not_xml">No es un archivo XML de KMyMoney ni una base de datos de KMyMoney sin cifrar. No se admiten archivos cifrados (GPG, SQLCipher).</string>
+    <string name="err_kmy_not_xml">No es ni un archivo de KMyMoney (.kmy) ni una base de datos de KMyMoney.</string>
     <string name="kmy_db_open">KMyMoney tiene abierta la base de datos «%1$s» (%2$s). Ciérrala allí y vuelve a transferir. No se ha escrito nada. Si KMyMoney no está abierto, la marca procede de un cierre inesperado: abrir y cerrar la base de datos una vez en KMyMoney la elimina.</string>
     <string name="kmy_db_busy">La base de datos «%1$s» está en mitad de una escritura de KMyMoney. No se ha escrito nada. Ábrela y ciérrala una vez en KMyMoney y vuelve a transferir.</string>
     <string name="kmy_db_version">La base de datos tiene la versión de esquema «%1$s»; KMySync solo está probado con las versiones %2$s. No se ha escrito nada.</string>
@@ -1084,4 +1084,16 @@
     <string name="gpg_saved">Clave GPG guardada.</string>
     <string name="gpg_removed">Claves GPG quitadas.</string>
     <string name="gpg_remove_confirm">¿Quitar todas las claves GPG de este perfil? Después, un archivo cifrado solo podrá leerse de nuevo cuando se vuelva a importar la clave.</string>
+    <!-- Mit SQLCipher verschlüsselte KMyMoney-Datenbank (KmySqlCipher) -->
+    <string name="kmy_sqlcipher_no_password">El archivo no es ni un .kmy ni una base de datos sin cifrar. Si es una base de datos de KMyMoney cifrada con SQLCipher, guarda su contraseña en los ajustes del perfil, en «Contraseña de la base de datos».</string>
+    <string name="kmy_sqlcipher_wrong">La base de datos cifrada no se puede abrir con la contraseña guardada (%1$s). Comprueba la contraseña en los ajustes del perfil.</string>
+    <string name="db_password_button">Contraseña de la base de datos…</string>
+    <string name="db_password_none">No hay ninguna contraseña guardada; solo hace falta si KMyMoney cifra la base de datos (SQLCipher).</string>
+    <string name="db_password_set">Contraseña de la base de datos cifrada guardada.</string>
+    <string name="db_password_title">Contraseña de la base de datos</string>
+    <string name="db_password_message">La contraseña con la que KMyMoney cifró la base de datos (controlador SQLCipher). La próxima importación mostrará si es correcta.</string>
+    <string name="db_password_hint">Contraseña</string>
+    <string name="db_password_remove">Quitar</string>
+    <string name="db_password_saved">Contraseña de la base de datos guardada.</string>
+    <string name="db_password_removed">Contraseña de la base de datos quitada.</string>
 </resources>

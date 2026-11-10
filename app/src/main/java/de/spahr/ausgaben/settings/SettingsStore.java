@@ -39,6 +39,8 @@ public class SettingsStore {
     /** GPG-Schlüssel (Text aus gpg --export-secret-keys/--export --armor) und Passphrase, je Profil. */
     private static final String KEY_GPG_KEYS = "gpg_keys";
     private static final String KEY_GPG_PASSPHRASE = "gpg_passphrase";
+    /** Passwort einer mit SQLCipher verschlüsselten KMyMoney-Datenbank, je Profil. */
+    private static final String KEY_DB_PASSWORD = "kmy_db_password";
     private static final String KEY_FOLDER = "nextcloud_folder";
     private static final String KEY_IMPORT_FOLDER = "nextcloud_import_folder";
     private static final String KEY_DEFAULT_ACCOUNT = "default_account";
@@ -299,6 +301,20 @@ public class SettingsStore {
 
     public String getGpgPassphrase() {
         return secret.getString(pk(KEY_GPG_PASSPHRASE), "");
+    }
+
+    /** Passwort der verschlüsselten KMyMoney-Datenbank (SQLCipher); leer = keins. */
+    public String getDbPassword() {
+        return secret.getString(pk(KEY_DB_PASSWORD), "");
+    }
+
+    /** Leer löscht es. */
+    public void setDbPassword(String password) {
+        if (password == null || password.isEmpty()) {
+            secret.edit().remove(pk(KEY_DB_PASSWORD)).apply();
+        } else {
+            secret.edit().putString(pk(KEY_DB_PASSWORD), password).apply();
+        }
     }
 
     /** Schlüssel und Passphrase zusammen setzen; leere Schlüssel löschen beides. */

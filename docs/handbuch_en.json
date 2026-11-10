@@ -2017,7 +2017,7 @@
     {
       "type": "h2",
       "id": "b-0171g0",
-      "text": "Encrypted KMyMoney file (GPG)"
+      "text": "Encrypted KMyMoney files (GPG, SQLCipher)"
     },
     {
       "type": "p",
@@ -2033,7 +2033,8 @@
         "<b>Further recipients</b>: if the file is encrypted to several keys, the app writes it back to exactly the same ones. For that it needs the <b>public</b> key of each (<b>gpg --export --armor &lt;ID&gt;</b>, imported via «Import another»). If one is missing, the app writes nothing – otherwise that recipient, for example KMyMoney on the computer, could no longer open the file.",
         "KMyMoney's <b>recovery key</b> («Encrypt with recover key») is such a further recipient as well; import its public key in the same way if needed.",
         "<b>Passphrase</b>: it is stored encrypted on the device together with the keys (Android keystore), like the server password, and is not asked for on every import. All private keys of a profile need the same passphrase. To protect the phone further, switch on the <b>biometric lock</b> (Security &amp; privacy).",
-        "The keys are not part of any backup; after changing devices, import them again."
+        "The keys are not part of any backup; after changing devices, import them again.",
+        "<b>KMyMoney database instead of .kmy</b>: KMyMoney encrypts a database not with GPG but with a <b>password</b> (choose the «SQLCipher» driver when creating it). Store the password via «Database password…»; it is kept encrypted on the device as well. The next import shows whether it is correct."
       ]
     },
     {
@@ -2425,7 +2426,7 @@
         "<b>.kmy mode</b>: writes new bookings straight into the KMyMoney file (including splits and transfers) and imports accounts/bookings as well as the portfolio from it. <b>«Choose .kmy»</b> opens a file browser (subfolders, «..» to go back).",
         "<b>CSV mode</b>: exports one CSV file per account (each booking only once); the target folder and import folder are set here.",
         "<b>Read .kmy, export CSV</b>: accounts, categories, payees, schedules and portfolio come from the KMyMoney file, but the app never writes to it – new bookings go out via CSV and are imported in KMyMoney. For anyone who does not want the app to write their .kmy.",
-        "<b>KMyMoney database (SQLite)</b>: like .kmy mode, but for a KMyMoney database in SQLite format instead of the .kmy file. Supported are the unencrypted databases of KMyMoney 5.1 and 5.2 (schema versions 12 to 16). Open and save an older database once in a current KMyMoney; a database from a newer KMyMoney version is read by the app, but nothing is written into it. If KMyMoney currently has the database open, the app writes nothing.",
+        "<b>KMyMoney database (SQLite)</b>: like .kmy mode, but for a KMyMoney database in SQLite format instead of the .kmy file. Supported are the databases of KMyMoney 5.1 and 5.2 (schema versions 12 to 16), including ones encrypted with SQLCipher: then store the password via the button <b>«Database password…»</b> below the path. Open and save an older database once in a current KMyMoney; a database from a newer KMyMoney version is read by the app, but nothing is written into it. If KMyMoney currently has the database open, the app writes nothing.",
         "<b>Read SQLite database, export CSV</b>: the counterpart of «Read .kmy, export CSV» for the database."
       ]
     },

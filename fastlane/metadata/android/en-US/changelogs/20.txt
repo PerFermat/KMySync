@@ -1,2 +1,2 @@
 KMyMoney databases (SQLite) from KMyMoney 5.2 are now read and written, not only from 5.1. Budgets from a 5.2 database were missing until now.
-New: read and write a GPG-encrypted .kmy from KMyMoney, with a key stored in the profile.
+New: read and write encrypted KMyMoney files – the .kmy with GPG, the database with SQLCipher.

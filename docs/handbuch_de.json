@@ -2022,7 +2022,7 @@
     {
       "type": "h2",
       "id": "b-0171g0",
-      "text": "Verschlüsselte KMyMoney-Datei (GPG)"
+      "text": "Verschlüsselte KMyMoney-Dateien (GPG, SQLCipher)"
     },
     {
       "type": "p",
@@ -2038,7 +2038,8 @@
         "<b>Weitere Empfänger</b>: Ist die Datei an mehrere Schlüssel verschlüsselt, schreibt die App sie wieder an genau dieselben zurück. Dafür braucht sie von jedem den <b>öffentlichen</b> Schlüssel (<b>gpg --export --armor &lt;ID&gt;</b>, einspielen über «Weiteren einspielen»). Fehlt einer, schreibt die App nichts – sonst könnte dieser Empfänger, etwa KMyMoney am Rechner, die Datei nicht mehr öffnen.",
         "Auch der <b>Wiederherstellungsschlüssel</b> von KMyMoney («Verschlüsseln mit Wiederherstellungsschlüssel») ist so ein weiterer Empfänger; seinen öffentlichen Schlüssel spielen Sie bei Bedarf genauso ein.",
         "<b>Passphrase</b>: Sie liegt zusammen mit den Schlüsseln verschlüsselt auf dem Gerät (Android-Schlüsselspeicher), wie das Server-Passwort, und wird nicht bei jedem Import abgefragt. Alle privaten Schlüssel eines Profils brauchen dieselbe Passphrase. Wer das Handy zusätzlich schützen will, schaltet die <b>biometrische Sperre</b> ein (Sicherheit &amp; Datenschutz).",
-        "Die Schlüssel stehen in keiner Sicherung; nach einem Gerätewechsel spielen Sie sie neu ein."
+        "Die Schlüssel stehen in keiner Sicherung; nach einem Gerätewechsel spielen Sie sie neu ein.",
+        "<b>KMyMoney-Datenbank statt .kmy</b>: Eine Datenbank verschlüsselt KMyMoney nicht mit GPG, sondern mit einem <b>Passwort</b> (beim Anlegen den Treiber «SQLCipher» wählen). Das Passwort hinterlegen Sie über «Datenbank-Passwort…»; es liegt ebenso verschlüsselt auf dem Gerät. Ob es passt, zeigt der nächste Import."
       ]
     },
     {
@@ -2430,7 +2431,7 @@
         "<b>.kmy-Modus</b>: schreibt neue Buchungen direkt in die KMyMoney-Datei (inkl. Splits und Umbuchungen) und importiert Konten/Buchungen sowie das Depot daraus. Über <b>«.kmy auswählen»</b> öffnet sich ein Datei-Browser (Unterordner, «..» zurück).",
         "<b>CSV-Modus</b>: exportiert je Konto eine CSV-Datei (jede Buchung nur einmal); Zielordner und Import-Ordner werden hier gesetzt.",
         "<b>.kmy lesen, CSV exportieren</b>: Konten, Kategorien, Empfänger, Planungen und Depot kommen aus der KMyMoney-Datei, geschrieben wird aber nie hinein – neue Buchungen gehen per CSV hinaus und werden in KMyMoney importiert. Für alle, die ihre .kmy nicht von der App beschreiben lassen wollen.",
-        "<b>KMyMoney-Datenbank (SQLite)</b>: wie der .kmy-Modus, nur für eine KMyMoney-Datenbank im SQLite-Format statt der .kmy-Datei. Unterstützt werden die unverschlüsselten Datenbanken von KMyMoney 5.1 und 5.2 (Schema-Versionen 12 bis 16). Eine ältere Datenbank öffnen und speichern Sie einmal in einem aktuellen KMyMoney; eine Datenbank aus einer neueren KMyMoney-Version liest die App, schreibt aber nichts hinein. Hat KMyMoney die Datenbank gerade geöffnet, schreibt die App nichts.",
+        "<b>KMyMoney-Datenbank (SQLite)</b>: wie der .kmy-Modus, nur für eine KMyMoney-Datenbank im SQLite-Format statt der .kmy-Datei. Unterstützt werden die Datenbanken von KMyMoney 5.1 und 5.2 (Schema-Versionen 12 bis 16), auch mit SQLCipher verschlüsselte: Dann hinterlegen Sie das Passwort über den Knopf <b>«Datenbank-Passwort…»</b> unter dem Pfad. Eine ältere Datenbank öffnen und speichern Sie einmal in einem aktuellen KMyMoney; eine Datenbank aus einer neueren KMyMoney-Version liest die App, schreibt aber nichts hinein. Hat KMyMoney die Datenbank gerade geöffnet, schreibt die App nichts.",
         "<b>SQLite-Datenbank lesen, CSV exportieren</b>: das Gegenstück zu «.kmy lesen, CSV exportieren» für die Datenbank."
       ]
     },

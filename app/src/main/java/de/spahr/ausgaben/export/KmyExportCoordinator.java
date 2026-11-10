@@ -263,7 +263,10 @@ public class KmyExportCoordinator {
             if (doc.istDatenbank()) {
                 // Die geprüften Änderungen in die Tabellen übertragen. Hochgeladen wird die Datenbank,
                 // nicht das XML – und nur, wenn sie abgebildet genau die geprüfte Fassung ergibt.
-                packed = KmySqliteWriter.schreibe(appContext, raw, res.xml, aenderungen);
+                packed = KmySqliteWriter.schreibe(appContext, doc.datenbankRoh(), res.xml, aenderungen);
+                if (doc.sqlcipher() != null) {
+                    packed = verschluesseln(packed, doc.sqlcipher());
+                }
                 if (KmyLock.hasJournal(storage, folder, file)) {
                     return Outcome.failed(r.getString(de.spahr.ausgaben.R.string.kmy_db_journal, file));
                 }
@@ -383,6 +386,25 @@ public class KmyExportCoordinator {
         }
         if (!java.util.Arrays.equals(inhalt, zurueck)) {
             throw new KmyExportCheck.Failed("verschlüsselte Datei weicht vom geprüften Inhalt ab");
+        }
+        return verschluesselt;
+    }
+
+    /**
+     * Verschlüsselt die beschriebene Datenbank in der Hülle der gelesenen und entschlüsselt sie zur
+     * Probe gleich wieder: Hochgeladen wird nur, was sich genau zu dieser Datenbank zurückwandeln lässt.
+     */
+    static byte[] verschluesseln(byte[] datenbank, KmySqlCipher.Huelle huelle)
+            throws java.io.IOException, KmyExportCheck.Failed {
+        byte[] verschluesselt = KmySqlCipher.verschluesseln(datenbank, huelle);
+        byte[] zurueck;
+        try {
+            zurueck = KmySqlCipher.entschluesseln(verschluesselt, huelle);
+        } catch (KmySqlCipher.Fehler e) {
+            throw new KmyExportCheck.Failed("verschlüsselte Datenbank nicht wieder lesbar", e);
+        }
+        if (!java.util.Arrays.equals(KmySqlCipher.ohneReserve(datenbank, huelle), zurueck)) {
+            throw new KmyExportCheck.Failed("verschlüsselte Datenbank weicht von der geschriebenen ab");
         }
         return verschluesselt;
     }

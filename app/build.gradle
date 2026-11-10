@@ -110,7 +110,9 @@ android {
             }
             // Von KMyMoney verschlüsselte Prüflinge, zu groß fürs Repo: ./gradlew … -Dkmy.gpg=/pfad/x.kmy
             // (KmyGpgTest) bzw. -Dkmy.sqlcipher=/pfad/x.db (KmySqlCipherTest)
-            ['kmy.gpg', 'kmy.sqlcipher'].each { name ->
+            // Mit -Dkmy.gpg.out=/pfad bzw. -Dkmy.sqlcipher.out=/pfad legen sie das Ergebnis mit einer
+            // Testbuchung dort ab – zum Gegenlesen in KMyMoney.
+            ['kmy.gpg', 'kmy.sqlcipher', 'kmy.gpg.out', 'kmy.sqlcipher.out'].each { name ->
                 if (System.getProperty(name)) {
                     it.systemProperty name, System.getProperty(name)
                     it.outputs.upToDateWhen { false }

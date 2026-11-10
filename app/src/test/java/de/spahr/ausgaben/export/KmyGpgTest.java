@@ -41,6 +41,22 @@ public class KmyGpgTest {
         assertFalse(KmyGpg.istVerschluesselt(new byte[0]));
     }
 
+    /**
+     * Zufällige Bytes, deren erstes Byte wie ein OpenPGP-Paketkopf aussieht – so beginnt jede 25.
+     * SQLCipher-Datenbank. Erst die Pakete dahinter entscheiden, und die passen nicht.
+     */
+    @Test
+    public void zufaelligerAnfangIstKeinGpg() {
+        java.util.Random r = new java.util.Random(13);
+        int[] koepfe = {0x84, 0x85, 0x86, 0x87, 0x8C, 0x8D, 0x8E, 0x8F, 0xC1, 0xC3};
+        for (int i = 0; i < 500; i++) {
+            byte[] b = new byte[1024];
+            r.nextBytes(b);
+            b[0] = (byte) koepfe[i % koepfe.length];
+            assertFalse("Versuch " + i, KmyGpg.istVerschluesselt(b));
+        }
+    }
+
     @Test
     public void entschluesseltWieGnuPG() throws Exception {
         KmyGpg.Ergebnis e = KmyGpg.entschluesseln(KmyRobustnessTest.fixture("gpg/edited.kmy"), schluessel());

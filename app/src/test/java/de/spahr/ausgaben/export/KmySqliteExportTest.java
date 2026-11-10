@@ -78,16 +78,19 @@ public class KmySqliteExportTest {
         assertFalse(KmyLock.hasJournal(null, "a.sqlite"));
     }
 
-    /** Weder XML noch SQLite – etwa eine verschlüsselte Datenbank: klare Absage statt Rätselraten. */
+    /**
+     * Weder XML noch SQLite – vielleicht eine mit SQLCipher verschlüsselte Datenbank. Ohne Passwort im
+     * Profil sagt die Meldung, wo es hingehört, statt zu raten.
+     */
     @Test
-    public void verschluesselteDatenbankWirdAbgelehnt() throws Exception {
+    public void verschluesselteDatenbankOhnePasswort() throws Exception {
         byte[] wirr = new byte[4096];
         new java.util.Random(3).nextBytes(wirr);
         try {
             new KmyDocument(wirr, ctx);
             fail("hätte abgelehnt werden müssen");
         } catch (IOException e) {
-            assertEquals(ctx.getString(de.spahr.ausgaben.R.string.err_kmy_not_xml), e.getMessage());
+            assertEquals(ctx.getString(de.spahr.ausgaben.R.string.kmy_sqlcipher_no_password), e.getMessage());
         }
     }
 

@@ -775,7 +775,7 @@
 
     <!-- Import-/Export-Detailmeldungen -->
     <string name="err_kmy_read">KMyMoney-Datei konnte nicht gelesen werden</string>
-    <string name="err_kmy_not_xml">Das ist weder eine KMyMoney-XML-Datei noch eine unverschlüsselte KMyMoney-Datenbank. Verschlüsselte Dateien (GPG, SQLCipher) werden nicht unterstützt.</string>
+    <string name="err_kmy_not_xml">Das ist weder eine KMyMoney-Datei (.kmy) noch eine KMyMoney-Datenbank.</string>
     <string name="kmy_db_open">KMyMoney hat die Datenbank „%1$s“ gerade geöffnet (%2$s). Bitte dort schließen und erneut übertragen. Es wurde nichts geschrieben. Ist KMyMoney nicht geöffnet, stammt der Eintrag von einem Absturz: die Datenbank einmal in KMyMoney öffnen und schließen räumt ihn ab.</string>
     <string name="kmy_db_busy">Die Datenbank „%1$s“ steht mitten in einem Schreibvorgang von KMyMoney. Es wurde nichts geschrieben. Bitte einmal in KMyMoney öffnen und schließen, dann erneut übertragen.</string>
     <string name="kmy_db_version">Die Datenbank hat die Schema-Version „%1$s“; KMySync ist nur mit den Versionen %2$s geprüft. Es wurde nichts geschrieben.</string>
@@ -1091,4 +1091,16 @@
     <string name="gpg_saved">GPG-Schlüssel übernommen.</string>
     <string name="gpg_removed">GPG-Schlüssel entfernt.</string>
     <string name="gpg_remove_confirm">Alle GPG-Schlüssel dieses Profils entfernen? Eine verschlüsselte Datei lässt sich danach erst wieder lesen, wenn der Schlüssel neu eingespielt ist.</string>
+    <!-- Mit SQLCipher verschlüsselte KMyMoney-Datenbank (KmySqlCipher) -->
+    <string name="kmy_sqlcipher_no_password">Die Datei ist weder eine .kmy noch eine unverschlüsselte Datenbank. Ist sie eine mit SQLCipher verschlüsselte KMyMoney-Datenbank, bitte das Passwort in den Profileinstellungen unter „Datenbank-Passwort“ hinterlegen.</string>
+    <string name="kmy_sqlcipher_wrong">Die verschlüsselte Datenbank lässt sich mit dem hinterlegten Passwort nicht öffnen (%1$s). Bitte das Passwort in den Profileinstellungen prüfen.</string>
+    <string name="db_password_button">Datenbank-Passwort…</string>
+    <string name="db_password_none">Kein Passwort hinterlegt – nur nötig, wenn KMyMoney die Datenbank verschlüsselt (SQLCipher).</string>
+    <string name="db_password_set">Passwort für die verschlüsselte Datenbank hinterlegt.</string>
+    <string name="db_password_title">Datenbank-Passwort</string>
+    <string name="db_password_message">Das Passwort, mit dem KMyMoney die Datenbank verschlüsselt hat (Treiber SQLCipher). Ob es passt, zeigt der nächste Import.</string>
+    <string name="db_password_hint">Passwort</string>
+    <string name="db_password_remove">Entfernen</string>
+    <string name="db_password_saved">Datenbank-Passwort hinterlegt.</string>
+    <string name="db_password_removed">Datenbank-Passwort entfernt.</string>
 </resources>

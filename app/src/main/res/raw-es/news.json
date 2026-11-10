@@ -2,7 +2,8 @@
   {"version": "2.5", "code": 20, "items": [
     {"title": "Carpeta local como destino de sincronización", "text": "Además de Nextcloud, WebDAV y SMB se puede elegir una carpeta del dispositivo, por ejemplo la carpeta de una app de sincronización como Syncthing. Dentro eliges el archivo de KMyMoney como siempre; la exportación, las copias de seguridad y los justificantes funcionan igual."},
     {"title": "Bases de datos de KMyMoney 5.2", "text": "La app ahora también lee y escribe bases de datos de KMyMoney (SQLite) creadas con KMyMoney 5.2, no solo con 5.1. Hasta ahora faltaban por completo los presupuestos de una base de datos de 5.2."},
-    {"title": "Archivo de KMyMoney cifrado con GPG", "text": "Si KMyMoney cifra el .kmy con GPG, la app ahora lo lee y lo escribe con una clave guardada en los ajustes del perfil («Claves GPG…»), para los mismos destinatarios que antes."}
+    {"title": "Archivo de KMyMoney cifrado con GPG", "text": "Si KMyMoney cifra el .kmy con GPG, la app ahora lo lee y lo escribe con una clave guardada en los ajustes del perfil («Claves GPG…»), para los mismos destinatarios que antes."},
+    {"title": "Base de datos de KMyMoney cifrada", "text": "Ahora también se puede leer y escribir una base de datos de KMyMoney cifrada con SQLCipher; la contraseña se indica en los ajustes del perfil, en «Contraseña de la base de datos…»."}
   ]},
   {"version": "2.4", "code": 19, "items": [
     {"title": "Categorías en árbol", "text": "En pantallas estrechas el selector de categorías usa todo el ancho y muestra las subcategorías sangradas bajo su categoría principal."},

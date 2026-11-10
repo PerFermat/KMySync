@@ -316,6 +316,8 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
      */
     private void setupLaunchers() {
         new GpgKeysController(this, settings, findViewById(R.id.btnGpgKeys), findViewById(R.id.gpgStatus));
+        new DbPasswordController(this, settings, findViewById(R.id.btnDbPassword),
+                findViewById(R.id.dbPasswordStatus));
         csvLauncher = registerForActivityResult(
                 new ActivityResultContracts.OpenDocument(), uri -> {
                     if (uri != null) {
@@ -479,6 +481,13 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         findViewById(R.id.btnKmyChanges).setVisibility(kmy ? View.VISIBLE : View.GONE);
         // Sicherungen legt nur an, wer die Datei schreibt.
         findViewById(R.id.kmyBackupKeepLayout).setVisibility(kmy ? View.VISIBLE : View.GONE);
+        // Verschlüsselt wird die .kmy mit GPG, die Datenbank mit einem Passwort (SQLCipher).
+        int gpg = kmySource && !selectedDatabase ? View.VISIBLE : View.GONE;
+        int db = kmySource && selectedDatabase ? View.VISIBLE : View.GONE;
+        findViewById(R.id.btnGpgKeys).setVisibility(gpg);
+        findViewById(R.id.gpgStatus).setVisibility(gpg);
+        findViewById(R.id.btnDbPassword).setVisibility(db);
+        findViewById(R.id.dbPasswordStatus).setVisibility(db);
     }
 
     /** Dropdown „CSV-Trennzeichen" (nur im CSV-Block sichtbar): Semikolon (Standard) oder Komma. */

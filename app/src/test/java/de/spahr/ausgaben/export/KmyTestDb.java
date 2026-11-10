@@ -50,9 +50,25 @@ final class KmyTestDb {
     }
 
     static byte[] ausXml(Context ctx, String xml) throws Exception {
+        return ausXml(ctx, xml, 0, 0);
+    }
+
+    /**
+     * Wie oben, mit {@code reserve} Bytes am Ende jeder Seite zu {@code seite} Bytes – so legt SQLCipher
+     * seine Datenbanken an (Version 3: 1024 und 48). SQLite übernimmt die Reserve aus dem Dateikopf;
+     * die Datei beginnt deshalb als leere Datenbank mit diesem Kopf.
+     */
+    static byte[] ausFixture(Context ctx, String fixture, int seite, int reserve) throws Exception {
+        return ausXml(ctx, new String(KmyRobustnessTest.fixture(fixture), StandardCharsets.UTF_8), seite, reserve);
+    }
+
+    private static byte[] ausXml(Context ctx, String xml, int seite, int reserve) throws Exception {
         File f = File.createTempFile("testdb", ".sqlite", ctx.getCacheDir());
         //noinspection ResultOfMethodCallIgnored
         f.delete();
+        if (seite > 0) {
+            leereDatenbank(f, seite, reserve);
+        }
         SQLiteDatabase db = SQLiteDatabase.openDatabase(f.getPath(), null,
                 SQLiteDatabase.CREATE_IF_NECESSARY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
         try {
@@ -70,6 +86,28 @@ final class KmyTestDb {
         byte[] roh = Files.readAllBytes(f.toPath());
         KmySqlite.entfernen(f);
         return roh;
+    }
+
+    /** Eine leere Datenbank aus einer Seite, mit Seitengröße und Reserve im Kopf. */
+    private static void leereDatenbank(File f, int seite, int reserve) throws Exception {
+        SQLiteDatabase db = SQLiteDatabase.openDatabase(f.getPath(), null,
+                SQLiteDatabase.CREATE_IF_NECESSARY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
+        try {
+            db.execSQL("PRAGMA page_size = " + seite);
+            db.execSQL("VACUUM");
+        } finally {
+            db.close();
+        }
+        byte[] b = Files.readAllBytes(f.toPath());
+        if (b.length != seite) {
+            throw new IllegalStateException("leere Datenbank hat " + b.length + " Bytes");
+        }
+        b[20] = (byte) reserve;
+        // Die leere Seite 1: Ihr Zellbereich beginnt am Ende des nutzbaren Platzes.
+        int ende = seite - reserve;
+        b[105] = (byte) (ende >> 8);
+        b[106] = (byte) ende;
+        Files.write(f.toPath(), b);
     }
 
     /**

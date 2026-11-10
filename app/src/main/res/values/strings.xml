@@ -803,7 +803,7 @@
 
     <!-- Import/export detail messages -->
     <string name="err_kmy_read">KMyMoney file could not be read</string>
-    <string name="err_kmy_not_xml">This is neither a KMyMoney XML file nor an unencrypted KMyMoney database. Encrypted files (GPG, SQLCipher) are not supported.</string>
+    <string name="err_kmy_not_xml">This is neither a KMyMoney file (.kmy) nor a KMyMoney database.</string>
     <string name="kmy_db_open">KMyMoney currently has the database “%1$s” open (%2$s). Please close it there and transfer again. Nothing was written. If KMyMoney is not open, the entry is left over from a crash: opening and closing the database once in KMyMoney clears it.</string>
     <string name="kmy_db_busy">The database “%1$s” is in the middle of a write by KMyMoney. Nothing was written. Please open and close it once in KMyMoney, then transfer again.</string>
     <string name="kmy_db_version">The database has schema version “%1$s”; KMySync is tested with versions %2$s only. Nothing was written.</string>
@@ -1125,4 +1125,16 @@
     <string name="gpg_saved">GPG key stored.</string>
     <string name="gpg_removed">GPG keys removed.</string>
     <string name="gpg_remove_confirm">Remove all GPG keys of this profile? An encrypted file can then only be read again once the key is imported again.</string>
+    <!-- Mit SQLCipher verschlüsselte KMyMoney-Datenbank (KmySqlCipher) -->
+    <string name="kmy_sqlcipher_no_password">The file is neither a .kmy nor an unencrypted database. If it is a KMyMoney database encrypted with SQLCipher, please store its password in the profile settings under “Database password”.</string>
+    <string name="kmy_sqlcipher_wrong">The encrypted database cannot be opened with the stored password (%1$s). Please check the password in the profile settings.</string>
+    <string name="db_password_button">Database password…</string>
+    <string name="db_password_none">No password stored – only needed if KMyMoney encrypts the database (SQLCipher).</string>
+    <string name="db_password_set">Password for the encrypted database stored.</string>
+    <string name="db_password_title">Database password</string>
+    <string name="db_password_message">The password KMyMoney encrypted the database with (SQLCipher driver). The next import shows whether it is correct.</string>
+    <string name="db_password_hint">Password</string>
+    <string name="db_password_remove">Remove</string>
+    <string name="db_password_saved">Database password stored.</string>
+    <string name="db_password_removed">Database password removed.</string>
 </resources>

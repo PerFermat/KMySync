@@ -340,6 +340,23 @@
                     android:layout_marginTop="2dp"
                     android:textAppearance="?attr/textAppearanceBodySmall"
                     android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <!-- Nur bei einer Datenbank, die KMyMoney mit SQLCipher verschlüsselt (DbPasswordController). -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDbPassword"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/db_password_button" />
+
+                <TextView
+                    android:id="@+id/dbPasswordStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
             </LinearLayout>
 
             <!-- Bewusst AUSSERHALB von csvOptions und kmyOptions: Belege gibt es in beiden Modi,

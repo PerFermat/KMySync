@@ -121,7 +121,19 @@ public final class KmyGpg {
             return false;
         }
         int tag = (b & 0x40) != 0 ? b & 0x3F : (b >> 2) & 0x0F;
-        return tag == 1 || tag == 3;
+        if (tag != 1 && tag != 3) {
+            return false;
+        }
+        // Das erste Byte allein trifft auch zufällige Daten – etwa das Salz einer SQLCipher-Datenbank
+        // in jedem 25. Fall. Sicher ist es erst, wenn sich die Pakete davor als Liste lesen lassen.
+        try {
+            PGPObjectFactory f = new PGPObjectFactory(new ByteArrayInputStream(raw),
+                    new BcKeyFingerprintCalculator());
+            Object o = f.nextObject();
+            return o instanceof PGPEncryptedDataList && ((PGPEncryptedDataList) o).size() > 0;
+        } catch (IOException | RuntimeException e) {
+            return false;
+        }
     }
 
     /** Ein Schlüssel aus dem hinterlegten Bund, für die Anzeige. */
