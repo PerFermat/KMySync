@@ -1,0 +1,1 @@
+KMyMoney-Datenbanken (SQLite) aus KMyMoney 5.2 werden jetzt gelesen und beschrieben, nicht nur aus 5.1. Budgets aus einer 5.2-Datenbank fehlten bisher.

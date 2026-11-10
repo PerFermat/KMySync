@@ -2408,7 +2408,7 @@
         "<b>.kmy-Modus</b>: schreibt neue Buchungen direkt in die KMyMoney-Datei (inkl. Splits und Umbuchungen) und importiert Konten/Buchungen sowie das Depot daraus. Über <b>«.kmy auswählen»</b> öffnet sich ein Datei-Browser (Unterordner, «..» zurück).",
         "<b>CSV-Modus</b>: exportiert je Konto eine CSV-Datei (jede Buchung nur einmal); Zielordner und Import-Ordner werden hier gesetzt.",
         "<b>.kmy lesen, CSV exportieren</b>: Konten, Kategorien, Empfänger, Planungen und Depot kommen aus der KMyMoney-Datei, geschrieben wird aber nie hinein – neue Buchungen gehen per CSV hinaus und werden in KMyMoney importiert. Für alle, die ihre .kmy nicht von der App beschreiben lassen wollen.",
-        "<b>KMyMoney-Datenbank (SQLite)</b>: wie der .kmy-Modus, nur für eine KMyMoney-Datenbank im SQLite-Format statt der .kmy-Datei. Unterstützt wird die unverschlüsselte Datenbank von KMyMoney 5.1 (Schema-Version 12). Hat KMyMoney die Datenbank gerade geöffnet, schreibt die App nichts.",
+        "<b>KMyMoney-Datenbank (SQLite)</b>: wie der .kmy-Modus, nur für eine KMyMoney-Datenbank im SQLite-Format statt der .kmy-Datei. Unterstützt werden die unverschlüsselten Datenbanken von KMyMoney 5.1 und 5.2 (Schema-Versionen 12 bis 16). Eine ältere Datenbank öffnen und speichern Sie einmal in einem aktuellen KMyMoney; eine Datenbank aus einer neueren KMyMoney-Version liest die App, schreibt aber nichts hinein. Hat KMyMoney die Datenbank gerade geöffnet, schreibt die App nichts.",
         "<b>SQLite-Datenbank lesen, CSV exportieren</b>: das Gegenstück zu «.kmy lesen, CSV exportieren» für die Datenbank."
       ]
     },

@@ -1,6 +1,7 @@
 [
   {"version": "2.5", "code": 20, "items": [
-    {"title": "Lokaler Ordner als Sync-Ziel", "text": "Neben Nextcloud, WebDAV und SMB lässt sich ein Ordner auf dem Gerät wählen, etwa der Ordner einer Sync-App wie Syncthing. Darin wählst du die KMyMoney-Datei wie gewohnt; Export, Sicherungen und Belege laufen dort genauso."}
+    {"title": "Lokaler Ordner als Sync-Ziel", "text": "Neben Nextcloud, WebDAV und SMB lässt sich ein Ordner auf dem Gerät wählen, etwa der Ordner einer Sync-App wie Syncthing. Darin wählst du die KMyMoney-Datei wie gewohnt; Export, Sicherungen und Belege laufen dort genauso."},
+    {"title": "Datenbanken aus KMyMoney 5.2", "text": "Die App liest und beschreibt jetzt auch KMyMoney-Datenbanken (SQLite) aus KMyMoney 5.2, nicht nur aus 5.1. Budgets aus einer 5.2-Datenbank fehlten bisher ganz."}
   ]},
   {"version": "2.4", "code": 19, "items": [
     {"title": "Kategorien als Baum", "text": "Die Kategorieauswahl nutzt auf schmalen Bildschirmen die volle Breite und zeigt Unterkategorien eingerückt unter ihrer Hauptkategorie."},

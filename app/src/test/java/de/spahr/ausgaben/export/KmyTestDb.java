@@ -30,6 +30,25 @@ final class KmyTestDb {
         return ausXml(ctx, new String(KmyRobustnessTest.fixture(fixture), StandardCharsets.UTF_8));
     }
 
+    /**
+     * Wie oben, in der Schema-Version {@code version}. Ab 13 bekommt {@code kmmPayees} die Spalten
+     * {@code idPattern} und {@code urlTemplate}, wie KMyMoney 5.2 sie anlegt (text, leer als '') – der
+     * einzige Unterschied im Aufbau bis 16, nachgesehen an einer mit KMyMoney 5.2.2 gespeicherten Datei.
+     */
+    static byte[] ausFixture(Context ctx, String fixture, String version) throws Exception {
+        String sql = "UPDATE kmmFileInfo SET version = '" + version + "'";
+        if (Integer.parseInt(version) >= 13) {
+            sql = "ALTER TABLE kmmPayees ADD COLUMN idPattern text;\n"
+                    + "ALTER TABLE kmmPayees ADD COLUMN urlTemplate text;\n"
+                    + "UPDATE kmmPayees SET idPattern = '', urlTemplate = '';\n" + sql;
+        }
+        byte[] roh = ausFixture(ctx, fixture);
+        for (String befehl : sql.split(";\n")) {
+            roh = aendere(ctx, roh, befehl);
+        }
+        return roh;
+    }
+
     static byte[] ausXml(Context ctx, String xml) throws Exception {
         File f = File.createTempFile("testdb", ".sqlite", ctx.getCacheDir());
         //noinspection ResultOfMethodCallIgnored

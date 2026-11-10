@@ -2403,7 +2403,7 @@
         "<b>.kmy mode</b>: writes new bookings straight into the KMyMoney file (including splits and transfers) and imports accounts/bookings as well as the portfolio from it. <b>«Choose .kmy»</b> opens a file browser (subfolders, «..» to go back).",
         "<b>CSV mode</b>: exports one CSV file per account (each booking only once); the target folder and import folder are set here.",
         "<b>Read .kmy, export CSV</b>: accounts, categories, payees, schedules and portfolio come from the KMyMoney file, but the app never writes to it – new bookings go out via CSV and are imported in KMyMoney. For anyone who does not want the app to write their .kmy.",
-        "<b>KMyMoney database (SQLite)</b>: like .kmy mode, but for a KMyMoney database in SQLite format instead of the .kmy file. Supported is the unencrypted database of KMyMoney 5.1 (schema version 12). If KMyMoney currently has the database open, the app writes nothing.",
+        "<b>KMyMoney database (SQLite)</b>: like .kmy mode, but for a KMyMoney database in SQLite format instead of the .kmy file. Supported are the unencrypted databases of KMyMoney 5.1 and 5.2 (schema versions 12 to 16). Open and save an older database once in a current KMyMoney; a database from a newer KMyMoney version is read by the app, but nothing is written into it. If KMyMoney currently has the database open, the app writes nothing.",
         "<b>Read SQLite database, export CSV</b>: the counterpart of «Read .kmy, export CSV» for the database."
       ]
     },

@@ -118,7 +118,7 @@ public class KmySqliteVergleichTest {
         KmyDocument ausDb = new KmyDocument(roh, ctx);
         KmyDocument ausKmy = new KmyDocument(Files.readAllBytes(kmy.toPath()), ctx);
         assertTrue(ausDb.istDatenbank());
-        assertEquals(KmySqlite.SCHEMA, ausDb.datenbank().version);
+        assertTrue(ausDb.datenbank().version, KmySqlite.geprueft(ausDb.datenbank().version));
 
         // Stammdaten
         assertEquals(sortiert(ausKmy.accountNames()), sortiert(ausDb.accountNames()));

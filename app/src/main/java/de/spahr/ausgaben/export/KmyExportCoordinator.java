@@ -364,8 +364,9 @@ public class KmyExportCoordinator {
         if (db == null) {
             return null;
         }
-        if (!KmySqlite.SCHEMA.equals(db.version)) {
-            return r.getString(de.spahr.ausgaben.R.string.kmy_db_version, db.version, KmySqlite.SCHEMA);
+        if (!KmySqlite.geprueft(db.version)) {
+            return r.getString(de.spahr.ausgaben.R.string.kmy_db_version, db.version,
+                    KmySqlite.geprueftAlsText());
         }
         if (db.updateInProgress) {
             return r.getString(de.spahr.ausgaben.R.string.kmy_db_busy, file);

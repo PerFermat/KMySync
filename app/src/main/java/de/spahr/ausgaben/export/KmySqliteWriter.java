@@ -205,6 +205,7 @@ public final class KmySqliteWriter {
         }
 
         KmyGliederung.Element empfaenger = wurzel.kind("PAYEES");
+        boolean mitVerknuepfung = hatSpalte(db, "kmmPayees", "idPattern");
         for (String id : aenderungen.neueEmpfaenger()) {
             KmyGliederung.Element block = mitId(empfaenger, id);
             if (block == null) {
@@ -229,6 +230,11 @@ public final class KmySqliteWriter {
             v.put("matchIgnoreCase", "1".equals(a(p, "matchignorecase")) ? "Y" : "N");
             if (!a(p, "matchkey").isEmpty()) {
                 v.put("matchKeys", a(p, "matchkey"));
+            }
+            if (mitVerknuepfung) {
+                // Ab Schema 13. KMyMoney 5.2 legt beide auch leer als '' ab, nicht als NULL.
+                v.put("idPattern", a(p, "idpattern"));
+                v.put("urlTemplate", a(p, "urltemplate"));
             }
             db.insertOrThrow("kmmPayees", null, v);
         }
@@ -398,6 +404,19 @@ public final class KmySqliteWriter {
         db.execSQL("UPDATE kmmAccounts SET transactionCount = (SELECT count(DISTINCT transactionId) "
                 + "FROM kmmSplits WHERE accountId = ? AND txType = 'N') WHERE id = ?",
                 new Object[]{kontoId, kontoId});
+    }
+
+    /** Ob die Tabelle die Spalte hat – so unterscheiden sich die Schema-Versionen (siehe KmySqlite). */
+    static boolean hatSpalte(SQLiteDatabase db, String tabelle, String spalte) {
+        try (Cursor c = db.rawQuery("PRAGMA table_info(" + tabelle + ")", null)) {
+            int name = c.getColumnIndexOrThrow("name");
+            while (c.moveToNext()) {
+                if (spalte.equalsIgnoreCase(c.getString(name))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /** Zähler und höchste ids in {@code kmmFileInfo} – KMyMoney führt sie nur noch der Form halber. */

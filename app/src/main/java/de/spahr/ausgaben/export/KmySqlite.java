@@ -27,12 +27,34 @@ import java.util.Map;
  * genau die Fassung ergeben, die die Selbstprüfung freigegeben hat.</p>
  *
  * <p>Geschrieben wird, wie KMyMoney 5 schreibt: ein Element je Zeile, eine Stelle Einrückung je
- * Ebene. Tabellen und Spalten: {@code mymoneydbdef.cpp} in KMyMoney, Schema-Version 12.</p>
+ * Ebene. Tabellen und Spalten: {@code mymoneydbdef.cpp} in KMyMoney, Schema-Version 12 bis 16.</p>
+ *
+ * <p>Die Versionen unterscheiden sich im Aufbau nur in {@code kmmPayees}: ab 13 (KMyMoney 5.2) stehen
+ * dort zusätzlich {@code idPattern} und {@code urlTemplate}. 14 und 15 bessern in KMyMoney nur Daten
+ * nach (Berichte, Planungen), 16 ändert keine Spalte. Was eine Version mitbringt, entscheidet deshalb
+ * nicht ihre Nummer, sondern ob die Spalte da ist.</p>
  */
 public final class KmySqlite {
 
-    /** Die Schema-Version, gegen die diese Klasse geprüft ist ({@code kmmFileInfo.version}). */
+    /**
+     * Die Schema-Versionen ({@code kmmFileInfo.version}), gegen die diese Klasse geprüft ist: 12 legt
+     * KMyMoney 5.1 an, 13 bis 16 KMyMoney 5.2. Eine andere wird gelesen, aber nicht beschrieben.
+     */
+    public static final List<String> SCHEMATA =
+            java.util.Collections.unmodifiableList(java.util.Arrays.asList("12", "13", "14", "15", "16"));
+
+    /** Die älteste geprüfte Version – so legen die Tests ihre Datenbanken an. */
     public static final String SCHEMA = "12";
+
+    /** Ob in eine Datenbank dieser Schema-Version geschrieben werden darf. */
+    public static boolean geprueft(String version) {
+        return version != null && SCHEMATA.contains(version.trim());
+    }
+
+    /** Die geprüften Versionen für Meldungen, etwa „12–16". */
+    public static String geprueftAlsText() {
+        return SCHEMATA.get(0) + "–" + SCHEMATA.get(SCHEMATA.size() - 1);
+    }
 
     /** So beginnt jede SQLite-Datei. */
     private static final byte[] KOPF = "SQLite format 3\u0000".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
@@ -287,7 +309,7 @@ public final class KmySqlite {
                         + a("matchingenabled", art.isEmpty() || "0".equals(art) ? "0" : "1")
                         + a("usingmatchkey", "2".equals(art) ? "1" : "0")
                         + a("matchignorecase", jn(c, "matchIgnoreCase"))
-                        + a("matchkey", s(c, "matchKeys")) + ">");
+                        + a("matchkey", s(c, "matchKeys")) + verknuepfung(c) + ">");
                 w.zeile(3, "<ADDRESS" + a("street", s(c, "addressStreet")) + a("city", s(c, "addressCity"))
                         + a("state", s(c, "addressState")) + a("postcode", s(c, "addressZipcode"))
                         + a("telephone", s(c, "telephone")) + "/>");
@@ -295,6 +317,20 @@ public final class KmySqlite {
             }
         }
         w.zeile(1, "</PAYEES>");
+    }
+
+    /**
+     * Ab Schema 13: Muster und Adressvorlage des Empfängers. KMyMoney schreibt beide nur, wenn eins
+     * davon gesetzt ist, und dann beide ({@code mymoneyxmlwriter.cpp}, writePayee).
+     */
+    private static String verknuepfung(Cursor c) {
+        if (c.getColumnIndex("idPattern") < 0) {
+            return "";
+        }
+        String muster = s(c, "idPattern");
+        String vorlage = s(c, "urlTemplate");
+        return muster.isEmpty() && vorlage.isEmpty() ? ""
+                : a("idpattern", muster) + a("urltemplate", vorlage);
     }
 
     private static void stichwoerter(SQLiteDatabase db, Schreiber w) {
@@ -532,7 +568,7 @@ public final class KmySqlite {
         }
         try (Cursor c = db.rawQuery("SELECT XML FROM kmmBudgetConfig ORDER BY id", null)) {
             while (c.moveToNext()) {
-                String xml = c.isNull(0) ? "" : c.getString(0);
+                String xml = budgetZeilen(c.isNull(0) ? "" : c.getString(0));
                 for (String zeile : xml.split("\n")) {
                     String t = zeile.trim();
                     if (t.isEmpty() || t.startsWith("<BUDGETS") || t.startsWith("</BUDGETS")
@@ -545,5 +581,35 @@ public final class KmySqlite {
             }
         }
         w.zeile(1, "</BUDGETS>");
+    }
+
+    /**
+     * Der gespeicherte Text eines Budgets in der Form, die KMyMoney 5.1 ablegt: ein Element je Zeile,
+     * ein Leerzeichen Einrückung je Ebene. KMyMoney 5.2 legt ihn in <b>einer</b> Zeile ab; ohne diese
+     * Umformung fiele das ganze Budget mit der Zeile {@code <BUDGETS>} weg.
+     */
+    static String budgetZeilen(String xml) {
+        if (xml.trim().indexOf('\n') >= 0) {
+            return xml;
+        }
+        StringBuilder sb = new StringBuilder(xml.length() + 256);
+        int tiefe = 0;
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("<[^>]+>").matcher(xml);
+        while (m.find()) {
+            String tag = m.group();
+            boolean ende = tag.startsWith("</");
+            boolean fuerSich = tag.endsWith("/>") || tag.startsWith("<?") || tag.startsWith("<!");
+            if (ende) {
+                tiefe = Math.max(0, tiefe - 1);
+            }
+            for (int i = 0; i < tiefe; i++) {
+                sb.append(' ');
+            }
+            sb.append(tag).append('\n');
+            if (!ende && !fuerSich) {
+                tiefe++;
+            }
+        }
+        return sb.toString();
     }
 }
