@@ -1,1 +1,2 @@
 Ahora se leen y escriben las bases de datos de KMyMoney (SQLite) de KMyMoney 5.2, no solo de 5.1. Hasta ahora faltaban los presupuestos de una base de datos de 5.2.
+Nuevo: leer y escribir un .kmy de KMyMoney cifrado con GPG, con una clave guardada en el perfil.

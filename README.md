@@ -103,7 +103,9 @@ This list names the main features only. The exact behaviour, every detail and sc
   moves on by one period with the next export.
 - **Sync** — Nextcloud/WebDAV/SMB, `.kmy` mode (reads and writes the KMyMoney file directly) or CSV;
   automatic backup before every export. Bookings changed after the fact are edited in the file rather
-  than added twice. KMyMoney's **tags** are read, edited, filtered and written back.
+  than added twice. KMyMoney's **tags** are read, edited, filtered and written back. A `.kmy` that
+  KMyMoney **encrypted with GPG** is read with a key stored in the profile and written back to the same
+  recipients.
 - **Wear OS** — speak an expense right from your wrist, offline too; the watch only captures the text,
   the phone creates the booking. Anything recorded offline is sent on later, without loss or duplication.
 - **Security & backup** — optional biometric lock, GPS off by default, encrypted credentials; data and

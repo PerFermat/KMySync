@@ -315,6 +315,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
      * nicht mehr anmelden.</p>
      */
     private void setupLaunchers() {
+        new GpgKeysController(this, settings, findViewById(R.id.btnGpgKeys), findViewById(R.id.gpgStatus));
         csvLauncher = registerForActivityResult(
                 new ActivityResultContracts.OpenDocument(), uri -> {
                     if (uri != null) {

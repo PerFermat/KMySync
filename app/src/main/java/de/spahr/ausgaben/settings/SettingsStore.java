@@ -36,6 +36,9 @@ public class SettingsStore {
     private static final String KEY_URL = "nextcloud_url";
     private static final String KEY_USER = "nextcloud_user";
     private static final String KEY_PASSWORD = "nextcloud_password";
+    /** GPG-Schlüssel (Text aus gpg --export-secret-keys/--export --armor) und Passphrase, je Profil. */
+    private static final String KEY_GPG_KEYS = "gpg_keys";
+    private static final String KEY_GPG_PASSPHRASE = "gpg_passphrase";
     private static final String KEY_FOLDER = "nextcloud_folder";
     private static final String KEY_IMPORT_FOLDER = "nextcloud_import_folder";
     private static final String KEY_DEFAULT_ACCOUNT = "default_account";
@@ -284,6 +287,28 @@ public class SettingsStore {
     /** Nur das Server-Passwort setzen (Wiederherstellen einer Sicherung); alles andere bleibt stehen. */
     public void setPassword(String password) {
         secret.edit().putString(pk(KEY_PASSWORD), password == null ? "" : password).apply();
+    }
+
+    /**
+     * Die hinterlegten GPG-Schlüssel dieses Profils als Text, leer = keine. Sie liegen wie das
+     * Server-Passwort im {@link SecretStore} – nicht in der Systemsicherung.
+     */
+    public String getGpgKeys() {
+        return secret.getString(pk(KEY_GPG_KEYS), "");
+    }
+
+    public String getGpgPassphrase() {
+        return secret.getString(pk(KEY_GPG_PASSPHRASE), "");
+    }
+
+    /** Schlüssel und Passphrase zusammen setzen; leere Schlüssel löschen beides. */
+    public void setGpg(String keys, String passphrase) {
+        if (keys == null || keys.trim().isEmpty()) {
+            secret.edit().remove(pk(KEY_GPG_KEYS)).remove(pk(KEY_GPG_PASSPHRASE)).apply();
+        } else {
+            secret.edit().putString(pk(KEY_GPG_KEYS), keys)
+                    .putString(pk(KEY_GPG_PASSPHRASE), passphrase == null ? "" : passphrase).apply();
+        }
     }
 
     /** Empfänger für die Kassensturz-Ausgleichsbuchung (leer = noch nicht festgelegt). */

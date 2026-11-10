@@ -2015,6 +2015,28 @@
       ]
     },
     {
+      "type": "h2",
+      "id": "b-0171g0",
+      "text": "Encrypted KMyMoney file (GPG)"
+    },
+    {
+      "type": "p",
+      "id": "b-0171g1",
+      "text": "KMyMoney can encrypt the .kmy file with GPG (<b>Settings → Configure KMyMoney → Encryption</b>). The app reads and writes such a file as soon as the matching <b>private key</b> is stored in the profile: profile settings, sync connection section below the .kmy path, button <b>«GPG keys…»</b>. Without a key, the import tells you which key the file is encrypted to."
+    },
+    {
+      "type": "bullets",
+      "id": "b-0171g2",
+      "items": [
+        "<b>Export the key</b> (on the computer): <b>gpg --export-secret-keys --armor &lt;key ID&gt; &gt; phone.asc</b>. Copy the file to the phone, import it via «GPG keys…» and enter the passphrase once; the app checks it right away. Then delete the file from the phone again.",
+        "<b>A separate key for the phone</b> is the safer choice: KMyMoney can encrypt the file to additional keys as well. Then the main key never sits on the phone, and if the phone is lost, only this one key is revoked.",
+        "<b>Further recipients</b>: if the file is encrypted to several keys, the app writes it back to exactly the same ones. For that it needs the <b>public</b> key of each (<b>gpg --export --armor &lt;ID&gt;</b>, imported via «Import another»). If one is missing, the app writes nothing – otherwise that recipient, for example KMyMoney on the computer, could no longer open the file.",
+        "KMyMoney's <b>recovery key</b> («Encrypt with recover key») is such a further recipient as well; import its public key in the same way if needed.",
+        "<b>Passphrase</b>: it is stored encrypted on the device together with the keys (Android keystore), like the server password, and is not asked for on every import. All private keys of a profile need the same passphrase. To protect the phone further, switch on the <b>biometric lock</b> (Security &amp; privacy).",
+        "The keys are not part of any backup; after changing devices, import them again."
+      ]
+    },
+    {
       "type": "h1",
       "id": "b-0173",
       "text": "19. Wear OS (watch)"

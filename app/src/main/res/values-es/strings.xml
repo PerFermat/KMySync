@@ -1064,4 +1064,24 @@
     <string name="news_all">Todas las novedades</string>
     <string name="news_settings_button">Novedades</string>
     <string name="news_version">Versión %1$s</string>
+    <!-- GPG-verschlüsselte .kmy (KmyGpg) -->
+    <string name="kmy_gpg_no_key">El archivo está cifrado con GPG (clave %1$s) y no hay ninguna clave privada guardada para ellas. Importa la clave correspondiente en los ajustes del perfil, en «Claves GPG».</string>
+    <string name="kmy_gpg_passphrase">La frase de contraseña de la clave GPG %1$s no coincide. Vuelve a importar la clave en los ajustes del perfil.</string>
+    <string name="kmy_gpg_recipient_missing">El archivo también está cifrado para la clave GPG %1$s, cuya parte pública falta aquí. Sin ella, ese destinatario ya no podría abrir el archivo. No se ha escrito nada. Importa la clave pública en los ajustes del perfil, en «Claves GPG».</string>
+    <string name="kmy_gpg_broken">No se puede leer el archivo cifrado con GPG: %1$s</string>
+    <string name="gpg_button">Claves GPG…</string>
+    <string name="gpg_none">No hay ninguna clave GPG guardada; solo hace falta si KMyMoney cifra el archivo.</string>
+    <string name="gpg_status">GPG: %1$s</string>
+    <string name="gpg_dialog_title">Claves GPG</string>
+    <string name="gpg_import">Importar clave</string>
+    <string name="gpg_add">Importar otra</string>
+    <string name="gpg_remove">Quitar todas</string>
+    <string name="gpg_private">privada</string>
+    <string name="gpg_public">pública</string>
+    <string name="gpg_passphrase_title">Frase de contraseña de la clave privada</string>
+    <string name="gpg_passphrase_wrong">La frase de contraseña no coincide con la clave. No se ha guardado nada.</string>
+    <string name="gpg_file_unreadable">El archivo no contiene ninguna clave OpenPGP legible.</string>
+    <string name="gpg_saved">Clave GPG guardada.</string>
+    <string name="gpg_removed">Claves GPG quitadas.</string>
+    <string name="gpg_remove_confirm">¿Quitar todas las claves GPG de este perfil? Después, un archivo cifrado solo podrá leerse de nuevo cuando se vuelva a importar la clave.</string>
 </resources>

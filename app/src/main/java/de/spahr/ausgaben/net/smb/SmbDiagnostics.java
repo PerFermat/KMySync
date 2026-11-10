@@ -295,6 +295,11 @@ public final class SmbDiagnostics {
 
     /** Gepackt oder nicht, gemeint ist immer UTF-8 – dieselbe Prüfung wie in {@code WebDavDiagnostics}. */
     private static void checkEncoding(byte[] raw, Log log) {
+        if (de.spahr.ausgaben.export.KmyGpg.istVerschluesselt(raw)) {
+            // Was darin steht, sieht erst der Import mit dem hinterlegten Schlüssel.
+            log.ok(t("GPG-verschlüsselt", "GPG-encrypted"));
+            return;
+        }
         try {
             String xml = de.spahr.ausgaben.export.KmyDocument.gunzip(raw);
             String badEncoding = de.spahr.ausgaben.export.KmyDocument.declaredNonUtf8Encoding(xml);

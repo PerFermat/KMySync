@@ -1071,4 +1071,24 @@
     <string name="news_all">Alle Neuigkeiten</string>
     <string name="news_settings_button">Neuigkeiten</string>
     <string name="news_version">Version %1$s</string>
+    <!-- GPG-verschlüsselte .kmy (KmyGpg) -->
+    <string name="kmy_gpg_no_key">Die Datei ist mit GPG verschlüsselt (Schlüssel %1$s), und für keinen davon ist ein privater Schlüssel hinterlegt. Bitte den passenden Schlüssel in den Profileinstellungen unter „GPG-Schlüssel“ einspielen.</string>
+    <string name="kmy_gpg_passphrase">Die Passphrase für den GPG-Schlüssel %1$s passt nicht. Bitte den Schlüssel in den Profileinstellungen neu einspielen.</string>
+    <string name="kmy_gpg_recipient_missing">Die Datei ist auch an den GPG-Schlüssel %1$s verschlüsselt, dessen öffentlicher Teil hier fehlt. Ohne ihn könnte dieser Empfänger die Datei nicht mehr öffnen. Es wurde nichts geschrieben. Bitte den öffentlichen Schlüssel in den Profileinstellungen unter „GPG-Schlüssel“ einspielen.</string>
+    <string name="kmy_gpg_broken">Die GPG-verschlüsselte Datei ist nicht lesbar: %1$s</string>
+    <string name="gpg_button">GPG-Schlüssel…</string>
+    <string name="gpg_none">Kein GPG-Schlüssel hinterlegt – nur nötig, wenn KMyMoney die Datei verschlüsselt.</string>
+    <string name="gpg_status">GPG: %1$s</string>
+    <string name="gpg_dialog_title">GPG-Schlüssel</string>
+    <string name="gpg_import">Schlüssel einspielen</string>
+    <string name="gpg_add">Weiteren einspielen</string>
+    <string name="gpg_remove">Alle entfernen</string>
+    <string name="gpg_private">privat</string>
+    <string name="gpg_public">öffentlich</string>
+    <string name="gpg_passphrase_title">Passphrase des privaten Schlüssels</string>
+    <string name="gpg_passphrase_wrong">Die Passphrase passt nicht zum Schlüssel. Es wurde nichts übernommen.</string>
+    <string name="gpg_file_unreadable">In der Datei steht kein lesbarer OpenPGP-Schlüssel.</string>
+    <string name="gpg_saved">GPG-Schlüssel übernommen.</string>
+    <string name="gpg_removed">GPG-Schlüssel entfernt.</string>
+    <string name="gpg_remove_confirm">Alle GPG-Schlüssel dieses Profils entfernen? Eine verschlüsselte Datei lässt sich danach erst wieder lesen, wenn der Schlüssel neu eingespielt ist.</string>
 </resources>

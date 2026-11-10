@@ -2020,6 +2020,28 @@
       ]
     },
     {
+      "type": "h2",
+      "id": "b-0171g0",
+      "text": "Verschlüsselte KMyMoney-Datei (GPG)"
+    },
+    {
+      "type": "p",
+      "id": "b-0171g1",
+      "text": "KMyMoney kann die .kmy-Datei mit GPG verschlüsseln (<b>Einstellungen → KMyMoney einrichten → Verschlüsselung</b>). Die App liest und schreibt eine solche Datei, sobald der passende <b>private Schlüssel</b> im Profil hinterlegt ist: Profileinstellungen, Abschnitt Synchronisierung unter dem Pfad der .kmy, Knopf <b>«GPG-Schlüssel…»</b>. Ohne Schlüssel meldet die App beim Import, an welchen Schlüssel die Datei verschlüsselt ist."
+    },
+    {
+      "type": "bullets",
+      "id": "b-0171g2",
+      "items": [
+        "<b>Schlüssel ausführen</b> (am Rechner): <b>gpg --export-secret-keys --armor &lt;Schlüssel-ID&gt; &gt; handy.asc</b>. Die Datei aufs Handy bringen, über «GPG-Schlüssel…» einspielen und die Passphrase einmal eingeben; die App prüft sie gleich. Danach die Datei vom Handy wieder löschen.",
+        "<b>Ein eigener Schlüssel fürs Handy</b> ist die sicherere Wahl: In KMyMoney lässt sich die Datei zusätzlich an weitere Schlüssel verschlüsseln. Dann liegt auf dem Handy nie der Hauptschlüssel, und geht das Handy verloren, wird nur dieser eine Schlüssel widerrufen.",
+        "<b>Weitere Empfänger</b>: Ist die Datei an mehrere Schlüssel verschlüsselt, schreibt die App sie wieder an genau dieselben zurück. Dafür braucht sie von jedem den <b>öffentlichen</b> Schlüssel (<b>gpg --export --armor &lt;ID&gt;</b>, einspielen über «Weiteren einspielen»). Fehlt einer, schreibt die App nichts – sonst könnte dieser Empfänger, etwa KMyMoney am Rechner, die Datei nicht mehr öffnen.",
+        "Auch der <b>Wiederherstellungsschlüssel</b> von KMyMoney («Verschlüsseln mit Wiederherstellungsschlüssel») ist so ein weiterer Empfänger; seinen öffentlichen Schlüssel spielen Sie bei Bedarf genauso ein.",
+        "<b>Passphrase</b>: Sie liegt zusammen mit den Schlüsseln verschlüsselt auf dem Gerät (Android-Schlüsselspeicher), wie das Server-Passwort, und wird nicht bei jedem Import abgefragt. Alle privaten Schlüssel eines Profils brauchen dieselbe Passphrase. Wer das Handy zusätzlich schützen will, schaltet die <b>biometrische Sperre</b> ein (Sicherheit &amp; Datenschutz).",
+        "Die Schlüssel stehen in keiner Sicherung; nach einem Gerätewechsel spielen Sie sie neu ein."
+      ]
+    },
+    {
       "type": "h1",
       "id": "b-0173",
       "text": "19. Wear OS (Uhr)"

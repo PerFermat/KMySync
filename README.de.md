@@ -104,7 +104,8 @@ stehen im **[Benutzerhandbuch](docs/Handbuch-KMySync-de.pdf)**.
 - **Synchronisierung** – Nextcloud/WebDAV/SMB, `.kmy`-Modus (direktes Lesen und Schreiben der
   KMyMoney-Datei) oder CSV; automatische Sicherung vor jedem Export. Nachträglich geänderte Buchungen
   werden in der Datei geändert statt doppelt angelegt. Die **Stichwörter** aus KMyMoney werden gelesen,
-  bearbeitet, gefiltert und zurückgeschrieben.
+  bearbeitet, gefiltert und zurückgeschrieben. Eine von KMyMoney **mit GPG verschlüsselte** `.kmy` wird mit
+  einem im Profil hinterlegten Schlüssel gelesen und an dieselben Empfänger zurückgeschrieben.
 - **Wear OS** – gesprochene Ausgabe direkt vom Handgelenk, auch offline; die Uhr nimmt nur den Text auf,
   gebucht wird auf dem Handy. Offline erfaßtes wird nachgereicht, ohne Verlust und ohne Dopplung.
 - **Sicherheit & Sicherung** – optionale biometrische Sperre, GPS standardmäßig aus, verschlüsselte

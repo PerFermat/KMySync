@@ -108,6 +108,14 @@ android {
                 }
                 it.outputs.upToDateWhen { false }
             }
+            // Von KMyMoney verschlüsselte Prüflinge, zu groß fürs Repo: ./gradlew … -Dkmy.gpg=/pfad/x.kmy
+            // (KmyGpgTest) bzw. -Dkmy.sqlcipher=/pfad/x.db (KmySqlCipherTest)
+            ['kmy.gpg', 'kmy.sqlcipher'].each { name ->
+                if (System.getProperty(name)) {
+                    it.systemProperty name, System.getProperty(name)
+                    it.outputs.upToDateWhen { false }
+                }
+            }
             // Ohne eigene Grenze erbt der Test-Worker die 2048 MB des Gradle-Daemons
             // (org.gradle.jvmargs) – zu knapp für BackupArchiveTest, der testweise ein
             // Gigabyte-Archiv entpackt (bricht bei 256 MB ab, aber ByteArrayOutputStream
@@ -151,13 +159,14 @@ dependencies {
     implementation libs.smbj
     implementation libs.slf4j.nop
 
-    // BouncyCastle für SMB (AES-CMAC) und PDF (verschlüsselte Dokumente). Alle drei Module müssen
-    // dieselbe Fassung haben – gemischte BouncyCastle-Versionen brechen zur Laufzeit. Deshalb hängen
-    // sie im Katalog an einem gemeinsamen version.ref: Ein Anheben kann gar nicht mehr nur zwei der
-    // drei treffen.
+    // BouncyCastle für SMB (AES-CMAC), PDF (verschlüsselte Dokumente) und GPG-verschlüsselte .kmy
+    // (OpenPGP, Modul pg). Alle Module müssen dieselbe Fassung haben – gemischte BouncyCastle-Versionen
+    // brechen zur Laufzeit. Deshalb hängen sie im Katalog an einem gemeinsamen version.ref: Ein
+    // Anheben kann gar nicht mehr nur einen Teil von ihnen treffen.
     implementation libs.bouncycastle.prov
     implementation libs.bouncycastle.pkix
     implementation libs.bouncycastle.util
+    implementation libs.bouncycastle.pg
 
     // Karten-Auswahl für Alias-Standort (OpenStreetMap, kein API-Key nötig).
     implementation libs.osmdroid

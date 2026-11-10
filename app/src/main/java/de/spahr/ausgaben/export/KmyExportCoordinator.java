@@ -252,8 +252,14 @@ public class KmyExportCoordinator {
             // die nachher hochgehen.
             KmyAenderungen aenderungen = KmyAenderungen.zusammen(
                     res.aenderungen, delRes.aenderungen, schedRes.aenderungen, secRes.aenderungen);
-            byte[] packed = KmyDocument.gzip(res.xml);
+            // Eine GPG-verschlüsselte Datei bekommt innen, was vorher darin stand: KMyMoney legt reines
+            // XML hinein, kein gzip. Geprüft wird dieser Inhalt; verschlüsselt erst danach.
+            byte[] packed = doc.gpg() != null && !doc.gpg().innenGzip
+                    ? res.xml.getBytes(java.nio.charset.StandardCharsets.UTF_8) : KmyDocument.gzip(res.xml);
             KmyExportCheck.pruefen(doc.xml(), res.xml, packed, aenderungen);
+            if (doc.gpg() != null) {
+                packed = verschluesseln(appContext, packed, doc.gpg());
+            }
             if (doc.istDatenbank()) {
                 // Die geprüften Änderungen in die Tabellen übertragen. Hochgeladen wird die Datenbank,
                 // nicht das XML – und nur, wenn sie abgebildet genau die geprüfte Fassung ergibt.
@@ -353,6 +359,32 @@ public class KmyExportCoordinator {
             String msg = e.getMessage() == null ? e.toString() : e.getMessage();
             return Outcome.failed(r.getString(de.spahr.ausgaben.R.string.export_failed, msg));
         }
+    }
+
+    /**
+     * Verschlüsselt den geprüften Inhalt in der Hülle der gelesenen Datei – und liest das Ergebnis
+     * gleich wieder: Nur was sich mit dem hinterlegten Schlüssel genau zu diesem Inhalt entschlüsseln
+     * lässt, geht auf den Server.
+     */
+    static byte[] verschluesseln(Context context, byte[] inhalt, KmyGpg.Huelle huelle)
+            throws java.io.IOException, KmyExportCheck.Failed {
+        KmyGpg.Schluessel s = KmyDocument.gpgSchluessel(context);
+        byte[] verschluesselt;
+        try {
+            verschluesselt = KmyGpg.verschluesseln(inhalt, huelle, s);
+        } catch (KmyGpg.Fehler e) {
+            throw KmyDocument.gpgMeldung(context, e);
+        }
+        byte[] zurueck;
+        try {
+            zurueck = KmyGpg.entschluesseln(verschluesselt, s).klar;
+        } catch (KmyGpg.Fehler e) {
+            throw new KmyExportCheck.Failed("verschlüsselte Datei nicht wieder lesbar", e);
+        }
+        if (!java.util.Arrays.equals(inhalt, zurueck)) {
+            throw new KmyExportCheck.Failed("verschlüsselte Datei weicht vom geprüften Inhalt ab");
+        }
+        return verschluesselt;
     }
 
     /**

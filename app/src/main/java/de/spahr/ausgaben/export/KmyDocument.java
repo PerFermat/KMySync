@@ -41,6 +41,8 @@ public class KmyDocument implements KmyAbsicht.Konten {
     private final String xml;
     /** Die Quelle ist eine KMyMoney-Datenbank: ihr Abbild samt Zustand; sonst {@code null}. */
     private final KmySqlite.Abbild sqlite;
+    /** Die Datei war GPG-verschlüsselt: ihre Hülle, in der der Export zurückschreibt; sonst {@code null}. */
+    private final KmyGpg.Huelle gpg;
     /** Lazy: alles hinter dem Hauptbuch, siehe {@link #xmlTail()}. */
     private String xmlTail;
 
@@ -127,6 +129,12 @@ public class KmyDocument implements KmyAbsicht.Konten {
     public KmyDocument(byte[] raw, android.content.Context context,
                        de.spahr.ausgaben.util.ProgressListener listener) throws IOException {
         this.ctx = de.spahr.ausgaben.i18n.LocaleManager.localizedContext(context);
+        // Eine GPG-verschlüsselte .kmy wird zuerst entschlüsselt; was darin steht, ist eine gewöhnliche.
+        KmyGpg.Ergebnis entschluesselt = KmyGpg.istVerschluesselt(raw) ? entschluesseln(context, raw) : null;
+        this.gpg = entschluesselt == null ? null : entschluesselt.huelle;
+        if (entschluesselt != null) {
+            raw = entschluesselt.klar;
+        }
         // Eine KMyMoney-Datenbank (SQLite) wird als das XML abgebildet, das KMyMoney aus denselben Daten
         // in eine .kmy schriebe – alles Weitere merkt keinen Unterschied. Siehe KmySqlite.
         this.sqlite = KmySqlite.istSqlite(raw) ? KmySqlite.abbilden(context, raw) : null;
@@ -249,6 +257,55 @@ public class KmyDocument implements KmyAbsicht.Konten {
         return sqlite != null;
     }
 
+    /** Die Hülle einer GPG-verschlüsselten Datei; {@code null}, wenn sie unverschlüsselt war. */
+    public KmyGpg.Huelle gpg() {
+        return gpg;
+    }
+
+    /** Die GPG-Schlüssel des aktiven Profils; {@code null}, wenn keine hinterlegt sind. */
+    static KmyGpg.Schluessel gpgSchluessel(android.content.Context context) throws IOException {
+        de.spahr.ausgaben.settings.SettingsStore st = new de.spahr.ausgaben.settings.SettingsStore(context);
+        String text = st.getGpgKeys();
+        if (text.isEmpty()) {
+            return null;
+        }
+        try {
+            return KmyGpg.Schluessel.aus(text, st.getGpgPassphrase());
+        } catch (KmyGpg.Fehler e) {
+            throw gpgMeldung(context, e);
+        }
+    }
+
+    /** Entschlüsselt mit den Schlüsseln des Profils; wirft mit verständlicher Meldung. */
+    static KmyGpg.Ergebnis entschluesseln(android.content.Context context, byte[] raw) throws IOException {
+        try {
+            return KmyGpg.entschluesseln(raw, gpgSchluessel(context));
+        } catch (KmyGpg.Fehler e) {
+            throw gpgMeldung(context, e);
+        }
+    }
+
+    /** Was bei GPG schiefging, als Meldung für den Nutzer – mit dem Fehler als Ursache. */
+    static IOException gpgMeldung(android.content.Context context, KmyGpg.Fehler e) {
+        android.content.Context r = de.spahr.ausgaben.i18n.LocaleManager.localizedContext(context);
+        String ids = android.text.TextUtils.join(", ", e.schluessel);
+        String text;
+        switch (e.art) {
+            case KEIN_SCHLUESSEL:
+                text = r.getString(de.spahr.ausgaben.R.string.kmy_gpg_no_key, ids);
+                break;
+            case PASSPHRASE:
+                text = r.getString(de.spahr.ausgaben.R.string.kmy_gpg_passphrase, ids);
+                break;
+            case EMPFAENGER_FEHLT:
+                text = r.getString(de.spahr.ausgaben.R.string.kmy_gpg_recipient_missing, ids);
+                break;
+            default:
+                text = r.getString(de.spahr.ausgaben.R.string.kmy_gpg_broken, e.getMessage());
+        }
+        return new IOException(text, e);
+    }
+
     /** Zustand der Datenbank (Schema-Version, geöffnet von, Schreibvorgang offen); {@code null} bei .kmy. */
     public KmySqlite.Abbild datenbank() {
         return sqlite;
@@ -260,6 +317,9 @@ public class KmyDocument implements KmyAbsicht.Konten {
      * nach dem Export etwa.
      */
     public static String alsXml(android.content.Context context, byte[] raw) throws IOException {
+        if (KmyGpg.istVerschluesselt(raw)) {
+            raw = entschluesseln(context, raw).klar;
+        }
         return KmySqlite.istSqlite(raw) ? KmySqlite.abbilden(context, raw).xml : gunzip(raw);
     }
 

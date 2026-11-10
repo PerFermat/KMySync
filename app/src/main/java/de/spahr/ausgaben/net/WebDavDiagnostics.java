@@ -337,6 +337,11 @@ public final class WebDavDiagnostics {
             log.fail(grundMitDeutung(e, ""));
             return;
         }
+        if (de.spahr.ausgaben.export.KmyGpg.istVerschluesselt(raw)) {
+            // Was darin steht, sieht erst der Import mit dem hinterlegten Schlüssel.
+            log.ok(t("GPG-verschlüsselt", "GPG-encrypted"));
+            return;
+        }
         try {
             String kmyXml = de.spahr.ausgaben.export.KmyDocument.gunzip(raw);
             String badEncoding = de.spahr.ausgaben.export.KmyDocument.declaredNonUtf8Encoding(kmyXml);
