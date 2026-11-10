@@ -141,6 +141,8 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
     private String selectedExportMode = SettingsStore.MODE_CSV;
     /** Zur gewählten Speicherart: ist die Quelle eine KMyMoney-Datenbank (SQLite)? Siehe {@link ExportFormat}. */
     private boolean selectedDatabase;
+    /** Schlüssel bzw. Passwort einer verschlüsselten KMyMoney-Datei. */
+    private EncryptionFields verschluesselung;
 
     // ---- Weitere Profil-Einstellungen (Währung, Dividenden, Budget, Standardkonto, Orte, Alias) ----
     private MaterialAutoCompleteTextView editDefaultAccount;
@@ -315,9 +317,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
      * nicht mehr anmelden.</p>
      */
     private void setupLaunchers() {
-        new GpgKeysController(this, settings, findViewById(R.id.btnGpgKeys), findViewById(R.id.gpgStatus));
-        new DbPasswordController(this, settings, findViewById(R.id.btnDbPassword),
-                findViewById(R.id.dbPasswordStatus));
+        verschluesselung = new EncryptionFields(this, settings);
         csvLauncher = registerForActivityResult(
                 new ActivityResultContracts.OpenDocument(), uri -> {
                     if (uri != null) {
@@ -481,13 +481,9 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         findViewById(R.id.btnKmyChanges).setVisibility(kmy ? View.VISIBLE : View.GONE);
         // Sicherungen legt nur an, wer die Datei schreibt.
         findViewById(R.id.kmyBackupKeepLayout).setVisibility(kmy ? View.VISIBLE : View.GONE);
-        // Verschlüsselt wird die .kmy mit GPG, die Datenbank mit einem Passwort (SQLCipher).
-        int gpg = kmySource && !selectedDatabase ? View.VISIBLE : View.GONE;
-        int db = kmySource && selectedDatabase ? View.VISIBLE : View.GONE;
-        findViewById(R.id.btnGpgKeys).setVisibility(gpg);
-        findViewById(R.id.gpgStatus).setVisibility(gpg);
-        findViewById(R.id.btnDbPassword).setVisibility(db);
-        findViewById(R.id.dbPasswordStatus).setVisibility(db);
+        if (verschluesselung != null) {
+            verschluesselung.sichtbarkeit(kmySource, selectedDatabase);
+        }
     }
 
     /** Dropdown „CSV-Trennzeichen" (nur im CSV-Block sichtbar): Semikolon (Standard) oder Komma. */
@@ -1199,6 +1195,11 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
         final String msg = syncFields.serverError(e);
         post(() -> {
             hideImportStatus();
+            // Fehlt nur Schlüssel oder Passwort der verschlüsselten Datei: gleich danach fragen und den
+            // Import dann noch einmal starten.
+            if (verschluesselung.nachFehler(e, this::importAccounts)) {
+                return;
+            }
             Toast.makeText(this, getString(R.string.import_failed, msg), Toast.LENGTH_LONG).show();
         });
     }

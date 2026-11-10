@@ -1065,9 +1065,9 @@
     <string name="news_settings_button">Novedades</string>
     <string name="news_version">Versión %1$s</string>
     <!-- GPG-verschlüsselte .kmy (KmyGpg) -->
-    <string name="kmy_gpg_no_key">El archivo está cifrado con GPG (clave %1$s) y no hay ninguna clave privada guardada para ellas. Importa la clave correspondiente en los ajustes del perfil, en «Claves GPG».</string>
-    <string name="kmy_gpg_passphrase">La frase de contraseña de la clave GPG %1$s no coincide. Vuelve a importar la clave en los ajustes del perfil.</string>
-    <string name="kmy_gpg_recipient_missing">El archivo también está cifrado para la clave GPG %1$s, cuya parte pública falta aquí. Sin ella, ese destinatario ya no podría abrir el archivo. No se ha escrito nada. Importa la clave pública en los ajustes del perfil, en «Claves GPG».</string>
+    <string name="kmy_gpg_no_key">El archivo está cifrado con GPG (clave %1$s) y no hay ninguna clave privada guardada para ellas. Importa la clave correspondiente en «Claves GPG…».</string>
+    <string name="kmy_gpg_passphrase">La frase de contraseña de la clave GPG %1$s no coincide. Vuelve a importar la clave en «Claves GPG…».</string>
+    <string name="kmy_gpg_recipient_missing">El archivo también está cifrado para la clave GPG %1$s, cuya parte pública falta aquí. Sin ella, ese destinatario ya no podría abrir el archivo. No se ha escrito nada. Importa la clave pública en «Claves GPG…».</string>
     <string name="kmy_gpg_broken">No se puede leer el archivo cifrado con GPG: %1$s</string>
     <string name="gpg_button">Claves GPG…</string>
     <string name="gpg_none">No hay ninguna clave GPG guardada; solo hace falta si KMyMoney cifra el archivo.</string>
@@ -1085,8 +1085,8 @@
     <string name="gpg_removed">Claves GPG quitadas.</string>
     <string name="gpg_remove_confirm">¿Quitar todas las claves GPG de este perfil? Después, un archivo cifrado solo podrá leerse de nuevo cuando se vuelva a importar la clave.</string>
     <!-- Mit SQLCipher verschlüsselte KMyMoney-Datenbank (KmySqlCipher) -->
-    <string name="kmy_sqlcipher_no_password">El archivo no es ni un .kmy ni una base de datos sin cifrar. Si es una base de datos de KMyMoney cifrada con SQLCipher, guarda su contraseña en los ajustes del perfil, en «Contraseña de la base de datos».</string>
-    <string name="kmy_sqlcipher_wrong">La base de datos cifrada no se puede abrir con la contraseña guardada (%1$s). Comprueba la contraseña en los ajustes del perfil.</string>
+    <string name="kmy_sqlcipher_no_password">El archivo no es ni un .kmy ni una base de datos sin cifrar. Si es una base de datos de KMyMoney cifrada con SQLCipher, guarda su contraseña en «Contraseña de la base de datos…».</string>
+    <string name="kmy_sqlcipher_wrong">La base de datos cifrada no se puede abrir con la contraseña guardada (%1$s). Comprueba la contraseña en «Contraseña de la base de datos…».</string>
     <string name="db_password_button">Contraseña de la base de datos…</string>
     <string name="db_password_none">No hay ninguna contraseña guardada; solo hace falta si KMyMoney cifra la base de datos (SQLCipher).</string>
     <string name="db_password_set">Contraseña de la base de datos cifrada guardada.</string>

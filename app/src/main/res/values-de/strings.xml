@@ -1072,9 +1072,9 @@
     <string name="news_settings_button">Neuigkeiten</string>
     <string name="news_version">Version %1$s</string>
     <!-- GPG-verschlüsselte .kmy (KmyGpg) -->
-    <string name="kmy_gpg_no_key">Die Datei ist mit GPG verschlüsselt (Schlüssel %1$s), und für keinen davon ist ein privater Schlüssel hinterlegt. Bitte den passenden Schlüssel in den Profileinstellungen unter „GPG-Schlüssel“ einspielen.</string>
-    <string name="kmy_gpg_passphrase">Die Passphrase für den GPG-Schlüssel %1$s passt nicht. Bitte den Schlüssel in den Profileinstellungen neu einspielen.</string>
-    <string name="kmy_gpg_recipient_missing">Die Datei ist auch an den GPG-Schlüssel %1$s verschlüsselt, dessen öffentlicher Teil hier fehlt. Ohne ihn könnte dieser Empfänger die Datei nicht mehr öffnen. Es wurde nichts geschrieben. Bitte den öffentlichen Schlüssel in den Profileinstellungen unter „GPG-Schlüssel“ einspielen.</string>
+    <string name="kmy_gpg_no_key">Die Datei ist mit GPG verschlüsselt (Schlüssel %1$s), und für keinen davon ist ein privater Schlüssel hinterlegt. Bitte den passenden Schlüssel unter „GPG-Schlüssel…“ einspielen.</string>
+    <string name="kmy_gpg_passphrase">Die Passphrase für den GPG-Schlüssel %1$s passt nicht. Bitte den Schlüssel unter „GPG-Schlüssel…“ neu einspielen.</string>
+    <string name="kmy_gpg_recipient_missing">Die Datei ist auch an den GPG-Schlüssel %1$s verschlüsselt, dessen öffentlicher Teil hier fehlt. Ohne ihn könnte dieser Empfänger die Datei nicht mehr öffnen. Es wurde nichts geschrieben. Bitte den öffentlichen Schlüssel unter „GPG-Schlüssel…“ einspielen.</string>
     <string name="kmy_gpg_broken">Die GPG-verschlüsselte Datei ist nicht lesbar: %1$s</string>
     <string name="gpg_button">GPG-Schlüssel…</string>
     <string name="gpg_none">Kein GPG-Schlüssel hinterlegt – nur nötig, wenn KMyMoney die Datei verschlüsselt.</string>
@@ -1092,8 +1092,8 @@
     <string name="gpg_removed">GPG-Schlüssel entfernt.</string>
     <string name="gpg_remove_confirm">Alle GPG-Schlüssel dieses Profils entfernen? Eine verschlüsselte Datei lässt sich danach erst wieder lesen, wenn der Schlüssel neu eingespielt ist.</string>
     <!-- Mit SQLCipher verschlüsselte KMyMoney-Datenbank (KmySqlCipher) -->
-    <string name="kmy_sqlcipher_no_password">Die Datei ist weder eine .kmy noch eine unverschlüsselte Datenbank. Ist sie eine mit SQLCipher verschlüsselte KMyMoney-Datenbank, bitte das Passwort in den Profileinstellungen unter „Datenbank-Passwort“ hinterlegen.</string>
-    <string name="kmy_sqlcipher_wrong">Die verschlüsselte Datenbank lässt sich mit dem hinterlegten Passwort nicht öffnen (%1$s). Bitte das Passwort in den Profileinstellungen prüfen.</string>
+    <string name="kmy_sqlcipher_no_password">Die Datei ist weder eine .kmy noch eine unverschlüsselte Datenbank. Ist sie eine mit SQLCipher verschlüsselte KMyMoney-Datenbank, bitte das Passwort unter „Datenbank-Passwort…“ hinterlegen.</string>
+    <string name="kmy_sqlcipher_wrong">Die verschlüsselte Datenbank lässt sich mit dem hinterlegten Passwort nicht öffnen (%1$s). Bitte das Passwort unter „Datenbank-Passwort…“ prüfen.</string>
     <string name="db_password_button">Datenbank-Passwort…</string>
     <string name="db_password_none">Kein Passwort hinterlegt – nur nötig, wenn KMyMoney die Datenbank verschlüsselt (SQLCipher).</string>
     <string name="db_password_set">Passwort für die verschlüsselte Datenbank hinterlegt.</string>

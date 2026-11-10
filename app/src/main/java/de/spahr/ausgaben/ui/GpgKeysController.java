@@ -42,6 +42,8 @@ final class GpgKeysController {
     private final SettingsStore settings;
     private final TextView status;
     private final ActivityResultLauncher<String[]> waehlen;
+    /** Läuft, nachdem Schlüssel übernommen wurden – etwa der Import, der an ihnen gescheitert war. */
+    private Runnable danach;
 
     /** Muss in {@code onCreate} entstehen – dort registriert er die Dateiauswahl. */
     GpgKeysController(AppCompatActivity activity, SettingsStore settings, View knopf, TextView status) {
@@ -54,7 +56,7 @@ final class GpgKeysController {
                         eingelesen(uri);
                     }
                 });
-        knopf.setOnClickListener(v -> zeigen());
+        knopf.setOnClickListener(v -> oeffnen(null));
         aktualisieren();
     }
 
@@ -88,6 +90,12 @@ final class GpgKeysController {
         String wer = i.benutzer.isEmpty() ? "" : i.benutzer + " ";
         return wer + "(" + i.keyId + ", "
                 + activity.getString(i.privat ? R.string.gpg_private : R.string.gpg_public) + ")";
+    }
+
+    /** Wie der Knopf; {@code danach} läuft, sobald ein Schlüssel übernommen ist. */
+    void oeffnen(Runnable danach) {
+        this.danach = danach;
+        zeigen();
     }
 
     private void zeigen() {
@@ -191,5 +199,10 @@ final class GpgKeysController {
         settings.setGpg(schluessel, passphrase);
         aktualisieren();
         Toast.makeText(activity, R.string.gpg_saved, Toast.LENGTH_SHORT).show();
+        Runnable weiter = danach;
+        danach = null;
+        if (weiter != null) {
+            weiter.run();
+        }
     }
 }

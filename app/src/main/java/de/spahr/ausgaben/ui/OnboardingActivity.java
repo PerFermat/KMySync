@@ -137,6 +137,8 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
     private String selectedExportMode = SettingsStore.MODE_CSV;
     /** Zur gewählten Speicherart: ist die Quelle eine KMyMoney-Datenbank (SQLite)? Siehe {@link ExportFormat}. */
     private boolean selectedDatabase;
+    /** Schlüssel bzw. Passwort einer verschlüsselten KMyMoney-Datei – wie in den Profileinstellungen. */
+    private EncryptionFields verschluesselung;
 
     // ---- Standardkonto ----
     private MaterialAutoCompleteTextView editDefaultAccount;
@@ -212,6 +214,8 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
         editDefaultAccount.setText(settings.getDefaultAccount(), false);
         repository.getAccountNames(names -> PickerAdapters.accounts(repository, editDefaultAccount, names));
 
+        verschluesselung = new EncryptionFields(this, settings);
+        applyExportModeVisibility();
         csvLauncher = registerForActivityResult(
                 new ActivityResultContracts.OpenDocument(), uri -> {
                     if (uri != null) {
@@ -385,6 +389,9 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
         // aus der .kmy-Datei, der Ordner wäre dort ohne Bedeutung.
         findViewById(R.id.importFolderGroup).setVisibility(
                 SettingsStore.MODE_CSV.equals(selectedExportMode) ? View.VISIBLE : View.GONE);
+        if (verschluesselung != null) {
+            verschluesselung.sichtbarkeit(kmySource, selectedDatabase);
+        }
     }
 
     /** Dropdown „CSV-Trennzeichen" (nur im CSV-Block sichtbar): Semikolon (Standard) oder Komma. */
@@ -863,6 +870,11 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
         final String msg = syncFields.serverError(e);
         post(() -> {
             hideImportStatus();
+            // Fehlt nur Schlüssel oder Passwort der verschlüsselten Datei: gleich danach fragen und den
+            // Import dann noch einmal starten.
+            if (verschluesselung.nachFehler(e, this::importAccounts)) {
+                return;
+            }
             Toast.makeText(this, getString(R.string.import_failed, msg), Toast.LENGTH_LONG).show();
         });
     }

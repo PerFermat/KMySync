@@ -352,6 +352,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="@string/kmy_browse" />
+
+                <include layout="@layout/include_kmy_encryption" />
             </LinearLayout>
 
             <com.google.android.material.button.MaterialButton

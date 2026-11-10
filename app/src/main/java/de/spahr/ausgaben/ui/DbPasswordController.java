@@ -29,7 +29,7 @@ final class DbPasswordController {
         this.activity = activity;
         this.settings = settings;
         this.status = status;
-        knopf.setOnClickListener(v -> fragen());
+        knopf.setOnClickListener(v -> fragen(null));
         aktualisieren();
     }
 
@@ -37,7 +37,8 @@ final class DbPasswordController {
         status.setText(settings.getDbPassword().isEmpty() ? R.string.db_password_none : R.string.db_password_set);
     }
 
-    private void fragen() {
+    /** Fragt nach dem Passwort; {@code danach} läuft, sobald eins gespeichert ist. */
+    void fragen(Runnable danach) {
         TextInputLayout rahmen = new TextInputLayout(activity);
         rahmen.setHint(activity.getString(R.string.db_password_hint));
         rahmen.setEndIconMode(TextInputLayout.END_ICON_PASSWORD_TOGGLE);
@@ -61,6 +62,9 @@ final class DbPasswordController {
                     settings.setDbPassword(pw);
                     aktualisieren();
                     Toast.makeText(activity, R.string.db_password_saved, Toast.LENGTH_SHORT).show();
+                    if (danach != null) {
+                        danach.run();
+                    }
                 })
                 .setNegativeButton(android.R.string.cancel, null);
         if (!settings.getDbPassword().isEmpty()) {

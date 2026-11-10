@@ -1106,9 +1106,9 @@
     <string name="news_settings_button">News</string>
     <string name="news_version">Version %1$s</string>
     <!-- GPG-verschlüsselte .kmy (KmyGpg) -->
-    <string name="kmy_gpg_no_key">The file is GPG-encrypted (key %1$s), and no private key is stored for any of them. Please import the matching key in the profile settings under “GPG keys”.</string>
-    <string name="kmy_gpg_passphrase">The passphrase for GPG key %1$s does not match. Please import the key again in the profile settings.</string>
-    <string name="kmy_gpg_recipient_missing">The file is also encrypted to GPG key %1$s, whose public part is missing here. Without it, that recipient could no longer open the file. Nothing was written. Please import the public key in the profile settings under “GPG keys”.</string>
+    <string name="kmy_gpg_no_key">The file is GPG-encrypted (key %1$s), and no private key is stored for any of them. Please import the matching key under “GPG keys…”.</string>
+    <string name="kmy_gpg_passphrase">The passphrase for GPG key %1$s does not match. Please import the key again under “GPG keys…”.</string>
+    <string name="kmy_gpg_recipient_missing">The file is also encrypted to GPG key %1$s, whose public part is missing here. Without it, that recipient could no longer open the file. Nothing was written. Please import the public key under “GPG keys…”.</string>
     <string name="kmy_gpg_broken">The GPG-encrypted file cannot be read: %1$s</string>
     <string name="gpg_button">GPG keys…</string>
     <string name="gpg_none">No GPG key stored – only needed if KMyMoney encrypts the file.</string>
@@ -1126,8 +1126,8 @@
     <string name="gpg_removed">GPG keys removed.</string>
     <string name="gpg_remove_confirm">Remove all GPG keys of this profile? An encrypted file can then only be read again once the key is imported again.</string>
     <!-- Mit SQLCipher verschlüsselte KMyMoney-Datenbank (KmySqlCipher) -->
-    <string name="kmy_sqlcipher_no_password">The file is neither a .kmy nor an unencrypted database. If it is a KMyMoney database encrypted with SQLCipher, please store its password in the profile settings under “Database password”.</string>
-    <string name="kmy_sqlcipher_wrong">The encrypted database cannot be opened with the stored password (%1$s). Please check the password in the profile settings.</string>
+    <string name="kmy_sqlcipher_no_password">The file is neither a .kmy nor an unencrypted database. If it is a KMyMoney database encrypted with SQLCipher, please store its password under “Database password…”.</string>
+    <string name="kmy_sqlcipher_wrong">The encrypted database cannot be opened with the stored password (%1$s). Please check the password under “Database password…”.</string>
     <string name="db_password_button">Database password…</string>
     <string name="db_password_none">No password stored – only needed if KMyMoney encrypts the database (SQLCipher).</string>
     <string name="db_password_set">Password for the encrypted database stored.</string>

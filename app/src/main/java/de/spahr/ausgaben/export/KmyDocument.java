@@ -291,7 +291,9 @@ public class KmyDocument implements KmyAbsicht.Konten {
         android.content.Context r = de.spahr.ausgaben.i18n.LocaleManager.localizedContext(context);
         String passwort = new de.spahr.ausgaben.settings.SettingsStore(context).getDbPassword();
         if (passwort.isEmpty()) {
-            throw new IOException(r.getString(de.spahr.ausgaben.R.string.kmy_sqlcipher_no_password));
+            // Die Ursache sagt der Oberfläche, dass nur das Passwort fehlt – sie fragt dann gleich danach.
+            throw new IOException(r.getString(de.spahr.ausgaben.R.string.kmy_sqlcipher_no_password),
+                    new KmySqlCipher.Fehler("kein Passwort hinterlegt", null));
         }
         try {
             return KmySqlCipher.entschluesseln(raw, passwort);

@@ -153,6 +153,8 @@ public class KmySqlCipherTest {
             fail();
         } catch (IOException e) {
             assertTrue(e.getMessage(), e.getMessage().contains("SQLCipher"));
+            // Daran erkennt die Oberfläche, dass sie nach dem Passwort fragen soll.
+            assertTrue(e.getCause() instanceof KmySqlCipher.Fehler);
         }
         new SettingsStore(ctx).setDbPassword("falsch");
         try {

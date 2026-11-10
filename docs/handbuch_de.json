@@ -195,7 +195,7 @@
           "items": [
             "<b>Sprache</b> wählen (wirkt sofort).",
             "<b>Import-/Export-Format</b>: CSV, «.kmy lesen, CSV exportieren», KMyMoney-Datei (.kmy), KMyMoney-Datenbank (SQLite) oder «SQLite-Datenbank lesen, CSV exportieren».",
-            "<b>Synchronisierung</b>: Server-Typ, URL, Benutzer, Passwort – mit <b>«Verbindung testen»</b>; im .kmy-Modus zusätzlich <b>«.kmy auswählen»</b>.",
+            "<b>Synchronisierung</b>: Server-Typ, URL, Benutzer, Passwort – mit <b>«Verbindung testen»</b>; im .kmy-Modus zusätzlich <b>«.kmy auswählen»</b>. Ist die Datei verschlüsselt, spielen Sie hier auch gleich den <b>GPG-Schlüssel</b> ein bzw. hinterlegen das <b>Datenbank-Passwort</b> (Kapitel 18); fehlt es, fragt die App beim Import danach.",
             "<b>«Konten importieren»</b>: derselbe Auswahldialog wie bei «Konto hinzufügen», direkt hier im Assistenten.",
             "<b>«Fertig»</b> schließt den Assistenten. Alle weiteren Einstellungen erreichen Sie danach jederzeit über das Menü."
           ]

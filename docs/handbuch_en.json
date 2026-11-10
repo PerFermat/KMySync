@@ -195,7 +195,7 @@
           "items": [
             "Choose the <b>language</b> (takes effect immediately).",
             "<b>Import/export format</b>: CSV, «Read .kmy, export CSV», KMyMoney file (.kmy), KMyMoney database (SQLite) or «Read SQLite database, export CSV».",
-            "<b>Synchronisation</b>: server type, URL, user, password – with <b>«Test connection»</b>; in .kmy mode also <b>«Choose .kmy»</b>.",
+            "<b>Synchronisation</b>: server type, URL, user, password – with <b>«Test connection»</b>; in .kmy mode also <b>«Choose .kmy»</b>. If the file is encrypted, import the <b>GPG key</b> or store the <b>database password</b> right here as well (chapter 18); if it is missing, the app asks for it during the import.",
             "<b>«Import accounts»</b>: the same selection dialog as «Add account», right here in the assistant.",
             "<b>«Done»</b> closes the assistant. All further settings can be reached at any time from the menu afterwards."
           ]
