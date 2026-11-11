@@ -25,7 +25,6 @@
     {"title": "Reloj: beneficiarios cercanos", "text": "En el reloj se puede elegir el beneficiario entre los lugares cercanos."}
   ]},
   {"version": "2.0", "code": 14, "items": [
-    {"title": "Nuevo nombre: KMySync", "text": "La app ahora se llama KMySync. Los datos, perfiles y ajustes se conservan."},
     {"title": "«Probar conexión» lo comprueba todo", "text": "Para Nextcloud, WebDAV y SMB la app comprueba toda la cadena hasta escribir, renombrar y borrar en la carpeta de destino, y si algo falla muestra un informe con el motivo."},
     {"title": "Compartir reglas de la cartera", "text": "Las reglas de reconocimiento aprendidas para los extractos en PDF se pueden compartir e importar en otro dispositivo."}
   ]},

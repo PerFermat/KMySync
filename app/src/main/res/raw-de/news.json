@@ -25,7 +25,6 @@
     {"title": "Uhr: Empfänger im Umkreis", "text": "Auf der Uhr lässt sich der Empfänger aus den Orten in der Nähe wählen."}
   ]},
   {"version": "2.0", "code": 14, "items": [
-    {"title": "Neuer Name: KMySync", "text": "Die App heißt jetzt KMySync. Daten, Profile und Einstellungen bleiben erhalten."},
     {"title": "„Verbindung testen“ prüft alles", "text": "Für Nextcloud, WebDAV und SMB prüft die App die ganze Kette bis zum Schreiben, Umbenennen und Löschen im Zielordner und zeigt bei Fehlern einen Bericht mit dem Grund."},
     {"title": "Depot-Regeln teilen", "text": "Gelernte Erkennungsregeln für PDF-Abrechnungen lassen sich weitergeben und auf einem anderen Gerät einspielen."}
   ]},

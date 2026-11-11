@@ -25,7 +25,6 @@
     {"title": "Watch: payees nearby", "text": "On the watch you can pick the payee from the places nearby."}
   ]},
   {"version": "2.0", "code": 14, "items": [
-    {"title": "New name: KMySync", "text": "The app is now called KMySync. Data, profiles and settings are kept."},
     {"title": "\"Test connection\" checks everything", "text": "For Nextcloud, WebDAV and SMB the app checks the whole chain up to writing, renaming and deleting in the target folder, and shows a report with the reason if something fails."},
     {"title": "Share portfolio rules", "text": "Learned recognition rules for PDF statements can be passed on and imported on another device."}
   ]},
