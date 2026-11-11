@@ -665,9 +665,9 @@ public class AnalysisActivity extends LocalizedActivity {
             };
 
     /**
-     * Blendet die Werte über den Balken aus, sobald der breiteste nicht mehr über seinen Balken passt –
-     * sonst schieben sich die Zahlen benachbarter Balken übereinander (große Jahresbeträge, viele
-     * Balken). Läuft nach dem Zeichnen und nach jedem Zoomen.
+     * Blendet die Werte über den Balken aus, sobald sich die Zahlen zweier benachbarter Balken berühren
+     * würden (große Jahresbeträge, viele Balken). Leere Perioden haben keinen Balken und keine Zahl,
+     * ihr Platz zählt mit. Läuft nach dem Zeichnen und nach jedem Zoomen.
      */
     private void updateBarValueVisibility() {
         if (chart.getData() == null || chart.getBarData() == null
@@ -678,11 +678,25 @@ public class AnalysisActivity extends LocalizedActivity {
         float perBar = chart.getViewPortHandler().contentWidth() / Math.max(1f, chart.getVisibleXRange());
         android.graphics.Paint paint = new android.graphics.Paint();
         paint.setTextSize(set.getValueTextSize());
-        float widest = 0;
-        for (int i = 0; i < set.getEntryCount(); i++) {
-            widest = Math.max(widest, paint.measureText(BAR_VALUES.getFormattedValue(set.getEntryForIndex(i).getY())));
+        // Nur was gerade zu sehen ist: Dichte Balken von vor Jahren dürfen die Zahlen von heute nicht
+        // mit ausblenden.
+        float von = chart.getLowestVisibleX() - 0.5f;
+        float bis = chart.getHighestVisibleX() + 0.5f;
+        boolean show = true;
+        float prevX = 0;
+        float prevHalf = -1;
+        for (int i = 0; i < set.getEntryCount() && show; i++) {
+            BarEntry e = set.getEntryForIndex(i);
+            if (e.getX() < von || e.getX() > bis) {
+                continue;
+            }
+            float half = paint.measureText(BAR_VALUES.getFormattedValue(e.getY())) / 2f;
+            if (prevHalf >= 0 && prevHalf + half > (e.getX() - prevX) * perBar * 0.95f) {
+                show = false;
+            }
+            prevX = e.getX();
+            prevHalf = half;
         }
-        boolean show = widest <= perBar * 0.95f;
         if (set.isDrawValuesEnabled() != show) {
             set.setDrawValues(show);
             chart.invalidate();
@@ -725,6 +739,7 @@ public class AnalysisActivity extends LocalizedActivity {
             @Override public void onChartScale(MotionEvent me, float sx, float sy) { }
             @Override public void onChartTranslate(MotionEvent me, float dx, float dy) {
                 updateScrollRightVisibility();
+                updateBarValueVisibility();
             }
         });
     }
