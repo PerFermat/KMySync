@@ -87,6 +87,12 @@ seit 2.4 nicht neu erzeugt (`python3 docs/build_manual_web.py`, dann `deploy-ser
   geordnet, dazu `b-0171g3`: Buchungen liegen in der App unverschlüsselt, App-Sperre empfohlen.
 - Verschlüsselung der App-Datenbank selbst verworfen: ginge nur mit nativer SQLCipher-Bibliothek, das
   will Michael nicht.
+- Aus „Offen“ erledigt: Depot bekommt den Geschlossen-Status schon beim ersten Import, und
+  `ensureDepotAccounts` öffnet beim Aktualisieren keine Depots mehr (`0644196`); Importfehler als
+  Dialog statt gekürztem Toast; Profileinstellungen zeigen den gewählten lokalen Ordner; die Wahl
+  Datei/Datenbank wird erst mit „Speichern“ übernommen (Schlüssel/Passwort bleiben sofort);
+  `androidx.security` ist entfernt. Offen bleibt: „Zurück führt in den Assistenten“ – im Code keine
+  Ursache gefunden, Michael liefert die Schritte.
 - Antwort an visionok in Issue #13 gepostet (ohne den Satz zur Warnung, die gab es da noch nicht), mit
   Bitte um Rückmeldung mit echten verschlüsselten Daten.
 
