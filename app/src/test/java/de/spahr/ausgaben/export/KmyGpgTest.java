@@ -232,4 +232,15 @@ public class KmyGpgTest {
         assertFalse(nurUnterschluessel(PASSPHRASE).hatPrivatenHauptschluessel());
         assertTrue(nurUnterschluessel(PASSPHRASE).hatPrivat());
     }
+
+    /** Die Statuszeile unterscheidet „privat“ und „privat (nur Unterschlüssel)“. */
+    @Test
+    public void beschreibungKenntDenUnterschluessel() throws Exception {
+        KmyGpg.Info ganz = schluessel().beschreibe().get(0);
+        assertTrue(ganz.privat);
+        assertFalse(ganz.nurUnterschluessel);
+        KmyGpg.Info unter = nurUnterschluessel(PASSPHRASE).beschreibe().get(0);
+        assertTrue(unter.privat);
+        assertTrue(unter.nurUnterschluessel);
+    }
 }

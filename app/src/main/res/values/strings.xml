@@ -1118,6 +1118,7 @@
     <string name="gpg_add">Import another</string>
     <string name="gpg_remove">Remove all</string>
     <string name="gpg_private">private</string>
+    <string name="gpg_private_subkey">private (subkey only)</string>
     <string name="gpg_public">public</string>
     <string name="gpg_passphrase_title">Passphrase of the private key</string>
     <string name="gpg_passphrase_wrong">The passphrase does not match the key. Nothing was stored.</string>

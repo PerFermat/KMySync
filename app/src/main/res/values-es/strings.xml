@@ -1077,6 +1077,7 @@
     <string name="gpg_add">Importar otra</string>
     <string name="gpg_remove">Quitar todas</string>
     <string name="gpg_private">privada</string>
+    <string name="gpg_private_subkey">privada (solo subclave)</string>
     <string name="gpg_public">pública</string>
     <string name="gpg_passphrase_title">Frase de contraseña de la clave privada</string>
     <string name="gpg_passphrase_wrong">La frase de contraseña no coincide con la clave. No se ha guardado nada.</string>

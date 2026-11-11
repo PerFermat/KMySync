@@ -144,11 +144,17 @@ public final class KmyGpg {
         public final String benutzer;
         /** Ob der private Teil hinterlegt ist – nur mit ihm lässt sich entschlüsseln. */
         public final boolean privat;
+        /**
+         * Privat ist nur der Unterschlüssel; der Hauptschlüssel ist ein leerer Platzhalter
+         * ({@code gpg --export-secret-subkeys … <ID>!}) – das empfohlene Mindestmaß fürs Handy.
+         */
+        public final boolean nurUnterschluessel;
 
-        Info(String keyId, String benutzer, boolean privat) {
+        Info(String keyId, String benutzer, boolean privat, boolean nurUnterschluessel) {
             this.keyId = keyId;
             this.benutzer = benutzer;
             this.privat = privat;
+            this.nurUnterschluessel = nurUnterschluessel;
         }
     }
 
@@ -202,12 +208,14 @@ public final class KmyGpg {
             Map<Long, Info> out = new LinkedHashMap<>();
             for (PGPSecretKeyRing r : geheim) {
                 PGPPublicKey haupt = r.getPublicKey();
-                out.put(haupt.getKeyID(), new Info(hex(haupt.getKeyID()), benutzer(haupt), true));
+                PGPSecretKey hauptGeheim = r.getSecretKey();
+                boolean nurUnter = hauptGeheim == null || hauptGeheim.isPrivateKeyEmpty();
+                out.put(haupt.getKeyID(), new Info(hex(haupt.getKeyID()), benutzer(haupt), true, nurUnter));
             }
             for (PGPPublicKeyRing r : oeffentlich) {
                 PGPPublicKey haupt = r.getPublicKey();
                 if (!out.containsKey(haupt.getKeyID())) {
-                    out.put(haupt.getKeyID(), new Info(hex(haupt.getKeyID()), benutzer(haupt), false));
+                    out.put(haupt.getKeyID(), new Info(hex(haupt.getKeyID()), benutzer(haupt), false, false));
                 }
             }
             return new ArrayList<>(out.values());

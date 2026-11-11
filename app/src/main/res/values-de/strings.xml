@@ -1084,6 +1084,7 @@
     <string name="gpg_add">Weiteren einspielen</string>
     <string name="gpg_remove">Alle entfernen</string>
     <string name="gpg_private">privat</string>
+    <string name="gpg_private_subkey">privat (nur Unterschlüssel)</string>
     <string name="gpg_public">öffentlich</string>
     <string name="gpg_passphrase_title">Passphrase des privaten Schlüssels</string>
     <string name="gpg_passphrase_wrong">Die Passphrase passt nicht zum Schlüssel. Es wurde nichts übernommen.</string>

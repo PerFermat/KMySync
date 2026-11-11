@@ -89,7 +89,8 @@ final class GpgKeysController {
     private String zeile(KmyGpg.Info i) {
         String wer = i.benutzer.isEmpty() ? "" : i.benutzer + " ";
         return wer + "(" + i.keyId + ", "
-                + activity.getString(i.privat ? R.string.gpg_private : R.string.gpg_public) + ")";
+                + activity.getString(!i.privat ? R.string.gpg_public
+                        : i.nurUnterschluessel ? R.string.gpg_private_subkey : R.string.gpg_private) + ")";
     }
 
     /** Wie der Knopf; {@code danach} läuft, sobald ein Schlüssel übernommen ist. */
