@@ -27,6 +27,8 @@
 
 # Persönliche KMyMoney-Datei (Testdaten, nicht einchecken)
 *.kmy
+# Sicherungskopien, die KMyMoney neben der Datei anlegt (michael.kmy.1~)
+*.kmy.*~
 docs/__pycache__/
 
 # Übersetzte Python-Zwischenstände der Werkzeuge

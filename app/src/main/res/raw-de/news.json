@@ -1,6 +1,7 @@
 [
   {"version": "2.5", "code": 20, "items": [
     {"title": "Lokaler Ordner als Sync-Ziel", "text": "Neben Nextcloud, WebDAV und SMB lässt sich ein Ordner auf dem Gerät wählen, etwa der Ordner einer Sync-App wie Syncthing. Darin wählst du die KMyMoney-Datei wie gewohnt; Export, Sicherungen und Belege laufen dort genauso."},
+    {"title": "Fremdwährung und Kursdatum", "text": "Wertpapiere und Konten in Fremdwährung rechnet die App mit den Devisenkursen aus KMyMoney in die Basiswährung um – so stimmen Depotsumme, Gesamtsumme und Vermögensverlauf. Die Depot-Ansicht zeigt zu jedem Kurs sein Datum."},
     {"title": "Datenbanken aus KMyMoney 5.2", "text": "Die App liest und beschreibt jetzt auch KMyMoney-Datenbanken (SQLite) aus KMyMoney 5.2, nicht nur aus 5.1. Budgets aus einer 5.2-Datenbank fehlten bisher ganz."},
     {"title": "GPG-verschlüsselte KMyMoney-Datei", "text": "Verschlüsselt KMyMoney die .kmy mit GPG, liest und schreibt die App sie jetzt mit einem in den Profileinstellungen hinterlegten Schlüssel („GPG-Schlüssel…“) – an dieselben Empfänger wie zuvor."},
     {"title": "Verschlüsselte KMyMoney-Datenbank", "text": "Auch eine mit SQLCipher verschlüsselte KMyMoney-Datenbank lässt sich jetzt lesen und beschreiben; das Passwort steht in den Profileinstellungen unter „Datenbank-Passwort…“."},

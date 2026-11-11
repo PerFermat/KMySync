@@ -1,6 +1,7 @@
 [
   {"version": "2.5", "code": 20, "items": [
     {"title": "Local folder as sync target", "text": "Besides Nextcloud, WebDAV and SMB you can choose a folder on the device, for example the folder of a sync app like Syncthing. Pick the KMyMoney file in it as usual; export, backups and receipts work there just the same."},
+    {"title": "Foreign currency and price date", "text": "Securities and accounts in a foreign currency are converted into the base currency using KMyMoney's exchange rates – so the portfolio total, the overall total and the net worth history add up. The portfolio view shows the date of each price."},
     {"title": "Databases from KMyMoney 5.2", "text": "The app now also reads and writes KMyMoney databases (SQLite) from KMyMoney 5.2, not only from 5.1. Budgets from a 5.2 database were missing entirely until now."},
     {"title": "GPG-encrypted KMyMoney file", "text": "If KMyMoney encrypts the .kmy with GPG, the app now reads and writes it with a key stored in the profile settings (“GPG keys…”) – to the same recipients as before."},
     {"title": "Encrypted KMyMoney database", "text": "A KMyMoney database encrypted with SQLCipher can now be read and written as well; the password goes into the profile settings under “Database password…”."},
