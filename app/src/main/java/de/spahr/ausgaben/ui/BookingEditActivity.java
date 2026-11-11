@@ -255,8 +255,10 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
             return false;
         }
         String key = counterAccount.trim().toLowerCase(Locale.ROOT);
+        // Gegen alle Konten prüfen, auch die geschlossenen: Eine Umbuchung auf ein geschlossenes
+        // Sparkonto ist keine Wertpapier-Buchung, nur weil das Konto nicht mehr auswählbar ist.
         return (knownSecurityNames != null && knownSecurityNames.contains(key))
-                || !knownAccountNames.contains(key);
+                || !allAccountNames.contains(key);
     }
 
     /** Ursprünglich gesprochener Empfänger (aus der Sprach-Erfassung) – für die Korrektur-Nachfrage. */
@@ -270,6 +272,8 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
     /** Nutzereingabe-Vorrang bei Alias-Umbuchung, siehe {@link #EXTRA_PRESET_TRANSFER_FROM_ACCOUNT}. */
     private String presetTransferFromAccount = "";
     private final Set<String> knownAccountNames = new HashSet<>();
+    /** Alle Konten (klein), auch geschlossene – für {@link #isSecurityCounterpart}. */
+    private final Set<String> allAccountNames = new HashSet<>();
 
     /** Alle Empfänger (alphabetisch) für die Vorschlagsliste; wird einmal aus der Datenbank geholt. */
     private List<String> payeeNames = new ArrayList<>();
@@ -418,6 +422,14 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
                 }
             }
             PickerAdapters.accounts(repository, names, editAccount, editAccountTo);
+        });
+        repository.getAllAccountNames(names -> {
+            allAccountNames.clear();
+            for (String name : names) {
+                if (name != null) {
+                    allAccountNames.add(name.trim().toLowerCase(Locale.ROOT));
+                }
+            }
             // Die Kontenliste entscheidet mit, ob dies eine Wertpapier-Buchung ist – sie kommt aus der
             // Datenbank und damit womöglich erst nach der Buchung.
             applyNotesOnlyIfNeeded();
@@ -979,7 +991,7 @@ public class BookingEditActivity extends LocalizedActivity implements HostedDial
      * weil erst beides zusammen die Frage beantwortet.</p>
      */
     private void applyNotesOnlyIfNeeded() {
-        if (notesOnly || readOnly || booking == null || knownAccountNames.isEmpty()) {
+        if (notesOnly || readOnly || booking == null || allAccountNames.isEmpty()) {
             return;
         }
         if (!booking.isTransfer) {
