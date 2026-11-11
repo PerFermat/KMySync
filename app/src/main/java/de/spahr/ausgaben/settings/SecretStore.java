@@ -31,7 +31,8 @@ import javax.crypto.spec.GCMParameterSpec;
  * <p>{@code androidx.security:security-crypto} steckte bis 2.0 auf {@code 1.1.0-alpha06} fest, und
  * die Bibliothek ist inzwischen abgekündigt – weitere Fassungen wird es nicht geben. Für das, was
  * diese App davon braucht, ist sie ohnehin überdimensioniert: Sie bringt Tink mit, um eine Handvoll
- * Zeichenketten zu schützen.</p>
+ * Zeichenketten zu schützen. Seit 2.5 ist sie ganz entfernt; wer von 2.0 oder älter direkt
+ * aktualisiert, gibt sein Server-Passwort einmal neu ein.</p>
  *
  * <h2>Aufbau</h2>
  *
@@ -70,7 +71,7 @@ public final class SecretStore implements SharedPreferences {
     /** Der Alias behält den Stamm „ausgaben": applicationId, Prefs und DB-Namen heißen weiterhin so. */
     private static final String KEY_ALIAS = "ausgaben_secret_key";
 
-    /** Die neue Datei. Der alte Name bleibt frei, damit die Übernahme beide nebeneinander sieht. */
+    /** Die Datei der Ablage; die alte {@code ausgaben_secret} von bis 2.0 wird nicht mehr gelesen. */
     public static final String FILE = "ausgaben_secret2";
 
     private static final String TRANSFORM = "AES/GCM/NoPadding";
@@ -87,21 +88,17 @@ public final class SecretStore implements SharedPreferences {
     }
 
     /**
-     * Die Ablage öffnen, den Schlüssel bei Bedarf anlegen und ein Passwort aus der alten
-     * {@code EncryptedSharedPreferences}-Datei einmalig übernehmen.
+     * Die Ablage öffnen und den Schlüssel bei Bedarf anlegen.
      *
      * @throws GeneralSecurityException wenn der Keystore den Schlüssel nicht liefert – der Aufrufer
      *         ({@code SettingsStore.createSecretPrefs}) entscheidet dann über Verwerfen und Rückfall
      */
     public static SharedPreferences open(Context context) throws Exception {
         Context app = context.getApplicationContext();
-        SecretStore store = new SecretStore(
-                app.getSharedPreferences(FILE, Context.MODE_PRIVATE), keystoreKey());
-        SecretMigration.uebernehmenFallsNoetig(app, store);
-        return store;
+        return new SecretStore(app.getSharedPreferences(FILE, Context.MODE_PRIVATE), keystoreKey());
     }
 
-    /** Für Tests: dieselbe Ablage mit einem eingespeisten Schlüssel, ohne Keystore und ohne Übernahme. */
+    /** Für Tests: dieselbe Ablage mit einem eingespeisten Schlüssel, ohne Keystore. */
     static SecretStore with(SharedPreferences raw, SecretKey key) {
         return new SecretStore(raw, key);
     }

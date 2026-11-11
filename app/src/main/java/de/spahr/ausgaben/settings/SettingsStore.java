@@ -16,8 +16,7 @@ public class SettingsStore {
 
     /**
      * Die Datei, die die Selbstheilung verwirft. Das ist die des {@link SecretStore} – <b>nicht</b>
-     * die alte {@code ausgaben_secret} von bis 2.0: Die räumt {@code SecretMigration} weg, sobald sie
-     * übernommen wurde, und würde hier fälschlich das letzte gelöscht, was das Passwort noch enthält.
+     * die alte {@code ausgaben_secret} von bis 2.0, die seit 2.5 nicht mehr gelesen wird.
      */
     private static final String SECRET_PREFS = SecretStore.FILE;
 

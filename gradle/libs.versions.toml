@@ -48,7 +48,6 @@ smbj = "0.13.0"
 slf4j = "2.0.9"
 osmdroid = "6.1.18"
 pdfbox = "2.0.27.0"
-securityCrypto = "1.1.0"
 biometric = "1.1.0"
 robolectric = "4.13"
 androidxTestCore = "1.7.0"
@@ -86,7 +85,6 @@ bouncycastle-pg = { module = "org.bouncycastle:bcpg-jdk18on", version.ref = "bou
 
 osmdroid = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroid" }
 pdfbox = { module = "com.tom-roush:pdfbox-android", version.ref = "pdfbox" }
-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
 
 play-services-wearable = { module = "com.google.android.gms:play-services-wearable", version.ref = "wearable" }

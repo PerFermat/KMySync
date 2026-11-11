@@ -184,7 +184,6 @@ dependencies {
     // Aus dem Quellcode gebaut (Submodul third_party/MPAndroidChart, Tag v3.1.0) statt über
     // JitPack, das F-Droid nicht zulässt (siehe mpandroidchart/build.gradle).
     implementation project(':mpandroidchart')
-    implementation libs.security.crypto
     implementation libs.biometric
 
     // Nur im „full"-Flavor: Wear Data Layer (Google Play Services, proprietär). Der „foss"-Flavor (F-Droid)
