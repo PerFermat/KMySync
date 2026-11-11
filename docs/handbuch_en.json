@@ -2565,6 +2565,16 @@
       "text": "<b>When switching devices</b> this backup is the only way. Android does <b>not</b> include this app’s data in its own backup – neither in the cloud nor when transferring to a new device. That is deliberate: bookings, receipts and the server access should leave this device only for where you send them yourself. So create a backup <i>before</i> the switch and restore it on the new device."
     },
     {
+      "type": "h2",
+      "id": "b-0215n0",
+      "text": "News"
+    },
+    {
+      "type": "p",
+      "id": "b-0215n1",
+      "text": "After an update, the app shows the dialog <b>«New in version …»</b> once on the first start, listing the new features of that version – only real new features, no bug fixes. If a version brings only fixes, nothing appears, nor after a fresh install. <b>«All news»</b> in the dialog or the <b>«News»</b> button at the very bottom of the settings opens a page with the new features of all previous versions, newest first."
+    },
+    {
       "type": "h1",
       "id": "b-0219",
       "text": "21. CSV format (export)"
