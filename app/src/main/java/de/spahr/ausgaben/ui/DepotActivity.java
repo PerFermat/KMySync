@@ -630,8 +630,7 @@ public class DepotActivity extends LocalizedActivity {
                         post(() -> {
                             importBanner.finishNow();
                             String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-                            Toast.makeText(DepotActivity.this, getString(R.string.import_failed, msg),
-                                    Toast.LENGTH_LONG).show();
+                            MainImportFlow.showImportError(DepotActivity.this, msg);
                         });
                     }
 
@@ -693,9 +692,7 @@ public class DepotActivity extends LocalizedActivity {
                 final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
                 post(() -> {
                     importBanner.finishNow();
-                    // Mit Grund – „import_failed" enthält einen Platzhalter.
-                    Toast.makeText(this, getString(R.string.import_failed, msg),
-                            Toast.LENGTH_LONG).show();
+                    MainImportFlow.showImportError(this, msg);
                 });
             }
         }).start();

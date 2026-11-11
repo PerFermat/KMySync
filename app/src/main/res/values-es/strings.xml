@@ -520,7 +520,7 @@
     <string name="password_saved_hint">•••••• (guardada)</string>
     <string name="settings_secret_fallback">El almacén de claves de este dispositivo no está disponible – la contraseña del servidor se guarda sin cifrar</string>
     <string name="import_done">Apuntes importados: %1$d (cuenta reemplazada)</string>
-    <string name="import_failed">Error en la importación: %1$s</string>
+    <string name="import_failed_title">Error en la importación</string>
     <string name="nextcloud_import_folder_hint">Carpeta de importación (Nextcloud)</string>
     <string name="loading_files">Cargando lista de archivos…</string>
     <string name="no_files">No se encontraron archivos CSV en la carpeta de importación</string>

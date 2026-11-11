@@ -521,7 +521,7 @@
     <string name="password_saved_hint">•••••• (gespeichert)</string>
     <string name="settings_secret_fallback">Der Schlüsselspeicher dieses Geräts ist nicht verfügbar – das Server-Passwort liegt unverschlüsselt</string>
     <string name="import_done">Buchungen importiert: %1$d (Konto ersetzt)</string>
-    <string name="import_failed">Import fehlgeschlagen: %1$s</string>
+    <string name="import_failed_title">Import fehlgeschlagen</string>
     <string name="nextcloud_import_folder_hint">Import-Ordner (Nextcloud)</string>
     <string name="loading_files">Dateiliste wird geladen…</string>
     <string name="no_files">Keine CSV-Dateien im Import-Ordner gefunden</string>

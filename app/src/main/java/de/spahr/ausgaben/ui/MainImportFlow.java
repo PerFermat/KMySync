@@ -408,7 +408,7 @@ class MainImportFlow {
         Ui.post(activity, () -> {
             host.dismissProgress();
             importBanner.finishNow();
-            Toast.makeText(activity, activity.getString(R.string.import_failed, msg), Toast.LENGTH_LONG).show();
+            showImportError(activity, msg);
         });
     }
 
@@ -416,6 +416,21 @@ class MainImportFlow {
     private void completeImport() {
         importBanner.finish();
         host.refreshBookings();
+    }
+
+    /**
+     * Der Grund eines gescheiterten Imports, ganz lesbar. Ein Toast kürzt seit Android 12 auf zwei
+     * Zeilen – gerade die längsten Meldungen (Schlüssel, Passwort, Server) blieben abgeschnitten.
+     */
+    static void showImportError(android.app.Activity activity, String msg) {
+        if (activity.isFinishing() || activity.isDestroyed()) {
+            return;
+        }
+        new AppDialog(activity)
+                .setTitle(R.string.import_failed_title)
+                .setMessage(msg)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
     }
 
     // ---- CSV-Import (Nextcloud-Liste oder lokaler Picker) ----
@@ -449,8 +464,7 @@ class MainImportFlow {
                 });
             } catch (Exception e) {
                 final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-                Ui.post(activity, () -> Toast.makeText(activity,
-                        activity.getString(R.string.import_failed, msg), Toast.LENGTH_LONG).show());
+                Ui.post(activity, () -> showImportError(activity, msg));
             }
         }).start();
     }
@@ -560,7 +574,7 @@ class MainImportFlow {
                 return;
             }
             importBanner.finishNow();
-            Toast.makeText(activity, activity.getString(R.string.import_failed, msg), Toast.LENGTH_LONG).show();
+            showImportError(activity, msg);
         });
     }
 

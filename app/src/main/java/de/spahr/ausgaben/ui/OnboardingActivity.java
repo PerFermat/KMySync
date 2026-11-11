@@ -778,8 +778,7 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
                 });
             } catch (Exception e) {
                 final String msg = syncFields.serverError(e);
-                post(() -> Toast.makeText(this,
-                        getString(R.string.import_failed, msg), Toast.LENGTH_LONG).show());
+                post(() -> MainImportFlow.showImportError(this, msg));
             }
         }).start();
     }
@@ -879,7 +878,7 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
             if (verschluesselung.nachFehler(e, this::importAccounts)) {
                 return;
             }
-            Toast.makeText(this, getString(R.string.import_failed, msg), Toast.LENGTH_LONG).show();
+            MainImportFlow.showImportError(this, msg);
         });
     }
 

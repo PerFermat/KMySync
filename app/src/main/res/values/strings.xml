@@ -545,7 +545,7 @@
     <string name="password_saved_hint">•••••• (saved)</string>
     <string name="settings_secret_fallback">The key store of this device is unavailable — the server password is stored unencrypted</string>
     <string name="import_done">Bookings imported: %1$d (account replaced)</string>
-    <string name="import_failed">Import failed: %1$s</string>
+    <string name="import_failed_title">Import failed</string>
     <string name="nextcloud_import_folder_hint">Import folder (Nextcloud)</string>
     <string name="loading_files">Loading file list…</string>
     <string name="no_files">No CSV files found in the import folder</string>

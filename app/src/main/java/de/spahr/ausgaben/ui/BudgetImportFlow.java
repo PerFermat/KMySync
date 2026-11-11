@@ -87,8 +87,7 @@ final class BudgetImportFlow {
                 final String msg = e.getMessage() == null ? e.toString() : e.getMessage();
                 Ui.post(activity, () -> {
                     progress.dismiss();
-                    Toast.makeText(activity, activity.getString(R.string.import_failed, msg),
-                            Toast.LENGTH_LONG).show();
+                    MainImportFlow.showImportError(activity, msg);
                 });
             }
         }).start();
