@@ -136,7 +136,7 @@ public class DepotReimportPendingTest {
 
         CountDownLatch fertig = new CountDownLatch(1);
         repo.replaceDepotImport(DEPOT, Collections.singletonList(neu),
-                Collections.emptyList(), Collections.emptyList(), fertig::countDown);
+                Collections.emptyList(), Collections.emptyList(), false, fertig::countDown);
         for (int i = 0; i < 50 && fertig.getCount() > 0; i++) {
             org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
             fertig.await(20, TimeUnit.MILLISECONDS);

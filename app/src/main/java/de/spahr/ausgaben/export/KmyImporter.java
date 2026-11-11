@@ -75,6 +75,8 @@ public class KmyImporter {
         public final List<Security> securities = new ArrayList<>();
         public final List<SecurityTx> transactions = new ArrayList<>();
         public final List<SecurityPrice> prices = new ArrayList<>();
+        /** In KMyMoney geschlossen ({@code mm-closed}) – die Datei entscheidet, wie bei Konten. */
+        public boolean closed;
     }
 
     /**
@@ -92,6 +94,7 @@ public class KmyImporter {
     public DepotData importDepot(String depotName, de.spahr.ausgaben.util.ProgressListener listener)
             throws IOException {
         DepotData data = new DepotData();
+        data.closed = doc.isClosed(depotName);
         String depotId = doc.depotId(depotName);
         if (depotId == null) {
             return data;

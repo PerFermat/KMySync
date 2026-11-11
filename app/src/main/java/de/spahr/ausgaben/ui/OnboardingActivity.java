@@ -725,7 +725,7 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
         new Thread(() -> {
             try {
                 KmyImporter.DepotData data = importer.importDepot(depot);
-                repository.replaceDepotImport(depot, data.securities, data.transactions, data.prices, () ->
+                repository.replaceDepotImport(depot, data.securities, data.transactions, data.prices, data.closed, () ->
                         importDepotsThenFinish(importer, rest, importedCount));
             } catch (Exception e) {
                 postImportError(e);

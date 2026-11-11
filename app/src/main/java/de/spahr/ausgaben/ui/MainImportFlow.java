@@ -280,7 +280,7 @@ class MainImportFlow {
         new Thread(() -> {
             try {
                 KmyImporter.DepotData data = importer.importDepot(depot, readListener);
-                repository.replaceDepotImport(depot, data.securities, data.transactions, data.prices,
+                repository.replaceDepotImport(depot, data.securities, data.transactions, data.prices, data.closed,
                         writeListener, () -> importDepotsThenFinish(importer, budget, rest));
             } catch (Exception e) {
                 postImportError(e);
@@ -335,7 +335,7 @@ class MainImportFlow {
                 final de.spahr.ausgaben.util.ProgressListener writeListener =
                         importBanner.phase(label, budget.from(schreiben), budget.to(schreiben));
                 Ui.post(activity, () -> repository.replaceDepotImport(depotName, data.securities,
-                        data.transactions, data.prices, writeListener, this::completeImport));
+                        data.transactions, data.prices, data.closed, writeListener, this::completeImport));
             } catch (Exception e) {
                 postImportError(e);
             }

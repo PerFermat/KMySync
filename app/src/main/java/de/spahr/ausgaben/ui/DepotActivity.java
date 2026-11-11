@@ -686,7 +686,7 @@ public class DepotActivity extends LocalizedActivity {
                 final String schreiben = de.spahr.ausgaben.export.KmyAccountImport.depotWrite(depotName);
                 KmyImporter.DepotData data = importer.importDepot(depotName,
                         importBanner.phase(label, budget.from(lesen), budget.to(lesen)));
-                repository.replaceDepotImport(depotName, data.securities, data.transactions, data.prices,
+                repository.replaceDepotImport(depotName, data.securities, data.transactions, data.prices, data.closed,
                         importBanner.phase(label, budget.from(schreiben), budget.to(schreiben)),
                         () -> post(this::completeImport));
             } catch (Exception e) {

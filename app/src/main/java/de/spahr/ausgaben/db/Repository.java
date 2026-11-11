@@ -2022,16 +2022,20 @@ public class Repository {
 
     public void replaceDepotImport(String depot, List<Security> securities,
                                    List<SecurityTx> transactions, List<SecurityPrice> prices,
-                                   Runnable onDone) {
-        replaceDepotImport(depot, securities, transactions, prices, null, onDone);
+                                   boolean closedInFile, Runnable onDone) {
+        replaceDepotImport(depot, securities, transactions, prices, closedInFile, null, onDone);
     }
 
     /** Wie oben, meldet aber den Fortschritt des Schreibens (Wertpapiere, Bewegungen, Kurse). */
     public void replaceDepotImport(String depot, List<Security> securities,
                                    List<SecurityTx> transactions, List<SecurityPrice> prices,
+                                   boolean closedInFile,
                                    de.spahr.ausgaben.util.ProgressListener listener,
                                    Runnable onDone) {
         ensureDepotAccount(depot);
+        // Erst jetzt gibt es die Zeile sicher: Ein beim ersten Import neu angelegtes Depot bekäme den
+        // Status sonst erst beim nächsten Import (applyAccountClosed fand es noch nicht).
+        applyAccountClosed(java.util.Collections.singletonMap(depot, closedInFile));
         depotRepo.replaceDepotImport(depot, securities, transactions, prices, listener, onDone);
     }
 
@@ -2135,10 +2139,9 @@ public class Repository {
                     String name = depot.trim();
                     accountDao.insertIfAbsent(new Account(name));
                     accountDao.setType(name, Account.KMY_TYPE_DEPOT);
-                    // Ein Depot mit Wertpapieren ist in Gebrauch: geschlossen gehörte es weder in die
-                    // Schublade noch in die Bestände, und sein Wert fiele aus der Summe. Dieselbe Regel
-                    // wie bei Konten, die durch einen Import wieder einen Saldo bekommen.
-                    accountDao.setClosed(name, false);
+                    // Den Geschlossen-Status lässt der Abgleich in Ruhe: Er läuft bei jedem
+                    // Aktualisieren und öffnete sonst ein in KMyMoney oder in der App geschlossenes
+                    // Depot immer wieder. Den Status setzt der Import (replaceDepotImport).
                 }
             }
             if (onDone != null) {

@@ -218,7 +218,7 @@ public final class KmyAccountImport {
             new Thread(() -> {
                 try {
                     KmyImporter.DepotData data = importer.importDepot(depot, readListener);
-                    repository.replaceDepotImport(depot, data.securities, data.transactions, data.prices,
+                    repository.replaceDepotImport(depot, data.securities, data.transactions, data.prices, data.closed,
                             writeListener,
                             () -> afterAccounts(app, repository, importer, budget, rest, schedules, ui));
                 } catch (Exception e) {
