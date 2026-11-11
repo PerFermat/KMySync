@@ -1,3 +1,3 @@
-Ahora se leen y escriben las bases de datos de KMyMoney (SQLite) de KMyMoney 5.2, no solo de 5.1. Hasta ahora faltaban los presupuestos de una base de datos de 5.2.
-Nuevo: leer y escribir archivos cifrados de KMyMoney: el .kmy con GPG y la base de datos con SQLCipher.
-Las cuentas cerradas se sincronizan con KMyMoney en ambos sentidos.
+Nuevo: leer y escribir archivos cifrados de KMyMoney: el .kmy con GPG y la base de datos con SQLCipher. La app avisa al importar tu clave principal privada; basta con la subclave de cifrado.
+Nuevo: una carpeta del dispositivo como destino de sincronización, por ejemplo la carpeta de una app de sincronización como Syncthing.
+Los valores y las cuentas en moneda extranjera se convierten a la moneda base con los tipos de cambio de KMyMoney; la vista de cartera muestra la fecha de cada cotización.

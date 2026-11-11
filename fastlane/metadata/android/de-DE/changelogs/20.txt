@@ -1,3 +1,3 @@
-KMyMoney-Datenbanken (SQLite) aus KMyMoney 5.2 werden jetzt gelesen und beschrieben, nicht nur aus 5.1. Budgets aus einer 5.2-Datenbank fehlten bisher.
-Neu: verschlüsselte KMyMoney-Dateien lesen und schreiben – die .kmy mit GPG, die Datenbank mit SQLCipher.
-Geschlossene Konten werden mit KMyMoney abgeglichen, in beide Richtungen.
+Neu: verschlüsselte KMyMoney-Dateien lesen und schreiben – die .kmy mit GPG, die Datenbank mit SQLCipher. Beim Einspielen des privaten Hauptschlüssels warnt die App; der Unterschlüssel zum Verschlüsseln genügt.
+Neu: ein Ordner auf dem Gerät als Sync-Ziel, etwa der Ordner einer Sync-App wie Syncthing.
+Wertpapiere und Konten in Fremdwährung werden mit den Devisenkursen aus KMyMoney in die Basiswährung umgerechnet; die Depot-Ansicht zeigt zu jedem Kurs sein Datum.
