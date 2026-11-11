@@ -23,7 +23,7 @@ nach KMyMoney, statt alles später von Hand nachzutragen.
 
 - 📲 **Mobile Erweiterung für KMyMoney** – Bargeldausgaben unterwegs sofort erfassen
 - 🔌 **Nahtlose KMyMoney-Integration** über `.kmy`-Dateien oder CSV-Import
-- 🗂️ **Sync über einen gemeinsamen WebDAV- oder SMB-Ordner** – eigener Server, eigene Daten
+- 🗂️ **Sync über einen gemeinsamen WebDAV- oder SMB-Ordner oder einen Ordner auf dem Gerät** – eigener Server, eigene Daten
 - 🔒 **Ihr Server, Ihre Daten** – keine zusätzliche Cloud, kein Herstellerkonto
 - ⌚ **Wear-OS-App mit Spracheingabe** – Ausgabe direkt vom Handgelenk sprechen
 - ➗ **Splitbuchungen und Umbuchungen**, Kategorien, Orte/Bestände und Depot-Import
@@ -93,7 +93,7 @@ stehen im **[Benutzerhandbuch](docs/Handbuch-KMySync-de.pdf)**.
   Käufen, Verkäufen, Dividenden und Gewinn/Verlust.
 - **Geplante Buchungen** – aus KMyMoney übernommen, einzeln buchbar oder überspringbar; die Regel
   wandert beim nächsten Export eine Periode weiter.
-- **Synchronisierung** – Nextcloud/WebDAV/SMB, `.kmy`-Modus (direktes Lesen und Schreiben der
+- **Synchronisierung** – Nextcloud/WebDAV/SMB oder ein lokaler Ordner, `.kmy`-Modus (direktes Lesen und Schreiben der
   KMyMoney-Datei) oder CSV; automatische Sicherung vor jedem Export. Nachträglich geänderte Buchungen
   werden in der Datei geändert statt doppelt angelegt. Die **Stichwörter** aus KMyMoney werden gelesen,
   bearbeitet, gefiltert und zurückgeschrieben. Eine von KMyMoney **mit GPG verschlüsselte** `.kmy` wird mit
@@ -131,7 +131,7 @@ Datum;Empfänger;Konto;Typ;Betrag;Notiz;Kategorie
 Analyse-, Absturz- oder Werbe-Bibliothek.
 
 **Aufbau.** Die Pakete unter `de.spahr.ausgaben` schneiden nach Aufgabe: `db` (Room und Rechenlogik),
-`export` (KMyMoney und CSV), `net` (WebDAV/SMB), `receipt` (Belege), `voice` (Sprach-Erfassung),
+`export` (KMyMoney und CSV), `net` (WebDAV/SMB/lokaler Ordner), `receipt` (Belege), `voice` (Sprach-Erfassung),
 `location`, `security`, `settings`, `backup`, `i18n`, `notify`, `widget`, `wear` und `ui`.
 
 **Datenhaltung.** [Room](https://developer.android.com/training/data-storage/room) über SQLite,
@@ -205,7 +205,7 @@ eingecheckt und muss lokal vorhanden sein (legt Android Studio automatisch an). 
 Release-Build wird `keystore.properties` benötigt (ebenfalls nicht eingecheckt); fehlt sie, entsteht
 ein unsigniertes Release.
 
-## Sync-Ziel einrichten (Nextcloud / WebDAV / SMB)
+## Sync-Ziel einrichten (Nextcloud / WebDAV / SMB / lokaler Ordner)
 
 In den Einstellungen den **Server-Typ** wählen, dann Basis-URL/Freigabe, Benutzername und Passwort
 eintragen; ein Button **„Verbindung testen"** prüft die Verbindung. Ohne konfiguriertes Sync-Ziel wird
@@ -215,6 +215,9 @@ lokal in einen selbst gewählten Ordner exportiert.
 - **WebDAV (generisch)**: vollständige DAV-Wurzel-URL, Auth per HTTP-Basic.
 - **SMB/Samba**: ein **Einrichtungsassistent** sucht die Server im lokalen Netz, danach Freigabe und
   Zielordner durchklicken. SMB2/3, auch verschlüsselte, anonyme und DFS-Freigaben.
+- **Lokaler Ordner**: kein Server – die Ordnerauswahl von Android (Storage Access Framework) gibt einen
+  Ordner dauerhaft frei, etwa den einer Sync-App wie Syncthing. Export, Sicherungen und Belege laufen
+  dort genauso; die Diagnose prüft Freigabe, Lesen und Schreiben.
 - **Diagnose**: „Verbindung testen" geht die ganze Kette bis zum Schreib-, Umbenenn- und Löschrecht
   durch und zeigt je Schritt Ergebnis, Dauer und Fehlercode. Der Bericht läßt sich kopieren und enthält
   weder Passwort noch Benutzernamen.

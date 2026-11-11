@@ -24,7 +24,7 @@ instead of typing everything in by hand later.
 
 - 📲 **Mobile extension for KMyMoney** — capture cash spending the moment it happens
 - 🔌 **Seamless KMyMoney integration** via `.kmy` files or CSV import
-- 🗂️ **Sync through a shared WebDAV or SMB folder** — your own server, your data
+- 🗂️ **Sync through a shared WebDAV or SMB folder or a folder on the device** — your own server, your data
 - 🔒 **Your server, your data** — no extra cloud, no vendor account required
 - ⌚ **Wear OS app with voice input** — speak an expense right from your wrist
 - ➗ **Split bookings and transfers**, categories, places/holdings and portfolio import
@@ -94,7 +94,7 @@ This list names the main features only. The exact behaviour, every detail and sc
   price history, buys, sells, dividends and gain/loss.
 - **Scheduled bookings** — taken from KMyMoney, bookable or skippable one date at a time; the schedule
   moves on by one period with the next export.
-- **Sync** — Nextcloud/WebDAV/SMB, `.kmy` mode (reads and writes the KMyMoney file directly) or CSV;
+- **Sync** — Nextcloud/WebDAV/SMB or a local folder, `.kmy` mode (reads and writes the KMyMoney file directly) or CSV;
   automatic backup before every export. Bookings changed after the fact are edited in the file rather
   than added twice. KMyMoney's **tags** are read, edited, filtered and written back. A `.kmy` that
   KMyMoney **encrypted with GPG** is read with a key stored in the profile and written back to the same
@@ -130,7 +130,7 @@ Datum;Empfänger;Konto;Typ;Betrag;Notiz;Kategorie
 reporting or ad library.
 
 **Layout.** The packages under `de.spahr.ausgaben` are cut by job: `db` (Room and the computing logic),
-`export` (KMyMoney and CSV), `net` (WebDAV/SMB), `receipt`, `voice`, `location`, `security`, `settings`,
+`export` (KMyMoney and CSV), `net` (WebDAV/SMB/local folder), `receipt`, `voice`, `location`, `security`, `settings`,
 `backup`, `i18n`, `notify`, `widget`, `wear` and `ui`.
 
 **Storage.** [Room](https://developer.android.com/training/data-storage/room) on SQLite, database
@@ -197,7 +197,7 @@ The Android SDK is located via `local.properties` (`sdk.dir=…`) — this file 
 present locally (Android Studio creates it automatically). A signed release build needs
 `keystore.properties` (also not checked in); without it an unsigned release is produced.
 
-## Setting up a sync target (Nextcloud / WebDAV / SMB)
+## Setting up a sync target (Nextcloud / WebDAV / SMB / local folder)
 
 In the settings choose the **server type**, then enter base URL/share, username and password; a **"Test
 connection"** button checks the connection. Without a configured sync target, export goes locally into a
@@ -208,6 +208,9 @@ folder you choose.
 - **WebDAV (generic)**: the full DAV root URL, auth via HTTP basic.
 - **SMB/Samba**: a **setup wizard** scans the local network for servers, then you pick a share and
   browse to the target folder. SMB2/3, encrypted, anonymous and DFS shares included.
+- **Local folder**: no server — Android's folder picker (Storage Access Framework) grants lasting access
+  to a folder, e.g. one kept in step by a sync app such as Syncthing. Export, backups and receipts work
+  there just the same; the diagnostics check the access grant, reading and writing.
 - **Diagnostics**: "Test connection" walks the whole chain up to the write, rename and delete
   permission and shows, per step, the result, the duration and the error code. The report can be copied
   and contains neither the password nor the user name.
