@@ -258,6 +258,27 @@ public final class KmySqliteWriter {
             db.update("kmmSplits", t, "transactionId = ? AND txType = 'S'", new String[]{id});
         }
 
+        // Geschlossene Konten: ein Schlüsselpaar am Konto, wie es KMyMoney in kmmKeyValuePairs führt.
+        // KMyMoney zählt die Paare in kmmFileInfo.kvps mit; der Zähler weicht schon mal um eins vom
+        // Bestand ab, deshalb wird er um die Differenz bewegt statt neu gezählt.
+        int paareDazu = 0;
+        for (Map.Entry<String, Boolean> k : aenderungen.kontoStatus().entrySet()) {
+            String[] wo = {"ACCOUNT", k.getKey(), KmyKontoStatus.SCHLUESSEL};
+            paareDazu -= db.delete("kmmKeyValuePairs", "kvpType = ? AND kvpId = ? AND kvpKey = ?", wo);
+            if (k.getValue()) {
+                paareDazu++;
+                ContentValues v = new ContentValues();
+                v.put("kvpType", "ACCOUNT");
+                v.put("kvpId", k.getKey());
+                v.put("kvpKey", KmyKontoStatus.SCHLUESSEL);
+                v.put("kvpData", "yes");
+                db.insertOrThrow("kmmKeyValuePairs", null, v);
+            }
+        }
+        if (paareDazu != 0) {
+            db.execSQL("UPDATE kmmFileInfo SET kvps = COALESCE(kvps, 0) + " + paareDazu);
+        }
+
         KmyGliederung.Element info = wurzel.kind("FILEINFO");
         KmyGliederung.Element geaendert = info == null ? null : info.inhalt().kind("LAST_MODIFIED_DATE");
         if (geaendert != null) {

@@ -1763,14 +1763,46 @@ public class Repository {
         });
     }
 
-    /** Konto schließen (inaktiv) oder wieder öffnen. */
+    /**
+     * Konto schließen (inaktiv) oder wieder öffnen. Schreibt die App in die KMyMoney-Datei, zieht der
+     * nächste Export den Zustand dort nach ({@code mm-closed}).
+     */
     public void setAccountClosed(final String name, final boolean closed, final Runnable onDone) {
         executor.execute(() -> {
             if (name != null && !name.trim().isEmpty()) {
                 accountDao.setClosed(name.trim(), closed);
+                fuerKmyVormerken(name.trim(), closed);
             }
             if (onDone != null) {
                 mainHandler.post(onDone);
+            }
+        });
+    }
+
+    /** Merkt den Zustand für den nächsten Export vor – nur, wenn die App die KMyMoney-Datei schreibt. */
+    private void fuerKmyVormerken(String name, boolean closed) {
+        de.spahr.ausgaben.settings.SettingsStore st = new de.spahr.ausgaben.settings.SettingsStore(appContext);
+        if (st.isKmyMode()) {
+            st.notePendingAccountStatus(name, closed);
+        }
+    }
+
+    /**
+     * Übernimmt beim Import, ob ein Konto in KMyMoney geschlossen ist. Nur ein UPDATE vorhandener
+     * Konten; was in der App geschlossen oder geöffnet und noch nicht exportiert ist, bleibt, wie es ist.
+     */
+    public void applyAccountClosed(final java.util.Map<String, Boolean> closed) {
+        if (closed == null || closed.isEmpty()) {
+            return;
+        }
+        final java.util.Set<String> vorgemerkt = new de.spahr.ausgaben.settings.SettingsStore(appContext)
+                .getPendingAccountStatus().keySet();
+        executor.execute(() -> {
+            for (java.util.Map.Entry<String, Boolean> e : closed.entrySet()) {
+                String name = e.getKey() == null ? "" : e.getKey().trim();
+                if (!name.isEmpty() && e.getValue() != null && !vorgemerkt.contains(name)) {
+                    accountDao.setClosed(name, e.getValue());
+                }
             }
         });
     }
@@ -1795,6 +1827,7 @@ public class Repository {
                 for (String name : names) {
                     if (name != null && !name.trim().isEmpty()) {
                         accountDao.setClosed(name.trim(), closed);
+                        fuerKmyVormerken(name.trim(), closed);
                     }
                 }
             }

@@ -1096,4 +1096,8 @@
     <string name="db_password_remove">Quitar</string>
     <string name="db_password_saved">Contraseña de la base de datos guardada.</string>
     <string name="db_password_removed">Contraseña de la base de datos quitada.</string>
+    <!-- Geschlossene Konten (mm-closed) -->
+    <string name="kmy_accounts_closed">Cerradas en KMyMoney: %1$s</string>
+    <string name="kmy_accounts_reopened">Reabiertas en KMyMoney: %1$s</string>
+    <string name="account_closed_suffix">%1$s (cerrada)</string>
 </resources>

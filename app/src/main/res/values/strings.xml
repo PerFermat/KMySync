@@ -1137,4 +1137,8 @@
     <string name="db_password_remove">Remove</string>
     <string name="db_password_saved">Database password stored.</string>
     <string name="db_password_removed">Database password removed.</string>
+    <!-- Geschlossene Konten (mm-closed) -->
+    <string name="kmy_accounts_closed">Closed in KMyMoney: %1$s</string>
+    <string name="kmy_accounts_reopened">Reopened in KMyMoney: %1$s</string>
+    <string name="account_closed_suffix">%1$s (closed)</string>
 </resources>

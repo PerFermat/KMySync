@@ -58,6 +58,8 @@ public final class KmyAenderungen {
     private final Map<String, Absicht> transaktionen = new LinkedHashMap<>();
     private final Set<String> neueEmpfaenger = new LinkedHashSet<>();
     private final Set<String> planungen = new LinkedHashSet<>();
+    /** Konto-id → in KMyMoney geschlossen ({@code mm-closed}) oder wieder offen. */
+    private final Map<String, Boolean> kontoStatus = new LinkedHashMap<>();
 
     public Absicht neu(String txId) {
         return melde(new Absicht(txId, Art.NEU));
@@ -85,6 +87,16 @@ public final class KmyAenderungen {
         planungen.add(scheduleId);
     }
 
+    /** Ein Konto wird geschlossen ({@code true}) oder wieder geöffnet – siehe {@link KmyKontoStatus}. */
+    public void kontoStatus(String kontoId, boolean geschlossen) {
+        kontoStatus.put(kontoId, geschlossen);
+    }
+
+    /** Konto-id → geschlossen; leer, wenn kein Konto seinen Zustand ändert. */
+    public Map<String, Boolean> kontoStatus() {
+        return kontoStatus;
+    }
+
     /**
      * Trägt eine Ansage ein. Trifft sie auf eine frühere zur selben Transaktion, gilt, was am Ende in
      * der Datei steht: Eine in diesem Lauf angelegte und gleich wieder entfernte Transaktion taucht
@@ -107,6 +119,7 @@ public final class KmyAenderungen {
         transaktionen.clear();
         neueEmpfaenger.clear();
         planungen.clear();
+        kontoStatus.clear();
     }
 
     /** Die Ansage zu dieser Transaktion, oder {@code null}: dann muss sie unberührt bleiben. */
@@ -143,6 +156,7 @@ public final class KmyAenderungen {
             }
             out.neueEmpfaenger.addAll(s.neueEmpfaenger);
             out.planungen.addAll(s.planungen);
+            out.kontoStatus.putAll(s.kontoStatus);
         }
         return out;
     }

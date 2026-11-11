@@ -165,9 +165,18 @@ class MainImportFlow {
                 newDepots.add(d);
             }
         }
-        List<String> labels = new ArrayList<>(newAccounts);
+        final List<String> sortierteKonten = ImportAuswahl.offeneZuerst(importer, newAccounts);
+        newAccounts.clear();
+        newAccounts.addAll(sortierteKonten);
+        final List<String> sortierteDepots = ImportAuswahl.offeneZuerst(importer, newDepots);
+        newDepots.clear();
+        newDepots.addAll(sortierteDepots);
+        List<String> labels = new ArrayList<>();
+        for (String a : newAccounts) {
+            labels.add(ImportAuswahl.zeile(activity, importer, a, a));
+        }
         for (String d : newDepots) {
-            labels.add(activity.getString(R.string.kmy_choose_depot, d));
+            labels.add(ImportAuswahl.zeile(activity, importer, d, activity.getString(R.string.kmy_choose_depot, d)));
         }
         if (labels.isEmpty()) {
             Toast.makeText(activity, R.string.kmy_no_new_accounts, Toast.LENGTH_LONG).show();
@@ -231,6 +240,7 @@ class MainImportFlow {
                 }
                 // Konto- und Kategorietypen für ALLE Konten/Kategorien der .kmy übernehmen.
                 repository.applyAccountTypes(importer.accountTypes());
+                repository.applyAccountClosed(importer.closedAccounts());
                 repository.applyExchangeRates(importer.baseCurrency(), importer.exchangeRates());
                 repository.applyCategoryTypes(importer.categoryTypes());
                 int written = 0;

@@ -652,11 +652,14 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
 
     /** Derselbe Mehrfachauswahl-Dialog wie in MainActivity (ohne Filterung – DB ist beim Start leer). */
     private void chooseAccountForImport(KmyImporter importer, List<String> accounts, List<String> depots) {
-        final List<String> accountList = new ArrayList<>(accounts);
-        final List<String> depotList = new ArrayList<>(depots);
-        List<String> labels = new ArrayList<>(accountList);
+        final List<String> accountList = ImportAuswahl.offeneZuerst(importer, accounts);
+        final List<String> depotList = ImportAuswahl.offeneZuerst(importer, depots);
+        List<String> labels = new ArrayList<>();
+        for (String a : accountList) {
+            labels.add(ImportAuswahl.zeile(this, importer, a, a));
+        }
         for (String d : depotList) {
-            labels.add(getString(R.string.kmy_choose_depot, d));
+            labels.add(ImportAuswahl.zeile(this, importer, d, getString(R.string.kmy_choose_depot, d)));
         }
         final int accountCount = accountList.size();
         final boolean[] checked = new boolean[labels.size()];
@@ -701,6 +704,7 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
                     repository.setAccountCurrency(acc, importer.currencyOf(acc));
                 }
                 repository.applyAccountTypes(importer.accountTypes());
+                repository.applyAccountClosed(importer.closedAccounts());
                 repository.applyExchangeRates(importer.baseCurrency(), importer.exchangeRates());
                 repository.applyCategoryTypes(importer.categoryTypes());
                 post(() -> repository.replaceImportAccounts(map, null,

@@ -217,6 +217,9 @@ public final class KmyExportCheck {
                 case "FILEINFO":
                     dateikopfBleibt(ea, en);
                     break;
+                case "ACCOUNTS":
+                    kontenBleiben(ea, en, erwartet);
+                    break;
                 default:
                     if (!ea.gleich(en)) {
                         throw new Failed(ea.name + " verändert");
@@ -355,6 +358,47 @@ public final class KmyExportCheck {
             if (anzahl(a.kinder, id) != 0 || anzahl(n.kinder, id) != 1) {
                 throw new Failed("PAYEE " + id + " als neu angesagt, steht aber " + anzahl(a.kinder, id)
                         + "-mal in der alten und " + anzahl(n.kinder, id) + "-mal in der neuen Datei");
+            }
+        }
+    }
+
+    /**
+     * An den Konten darf sich nur ändern, was angesagt ist: ob ein Konto geschlossen ist
+     * ({@link KmyKontoStatus}). Ohne dieses eine Paar muss jeder Konto-Block zeichengleich bleiben.
+     */
+    private static void kontenBleiben(KmyGliederung.Element alt, KmyGliederung.Element neu,
+                                      KmyAenderungen erwartet) throws Failed, KmyGliederung.Fehler {
+        if (erwartet.kontoStatus().isEmpty()) {
+            if (!alt.gleich(neu)) {
+                throw new Failed("ACCOUNTS verändert");
+            }
+            return;
+        }
+        oeffnungBleibt(alt, neu, null);
+        KmyGliederung.Inhalt a = alt.inhalt();
+        KmyGliederung.Inhalt n = neu.inhalt();
+        if (!a.rest().equals(n.rest()) || a.kinder.size() != n.kinder.size()) {
+            throw new Failed("Konten hinzugefügt, entfernt oder umgestellt");
+        }
+        for (int i = 0; i < a.kinder.size(); i++) {
+            KmyGliederung.Element ea = a.kinder.get(i);
+            KmyGliederung.Element en = n.kinder.get(i);
+            String id = ea.id();
+            Boolean soll = id == null ? null : erwartet.kontoStatus().get(id);
+            if (soll == null) {
+                if (!ea.gleich(en)) {
+                    throw new Failed("ACCOUNT " + id + " verändert, ohne dass der Export es wollte");
+                }
+                continue;
+            }
+            if (!id.equals(en.id())) {
+                throw new Failed("ACCOUNT " + id + " → " + en.id());
+            }
+            if (KmyKontoStatus.geschlossen(en.text()) != soll) {
+                throw new Failed("ACCOUNT " + id + (soll ? " nicht geschlossen" : " nicht geöffnet"));
+            }
+            if (!KmyKontoStatus.ohnePaar(ea.text()).equals(KmyKontoStatus.ohnePaar(en.text()))) {
+                throw new Failed("ACCOUNT " + id + " über den Zustand hinaus verändert");
             }
         }
     }

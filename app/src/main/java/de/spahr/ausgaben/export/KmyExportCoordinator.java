@@ -240,8 +240,16 @@ public class KmyExportCoordinator {
             res.xml = secRes.xml;
             res.skipped.addAll(secRes.skipped);
 
+            // In der App geschlossene oder wieder geöffnete Konten auch in KMyMoney so stellen.
+            final java.util.Map<String, Boolean> kontoVormerkung = settings.getPendingAccountStatus();
+            KmyExporter.AccountStatusResult kontoRes = exporter.applyAccountStatus(res.xml, kontoVormerkung);
+            res.xml = kontoRes.xml;
+
             if (res.writtenIds.isEmpty() && delRes.resolvedIds.isEmpty()
-                    && schedRes.resolvedIds.isEmpty() && secRes.writtenIds.isEmpty()) {
+                    && schedRes.resolvedIds.isEmpty() && secRes.writtenIds.isEmpty()
+                    && kontoRes.writtenNames.isEmpty()) {
+                // Was schon so in der Datei steht, ist erledigt.
+                settings.clearPendingAccountStatus(erledigt(kontoVormerkung, kontoRes.resolvedNames));
                 return Outcome.done(r.getString(de.spahr.ausgaben.R.string.kmy_none_matched)
                         + "\n" + skippedText(r, res) + notFoundText(r, res)
                         + reconciledText(r, res), false);
@@ -251,7 +259,8 @@ public class KmyExportCoordinator {
             // den Server erreicht. Gepackt wird schon hier, damit genau die Bytes geprüft sind,
             // die nachher hochgehen.
             KmyAenderungen aenderungen = KmyAenderungen.zusammen(
-                    res.aenderungen, delRes.aenderungen, schedRes.aenderungen, secRes.aenderungen);
+                    res.aenderungen, delRes.aenderungen, schedRes.aenderungen, secRes.aenderungen,
+                    kontoRes.aenderungen);
             // Eine GPG-verschlüsselte Datei bekommt innen, was vorher darin stand: KMyMoney legt reines
             // XML hinein, kein gzip. Geprüft wird dieser Inhalt; verschlüsselt erst danach.
             byte[] packed = doc.gpg() != null && !doc.gpg().innenGzip
@@ -323,10 +332,12 @@ public class KmyExportCoordinator {
             // Der Hintergrundlauf liest die Datei vorher zurück und spielt den alten Stand wieder
             // ein, falls sie defekt ankam – dann darf nichts als exportiert gelten.
             Outcome ok = Outcome.done(buildMessage(r, res, secRes.writtenIds.size(),
-                    delRes.resolvedIds.size(), schedRes.writtenIds.size(), file, backup), true);
+                    delRes.resolvedIds.size(), schedRes.writtenIds.size(), file, backup)
+                    + kontoText(r, kontoRes, kontoVormerkung), true);
             final KmyExporter.Result geschrieben = res;
             ok.nachziehen = () -> {
                 commitLocally(geschrieben, secRes, securityTx, delRes, schedRes, advances);
+                settings.clearPendingAccountStatus(erledigt(kontoVormerkung, kontoRes.resolvedNames));
                 // Lokal nachgezogen: der Vermerk von oben hat seinen Zweck erfüllt.
                 PendingExport.clear(settings);
             };
@@ -362,6 +373,36 @@ public class KmyExportCoordinator {
             String msg = e.getMessage() == null ? e.toString() : e.getMessage();
             return Outcome.failed(r.getString(de.spahr.ausgaben.R.string.export_failed, msg));
         }
+    }
+
+    /** Welche Konten der Export in KMyMoney geschlossen bzw. wieder geöffnet hat; leer, wenn keine. */
+    private static String kontoText(Context r, KmyExporter.AccountStatusResult res,
+                                     java.util.Map<String, Boolean> vormerkung) {
+        List<String> zu = new ArrayList<>();
+        List<String> auf = new ArrayList<>();
+        for (String n : res.writtenNames) {
+            (Boolean.TRUE.equals(vormerkung.get(n)) ? zu : auf).add(n);
+        }
+        StringBuilder sb = new StringBuilder();
+        if (!zu.isEmpty()) {
+            sb.append('\n').append(r.getString(de.spahr.ausgaben.R.string.kmy_accounts_closed,
+                    android.text.TextUtils.join(", ", zu)));
+        }
+        if (!auf.isEmpty()) {
+            sb.append('\n').append(r.getString(de.spahr.ausgaben.R.string.kmy_accounts_reopened,
+                    android.text.TextUtils.join(", ", auf)));
+        }
+        return sb.toString();
+    }
+
+    /** Die Vormerkungen zu den Namen, die die Datei kannte – sie stehen jetzt so in der Datei. */
+    private static java.util.Map<String, Boolean> erledigt(java.util.Map<String, Boolean> vormerkung,
+                                                           List<String> namen) {
+        java.util.Map<String, Boolean> out = new java.util.HashMap<>();
+        for (String n : namen) {
+            out.put(n, vormerkung.get(n));
+        }
+        return out;
     }
 
     /**

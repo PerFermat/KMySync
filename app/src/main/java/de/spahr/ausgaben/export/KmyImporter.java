@@ -468,6 +468,23 @@ public class KmyImporter {
         return out;
     }
 
+    /** Konto- und Depotname → in KMyMoney geschlossen, für alle Konten und Depots der Datei. */
+    public java.util.Map<String, Boolean> closedAccounts() {
+        java.util.Map<String, Boolean> out = new java.util.LinkedHashMap<>();
+        for (String name : doc.accountNames()) {
+            out.put(name, doc.isClosed(name));
+        }
+        for (String depot : doc.depotNames()) {
+            out.put(depot, doc.isClosed(depot));
+        }
+        return out;
+    }
+
+    /** Ob dieses Konto oder Depot in KMyMoney geschlossen ist – für die Kennzeichnung in der Auswahl. */
+    public boolean isClosed(String name) {
+        return doc.isClosed(name);
+    }
+
     /** Kontoname → Bankinstitut für alle Konten und Depots der Datei (Grundlage der Bank-Kontengruppen). */
     public java.util.Map<String, String> institutions() {
         return doc.institutionsByAccount();

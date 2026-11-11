@@ -1103,4 +1103,8 @@
     <string name="db_password_remove">Entfernen</string>
     <string name="db_password_saved">Datenbank-Passwort hinterlegt.</string>
     <string name="db_password_removed">Datenbank-Passwort entfernt.</string>
+    <!-- Geschlossene Konten (mm-closed) -->
+    <string name="kmy_accounts_closed">In KMyMoney geschlossen: %1$s</string>
+    <string name="kmy_accounts_reopened">In KMyMoney wieder geöffnet: %1$s</string>
+    <string name="account_closed_suffix">%1$s (geschlossen)</string>
 </resources>

@@ -71,6 +71,8 @@ public class KmyDocument implements KmyAbsicht.Konten {
     private final Map<String, String> assetNameToId = new LinkedHashMap<>();
     /** Anzeigename → id der Depots (Investment-Konten, Typ 7). */
     private final Map<String, String> depotAccounts = new LinkedHashMap<>();
+    /** ids der Konten, die in KMyMoney geschlossen sind ({@code mm-closed}, siehe KmyKontoStatus). */
+    private final java.util.Set<String> closedAccountIds = new java.util.HashSet<>();
 
     /** Wertpapier-ID (E00000x) → Anzeigedaten aus dem SECURITY-Block. */
     private final Map<String, String[]> securityInfo = new LinkedHashMap<>(); // {name, symbol, currency}
@@ -533,6 +535,15 @@ public class KmyDocument implements KmyAbsicht.Konten {
         return name == null ? null : depotAccounts.get(name);
     }
 
+    /** Ob das Konto oder Depot dieses Namens in KMyMoney geschlossen ist. */
+    public boolean isClosed(String name) {
+        String id = accountId(name);
+        if (id == null) {
+            id = depotId(name);
+        }
+        return id != null && closedAccountIds.contains(id);
+    }
+
     /** Konto-id des Wertpapiers (Typ 15) unterhalb des Depots; {@code null}, wenn es dort keines gibt. */
     @Override
     public String wertpapierKontoId(String depot, String securityKmyId) {
@@ -682,6 +693,11 @@ public class KmyDocument implements KmyAbsicht.Konten {
                             accountInstitution.put(id, institution == null ? "" : institution.trim());
                         }
                         openAccount = id;
+                    } else if ("PAIR".equals(tag) && openAccount != null
+                            && KmyKontoStatus.SCHLUESSEL.equals(parser.getAttributeValue(null, "key"))) {
+                        if ("yes".equalsIgnoreCase(orEmpty(parser.getAttributeValue(null, "value")).trim())) {
+                            closedAccountIds.add(openAccount);
+                        }
                     } else if ("PAIR".equals(tag) && openAccount != null
                             && "PreferredAccount".equals(parser.getAttributeValue(null, "key"))) {
                         // KMyMoney kennzeichnet bevorzugte Konten so; daraus entsteht die Gruppe

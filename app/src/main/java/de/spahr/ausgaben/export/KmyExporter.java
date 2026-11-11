@@ -104,6 +104,51 @@ public class KmyExporter {
         public final KmyAenderungen aenderungen = new KmyAenderungen();
     }
 
+    /** Ergebnis von {@link #applyAccountStatus}. */
+    public static class AccountStatusResult {
+        public String xml;
+        /** Kontonamen, deren Zustand jetzt so in der Datei steht wie gewünscht – geschrieben oder schon so. */
+        public final List<String> resolvedNames = new ArrayList<>();
+        /** Konten, deren Block sich wirklich geändert hat (Teilmenge, als Namen). */
+        public final List<String> writtenNames = new ArrayList<>();
+        /** Was dieser Schritt an der Datei ändern wollte – Maßstab der Selbstprüfung. */
+        public final KmyAenderungen aenderungen = new KmyAenderungen();
+    }
+
+    /**
+     * Schließt Konten in KMyMoney oder öffnet sie wieder, wie es in der App geschehen ist
+     * ({@code mm-closed}, siehe {@link KmyKontoStatus}). {@code status}: Kontoname → geschlossen.
+     * Ein Name, den die Datei nicht kennt, bleibt offen vorgemerkt und erscheint nicht in
+     * {@link AccountStatusResult#resolvedNames}.
+     */
+    public AccountStatusResult applyAccountStatus(String xml, java.util.Map<String, Boolean> status) {
+        AccountStatusResult r = new AccountStatusResult();
+        r.xml = xml;
+        if (status == null || status.isEmpty()) {
+            return r;
+        }
+        java.util.Map<String, Boolean> nachId = new java.util.LinkedHashMap<>();
+        java.util.Map<String, String> nameVon = new java.util.HashMap<>();
+        for (java.util.Map.Entry<String, Boolean> e : status.entrySet()) {
+            String id = doc.accountId(e.getKey());
+            if (id == null) {
+                id = doc.depotId(e.getKey());
+            }
+            if (id != null && e.getValue() != null) {
+                nachId.put(id, e.getValue());
+                nameVon.put(id, e.getKey());
+                r.resolvedNames.add(e.getKey());
+            }
+        }
+        java.util.Set<String> geaendert = new java.util.LinkedHashSet<>();
+        r.xml = KmyKontoStatus.setze(xml, nachId, geaendert);
+        for (String id : geaendert) {
+            r.aenderungen.kontoStatus(id, nachId.get(id));
+            r.writtenNames.add(nameVon.get(id));
+        }
+        return r;
+    }
+
     /** Ende des Hauptbuchs; alles dahinter (z. B. geplante Buchungen) bleibt bei der Suche außen vor. */
     private static final String LEDGER_END = "</TRANSACTIONS>";
 

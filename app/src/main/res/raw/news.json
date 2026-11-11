@@ -3,7 +3,8 @@
     {"title": "Local folder as sync target", "text": "Besides Nextcloud, WebDAV and SMB you can choose a folder on the device, for example the folder of a sync app like Syncthing. Pick the KMyMoney file in it as usual; export, backups and receipts work there just the same."},
     {"title": "Databases from KMyMoney 5.2", "text": "The app now also reads and writes KMyMoney databases (SQLite) from KMyMoney 5.2, not only from 5.1. Budgets from a 5.2 database were missing entirely until now."},
     {"title": "GPG-encrypted KMyMoney file", "text": "If KMyMoney encrypts the .kmy with GPG, the app now reads and writes it with a key stored in the profile settings (“GPG keys…”) – to the same recipients as before."},
-    {"title": "Encrypted KMyMoney database", "text": "A KMyMoney database encrypted with SQLCipher can now be read and written as well; the password goes into the profile settings under “Database password…”."}
+    {"title": "Encrypted KMyMoney database", "text": "A KMyMoney database encrypted with SQLCipher can now be read and written as well; the password goes into the profile settings under “Database password…”."},
+    {"title": "Closed accounts", "text": "An account closed in KMyMoney is now closed in the app as well, so no new bookings can be entered on it. Closing or reopening an account in the app closes or reopens it in KMyMoney on the next export."}
   ]},
   {"version": "2.4", "code": 19, "items": [
     {"title": "Categories as a tree", "text": "On narrow screens the category picker uses the full width and shows subcategories indented below their parent category."},

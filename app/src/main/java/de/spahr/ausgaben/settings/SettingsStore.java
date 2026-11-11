@@ -39,6 +39,8 @@ public class SettingsStore {
     /** GPG-Schlüssel (Text aus gpg --export-secret-keys/--export --armor) und Passphrase, je Profil. */
     private static final String KEY_GPG_KEYS = "gpg_keys";
     private static final String KEY_GPG_PASSPHRASE = "gpg_passphrase";
+    /** In der App geschlossene/geöffnete Konten, die der nächste Export in KMyMoney nachzieht. */
+    private static final String KEY_KMY_ACCOUNT_STATUS = "kmy_account_status_pending";
     /** Passwort einer mit SQLCipher verschlüsselten KMyMoney-Datenbank, je Profil. */
     private static final String KEY_DB_PASSWORD = "kmy_db_password";
     private static final String KEY_FOLDER = "nextcloud_folder";
@@ -565,6 +567,55 @@ public class SettingsStore {
             return exportMode;
         }
         return MODE_CSV;
+    }
+
+    /**
+     * Konten, die in der App geschlossen ({@code true}) oder wieder geöffnet wurden und deren Zustand
+     * der nächste Export in die KMyMoney-Datei schreibt. Bis dahin hat dieser Zustand Vorrang vor dem,
+     * was ein Import aus der Datei liest.
+     */
+    public java.util.Map<String, Boolean> getPendingAccountStatus() {
+        java.util.Map<String, Boolean> out = new java.util.LinkedHashMap<>();
+        try {
+            org.json.JSONObject o = new org.json.JSONObject(prefs.getString(pk(KEY_KMY_ACCOUNT_STATUS), "{}"));
+            for (java.util.Iterator<String> it = o.keys(); it.hasNext(); ) {
+                String name = it.next();
+                out.put(name, o.optBoolean(name));
+            }
+        } catch (org.json.JSONException e) {
+            // unlesbar: dann ist nichts vorgemerkt
+        }
+        return out;
+    }
+
+    /** Merkt den Zustand eines Kontos für den nächsten Export vor. */
+    public synchronized void notePendingAccountStatus(String name, boolean closed) {
+        java.util.Map<String, Boolean> m = getPendingAccountStatus();
+        m.put(name, closed);
+        savePendingAccountStatus(m);
+    }
+
+    /** Streicht erledigte Vormerkungen – nur die, die noch den geschriebenen Zustand tragen. */
+    public synchronized void clearPendingAccountStatus(java.util.Map<String, Boolean> erledigt) {
+        java.util.Map<String, Boolean> m = getPendingAccountStatus();
+        for (java.util.Map.Entry<String, Boolean> e : erledigt.entrySet()) {
+            if (e.getValue().equals(m.get(e.getKey()))) {
+                m.remove(e.getKey());
+            }
+        }
+        savePendingAccountStatus(m);
+    }
+
+    private void savePendingAccountStatus(java.util.Map<String, Boolean> m) {
+        org.json.JSONObject o = new org.json.JSONObject();
+        try {
+            for (java.util.Map.Entry<String, Boolean> e : m.entrySet()) {
+                o.put(e.getKey(), e.getValue().booleanValue());
+            }
+        } catch (org.json.JSONException e) {
+            return;
+        }
+        prefs.edit().putString(pk(KEY_KMY_ACCOUNT_STATUS), o.toString()).apply();
     }
 
     /** Schreibziel ist die .kmy-Datei – nur im vollen kmy-Modus. */
