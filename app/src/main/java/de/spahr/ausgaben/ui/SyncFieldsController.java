@@ -117,13 +117,16 @@ final class SyncFieldsController {
                     : position == 2 ? SettingsStore.SERVER_SMB
                     : position == 3 ? SettingsStore.SERVER_LOCAL : SettingsStore.SERVER_NEXTCLOUD;
             // Eine Server-Adresse ist kein Ordner und umgekehrt: beim Wechsel von oder zu „lokal"
-            // gehört das Adressfeld geleert, sonst hielte die App das eine für das andere.
+            // gehört ins Adressfeld nur, was zur neuen Art passt – die gespeicherte Adresse, wenn sie
+            // dazu passt (wer hin- und zurückwechselt, findet seinen Ordner wieder), sonst nichts.
             boolean lokalVorher = SettingsStore.SERVER_LOCAL.equals(vorher);
             boolean lokalJetzt = SettingsStore.SERVER_LOCAL.equals(selectedServerType);
             if (lokalVorher != lokalJetzt) {
-                editUrl.setText("");
+                String gespeichert = settings.getUrl();
+                boolean gespeichertLokal = gespeichert.startsWith("content://");
+                editUrl.setText(gespeichertLokal == lokalJetzt ? gespeichert : "");
             }
-            settings.setServerType(selectedServerType);
+            // Gespeichert wird erst mit der Maske – „Zurück" verwirft die Wahl wie die übrigen Felder.
             applyServerTypeHints();
         });
     }
