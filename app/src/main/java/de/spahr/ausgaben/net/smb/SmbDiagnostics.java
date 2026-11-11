@@ -85,7 +85,7 @@ public final class SmbDiagnostics {
         try {
             link = SmbSessions.open(host, port, false);
         } catch (Exception e) {
-            log.fail(reason(e));
+            log.fail(reason(SmbErrors.Step.CONNECT, e));
             return log.steps();
         }
         try {
@@ -108,7 +108,7 @@ public final class SmbDiagnostics {
             try {
                 session = SmbSessions.authenticate(link.connection, user, password);
             } catch (Exception e) {
-                log.fail(reason(e));
+                log.fail(reason(SmbErrors.Step.LOGIN, e));
                 return log.steps();
             }
             log.ok((session.isGuest() ? t("als Gast", "as guest") : t("als Benutzer", "as user"))
@@ -123,7 +123,7 @@ public final class SmbDiagnostics {
                                     ", \"" + share + "\" is not among them")));
             } catch (Exception e) {
                 // Kein Abbruch: manche Server verbieten nur die Auskunft, nicht den Zugriff.
-                log.fail(reason(e));
+                log.fail(reason(SmbErrors.Step.SHARE, e));
             }
 
             log.begin(t("Freigabe „" + share + "\" öffnen", "Open share \"" + share + "\""));
@@ -131,7 +131,7 @@ public final class SmbDiagnostics {
             try {
                 disk = (DiskShare) session.connectShare(share);
             } catch (Exception e) {
-                log.fail(reason(e));
+                log.fail(reason(SmbErrors.Step.SHARE, e));
                 return log.steps();
             }
             try {
@@ -147,7 +147,7 @@ public final class SmbDiagnostics {
                     }
                     log.ok(count + t(" Einträge", " entries"));
                 } catch (Exception e) {
-                    log.fail(reason(e));
+                    log.fail(reason(SmbErrors.Step.FOLDER, e));
                     return log.steps();
                 }
                 writeRenameCleanup(disk, dir, log);
@@ -157,7 +157,7 @@ public final class SmbDiagnostics {
                     try {
                         exists = disk.fileExists(join(dir, file));
                     } catch (Exception e) {
-                        log.fail(reason(e));
+                        log.fail(reason(SmbErrors.Step.FOLDER, e));
                         return log.steps();
                     }
                     if (exists) {
@@ -207,7 +207,7 @@ public final class SmbDiagnostics {
                     null, SMB2ShareAccess.ALL,
                     SMB2CreateDisposition.FILE_OVERWRITE_IF, null).close();
         } catch (Exception e) {
-            log.fail(reason(e) + t(" – die App braucht ein beschreibbares Verzeichnis",
+            log.fail(reason(SmbErrors.Step.FOLDER, e) + t(" – die App braucht ein beschreibbares Verzeichnis",
                     " – the app needs a writable directory"));
             return;
         }
@@ -224,7 +224,7 @@ public final class SmbDiagnostics {
             liegengeblieben = to;
             log.ok("");
         } catch (Exception e) {
-            log.fail(reason(e) + " – " + Diagnostics.umbenennenNoetig());
+            log.fail(reason(SmbErrors.Step.FOLDER, e) + " – " + Diagnostics.umbenennenNoetig());
         }
 
         log.begin(t("Aufräumen im Ordner", "Clean up in the folder"));
@@ -232,7 +232,7 @@ public final class SmbDiagnostics {
             disk.rm(liegengeblieben);
             log.ok("");
         } catch (Exception e) {
-            log.fail(reason(e) + t(" – bitte " + liegengeblieben + " von Hand löschen",
+            log.fail(reason(SmbErrors.Step.FOLDER, e) + t(" – bitte " + liegengeblieben + " von Hand löschen",
                     " – please delete " + liegengeblieben + " by hand"));
         }
     }
@@ -250,7 +250,7 @@ public final class SmbDiagnostics {
                     SMB2CreateDisposition.FILE_OPEN, null).close();
             log.ok("");
         } catch (Exception e) {
-            log.fail(reason(e) + t(" – Rückschreiben wäre nicht möglich",
+            log.fail(reason(SmbErrors.Step.FOLDER, e) + t(" – Rückschreiben wäre nicht möglich",
                     " – writing back would not be possible"));
         }
     }
@@ -289,7 +289,7 @@ public final class SmbDiagnostics {
             }
             checkEncoding(bos.toByteArray(), log);
         } catch (Exception e) {
-            log.fail(reason(e));
+            log.fail(reason(SmbErrors.Step.FOLDER, e));
         }
     }
 
@@ -364,6 +364,14 @@ public final class SmbDiagnostics {
     private static String reason(Throwable e) {
         String raw = Diagnostics.shorten(SmbErrors.textOf(e));
         return raw.isEmpty() ? e.getClass().getSimpleName() : raw;
+    }
+
+    /**
+     * Wie {@link #reason(Throwable)}, aber vorneweg verständlich, was los ist – der rohe Text mit dem
+     * Statuscode folgt in Klammern, damit ein Bericht aus der Ferne zuzuordnen bleibt.
+     */
+    private static String reason(SmbErrors.Step step, Throwable e) {
+        return SmbErrors.hint(step, e) + " (" + reason(e) + ")";
     }
 
     private static String folderOf(String path) {

@@ -9,6 +9,7 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 
 import de.spahr.ausgaben.R;
+import de.spahr.ausgaben.net.Diagnostics;
 
 /**
  * Übersetzt die Ausnahmen der SMB-Schicht in Meldungen, die dem Benutzer sagen, was zu tun ist –
@@ -87,6 +88,37 @@ public final class SmbErrors {
             default:
                 return R.string.smb_err_unknown;
         }
+    }
+
+    /**
+     * Dieselbe Deutung wie {@link #messageFor}, aber ohne Android-Ressourcen, auf Deutsch oder Englisch
+     * wie der übrige Diagnosebericht ({@link de.spahr.ausgaben.net.Diagnostics#t}).
+     */
+    static String hint(Step step, Throwable error) {
+        int id = reasonFor(step, error);
+        if (id == R.string.smb_err_unreachable) {
+            return Diagnostics.t("Server nicht erreichbar", "Server not reachable");
+        } else if (id == R.string.smb_err_credentials) {
+            return Diagnostics.t("Benutzername oder Passwort ungültig", "Username or password invalid");
+        } else if (id == R.string.smb_err_share) {
+            return Diagnostics.t("Freigabe nicht verfügbar", "Share not available");
+        } else if (id == R.string.smb_err_folder_denied) {
+            return Diagnostics.t("Zugriff verweigert", "Access denied");
+        } else if (id == R.string.smb_err_guest_signing) {
+            return Diagnostics.t("Server verlangt Signierung, Anmeldung lief als Gast – Benutzer und "
+                    + "Passwort angeben", "Server requires signing but treated the login as guest – "
+                    + "enter user and password");
+        } else if (id == R.string.smb_err_encryption) {
+            return Diagnostics.t("Freigabe verlangt Verschlüsselung (SMB 3 nötig)",
+                    "Share requires encryption (SMB 3 needed)");
+        } else if (id == R.string.smb_err_dfs) {
+            return Diagnostics.t("Freigabe verweist auf ein unerreichbares DFS-Ziel",
+                    "Share points to an unreachable DFS target");
+        } else if (id == R.string.smb_err_smb1) {
+            return Diagnostics.t("Server spricht nur SMB1 – SMB2/3 aktivieren",
+                    "Server only speaks SMB1 – enable SMB2/3");
+        }
+        return Diagnostics.t("Unerwarteter SMB-Fehler", "Unexpected SMB error");
     }
 
     /** Hängt den rohen Grund in Klammern an – einzeilig und gekürzt. */

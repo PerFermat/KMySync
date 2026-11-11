@@ -64,6 +64,14 @@ public class SmbDiagnosticsTest {
         assertTrue(report, report.contains("✗ Verbinden"));
     }
 
+    /** Ein Fehlschritt sagt zuerst verständlich, was los ist; der rohe Grund folgt in Klammern. */
+    @Test
+    public void failedStepStartsWithAReadableReason() {
+        String report = SmbDiagnostics.report(
+                SmbDiagnostics.run("smb://127.0.0.1:1/daten", "", "", "Finanzen", ""));
+        assertTrue(report, report.contains("Server nicht erreichbar ("));
+    }
+
     @Test
     public void emptyAddressSaysSoInsteadOfPrintingBlanks() {
         String report = SmbDiagnostics.report(SmbDiagnostics.run("", "", "", ""));
