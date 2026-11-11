@@ -8,13 +8,6 @@ instead of typing everything in by hand later.
 
 > Offline-first · no account, no ads, no tracking · open source.
 
-> [!NOTE]
-> **KMySync was previously called “Ausgaben”.** It is the same program, just under a new name.
-> If you already have “Ausgaben” installed, simply install the new version over it — it arrives as
-> a normal update: the package id (`de.spahr.ausgaben`) and the signing key are unchanged, so all
-> your bookings, profiles, settings and receipts stay exactly where they are. There is nothing to
-> export, uninstall or migrate. Only the name and the launcher label change.
-
 📖 The full user manual describes every feature in detail, with screenshots –
 **[read it online: kmysync.michaelspahr.de/en](https://kmysync.michaelspahr.de/en/)** or as a
 **[PDF (English)](docs/Manual-KMySync-en.pdf)**.

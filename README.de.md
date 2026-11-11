@@ -8,14 +8,6 @@ nach KMyMoney, statt alles später von Hand nachzutragen.
 
 > Offline-first · kein Konto, keine Werbung, kein Tracking · Open Source.
 
-> [!NOTE]
-> **KMySync hieß früher „Ausgaben".** Es ist dasselbe Programm, nur unter neuem Namen.
-> Wer „Ausgaben" bereits installiert hat, spielt die neue Fassung einfach darüber – sie kommt als
-> ganz normales Update: Paket-Kennung (`de.spahr.ausgaben`) und Signaturschlüssel bleiben gleich,
-> deine Buchungen, Profile, Einstellungen und Belege bleiben also unangetastet. Es gibt nichts zu
-> exportieren, zu deinstallieren oder zu übertragen. Nur der Name und die Beschriftung im
-> App-Menü ändern sich.
-
 📖 Das vollständige Benutzerhandbuch beschreibt jede Funktion im Detail, mit Bildschirmfotos –
 **[online lesen: kmysync.michaelspahr.de](https://kmysync.michaelspahr.de/)** oder als
 **[PDF (Deutsch)](docs/Handbuch-KMySync-de.pdf)**.
