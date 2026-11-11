@@ -115,7 +115,7 @@
     {
       "type": "p",
       "id": "b-0003",
-      "text": "Die App braucht weder ein Herstellerkonto noch die Cloud eines Dritten: Der Datenaustausch mit KMyMoney läuft über einen von Ihnen bereitgestellten Ordner (Nextcloud, WebDAV oder SMB/Samba). Es gibt keine Werbung und kein Tracking. Einzige Ausnahme: Die Kartenansicht zur Standortwahl lädt ihre Kacheln von OpenStreetMap, und zwar nur, wenn Sie sie öffnen."
+      "text": "Die App braucht weder ein Herstellerkonto noch die Cloud eines Dritten: Der Datenaustausch mit KMyMoney läuft über einen von Ihnen bereitgestellten Ordner (Nextcloud, WebDAV, SMB/Samba oder ein Ordner auf dem Gerät). Es gibt keine Werbung und kein Tracking. Einzige Ausnahme: Die Kartenansicht zur Standortwahl lädt ihre Kacheln von OpenStreetMap, und zwar nur, wenn Sie sie öffnen."
     },
     {
       "type": "h2",
@@ -148,7 +148,7 @@
       "type": "steps",
       "id": "b-0005c",
       "items": [
-        "<b>Verbindung einrichten.</b> Beim ersten Start erscheint der Willkommen-Assistent. Wählen Sie Ihre Sprache, dann als Format <b>«KMyMoney-Datei (.kmy)»</b> und tragen Sie Ihren Server ein (Nextcloud, WebDAV oder SMB). <b>«Verbindung testen»</b> sagt Ihnen sofort, ob es klappt.",
+        "<b>Verbindung einrichten.</b> Beim ersten Start erscheint der Willkommen-Assistent. Wählen Sie Ihre Sprache, dann als Format <b>«KMyMoney-Datei (.kmy)»</b> und tragen Sie Ihren Server ein (Nextcloud, WebDAV oder SMB) oder wählen Sie einen Ordner auf dem Gerät. <b>«Verbindung testen»</b> sagt Ihnen sofort, ob es klappt.",
         "<b>Ihre KMyMoney-Datei wählen.</b> <b>«.kmy auswählen»</b> zeigt die Dateien im eingestellten Ordner. Nehmen Sie die, mit der Sie am Rechner arbeiten.",
         "<b>Konten einlesen.</b> <b>«Konten importieren»</b> listet die Konten aus dieser Datei. Haken Sie an, was Sie unterwegs brauchen – meist ein Bargeld- und ein Girokonto. <b>«Fertig»</b> schließt den Assistenten.",
         "<b>Die erste Ausgabe eintragen.</b> Unten rechts den runden <b>✚</b>-Knopf antippen. Betrag eingeben, Empfänger und Kategorie aus der Liste wählen, <b>«Als neu speichern»</b>. Die Buchung steht sofort in der Liste.",
@@ -262,7 +262,7 @@
           "id": "b-0019",
           "items": [
             "<b>Konto</b>: Saldo des gerade gewählten Kontos (nur wenn ein einzelnes Konto gewählt ist).",
-            "<b>Gesamt</b>: Summe aller Konten.",
+            "<b>Gesamt</b>: Summe aller Konten. Ein Konto in <b>Fremdwährung</b> zählt hier mit seinem Saldo × Devisenkurs aus KMyMoney, also in der Basiswährung der Datei; in seiner eigenen Ansicht bleibt es in seiner Währung. Gleiches gilt für die Gruppensumme und den Vermögensverlauf der Auswertung.",
             "<b>Gesamtvermögen</b>: alle Konten + aktueller Depotwert (nur wenn ein Depot importiert wurde).",
             "<b>Orte</b>: Salden der einzelnen Bargeld-Orte des Kontos.",
             "<b>Gefiltert</b>: Summe der aktuell gefilterten Buchungen (nur bei aktivem Filter)."
@@ -861,7 +861,12 @@
         {
           "type": "p",
           "id": "b-0062z7",
-          "text": "Nach dem Import eines KMyMoney-Investmentkontos erscheint das <b>Depot</b> in der Kontenschublade. Die Ansicht ist wie eine Konto-Ansicht aufgebaut – gleiche Titelleiste, gleiche Schublade, gleicher Filter – und zeigt je Wertpapier <b>Stückzahl × Kurs = aktueller Wert</b>. Vollständig verkaufte Papiere werden ausgeblendet."
+          "text": "Nach dem Import eines KMyMoney-Investmentkontos erscheint das <b>Depot</b> in der Kontenschublade. Die Ansicht ist wie eine Konto-Ansicht aufgebaut – gleiche Titelleiste, gleiche Schublade, gleicher Filter – und zeigt je Wertpapier <b>Stückzahl × Kurs = aktueller Wert</b>. Neben dem Kurs steht sein <b>Datum</b>, etwa «12,3456 × 31,50 (06.11.26)» – so sieht man gleich, ob die App einen veralteten Kurs hat. Vollständig verkaufte Papiere werden ausgeblendet."
+        },
+        {
+          "type": "p",
+          "id": "b-0062z7a",
+          "text": "<b>Wertpapiere in Fremdwährung</b>: Ein Papier, das KMyMoney in einer anderen Währung führt – etwa ein Dollar-Fonds in einer Euro-Datei –, rechnet die App mit den Devisenkursen aus KMyMoney in die Basiswährung der Datei um, jeweils mit dem Kurs des Tages. Die Zeile zeigt den Originalkurs mit Währung («1 × 83,49 USD»), der Wert rechts steht in Euro; so stimmen Depotsumme, Gesamtvermögen und Vermögensverlauf. Käufe und Verkäufe übernimmt die App mit dem Euro-Betrag, den KMyMoney gebucht hat. Fehlt in KMyMoney der Devisenkurs, rechnet die App mit dem unveränderten Betrag."
         }
       ],
       "shot": {
@@ -2217,7 +2222,7 @@
     {
       "type": "h2",
       "id": "b-0186",
-      "text": "Verbindung zu Ihrem Server (SMB / WebDAV / Nextcloud)"
+      "text": "Verbindung zu Ihrem Server (SMB / WebDAV / Nextcloud / lokaler Ordner)"
     },
     {
       "type": "p",
@@ -2231,6 +2236,7 @@
         "<b>Nextcloud</b>: Basis-URL des Servers + App-Passwort (Nextcloud → Sicherheit → App-Passwort).",
         "<b>WebDAV (generisch)</b>: vollständige DAV-Wurzel-URL, Auth per HTTP-Basic.",
         "<b>SMB/Samba</b>: wird per <b>Assistent</b> eingerichtet – siehe unten. SMB2/3.",
+        "<b>Lokaler Ordner (auf diesem Gerät)</b>: kein Server. <b>«Ordner wählen…»</b> öffnet die Ordnerauswahl von Android; darin wählen Sie die KMyMoney-Datei wie gewohnt. Gedacht für einen Ordner, den eine Sync-App wie Syncthing mit dem Rechner abgleicht. Export, Sicherungen und Belege laufen dort genauso, und «Verbindung testen» prüft Freigabe, Lesen und Schreiben.",
         "<b>«Verbindung testen»</b> prüft nicht nur die Zugangsdaten, sondern die ganze Kette bis zum Schreibrecht – siehe unten."
       ]
     },

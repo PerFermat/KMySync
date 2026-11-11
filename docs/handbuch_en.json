@@ -115,7 +115,7 @@
     {
       "type": "p",
       "id": "b-0003",
-      "text": "The app needs no vendor account and no third-party cloud: data is exchanged with KMyMoney through a folder you provide yourself (Nextcloud, WebDAV or SMB/Samba). There are no ads and no tracking. The one exception is the map for picking a location: it loads its tiles from OpenStreetMap, and only when you open it."
+      "text": "The app needs no vendor account and no third-party cloud: data is exchanged with KMyMoney through a folder you provide yourself (Nextcloud, WebDAV, SMB/Samba or a folder on the device). There are no ads and no tracking. The one exception is the map for picking a location: it loads its tiles from OpenStreetMap, and only when you open it."
     },
     {
       "type": "h2",
@@ -148,7 +148,7 @@
       "type": "steps",
       "id": "b-0005c",
       "items": [
-        "<b>Set up the connection.</b> On first start the welcome assistant appears. Choose your language, then <b>«KMyMoney file (.kmy)»</b> as the format, and enter your server (Nextcloud, WebDAV or SMB). <b>«Test connection»</b> tells you right away whether it works.",
+        "<b>Set up the connection.</b> On first start the welcome assistant appears. Choose your language, then <b>«KMyMoney file (.kmy)»</b> as the format, and enter your server (Nextcloud, WebDAV or SMB) or choose a folder on the device. <b>«Test connection»</b> tells you right away whether it works.",
         "<b>Pick your KMyMoney file.</b> <b>«Choose .kmy»</b> lists the files in the folder you configured. Take the one you work with on the desktop.",
         "<b>Import your accounts.</b> <b>«Import accounts»</b> lists the accounts in that file. Tick the ones you need while out and about – usually a cash and a checking account. <b>«Done»</b> closes the assistant.",
         "<b>Record your first expense.</b> Tap the round <b>✚</b> button at the bottom right. Enter the amount, pick payee and category from the list, then <b>«Save as new»</b>. The booking appears in the list immediately.",
@@ -262,7 +262,7 @@
           "id": "b-0019",
           "items": [
             "<b>Account</b>: balance of the currently selected account (only when a single account is selected).",
-            "<b>Total</b>: sum of all accounts.",
+            "<b>Total</b>: sum of all accounts. An account in a <b>foreign currency</b> counts here with its balance × the exchange rate from KMyMoney, i.e. in the file's base currency; in its own view it stays in its currency. The same applies to the group total and the net worth history in the analysis.",
             "<b>Net worth</b>: all accounts + current portfolio value (only after a portfolio was imported).",
             "<b>Places</b>: balances of the account's individual cash places.",
             "<b>Filtered</b>: sum of the currently filtered bookings (only when a filter is active)."
@@ -861,7 +861,12 @@
         {
           "type": "p",
           "id": "b-0062z7",
-          "text": "After importing a KMyMoney investment account, the <b>portfolio</b> appears in the account drawer. The view is structured like a regular account view – same title bar, same drawer, same filter – and shows for each security <b>quantity × price = current value</b>. Fully sold securities are hidden."
+          "text": "After importing a KMyMoney investment account, the <b>portfolio</b> appears in the account drawer. The view is structured like a regular account view – same title bar, same drawer, same filter – and shows for each security <b>quantity × price = current value</b>. Next to the price stands its <b>date</b>, e.g. «12.3456 × 31.50 (11/6/26)» – so you see at once whether the app has an outdated price. Fully sold securities are hidden."
+        },
+        {
+          "type": "p",
+          "id": "b-0062z7a",
+          "text": "<b>Securities in a foreign currency</b>: a security that KMyMoney keeps in another currency – say a dollar fund in a euro file – is converted by the app into the file's base currency using KMyMoney's exchange rates, each time with the rate of that day. The row shows the original price with its currency («1 × 83.49 USD»), the value on the right is in euros; so the portfolio total, net worth and net worth history add up. Buys and sells are taken over with the euro amount KMyMoney booked. If KMyMoney has no exchange rate, the app uses the unconverted amount."
         }
       ],
       "shot": {
@@ -2212,7 +2217,7 @@
     {
       "type": "h2",
       "id": "b-0186",
-      "text": "Connection to your server (SMB / WebDAV / Nextcloud)"
+      "text": "Connection to your server (SMB / WebDAV / Nextcloud / local folder)"
     },
     {
       "type": "p",
@@ -2226,6 +2231,7 @@
         "<b>Nextcloud</b>: base URL of the server + app password (Nextcloud → Security → App password).",
         "<b>WebDAV (generic)</b>: full DAV root URL, auth via HTTP basic.",
         "<b>SMB/Samba</b>: set up through a <b>wizard</b> – see below. SMB2/3.",
+        "<b>Local folder (on this device)</b>: no server. <b>«Choose folder…»</b> opens Android's folder picker; in it you choose the KMyMoney file as usual. Meant for a folder that a sync app such as Syncthing keeps in step with the computer. Export, backups and receipts work there just the same, and «Test connection» checks the access grant, reading and writing.",
         "<b>«Test connection»</b> checks more than the credentials: the whole chain up to the write permission – see below."
       ]
     },
