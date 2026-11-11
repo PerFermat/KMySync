@@ -193,4 +193,43 @@ public class KmyGpgTest {
         }
         return out.toString("US-ASCII");
     }
+
+    private static KmyGpg.Schluessel nurUnterschluessel(String passphrase) throws Exception {
+        return KmyGpg.Schluessel.aus(new String(KmyRobustnessTest.fixture("gpg/nur-unterschluessel.asc"),
+                StandardCharsets.US_ASCII), passphrase);
+    }
+
+    /**
+     * Das Mindestmaß fürs Handy: nur der Unterschlüssel zum Verschlüsseln, der Hauptschlüssel als leerer
+     * Platzhalter. Damit liest und schreibt die App die Datei genauso.
+     */
+    @Test
+    public void nurDerUnterschluesselGenuegt() throws Exception {
+        KmyGpg.Schluessel s = nurUnterschluessel(PASSPHRASE);
+        s.pruefePassphrase();
+        KmyGpg.Ergebnis vorher = KmyGpg.entschluesseln(KmyRobustnessTest.fixture("gpg/edited.kmy"), s);
+        assertArrayEquals(KmyRobustnessTest.fixture("edited.xml"), vorher.klar);
+        byte[] neu = KmyGpg.verschluesseln(vorher.klar, vorher.huelle, s);
+        KmyGpg.Ergebnis nachher = KmyGpg.entschluesseln(neu, s);
+        assertArrayEquals(vorher.klar, nachher.klar);
+        assertEquals(Collections.singletonList(EMPFAENGER), nachher.huelle.empfaenger);
+    }
+
+    @Test
+    public void nurDerUnterschluesselFalschePassphrase() throws Exception {
+        try {
+            nurUnterschluessel("falsch").pruefePassphrase();
+            fail("falsche Passphrase nicht erkannt");
+        } catch (KmyGpg.Fehler e) {
+            assertEquals(KmyGpg.Art.PASSPHRASE, e.art);
+        }
+    }
+
+    /** Die Warnung beim Einspielen hängt daran, ob der private Hauptschlüssel mitkommt. */
+    @Test
+    public void erkenntDenPrivatenHauptschluessel() throws Exception {
+        assertTrue(schluessel().hatPrivatenHauptschluessel());
+        assertFalse(nurUnterschluessel(PASSPHRASE).hatPrivatenHauptschluessel());
+        assertTrue(nurUnterschluessel(PASSPHRASE).hatPrivat());
+    }
 }

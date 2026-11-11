@@ -1087,6 +1087,9 @@
     <string name="gpg_public">öffentlich</string>
     <string name="gpg_passphrase_title">Passphrase des privaten Schlüssels</string>
     <string name="gpg_passphrase_wrong">Die Passphrase passt nicht zum Schlüssel. Es wurde nichts übernommen.</string>
+    <string name="gpg_master_warning_title">Privater Hauptschlüssel enthalten</string>
+    <string name="gpg_master_warning">Die Datei enthält den privaten Teil deines Hauptschlüssels. Er signiert und beglaubigt und öffnet oft weit mehr als die KMyMoney-Datei, etwa deine E-Mails. Sicherer: nur den Unterschlüssel zum Verschlüsseln exportieren (gpg --export-secret-subkeys --armor &lt;Unterschlüssel-ID&gt;!) oder einen eigenen Schlüssel nur für dieses Handy verwenden.</string>
+    <string name="gpg_master_continue">Trotzdem einspielen</string>
     <string name="gpg_file_unreadable">In der Datei steht kein lesbarer OpenPGP-Schlüssel.</string>
     <string name="gpg_saved">GPG-Schlüssel übernommen.</string>
     <string name="gpg_removed">GPG-Schlüssel entfernt.</string>

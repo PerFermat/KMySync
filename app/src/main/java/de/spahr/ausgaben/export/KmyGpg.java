@@ -219,6 +219,22 @@ public final class KmyGpg {
         }
 
         /**
+         * Ob der private Teil eines <b>Hauptschlüssels</b> dabei ist – der signiert und beglaubigt und
+         * öffnet oft weit mehr als die .kmy. Ein Export nur des Unterschlüssels
+         * ({@code gpg --export-secret-subkeys … <ID>!}) enthält ihn als leeren Platzhalter („GNU-dummy");
+         * zum Lesen und Schreiben der Datei genügt das.
+         */
+        public boolean hatPrivatenHauptschluessel() {
+            for (PGPSecretKeyRing r : geheim) {
+                PGPSecretKey haupt = r.getSecretKey();
+                if (haupt != null && !haupt.isPrivateKeyEmpty()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /**
          * Prüft die Passphrase an jedem privaten Schlüssel: wirft {@link Art#PASSPHRASE}, wenn sie
          * für keinen taugt. Für das Einspielen in den Einstellungen.
          */

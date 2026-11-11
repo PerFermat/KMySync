@@ -156,7 +156,15 @@ final class GpgKeysController {
         }
         String alt = settings.getGpgKeys();
         String zusammen = alt.isEmpty() ? neu.trim() : alt.trim() + "\n" + neu.trim();
-        if (nurNeu.hatPrivat()) {
+        if (nurNeu.hatPrivatenHauptschluessel()) {
+            // Der ganze private Schlüssel aufs Handy: einmal deutlich sagen, was sicherer wäre.
+            new AppDialog(activity)
+                    .setTitle(R.string.gpg_master_warning_title)
+                    .setMessage(R.string.gpg_master_warning)
+                    .setPositiveButton(R.string.gpg_master_continue, (d, w) -> passphraseFragen(zusammen))
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
+        } else if (nurNeu.hatPrivat()) {
             passphraseFragen(zusammen);
         } else {
             uebernehmen(zusammen, settings.getGpgPassphrase());

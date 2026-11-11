@@ -1121,6 +1121,9 @@
     <string name="gpg_public">public</string>
     <string name="gpg_passphrase_title">Passphrase of the private key</string>
     <string name="gpg_passphrase_wrong">The passphrase does not match the key. Nothing was stored.</string>
+    <string name="gpg_master_warning_title">Main private key included</string>
+    <string name="gpg_master_warning">This file contains the private part of your main key. It signs and certifies, and it often opens far more than the KMyMoney file, e.g. your e-mail. Safer: export only the encryption subkey (gpg --export-secret-subkeys --armor &lt;subkey ID&gt;!) or use a separate key just for this phone.</string>
+    <string name="gpg_master_continue">Import anyway</string>
     <string name="gpg_file_unreadable">The file contains no readable OpenPGP key.</string>
     <string name="gpg_saved">GPG key stored.</string>
     <string name="gpg_removed">GPG keys removed.</string>

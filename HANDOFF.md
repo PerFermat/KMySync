@@ -77,6 +77,19 @@ seit 2.4 nicht neu erzeugt (`python3 docs/build_manual_web.py`, dann `deploy-ser
 - GitHub: Issue #13 (Verschlüsselung) noch ohne Antwort an visionok; Issue #12 (Paras, Herunterziehen
   aktualisiert nur das angezeigte Depot) beantwortet, offen. #11 ist erledigt und geschlossen.
 
+### Erledigt am 11.11. (anderer Rechner)
+
+- Volle Testsuite hier gelaufen: grün. `gpg/edited.kmy` fehlte im Repo (`.gitignore` schließt `.kmy`
+  aus) – neu erzeugt und mit `-f` eingecheckt.
+- Punkt 1–3 unten erledigt: Unterschlüssel-Export funktioniert ohne Änderung
+  (`nur-unterschluessel.asc`, `KmyGpgTest`); Warnung beim Einspielen des privaten Hauptschlüssels
+  (`KmyGpg.Schluessel.hatPrivatenHauptschluessel`, `GpgKeysController`); Handbuch `b-0171g2` neu
+  geordnet, dazu `b-0171g3`: Buchungen liegen in der App unverschlüsselt, App-Sperre empfohlen.
+- Verschlüsselung der App-Datenbank selbst verworfen: ginge nur mit nativer SQLCipher-Bibliothek, das
+  will Michael nicht.
+- Antwort an visionok in Issue #13 gepostet (ohne den Satz zur Warnung, die gab es da noch nicht), mit
+  Bitte um Rückmeldung mit echten verschlüsselten Daten.
+
 ### Nächster Schritt (Michael macht am 12.11. weiter): Sicherheit des privaten Schlüssels
 
 Michael fragte, ob das Einspielen des privaten GPG-Schlüssels bedenklich ist. Stand der Antwort:

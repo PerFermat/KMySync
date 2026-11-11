@@ -2033,14 +2033,20 @@
       "type": "bullets",
       "id": "b-0171g2",
       "items": [
-        "<b>Schlüssel ausführen</b> (am Rechner): <b>gpg --export-secret-keys --armor &lt;Schlüssel-ID&gt; &gt; handy.asc</b>. Die Datei aufs Handy bringen, über «GPG-Schlüssel…» einspielen und die Passphrase einmal eingeben; die App prüft sie gleich. Danach die Datei vom Handy wieder löschen.",
-        "<b>Ein eigener Schlüssel fürs Handy</b> ist die sicherere Wahl: In KMyMoney lässt sich die Datei zusätzlich an weitere Schlüssel verschlüsseln. Dann liegt auf dem Handy nie der Hauptschlüssel, und geht das Handy verloren, wird nur dieser eine Schlüssel widerrufen.",
+        "<b>Ein eigener Schlüssel fürs Handy</b> ist die sicherste Wahl: In KMyMoney lässt sich die Datei zusätzlich an weitere Schlüssel verschlüsseln. Dann liegt auf dem Handy nie der Hauptschlüssel, und geht das Handy verloren, wird nur dieser eine Schlüssel widerrufen.",
+        "<b>Mindestens nur den Unterschlüssel exportieren</b> (am Rechner): <b>gpg --list-keys --keyid-format long</b> zeigt ihn in der Zeile «sub … [E]»; dann <b>gpg --export-secret-subkeys --armor &lt;Unterschlüssel-ID&gt;! &gt; handy.asc</b> – das Ausrufezeichen gehört dazu. Zum Lesen und Schreiben der Datei genügt der Unterschlüssel; der Hauptschlüssel, der signiert und oft auch E-Mails öffnet, bleibt so am Rechner. Den ganzen Schlüssel (<b>gpg --export-secret-keys</b>) nimmt die App auch, warnt aber vorher.",
+        "<b>Einspielen</b>: Die Datei aufs Handy bringen, über «GPG-Schlüssel…» einspielen und die Passphrase einmal eingeben; die App prüft sie gleich. Danach die Datei vom Handy wieder löschen.",
         "<b>Weitere Empfänger</b>: Ist die Datei an mehrere Schlüssel verschlüsselt, schreibt die App sie wieder an genau dieselben zurück. Dafür braucht sie von jedem den <b>öffentlichen</b> Schlüssel (<b>gpg --export --armor &lt;ID&gt;</b>, einspielen über «Weiteren einspielen»). Fehlt einer, schreibt die App nichts – sonst könnte dieser Empfänger, etwa KMyMoney am Rechner, die Datei nicht mehr öffnen.",
         "Auch der <b>Wiederherstellungsschlüssel</b> von KMyMoney («Verschlüsseln mit Wiederherstellungsschlüssel») ist so ein weiterer Empfänger; seinen öffentlichen Schlüssel spielen Sie bei Bedarf genauso ein.",
         "<b>Passphrase</b>: Sie liegt zusammen mit den Schlüsseln verschlüsselt auf dem Gerät (Android-Schlüsselspeicher), wie das Server-Passwort, und wird nicht bei jedem Import abgefragt. Alle privaten Schlüssel eines Profils brauchen dieselbe Passphrase. Wer das Handy zusätzlich schützen will, schaltet die <b>biometrische Sperre</b> ein (Sicherheit &amp; Datenschutz).",
         "Die Schlüssel stehen in keiner Sicherung; nach einem Gerätewechsel spielen Sie sie neu ein.",
         "<b>KMyMoney-Datenbank statt .kmy</b>: Eine Datenbank verschlüsselt KMyMoney nicht mit GPG, sondern mit einem <b>Passwort</b> (beim Anlegen den Treiber «SQLCipher» wählen). Das Passwort hinterlegen Sie über «Datenbank-Passwort…»; es liegt ebenso verschlüsselt auf dem Gerät. Ob es passt, zeigt der nächste Import."
       ]
+    },
+    {
+      "type": "p",
+      "id": "b-0171g3",
+      "text": "GPG und SQLCipher schützen die Datei auf dem Server und in dessen Sicherungen. Nach dem Import liegen die Buchungen in der App <b>unverschlüsselt</b>; dort schützt sie die Gerätesperre des Handys. Zusätzlich empfiehlt sich die <b>biometrische Sperre</b> der App (Sicherheit &amp; Datenschutz)."
     },
     {
       "type": "h1",

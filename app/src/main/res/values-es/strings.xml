@@ -1080,6 +1080,9 @@
     <string name="gpg_public">pública</string>
     <string name="gpg_passphrase_title">Frase de contraseña de la clave privada</string>
     <string name="gpg_passphrase_wrong">La frase de contraseña no coincide con la clave. No se ha guardado nada.</string>
+    <string name="gpg_master_warning_title">Clave principal privada incluida</string>
+    <string name="gpg_master_warning">El archivo contiene la parte privada de tu clave principal. Firma y certifica, y a menudo abre mucho más que el archivo de KMyMoney, por ejemplo tu correo. Más seguro: exportar solo la subclave de cifrado (gpg --export-secret-subkeys --armor &lt;ID de subclave&gt;!) o usar una clave propia solo para este móvil.</string>
+    <string name="gpg_master_continue">Importar de todos modos</string>
     <string name="gpg_file_unreadable">El archivo no contiene ninguna clave OpenPGP legible.</string>
     <string name="gpg_saved">Clave GPG guardada.</string>
     <string name="gpg_removed">Claves GPG quitadas.</string>
