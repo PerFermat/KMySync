@@ -233,7 +233,7 @@ public final class KmyAccountImport {
             new Thread(() -> {
                 try {
                     repository.applyScheduledTransactions(importer.scheduledTransactions(),
-                            () -> repository.reopenAccountsWithBalance(ui::finished));
+                            () -> repository.reopenAccountsWithBalance(geschlosseneKonten(importer), ui::finished));
                 } catch (Exception e) {
                     ui.failed(e);
                 }
@@ -241,7 +241,7 @@ public final class KmyAccountImport {
             return;
         }
         // Zum Schluss: geschlossene Konten, die wieder einen Saldo haben, öffnen sich von selbst.
-        repository.reopenAccountsWithBalance(ui::finished);
+        repository.reopenAccountsWithBalance(geschlosseneKonten(importer), ui::finished);
     }
 
     private static boolean containsIgnoreCase(List<String> list, String name) {
@@ -263,5 +263,16 @@ public final class KmyAccountImport {
         String p = path.trim();
         int slash = p.lastIndexOf('/');
         return slash < 0 ? p : p.substring(slash + 1);
+    }
+
+    /** Die Konten und Depots, die KMyMoney geschlossen führt – dort entscheidet die Datei. */
+    private static java.util.Set<String> geschlosseneKonten(KmyImporter importer) {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        for (java.util.Map.Entry<String, Boolean> e : importer.closedAccounts().entrySet()) {
+            if (Boolean.TRUE.equals(e.getValue())) {
+                out.add(e.getKey());
+            }
+        }
+        return out;
     }
 }

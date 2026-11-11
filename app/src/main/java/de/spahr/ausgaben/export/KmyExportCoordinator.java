@@ -168,8 +168,10 @@ public class KmyExportCoordinator {
         for (de.spahr.ausgaben.db.SecurityTx tx : securityTx) {
             tx.parts = repository.securityDao().getSplits(tx.id);
         }
+        // Auch ein in der App geschlossenes oder wieder geöffnetes Konto ist etwas zu exportieren.
         if (bookings.isEmpty() && edited.isEmpty() && pendingDeletes.isEmpty()
-                && advances.isEmpty() && securityTx.isEmpty()) {
+                && advances.isEmpty() && securityTx.isEmpty()
+                && settings.getPendingAccountStatus().isEmpty()) {
             return Outcome.done(r.getString(de.spahr.ausgaben.R.string.export_none), false);
         }
 

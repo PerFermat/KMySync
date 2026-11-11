@@ -522,7 +522,7 @@
         {
           "type": "p",
           "id": "b-0042d",
-          "text": "Dieselbe Ankreuzliste trägt neben «OK» die Schaltfläche <b>«Konto schließen»</b> bzw. «Konto wiedereröffnen»; sie übernimmt die gesetzten Haken mit. Geschlossen wird nur bei <b>Saldo 0</b>. Bekommt ein geschlossenes Konto durch einen Import wieder einen Saldo, öffnet es sich von selbst. <b>Mit KMyMoney abgeglichen</b>: Ein in KMyMoney geschlossenes Konto kommt geschlossen in die App – in der Kontenauswahl beim Import steht es am Ende mit dem Zusatz «(geschlossen)». Umgekehrt überträgt im .kmy-Modus der nächste Export, was Sie in der App schließen oder wieder öffnen, nach KMyMoney."
+          "text": "Dieselbe Ankreuzliste trägt neben «OK» die Schaltfläche <b>«Konto schließen»</b> bzw. «Konto wiedereröffnen»; sie übernimmt die gesetzten Haken mit. Geschlossen wird nur bei <b>Saldo 0</b>. Bekommt ein geschlossenes Konto durch einen Import wieder einen Saldo, öffnet es sich von selbst – außer KMyMoney führt es selbst als geschlossen. <b>Mit KMyMoney abgeglichen</b>: Ein in KMyMoney geschlossenes Konto kommt geschlossen in die App – in der Kontenauswahl beim Import steht es am Ende mit dem Zusatz «(geschlossen)». Umgekehrt überträgt im .kmy-Modus der nächste Export, was Sie in der App schließen oder wieder öffnen, nach KMyMoney."
         },
         {
           "type": "h3",

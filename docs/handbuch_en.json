@@ -522,7 +522,7 @@
         {
           "type": "p",
           "id": "b-0042d",
-          "text": "The same tick list carries, next to «OK», a <b>«Close account»</b> (or «Reopen account») button; it applies the ticks along the way. Closing is offered only at a <b>balance of 0</b>. If a closed account regains a balance on import, it reopens by itself. <b>Kept in step with KMyMoney</b>: an account closed in KMyMoney arrives closed in the app – in the account selection on import it is listed last with «(closed)». The other way round, in .kmy mode the next export carries over to KMyMoney what you close or reopen in the app."
+          "text": "The same tick list carries, next to «OK», a <b>«Close account»</b> (or «Reopen account») button; it applies the ticks along the way. Closing is offered only at a <b>balance of 0</b>. If a closed account regains a balance on import, it reopens by itself – unless KMyMoney itself lists it as closed. <b>Kept in step with KMyMoney</b>: an account closed in KMyMoney arrives closed in the app – in the account selection on import it is listed last with «(closed)». The other way round, in .kmy mode the next export carries over to KMyMoney what you close or reopen in the app."
         },
         {
           "type": "h3",

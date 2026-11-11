@@ -188,8 +188,11 @@ public class Repository {
     /**
      * Öffnet geschlossene Konten wieder, die durch einen Import erneut einen Saldo bekommen haben.
      * Geschlossen wird nur bei Saldo 0 – ein Saldo ungleich 0 heißt also, dass das Konto wieder lebt.
+     *
+     * <p>Ausgenommen sind Konten, die KMyMoney selbst geschlossen führt ({@code geschlossenInDatei}):
+     * Dort entscheidet die Datei, auch wenn ein Restsaldo stehen geblieben ist.</p>
      */
-    public void reopenAccountsWithBalance(final Runnable onDone) {
+    public void reopenAccountsWithBalance(final java.util.Set<String> geschlossenInDatei, final Runnable onDone) {
         executor.execute(() -> {
             Map<String, Long> balances = new HashMap<>();
             for (AccountBalance ab : bookingDao.getAllAccountBalances()) {
@@ -199,7 +202,8 @@ public class Repository {
             }
             for (String closed : accountDao.getClosedNames()) {
                 Long balance = balances.get(closed);
-                if (balance != null && balance != 0) {
+                if (balance != null && balance != 0
+                        && (geschlossenInDatei == null || !geschlossenInDatei.contains(closed))) {
                     accountDao.setClosed(closed, false);
                 }
             }
