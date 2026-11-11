@@ -83,6 +83,13 @@ final class SyncFieldsController {
                 new androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree(),
                 this::onLocalFolderChosen);
         btnLocalFolder.setOnClickListener(v -> localFolderPicker.launch(null));
+        // Die Beschriftung folgt dem (versteckten) Adressfeld: Die Profileinstellungen füllen es erst
+        // nach der Wahl der Serverart, und der Knopf zeigte sonst „Ordner wählen…" statt des Ordners.
+        editUrl.addTextChangedListener(new SimpleWatcher(() -> {
+            if (btnLocalFolder.getVisibility() == View.VISIBLE) {
+                updateLocalFolderLabel();
+            }
+        }));
         // Der Assistent entscheidet über seine Schritte selbst; was daneben sichtbar ist, gehört
         // hierher. Deshalb meldet er nur, daß sich etwas geändert hat.
         smbWizard.setOnStepChanged(this::applyServerTypeHints);
