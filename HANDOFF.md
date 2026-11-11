@@ -93,6 +93,8 @@ seit 2.4 nicht neu erzeugt (`python3 docs/build_manual_web.py`, dann `deploy-ser
   Datei/Datenbank wird erst mit „Speichern“ übernommen (Schlüssel/Passwort bleiben sofort);
   `androidx.security` ist entfernt. Offen bleibt: „Zurück führt in den Assistenten“ – im Code keine
   Ursache gefunden, Michael liefert die Schritte.
+- Entschieden: Sind alle Konten eines Profils geschlossen, erscheint weiter der Willkommen-Assistent
+  (Michael: „so lassen“). GPG/SQLCipher im Release-Build hat Michael am Handy geprüft.
 - Antwort an visionok in Issue #13 gepostet (ohne den Satz zur Warnung, die gab es da noch nicht), mit
   Bitte um Rückmeldung mit echten verschlüsselten Daten.
 
