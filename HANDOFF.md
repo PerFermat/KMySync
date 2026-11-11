@@ -77,6 +77,55 @@ seit 2.4 nicht neu erzeugt (`python3 docs/build_manual_web.py`, dann `deploy-ser
 - GitHub: Issue #13 (Verschlüsselung) noch ohne Antwort an visionok; Issue #12 (Paras, Herunterziehen
   aktualisiert nur das angezeigte Depot) beantwortet, offen. #11 ist erledigt und geschlossen.
 
+### Nächster Schritt (Michael macht am 12.11. weiter): Sicherheit des privaten Schlüssels
+
+Michael fragte, ob das Einspielen des privaten GPG-Schlüssels bedenklich ist. Stand der Antwort:
+
+- **Hochgeladen wird nichts.** Die `.asc` wird nur auf dem Handy eingelesen; Schlüssel und Passphrase
+  liegen im `SecretStore` (Android-Keystore), in keiner Sicherung.
+- **Risiken:** Schlüssel und Passphrase liegen *zusammen* auf dem Gerät – wer die App-Daten eines
+  entsperrten oder gerooteten Handys ausliest, hat den Schlüssel einsatzbereit (die App-Sperre schützt
+  nur die Oberfläche). Schwerer wiegt, **was der Schlüssel sonst noch öffnet**: alle Fassungen der .kmy
+  auf Server und in Sicherungen, und beim Hauptschlüssel auch alles andere (E-Mails). Beim Export des
+  ganzen Schlüssels liegt zudem der **Signaturschlüssel** auf dem Handy. Die `.asc` unterwegs (Mail,
+  Cloud, Download-Ordner) nach dem Einspielen löschen.
+- **Einordnung:** Nach dem Import liegen die Buchungen ohnehin unverschlüsselt in der App-Datenbank;
+  GPG schützt vor allem die Datei auf dem Server.
+
+Offene Aufgaben dazu – **mit Michael abstimmen, dann umsetzen:**
+1. **Testen**, ob die App einen Teil-Export nur des Verschlüsselungs-Unterschlüssels liest
+   (`gpg --export-secret-subkeys --armor <UNTERSCHLÜSSEL-ID>!`, Hauptschlüssel als leerer „GNU-dummy“-
+   Stub). Ungeprüft – BouncyCastle sollte `isPrivateKeyEmpty()` liefern, `pruefePassphrase` überspringt
+   solche Schlüssel. Testschlüssel: Unterschlüssel `B06AB31369FE6554` in `~/backup.asc`, Passphrase
+   „michael“.
+2. **Warnhinweis beim Einspielen** (`ui/GpgKeysController`), wenn die Datei einen privaten
+   Signaturschlüssel enthält: Rat, nur den Unterschlüssel oder einen eigenen Schlüssel fürs Handy zu
+   nehmen.
+3. **Handbuch** (Abschnitt „Verschlüsselte KMyMoney-Dateien“, `b-0171g*`): den eigenen Schlüssel fürs
+   Handy deutlicher als *Empfehlung* formulieren, den Unterschlüssel-Export als Mindestmaß nennen.
+4. Optional später: Schlüssel nur nach Geräte-Anmeldung nutzbar (Keystore mit
+   `setUserAuthenticationRequired` + Zeitfenster, `security/BiometricAuth`).
+
+**Antwort an visionok in Issue #13 – noch NICHT posten, Michael will erst Punkt 1–3 klären.** Entwurf
+(Englisch), danach um den Rat zum eigenen Schlüssel/Unterschlüssel ergänzen:
+
+> Hi visionok,
+>
+> thanks for the kind words and the suggestion!
+>
+> Encrypted files are supported in the next version (2.5), which is currently in testing:
+>
+> - **GPG-encrypted .kmy**: as KMyMoney writes it with *Settings → Encryption*. You import your private
+>   key once (`gpg --export-secret-keys --armor <ID>`) and enter its passphrase. The app reads the file
+>   and writes it back encrypted to the same recipients. If a recipient's public key is missing, the app
+>   writes nothing, so KMyMoney on your computer can always open the file again.
+> - **SQLCipher-encrypted KMyMoney database**: you just store the database password.
+>
+> The key and passphrase are stored encrypted on the device, like the server password. The app asks for
+> them right in the setup assistant if the file turns out to be encrypted.
+>
+> I'll post here as soon as 2.5 is released.
+
 ### Achtung auf dem 7-GB-Rechner
 
 Die volle Testsuite (Gradle 2 GB + Test-Worker 3 GB) hat den Rechner dreimal eingefroren (nur 512 MB
