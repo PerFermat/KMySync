@@ -614,6 +614,7 @@ public class AnalysisActivity extends LocalizedActivity {
         barSet.setColors(barColors);
         barSet.setValueTextColor(chartText);
         barSet.setValueTextSize(11f * de.spahr.ausgaben.settings.FontScale.factor());
+        barSet.setValueFormatter(BAR_VALUES);
         BarData barData = new BarData(barSet);
         barData.setBarWidth(0.6f);
 
@@ -651,6 +652,41 @@ public class AnalysisActivity extends LocalizedActivity {
         chart.moveViewToX(lastIndex);
         chart.invalidate();
         updateScrollRightVisibility();
+        chart.post(this::updateBarValueVisibility);
+    }
+
+    /** Werte über den Balken: ganze Beträge im eingestellten Zahlenformat – Cent machen sie nur breit. */
+    private static final com.github.mikephil.charting.formatter.ValueFormatter BAR_VALUES =
+            new com.github.mikephil.charting.formatter.ValueFormatter() {
+                @Override
+                public String getFormattedValue(float value) {
+                    return de.spahr.ausgaben.settings.MoneyFormat.decimal(Math.round(value), 0, 0);
+                }
+            };
+
+    /**
+     * Blendet die Werte über den Balken aus, sobald der breiteste nicht mehr über seinen Balken passt –
+     * sonst schieben sich die Zahlen benachbarter Balken übereinander (große Jahresbeträge, viele
+     * Balken). Läuft nach dem Zeichnen und nach jedem Zoomen.
+     */
+    private void updateBarValueVisibility() {
+        if (chart.getData() == null || chart.getBarData() == null
+                || chart.getBarData().getDataSetCount() == 0) {
+            return;
+        }
+        BarDataSet set = (BarDataSet) chart.getBarData().getDataSetByIndex(0);
+        float perBar = chart.getViewPortHandler().contentWidth() / Math.max(1f, chart.getVisibleXRange());
+        android.graphics.Paint paint = new android.graphics.Paint();
+        paint.setTextSize(set.getValueTextSize());
+        float widest = 0;
+        for (int i = 0; i < set.getEntryCount(); i++) {
+            widest = Math.max(widest, paint.measureText(BAR_VALUES.getFormattedValue(set.getEntryForIndex(i).getY())));
+        }
+        boolean show = widest <= perBar * 0.95f;
+        if (set.isDrawValuesEnabled() != show) {
+            set.setDrawValues(show);
+            chart.invalidate();
+        }
     }
 
     private void setupChart() {
@@ -680,6 +716,7 @@ public class AnalysisActivity extends LocalizedActivity {
             @Override public void onChartGestureStart(MotionEvent me, ChartTouchListener.ChartGesture g) { }
             @Override public void onChartGestureEnd(MotionEvent me, ChartTouchListener.ChartGesture g) {
                 updateScrollRightVisibility();
+                updateBarValueVisibility();
             }
             @Override public void onChartLongPressed(MotionEvent me) { }
             @Override public void onChartDoubleTapped(MotionEvent me) { }
