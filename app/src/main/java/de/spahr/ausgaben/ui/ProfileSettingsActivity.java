@@ -456,7 +456,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
             ExportModeSwitch.request(this, repository, settings, chosen, () -> {
                 selectedExportMode = chosen;
                 selectedDatabase = database;
-                settings.setKmyDatabase(database);
+                // Gespeichert wird erst mit „Speichern" wie die übrigen Felder – „Zurück" verwirft es.
                 syncFields.setDatabase(database);
                 applyExportModeVisibility();
             }, () -> editExportMode.setText(
@@ -703,6 +703,7 @@ public class ProfileSettingsActivity extends LocalizedActivity implements SmbWiz
                 selectedExportMode,
                 Ui.trimmedText(editKmyPath),
                 syncFields.serverType());
+        settings.setKmyDatabase(selectedDatabase);
         settings.setCsvSeparator(selectedCsvSeparator);
         // Ein leeres oder unlesbares Feld lässt die gespeicherte Zahl stehen.
         try {
