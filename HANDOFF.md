@@ -7,6 +7,82 @@
 > Stand: 2026-09-12. **2.0 ist veröffentlicht** – Tag `v2.0` (Commit `c08dcef`) und GitHub-Release mit
 > den drei signierten APKs sind draußen. Offen ist nur noch der Merge Request; siehe unten.
 
+## Stand 2026-11-11: Arbeit vom 10. und 11.11.2026 (Rechner mit 7 GB RAM)
+
+Alles ist committet und gepusht (`4ee6853` … `8e7b01b`). Version im Repo: 2.5 / versionCode 20,
+noch nicht veröffentlicht. Die Änderungstexte `changelogs/20.txt` und „Was ist neu“ (`res/raw*/news.json`)
+sind für alles unten nachgezogen; in `20.txt` fehlen noch die Punkte vom anderen Rechner (lokaler Ordner,
+Fremdwährung u. a.).
+
+### Was neu ist
+
+1. **KMyMoney-Datenbanken aus 5.2** (`4ee6853`): geprüft sind jetzt Schema 12 (KMyMoney 5.1) bis 16
+   (5.2.2), vorher verweigerte die App jede andere Version als 12. Spalten nach Vorhandensein
+   (`kmmPayees.idPattern`/`urlTemplate` ab 13); die Schema-Version wird nie angehoben.
+   **Behobener Fehler:** 5.2 legt Budgets in `kmmBudgetConfig` in *einer* Zeile ab – das Abbild ließ
+   sie bisher ganz weg (`KmySqlite.budgetZeilen`).
+2. **GPG-verschlüsselte .kmy** (Issue #13, `c2e2696`): `export/KmyGpg.java` über BouncyCastle-Modul
+   `bcpg` (gleiche Fassung 1.79, leichtes Bc-API, keine Keep-Regeln). KMyMoney/GnuPG 2.4 schreibt
+   ASCII-armored, AEAD/OCB, darin ZLIB und reines XML. Zurück in derselben Hülle an dieselben
+   Empfänger; fehlt ein öffentlicher Schlüssel, wird nichts geschrieben. Schlüssel + Passphrase je Profil
+   im `SecretStore` (Profileinstellungen „GPG-Schlüssel…“).
+3. **SQLCipher-verschlüsselte Datenbank** (Issue #13, `b934b8f`): `export/KmySqlCipher.java`, ein
+   Seitenwandler in reinem Java (keine nativen Bibliotheken!). KMyMoney 5.2.2 schreibt SQLCipher 3
+   (PBKDF2-SHA1 64 000, Seite 1024, Reserve 48). Passwort je Profil („Datenbank-Passwort…“).
+   Dabei behoben: Die Erkennung binärer GPG-Dateien sah nur aufs erste Byte und hätte jede ~25.
+   SQLCipher-Datenbank für GPG gehalten.
+4. **Im Willkommen-Assistenten** (`c825439`): dieselben Knöpfe (`include_kmy_encryption.xml`,
+   `ui/EncryptionFields.java`). Scheitert ein Import an Schlüssel/Passwort, kommt ein Dialog mit der
+   ganzen Meldung, führt zur Eingabe und startet den Import danach selbst neu.
+5. **Geschlossene Konten mit KMyMoney abgleichen** (`3de11a4`, `8e7b01b`): KMyMoney führt „geschlossen“
+   als `<PAIR key="mm-closed" value="yes"/>` am Konto. Import übernimmt es (Konto grau, keine neuen
+   Buchungen, in der Importauswahl am Ende mit „(geschlossen)“). Schließen/Wiederöffnen in der App wird
+   vorgemerkt (`SettingsStore.getPendingAccountStatus`) und beim nächsten Export geschrieben
+   (`KmyKontoStatus`, in der DB `kmmKeyValuePairs` + `kmmFileInfo.kvps`). Die Selbstprüfung erlaubt am
+   Kontenbereich nur dieses angesagte Paar. Ein von KMyMoney geschlossenes Konto öffnet sich nicht mehr
+   von selbst wegen eines Restsaldos.
+
+Handbuch (de/en, PDFs neu gebaut) ist für alle Punkte nachgezogen, die READMEs nur für GPG/SQLCipher. Die Handbuch-**Webseite** ist
+seit 2.4 nicht neu erzeugt (`python3 docs/build_manual_web.py`, dann `deploy-server.sh` im Repo
+`kmysync-handbuch`).
+
+### Geprüft
+
+- Einzelne Testklassen und die Pakete `export`/`settings` (423 Tests) grün. **Die volle Testsuite lief
+  seit `c2e2696` nicht mehr** – auf diesem Rechner friert sie ihn ein (siehe unten). Bitte auf dem
+  anderen Rechner einmal ganz laufen lassen.
+- `StatementRulesTestFileTest` scheiterte hier unter Speicherdruck: ein Timing-Test (wartet nicht auf
+  das Einlesen der PDF im Hintergrund), hat mit den Änderungen nichts zu tun.
+- Echte Prüflinge von Michael (nur Testdaten, Passphrase/Passwort „michael“):
+  `~/Nextcloud/KMyMoney/testdate/` (`test.verschluesselt.kmy`, `.app.*`, `.emulator.*`) und
+  `~/Downloads/test.verschluesselt.db`, Schlüssel `~/backup.asc`. Kleine Prüflinge im Repo unter
+  `app/src/test/resources/kmy/gpg/`. Große Dateien über `-Dkmy.gpg=…`, `-Dkmy.sqlcipher=…`
+  (Ausgabe mit `…out`).
+- KMyMoney 5.2.2 hat alle von der App verschlüsselten Dateien geöffnet und die Testbuchungen gezeigt.
+- Emulator (nur auf diesem Rechner angelegt, AVD `KMySync_Test`, 2 GB): beide Verschlüsselungen,
+  Assistent und geschlossene Konten durchgespielt.
+
+### Offen
+
+- Nach R8 (Release-Build) am Handy prüfen, ob GPG/SQLCipher laufen – bisher nur Debug-Build.
+- Ein **Depot**, das beim ersten Import neu angelegt wird, bekommt den Geschlossen-Status erst beim
+  nächsten Import.
+- Sind **alle** Konten eines Profils geschlossen, erscheint der Willkommen-Assistent (er prüft nur auf
+  offene Konten). Michael hat noch nicht entschieden, ob das so bleibt.
+- Vier ältere Auffälligkeiten aus dem Emulator, nicht angefasst: Import-Fehler in der Hauptansicht als
+  abgeschnittene Einblendung; nach dem Assistenten bleibt er im Verlauf (Zurück führt dorthin);
+  Profileinstellungen zeigen beim lokalen Ordner nicht den gewählten Ordner; „Zurück“ verwirft dort
+  Änderungen, Format und Passwort aber nicht.
+- Ob KMyMoney 5.1.3 eine mit 5.2 gespeicherte Datenbank noch öffnet, ist ungeprüft.
+- GitHub: Issue #13 (Verschlüsselung) noch ohne Antwort an visionok; Issue #12 (Paras, Herunterziehen
+  aktualisiert nur das angezeigte Depot) beantwortet, offen. #11 ist erledigt und geschlossen.
+
+### Achtung auf dem 7-GB-Rechner
+
+Die volle Testsuite (Gradle 2 GB + Test-Worker 3 GB) hat den Rechner dreimal eingefroren (nur 512 MB
+Swap). Dort nur einzelne Klassen/Pakete testen, danach `./gradlew --stop`; Emulator und Gradle nicht
+gleichzeitig.
+
 ## Worum es geht
 
 KMySync (früher „Ausgaben") soll erstmals zu F-Droid. Der GMS-freie `foss`-Flavor ist geprüft und
