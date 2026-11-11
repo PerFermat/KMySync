@@ -2460,7 +2460,7 @@
     {
       "type": "p",
       "id": "b-0202",
-      "text": "Without a configured sync target, export goes locally into a folder you choose. How the sync runs is in Chapter 18."
+      "text": "In CSV mode, without a sync target the app exports into a folder you choose. The .kmy mode, by contrast, always needs a sync target, because the app reads the file and writes it back – a local folder on the device is enough for that. How the sync runs is in Chapter 18."
     },
     {
       "type": "h2",

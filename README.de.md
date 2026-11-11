@@ -208,8 +208,9 @@ ein unsigniertes Release.
 ## Sync-Ziel einrichten (Nextcloud / WebDAV / SMB / lokaler Ordner)
 
 In den Einstellungen den **Server-Typ** wählen, dann Basis-URL/Freigabe, Benutzername und Passwort
-eintragen; ein Button **„Verbindung testen"** prüft die Verbindung. Ohne konfiguriertes Sync-Ziel wird
-lokal in einen selbst gewählten Ordner exportiert.
+eintragen; ein Button **„Verbindung testen"** prüft die Verbindung. Im CSV-Modus wird ohne Sync-Ziel
+lokal in einen selbst gewählten Ordner exportiert; der `.kmy`-Modus braucht immer ein Sync-Ziel – dafür
+genügt auch ein lokaler Ordner.
 
 - **Nextcloud**: Basis-URL des Servers + ein **App-Passwort** (Nextcloud → Sicherheit → App-Passwort).
 - **WebDAV (generisch)**: vollständige DAV-Wurzel-URL, Auth per HTTP-Basic.

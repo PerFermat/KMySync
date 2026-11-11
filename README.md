@@ -200,8 +200,8 @@ present locally (Android Studio creates it automatically). A signed release buil
 ## Setting up a sync target (Nextcloud / WebDAV / SMB / local folder)
 
 In the settings choose the **server type**, then enter base URL/share, username and password; a **"Test
-connection"** button checks the connection. Without a configured sync target, export goes locally into a
-folder you choose.
+connection"** button checks the connection. In CSV mode, without a sync target export goes locally into a
+folder you choose; the `.kmy` mode always needs a sync target – a local folder is enough.
 
 - **Nextcloud**: base URL of the server + an **app password** (Nextcloud → Settings → Security → App
   password).

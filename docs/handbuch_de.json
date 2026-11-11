@@ -2465,7 +2465,7 @@
     {
       "type": "p",
       "id": "b-0202",
-      "text": "Ohne konfiguriertes Sync-Ziel wird lokal in einen selbst gewählten Ordner exportiert. Wie der Abgleich abläuft, steht in Kapitel 18."
+      "text": "Im CSV-Modus exportiert die App ohne Sync-Ziel in einen selbst gewählten Ordner. Der .kmy-Modus braucht dagegen immer ein Sync-Ziel, weil die App die Datei liest und zurückschreibt – dafür genügt auch ein lokaler Ordner auf dem Gerät. Wie der Abgleich abläuft, steht in Kapitel 18."
     },
     {
       "type": "h2",
