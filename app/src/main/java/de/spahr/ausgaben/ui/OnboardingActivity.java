@@ -536,6 +536,12 @@ public class OnboardingActivity extends LocalizedActivity implements SmbWizardCo
                 Ui.trimmedText(editKmyPath),
                 syncFields.serverType());
         settings.setCsvSeparator(selectedCsvSeparator);
+        // Ein neues Profil bekommt den Belegordner in seiner Sprache („Receipts" statt „Belege").
+        // Nur hier: Bestehende Profile ohne Eintrag haben ihre Belege schon unter „Belege" liegen
+        // und behalten deshalb RECEIPT_FOLDER_DEFAULT.
+        if (!settings.hasReceiptFolder()) {
+            settings.setReceiptFolder(getString(R.string.receipt_folder_default));
+        }
 
         repository.ensureAccount(defaultAccount);
         // Währung/Zahlenformat/Währungsanzeige/Dividenden-Modus sind hier (bewusst schlanker

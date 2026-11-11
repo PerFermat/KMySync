@@ -716,6 +716,11 @@ public class SettingsStore {
         return normalizeReceiptFolder(prefs.getString(pk(KEY_RECEIPT_FOLDER), ""));
     }
 
+    /** Ob für dieses Profil ein Belegordner eingetragen ist (sonst gilt {@link #RECEIPT_FOLDER_DEFAULT}). */
+    public boolean hasReceiptFolder() {
+        return !prefs.getString(pk(KEY_RECEIPT_FOLDER), "").trim().isEmpty();
+    }
+
     public void setReceiptFolder(String folder) {
         prefs.edit().putString(pk(KEY_RECEIPT_FOLDER), normalizeReceiptFolder(folder)).apply();
     }

@@ -1144,4 +1144,5 @@
     <string name="kmy_accounts_closed">Closed in KMyMoney: %1$s</string>
     <string name="kmy_accounts_reopened">Reopened in KMyMoney: %1$s</string>
     <string name="account_closed_suffix">%1$s (closed)</string>
+    <string name="receipt_folder_default">Receipts</string>
 </resources>
