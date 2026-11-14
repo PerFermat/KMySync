@@ -20,8 +20,8 @@ android {
         minSdk 30
         targetSdk libs.versions.targetSdk.get().toInteger()
         // Literal wie in app/build.gradle – siehe die Begründung dort (F-Droids checkupdates).
-        versionCode 20
-        versionName "2.5"
+        versionCode 21
+        versionName "2.6"
     }
 
     signingConfigs {
