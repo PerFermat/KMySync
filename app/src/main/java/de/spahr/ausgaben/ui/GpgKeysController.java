@@ -16,7 +16,6 @@ import com.google.android.material.textfield.TextInputLayout;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -143,7 +142,7 @@ final class GpgKeysController {
                     throw new java.io.IOException("zu groß");
                 }
             }
-            neu = new String(out.toByteArray(), StandardCharsets.US_ASCII);
+            neu = KmyGpg.alsText(out.toByteArray());
         } catch (Exception e) {
             Toast.makeText(activity, R.string.gpg_file_unreadable, Toast.LENGTH_LONG).show();
             return;

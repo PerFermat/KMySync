@@ -488,6 +488,24 @@ public final class KmyGpg {
     }
 
     /** Teilt einen Text in seine „-----BEGIN PGP …"-Blöcke; ohne solche ist der ganze Text ein Block. */
+    /**
+     * Der Inhalt einer Schlüsseldatei als Text. Ein Export ohne {@code --armor} ist binär; er wird
+     * hier in die Textform gebracht, damit er sich wie eine .asc speichern und lesen lässt.
+     */
+    public static String alsText(byte[] raw) {
+        // Ein OpenPGP-Paket beginnt mit gesetztem höchsten Bit, die Textform mit „-----BEGIN“.
+        if (raw.length == 0 || (raw[0] & 0x80) == 0) {
+            return new String(raw, StandardCharsets.US_ASCII);
+        }
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try (ArmoredOutputStream a = ArmoredOutputStream.builder().build(out)) {
+            a.write(raw);
+        } catch (IOException e) {
+            return new String(raw, StandardCharsets.US_ASCII);
+        }
+        return new String(out.toByteArray(), StandardCharsets.US_ASCII);
+    }
+
     static List<String> bloecke(String text) {
         List<String> out = new ArrayList<>();
         java.util.regex.Matcher m = java.util.regex.Pattern.compile(

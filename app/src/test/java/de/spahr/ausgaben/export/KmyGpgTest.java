@@ -225,6 +225,28 @@ public class KmyGpgTest {
         }
     }
 
+    /**
+     * Ohne {@code --armor} exportiert gpg binär (Issue #13). Die App wandelt das beim Einspielen in
+     * Text um und liest es danach wie die .asc.
+     */
+    @Test
+    public void binaererExportWirdAlsTextGelesen() throws Exception {
+        String text = KmyGpg.alsText(KmyRobustnessTest.fixture("gpg/nur-unterschluessel.gpg"));
+        assertTrue(text.startsWith("-----BEGIN PGP"));
+        KmyGpg.Schluessel s = KmyGpg.Schluessel.aus(text, PASSPHRASE);
+        s.pruefePassphrase();
+        assertFalse(s.hatPrivatenHauptschluessel());
+        KmyGpg.Ergebnis e = KmyGpg.entschluesseln(KmyRobustnessTest.fixture("gpg/edited.kmy"), s);
+        assertArrayEquals(KmyRobustnessTest.fixture("edited.xml"), e.klar);
+    }
+
+    /** Eine .asc bleibt, wie sie ist. */
+    @Test
+    public void textExportBleibtUnveraendert() throws Exception {
+        byte[] asc = KmyRobustnessTest.fixture("gpg/nur-unterschluessel.asc");
+        assertEquals(new String(asc, StandardCharsets.US_ASCII), KmyGpg.alsText(asc));
+    }
+
     /** Die Warnung beim Einspielen hängt daran, ob der private Hauptschlüssel mitkommt. */
     @Test
     public void erkenntDenPrivatenHauptschluessel() throws Exception {

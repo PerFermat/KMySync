@@ -19,6 +19,13 @@
       --export-secret-subkeys --armor 'B06AB31369FE6554!' > nur-unterschluessel.asc
   ```
 
+- `nur-unterschluessel.gpg` – dasselbe ohne `--armor`, also binär (so exportiert in Issue #13):
+
+  ```bash
+  gpg --batch --pinentry-mode loopback --passphrase michael \
+      --export-secret-subkeys 'B06AB31369FE6554!' > nur-unterschluessel.gpg
+  ```
+
   `edited.kmy` ist mit `-f` eingecheckt, weil `.gitignore` alle `.kmy` ausschließt.
 
 Die echte, von KMyMoney gespeicherte Datei ist zu groß fürs Repo; `KmyGpgTest` prüft sie mit
